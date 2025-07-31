@@ -63,7 +63,7 @@ export default function AboutCreative() {
             "
           >
             <Image
-              src="/images/homehero.jpg"  
+              src="/images/aboutsection.png"  
               alt="Robo Books illustration"
               fill
               priority
