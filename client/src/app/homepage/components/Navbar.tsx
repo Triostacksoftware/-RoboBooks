@@ -51,7 +51,7 @@ const Navbar: React.FC = () => {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image src="/logo.png" alt="Robo Books" width={140} height={40} priority />
+            <Image src="/images/logo.png" alt="Robo Books" width={140} height={40} priority />
           </Link>
 
           {/* Desktop links */}
@@ -103,7 +103,7 @@ const Navbar: React.FC = () => {
           ${mobileOpen ? 'translate-y-0' : '-translate-y-full'}
           ${scrolled ? 'bg-white/90 backdrop-blur-lg shadow-md' : 'bg-black/120 backdrop-blur'}`}
       >
-        {/* 72px (~h-18) ऊपर स्पेस, ताकि ड्रॉअर का पहला लिंक लोगो से न टकराए */}
+       
         <div className="pt-[72px] flex h-full flex-col text-white items-center space-y-6 overflow-y-auto px-6 pb-10">
           {links.map(({ href, label }) => (
             <Link

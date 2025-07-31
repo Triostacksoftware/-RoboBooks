@@ -9,6 +9,7 @@ import TeamManagement from './homepage/components/TeamManagement'
 import FaqSection from './homepage/components/FaqSection'
 import TestimonialsCarousel from './homepage/components/TestimonialsCarousel'
 import Footer from './homepage/components/Footer'
+import Usability from './homepage/components/Usability'
 
 
 const page = () => {
@@ -18,6 +19,7 @@ const page = () => {
     <Hero/>
     <AboutSection/>
     <FeaturesSection/>
+    <Usability/>
     <BusinessBenefits/>
     <AboutSplit/>
     <TeamManagement/>

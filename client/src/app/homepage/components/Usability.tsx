@@ -8,13 +8,13 @@ type UsabilityProps = {
 };
 
 export default function Usability({
-  dashboardSrc = "/images/usability-dashboard.png",
+  dashboardSrc = "/images/usability.png", // default path, update as needed
   className,
 }: UsabilityProps): ReactElement {
   return (
     <section
       className={cn(
-        "relative py-20 sm:py-28 md:py-32",
+        "relative py-20 mb-44 sm:py-28 md:py-32",
         // subtle dotted background outside the card
         "[background-image:radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-white",
         className
