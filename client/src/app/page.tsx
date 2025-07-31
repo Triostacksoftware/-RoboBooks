@@ -1,6 +1,6 @@
 import React from 'react'
 import Navbar from './homepage/components/Navbar'
-import Hero from './homepage/components/Home'
+import Hero from './homepage/components/Horo'
 import AboutSection from './homepage/components/AboutSection'
 import FeaturesSection from './homepage/components/FeaturesSection'
 import BusinessBenefits from './homepage/components/BusinessBenefits'

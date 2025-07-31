@@ -97,7 +97,7 @@ const Hero: React.FC = () => (
           "
         >
           <Image
-            src="/images/homehero.jpg" /* update path as needed */
+            src="/images/homehero.png" /* update path as needed */
             alt="Robo Books Robot"
             fill
             className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
