@@ -1,9 +1,8 @@
-// src/app/lib/country-dial-selector.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-/** This file is in /app/lib, so import locally: */
-import { flagEmoji } from "./phone-codes";
+/** this file is in /app/lib, so use a relative import */
+import { flagEmoji } from "@/lib/phone-codes";
 
 type Option = { name: string; iso2: string; dial: string };
 
