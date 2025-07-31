@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, FormEvent } from "react";
+import { useMemo, useState, useEffect, useRef, FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -9,7 +9,9 @@ import {
   flagEmoji,
 } from "../../../lib/phone-codes";
 
-/* ---------- Small UI icons to keep parity with login ---------- */
+/* =========================
+   Small UI Icons
+========================= */
 function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -41,8 +43,27 @@ function ShieldCheckIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+function QuoteIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M18 8C10 8 6 14 6 20c0 5.5 3.7 9.3 8.5 10.1V40H26V20C26 12 22 8 18 8zm24 0c-8 0-12 6-12 12 0 5.5 3.7 9.3 8.5 10.1V40H50V20c0-8-4-12-8-12z" />
+    </svg>
+  );
+}
+function StarIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
+      <path
+        fill="currentColor"
+        d="M10 1.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L10 15.8 4.7 17.6l1-5.8L1.5 7.7l5.9-.9L10 1.5z"
+      />
+    </svg>
+  );
+}
 
-/* ---------- Brand SVG icons (inline, no deps) ---------- */
+/* =========================
+   Provider Logos (SVG)
+========================= */
 function GoogleMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true" {...props}>
@@ -81,13 +102,58 @@ function GitHubMark(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-/* ---------- Reusable provider button (icons only) ---------- */
+/* =========================
+   Rating Marks — Icons only (no text)
+========================= */
+function CapterraMark(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <path fill="#1F6FB2" d="M2 4h7l9 8-9 8H2l9-8L2 4z" />
+    </svg>
+  );
+}
+function G2Mark(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="12" fill="#EF4B2B" />
+      <path
+        d="M16.8 8.8c-.9-1.1-2.1-1.8-3.7-1.8-2.9 0-5.1 2-5.1 5s2.2 5 5.1 5c1.9 0 3.3-.8 4.2-2.2l-2-1.3c-.5.8-1.2 1.3-2.2 1.3-1.6 0-2.7-1.2-2.7-2.8s1.1-2.8 2.7-2.8c.6 0 1 .1 1.4.4l-1.5 1.4h4.1V8.8z"
+        fill="#fff"
+      />
+      <path d="M17 16.4h2.5V14H17v2.4z" fill="#fff" />
+    </svg>
+  );
+}
+function PlayMark(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <rect width="24" height="24" rx="5" fill="#1A73E8" />
+      <polygon points="9,6 19,12 9,18" fill="#34A853" />
+      <polygon points="9,6 15,10 13.7,10.8 9,6" fill="#FBBC05" />
+      <polygon points="9,18 15,14 13.7,13.2 9,18" fill="#EA4335" />
+    </svg>
+  );
+}
+function AppStoreMark(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <rect width="24" height="24" rx="5" fill="#0A84FF" />
+      <path
+        d="M8.7 17.7h6.6a.9.9 0 0 0 0-1.8H8.7a.9.9 0 0 0 0 1.8zm6.1-6.9c-.3-.5-.8-.8-1.3-.8-.3 0-.7.1-1 .3l3 5.2c.5-.3.8-.8.8-1.3 0-.3-.1-.7-.2-1l-1.3-2.4zm-5.6 0c.3-.5.8-.8 1.3-.8.3 0 .7.1 1 .3l-3 5.2a1.9 1.9 0 0 1-.8-1.3c0-.3.1-.7.2-1l1.3-2.4z"
+        fill="#fff"
+      />
+    </svg>
+  );
+}
+
+/* =========================
+   Reusable Provider Button
+========================= */
 type ProviderBtnProps = {
   label: "Google" | "Microsoft" | "Apple" | "LinkedIn" | "GitHub";
   children: React.ReactNode;
   onClick?: () => void;
 };
-
 function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
   return (
     <button
@@ -109,7 +175,9 @@ function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
   );
 }
 
-/* ---------- Types ---------- */
+/* =========================
+   Types
+========================= */
 type FormData = {
   companyName: string;
   email: string;
@@ -121,6 +189,12 @@ type FormData = {
   state: string;
   agree: boolean;
 };
+type Testimonial = {
+  quote: string;
+  author: string;
+  role: string;
+  avatar?: string;
+};
 
 const statesOfIndia = [
   "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat",
@@ -130,12 +204,66 @@ const statesOfIndia = [
   "Uttarakhand","West Bengal","Delhi","Jammu and Kashmir","Ladakh"
 ];
 
+/* =========================
+   Rating Badge (compact, no overflow)
+========================= */
+function RatingBadge({
+  icon,
+  label,
+  score,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  score: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80 px-3.5 py-2.5">
+      <div className="flex w-full items-center gap-2.5">
+        <span className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-50">
+          {icon}
+        </span>
+
+        <span className="shrink-0 text-sm font-medium text-slate-700">{label}</span>
+
+        <span className="shrink-0 text-[12px] text-slate-600 tabular-nums">{score}</span>
+
+        <div className="ml-auto flex shrink-0">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <StarIcon key={i} className="h-3.5 w-3.5 text-amber-400" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RatingsRow() {
+  return (
+    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+      <RatingBadge
+        label="Capterra"
+        score="4.4/5"
+        icon={<CapterraMark className="h-4 w-4" />}
+      />
+      <RatingBadge label="G2" score="4.4/5" icon={<G2Mark className="h-4 w-4" />} />
+      <RatingBadge label="Play" score="4.7/5" icon={<PlayMark className="h-4 w-4" />} />
+      <RatingBadge
+        label="App Store"
+        score="4.8/5"
+        icon={<AppStoreMark className="h-4 w-4" />}
+      />
+    </div>
+  );
+}
+
 export default function Register() {
+  /* ---------- Phone defaults ---------- */
   const defaultIN = useMemo(
     () => ALL_PHONE_OPTIONS.find((o) => o.iso2 === "IN" && o.dial === "+91"),
     []
   );
 
+  /* ---------- Form state ---------- */
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<FormData>({
     companyName: "",
@@ -158,12 +286,12 @@ export default function Register() {
           : e.target.value;
       setForm((prev) => ({ ...prev, [key]: value as never }));
     };
-
   const onPhoneCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const [dial, iso2] = e.target.value.split("|");
     setForm((prev) => ({ ...prev, phoneDialCode: dial, phoneIso2: iso2 }));
   };
 
+  /* ---------- Submit ---------- */
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -175,7 +303,6 @@ export default function Register() {
 
     try {
       setLoading(true);
-      // TODO: replace with your server action / API call
       console.log("Submitting form:", form);
       alert("Account created (demo). Wire this up to your API/server action.");
     } catch (err) {
@@ -186,11 +313,51 @@ export default function Register() {
     }
   };
 
+  /* ---------- OAuth ---------- */
   const handleSocial = (
     provider: "google" | "azure-ad" | "linkedin" | "apple" | "github"
   ) => {
     window.location.href = `/api/auth/signin/${provider}`;
   };
+
+  /* ---------- Testimonials slider ---------- */
+  const testimonials: Testimonial[] = [
+    {
+      quote:
+        "With Robo Books’ finance suite, we saved time and money while retaining customer satisfaction—posting over 20% YoY revenue growth.",
+      author: "CA Sanjeev Archak",
+      role: "Integrabooks · Proprietor",
+      avatar: "/images/testimonial-1.jpg",
+    },
+    {
+      quote:
+        "Automations and GST-ready invoicing cut monthly close by days. The team loves how fast it is.",
+      author: "Shruti Mehta",
+      role: "CFO · Diginest",
+      avatar: "/images/testimonial-2.jpg",
+    },
+    {
+      quote:
+        "From billing to reconciliation, it just flows. Support is fantastic and onboarding was seamless.",
+      author: "Ankit Yadav",
+      role: "Founder · Pixeldesk",
+      avatar: "/images/testimonial-3.jpg",
+    },
+  ];
+
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (paused) return;
+    timerRef.current = window.setInterval(() => {
+      setIndex((i) => (i + 1) % testimonials.length);
+    }, 5000);
+    return () => {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+    };
+  }, [paused, testimonials.length]);
 
   return (
     <main
@@ -201,17 +368,17 @@ export default function Register() {
         "min-h-[100svh]",
       ].join(" ")}
     >
-      {/* Ambient blobs (match login) */}
+      {/* Ambient blobs */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-30"
+          className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-25"
           style={{
             background:
               "radial-gradient(120px 120px at 40% 40%, rgba(34,197,94,0.33), transparent), radial-gradient(200px 200px at 70% 70%, rgba(37,99,235,0.33), transparent)",
           }}
         />
         <div
-          className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl opacity-25"
+          className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl opacity-20"
           style={{
             background:
               "radial-gradient(160px 160px at 60% 40%, rgba(16,185,129,0.33), transparent), radial-gradient(220px 220px at 30% 70%, rgba(59,130,246,0.33), transparent)",
@@ -223,48 +390,106 @@ export default function Register() {
       <section className="relative grid overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 md:grid-cols-2">
         <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
 
-        {/* Left: promo / trust */}
-        <aside className="relative overflow-hidden bg-gradient-to-b from-emerald-50/90 to-blue-50/90 p-6 sm:p-8 md:p-10">
+        {/* LEFT: Trusted by + slider + rating badges */}
+        <aside className="relative overflow-hidden p-6 sm:p-8 md:p-10 bg-gradient-to-b from-blue-600 via-blue-600 to-emerald-600 text-white">
           <div
             aria-hidden
-            className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full blur-2xl"
-            style={{ background: "conic-gradient(from 120deg, #10b98155, #2563eb55, #10b98155)" }}
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(800px 400px at 120% -10%, rgba(255,255,255,0.08), transparent 60%), radial-gradient(600px 300px at -10% 110%, rgba(255,255,255,0.06), transparent 60%)",
+            }}
           />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-28 -bottom-28 size-80 rounded-full blur-2xl"
-            style={{ background: "radial-gradient(circle at 60% 40%, #2563eb33, transparent 60%)" }}
-          />
+          <div className="relative">
+            <h2 className="text-3xl sm:text-4xl font-semibold leading-tight">
+              Trusted by
+              <br className="hidden sm:block" />
+              {" "}businesses and CAs
+            </h2>
 
-          <div className="mx-auto max-w-md">
-            <div className="mx-auto w-full max-w-sm rounded-3xl bg-white/60 p-6 shadow-xl ring-1 ring-white/50 backdrop-blur-xl">
-              <div className="flex items-center justify-between">
-                <div className="grid size-12 place-items-center rounded-2xl bg-blue-600/10">
-                  <ShieldCheckIcon className="size-6 text-blue-600" />
-                </div>
-                <div className="h-2 w-24 rounded-full bg-emerald-200" />
+            {/* Testimonial slider */}
+            <div
+              className="mt-6 sm:mt-8 rounded-3xl bg-blue-900/50 backdrop-blur-md ring-1 ring-white/15 p-5 sm:p-7"
+              onMouseEnter={() => setPaused(true)}
+              onMouseLeave={() => setPaused(false)}
+            >
+              <QuoteIcon className="h-8 w-8 text-blue-300/70" />
+
+              <div className="relative mt-3 sm:mt-4 min-h-[120px]">
+                {testimonials.map((t, i) => (
+                  <div
+                    key={i}
+                    className={[
+                      "absolute inset-0 transition-opacity duration-500",
+                      i === index ? "opacity-100" : "opacity-0",
+                    ].join(" ")}
+                    aria-hidden={i !== index}
+                  >
+                    <p className="text-[15px] sm:text-base leading-7 text-white/95">
+                      {t.quote.includes("20% YoY") ? (
+                        <>
+                          {t.quote.split("20% YoY")[0]}
+                          <span className="font-semibold text-emerald-200">20% YoY</span>
+                          {t.quote.split("20% YoY")[1]}
+                        </>
+                      ) : (
+                        t.quote
+                      )}
+                    </p>
+
+                    <div className="mt-5 flex items-center gap-4">
+                      <div className="relative">
+                        <Image
+                          src={t.avatar ?? "/images/testimonial-1.jpg"}
+                          alt={t.author}
+                          width={44}
+                          height={44}
+                          className="h-11 w-11 rounded-full ring-2 ring-emerald-400/60 object-cover"
+                        />
+                        <span className="pointer-events-none absolute -inset-1 rounded-full ring-1 ring-white/10" />
+                      </div>
+                      <div className="leading-tight">
+                        <p className="font-semibold">{t.author}</p>
+                        <p className="text-white/80 text-[13px]">{t.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="mt-6 h-32 rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/70" />
-
-              <div className="mt-6 flex items-center justify-between">
-                <div className="h-2 w-32 rounded-full bg-blue-200" />
-                <div className="grid size-10 place-items-center rounded-full bg-emerald-500/15">
-                  <ShieldCheckIcon className="size-5 text-emerald-600" />
-                </div>
+              {/* Pager */}
+              <div className="mt-6 flex items-center justify-end gap-2">
+                {testimonials.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setIndex(i)}
+                    className={[
+                      "h-1.5 rounded-full transition-all",
+                      i === index ? "w-6 bg-white" : "w-1.5 bg-white/60",
+                    ].join(" ")}
+                    aria-label={`Go to testimonial ${i + 1}`}
+                  />
+                ))}
               </div>
             </div>
 
-            <h2 className="mt-8 text-lg font-semibold">Built for compliance</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Your data stays protected. Robo Books uses industry-standard encryption and adheres to local data regulations.
-            </p>
+            {/* Rating badges row */}
+            <div className="mt-7 sm:mt-9">
+              <div className="relative mx-auto max-w-sm">
+                <p className="text-center text-[12px] tracking-widest text-white/90">
+                  RATED BY THE BEST
+                </p>
+                <div className="absolute left-0 right-0 top-1/2 -z-10 h-px bg-white/20" />
+              </div>
+
+              <RatingsRow />
+            </div>
           </div>
         </aside>
 
-        {/* Right: the registration form */}
+        {/* RIGHT: Registration form */}
         <div className="p-6 sm:p-8 md:p-10">
-          {/* Brand with logo image */}
+          {/* Brand */}
           <div className="flex items-center gap-2">
             <Image
               src="/images/logo.png"
@@ -290,7 +515,7 @@ export default function Register() {
                   value={form.companyName}
                   onChange={onChange("companyName")}
                   placeholder="e.g., Robo Innovations Pvt Ltd"
-                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none ring-emerald-500/20 transition focus:border-emerald-400 focus:ring-4"
+                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
@@ -306,60 +531,68 @@ export default function Register() {
                   value={form.email}
                   onChange={onChange("email")}
                   placeholder="you@company.com"
-                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none ring-emerald-500/20 transition focus:border-emerald-400 focus:ring-4"
+                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
             </label>
 
-            {/* Phone (always same row; two columns) */}
-            <div className="grid grid-cols-[minmax(120px,160px),1fr] gap-3">
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Country code</span>
-                <select
-                  aria-label="Country code"
-                  value={`${form.phoneDialCode}|${form.phoneIso2}`}
-                  onChange={onPhoneCountryChange}
-                  className="w-full rounded-2xl border border-slate-300/80 bg-white/70 px-3 py-3 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
-                >
-                  {/* Popular on top */}
-                  <optgroup label="Popular">
-                    {["IN|+91", "US|+1", "GB|+44", "AU|+61", "AE|+971"].map((k) => {
-                      const [iso2, dial] = k.split("|");
-                      return (
-                        <option key={`popular-${k}`} value={`${dial}|${iso2}`}>
-                          {shortLabel(iso2, dial)}
-                        </option>
-                      );
-                    })}
-                  </optgroup>
-                  <optgroup label="All countries (A–Z)">
-                    {ALL_PHONE_OPTIONS.map((o) => (
-                      <option key={`${o.iso2}-${o.dial}`} value={`${o.dial}|${o.iso2}`} title={o.name}>
-                        {shortLabel(o.iso2, o.dial)}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-                <p className="mt-1 text-xs text-slate-500">
-                  {flagEmoji(form.phoneIso2)} {form.phoneIso2} • {form.phoneDialCode}
-                </p>
-              </label>
+            {/* Phone — unified group */}
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Mobile number</span>
+              <div className="rounded-2xl border border-slate-300/80 bg-white/70 transition focus-within:border-emerald-400 focus-within:ring-4 focus-within:ring-emerald-500/20">
+                <div className="flex items-stretch">
+                  <div className="relative">
+                    <span className="sr-only">Country code</span>
+                    <select
+                      aria-label="Country code"
+                      value={`${form.phoneDialCode}|${form.phoneIso2}`}
+                      onChange={onPhoneCountryChange}
+                      className={[
+                        "min-w-[110px] sm:min-w-[150px]",
+                        "h-full rounded-l-2xl bg-transparent",
+                        "px-3 py-3 pr-8",
+                        "text-slate-900 outline-none",
+                        "border-0 focus:ring-0 appearance-none cursor-pointer",
+                      ].join(" ")}
+                    >
+                      <optgroup label="Popular">
+                        {["IN|+91", "US|+1", "GB|+44", "AU|+61", "AE|+971"].map((k) => {
+                          const [iso2, dial] = k.split("|");
+                          return (
+                            <option key={`popular-${k}`} value={`${dial}|${iso2}`}>
+                              {shortLabel(iso2, dial)}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                      <optgroup label="All countries (A–Z)">
+                        {ALL_PHONE_OPTIONS.map((o) => (
+                          <option key={`${o.iso2}-${o.dial}`} value={`${o.dial}|${o.iso2}`} title={o.name}>
+                            {shortLabel(o.iso2, o.dial)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 h-6 w-px bg-slate-200/80"
+                    />
+                  </div>
 
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Mobile number</span>
-                <div className="relative">
                   <input
                     aria-label="Mobile number"
                     value={form.phoneNumber}
                     onChange={onChange("phoneNumber")}
                     placeholder="98765 43210"
-                    className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none ring-emerald-500/20 transition focus:border-emerald-400 focus:ring-4"
+                    className="flex-1 rounded-r-2xl bg-transparent px-4 py-3 text-slate-900 outline-none border-0 focus:ring-0"
                   />
-                  <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
                 </div>
-              </label>
-            </div>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {flagEmoji(form.phoneIso2)} {form.phoneIso2} • {form.phoneDialCode}
+              </p>
+            </label>
 
             {/* Password */}
             <label className="block">
@@ -371,7 +604,7 @@ export default function Register() {
                   value={form.password}
                   onChange={onChange("password")}
                   placeholder="At least 6 characters"
-                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none ring-emerald-500/20 transition focus:border-emerald-400 focus:ring-4"
+                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
@@ -456,11 +689,10 @@ export default function Register() {
             <p className="mt-1 text-[12px] text-slate-500">*No credit card required</p>
           </form>
 
-          {/* Social sign up — icons only (Apple uses PNG now) */}
+          {/* Social sign up */}
           <div className="mt-5 sm:mt-6">
             <p className="text-sm text-slate-500">Sign in using</p>
             <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-              {/* Apple – your PNG */}
               <ProviderButton label="Apple" onClick={() => handleSocial("apple")}>
                 <Image
                   src="/images/apple.png"
@@ -471,19 +703,15 @@ export default function Register() {
                   priority
                 />
               </ProviderButton>
-
               <ProviderButton label="Google" onClick={() => handleSocial("google")}>
                 <GoogleMark className="h-5 w-5" />
               </ProviderButton>
-
               <ProviderButton label="LinkedIn" onClick={() => handleSocial("linkedin")}>
                 <LinkedInMark className="h-5 w-5 text-[#0A66C2]" />
               </ProviderButton>
-
               <ProviderButton label="GitHub" onClick={() => handleSocial("github")}>
                 <GitHubMark className="h-5 w-5 text-black" />
               </ProviderButton>
-
               <ProviderButton label="Microsoft" onClick={() => handleSocial("azure-ad")}>
                 <MicrosoftMark className="h-5 w-5" />
               </ProviderButton>
@@ -493,14 +721,14 @@ export default function Register() {
           {/* Login link */}
           <p className="mt-6 text-sm text-slate-600">
             Already have a Robo Books account?{" "}
-            <a className="font-semibold text-blue-700 hover:underline" href="/login">
-              Log in
+            <a className="font-semibold text-blue-700 hover:underline" href="/signin">
+              Sign in
             </a>
           </p>
         </div>
       </section>
 
-      {/* Keyframes for shiny buttons (same as login) */}
+      {/* Keyframes */}
       <style jsx>{`
         @keyframes shine {
           0% { transform: translateX(-20%); }
