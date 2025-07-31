@@ -13,7 +13,10 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#16191d] text-white">
+    <footer className="
+        relative overflow-hidden text-white
+        bg-gradient-to-b from-[#0d1524] via-[#0b1c31]/90 to-[#08111e]
+      ">
       {/* top glow border */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
 

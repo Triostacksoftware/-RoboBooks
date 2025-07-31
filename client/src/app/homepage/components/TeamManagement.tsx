@@ -11,7 +11,7 @@ interface StatProps {
   label: string;
 }
 const StatRing: FC<StatProps> = ({ value, label }) => (
-  <div className="relative flex h-32 w-32 items-center justify-center md:h-40 md:w-40 lg:h-48 lg:w-48">
+  <div className="relative flex h-32 px-10 w-32 items-center justify-center md:h-40 md:w-40 lg:h-48 lg:w-48">
     <div className="absolute inset-0 rounded-full bg-gray-200/40" />
     <div
       className="absolute inset-0 rounded-full"
@@ -84,7 +84,7 @@ export default function TeamManagement() {
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-transparent bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text">
             Team Management
           </p>
-          <h2 className="mb-6 text-3xl font-extrabold leading-tight text-transparent bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 bg-clip-text sm:text-4xl lg:text-5xl">
+          <h2 className="mb-6 text-3xl font-bold leading-tight text-transparent bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 bg-clip-text sm:text-4xl lg:text-5xl">
             Manage team increase productivity
           </h2>
           <p className="mb-8 max-w-xl text-base leading-relaxed text-gray-700 md:text-lg">
