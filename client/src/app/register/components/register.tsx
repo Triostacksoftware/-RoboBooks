@@ -9,9 +9,7 @@ import {
   flagEmoji,
 } from "../../../lib/phone-codes";
 
-/* =========================
-   Small UI Icons
-========================= */
+/* ----------------- Small UI icons ----------------- */
 function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -25,24 +23,6 @@ function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-function ShieldCheckIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path
-        d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path
-        d="M9 12l2.2 2.2L15 10.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 function QuoteIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 48 48" fill="currentColor" aria-hidden="true" {...props}>
@@ -50,34 +30,84 @@ function QuoteIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-function StarIcon(props: React.SVGProps<SVGSVGElement>) {
+
+/* ----------------- Stars with half support ----------------- */
+function StarBase({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" {...props}>
-      <path
-        fill="currentColor"
-        d="M10 1.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L10 15.8 4.7 17.6l1-5.8L1.5 7.7l5.9-.9L10 1.5z"
-      />
+    <svg viewBox="0 0 20 20" className={className} aria-hidden="true">
+      <path d="M10 1.6l2.5 5.1 5.6.8-4 3.9.9 5.6L10 14.9 5 17l.9-5.6-4-3.9 5.6-.8L10 1.6z" />
     </svg>
   );
 }
+function Star({ fill, idBase }: { fill: 0 | 0.5 | 1; idBase: string }) {
+  const halfId = `${idBase}-half`;
+  return (
+    <span className="inline-block relative">
+      <StarBase className="h-3.5 w-3.5 text-slate-300 fill-current" />
+      {fill > 0 && (
+        <svg
+          viewBox="0 0 20 20"
+          className="absolute inset-0 h-3.5 w-3.5 text-amber-400"
+        >
+          <defs>
+            <clipPath id={halfId}>
+              <rect x="0" y="0" width={fill === 0.5 ? 10 : 20} height="20" />
+            </clipPath>
+          </defs>
+          <path
+            d="M10 1.6l2.5 5.1 5.6.8-4 3.9.9 5.6L10 14.9 5 17l.9-5.6-4-3.9 5.6-.8L10 1.6z"
+            clipPath={`url(#${halfId})`}
+            className="fill-current"
+          />
+        </svg>
+      )}
+    </span>
+  );
+}
+function StarRow({ rating, id }: { rating: number; id: string }) {
+  const full = Math.floor(rating);
+  const frac = rating - full;
+  const half = frac >= 0.25 && frac < 0.75 ? 1 : 0;
+  const addFull = frac >= 0.75 ? 1 : 0;
+  const fullTotal = Math.min(5, full + addFull);
+  const empty = 5 - fullTotal - (half ? 1 : 0);
 
-/* =========================
-   Provider Logos (SVG)
-========================= */
+  const stars: React.ReactElement[] = [];
+  for (let i = 0; i < fullTotal; i++)
+    stars.push(<Star key={`f-${i}`} fill={1} idBase={`${id}-f-${i}`} />);
+  if (half) stars.push(<Star key="h" fill={0.5} idBase={`${id}-h`} />);
+  for (let i = 0; i < empty; i++)
+    stars.push(<Star key={`e-${i}`} fill={0} idBase={`${id}-e-${i}`} />);
+  return <div className="mt-[6px] flex items-center gap-1">{stars}</div>;
+}
+
+/* ----------------- Provider icons (inline SVGs) ----------------- */
 function GoogleMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true" {...props}>
-      <path fill="#EA4335" d="M24 9.5c3.3 0 6.2 1.1 8.5 3.2l6-6C34.9 3.1 29.8 1 24 1 14.8 1 6.9 6.3 3.2 14.1l7.7 6c1.8-5.8 7.2-10.6 13.1-10.6z"/>
-      <path fill="#FBBC05" d="M46.5 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12.7c-.6 3-2.4 5.5-5.1 7.2l7.8 6c4.6-4.3 7.1-10.7 7.1-16.9z"/>
-      <path fill="#34A853" d="M10.9 27.8a14.5 14.5 0 0 1-.8-4.8c0-1.6.3-3.3.8-4.8l-7.7-6A23 23 0 0 0 1 23c0 3.7.9 7.3 2.6 10.5l7.3-5.7z"/>
-      <path fill="#4285F4" d="M24 47c6.5 0 12-2.1 16-5.9l-7.8-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.7-4.2-13.6-9.9l-7.7 6C6.4 42.1 14.5 47 24 47z"/>
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.3 0 6.2 1.1 8.5 3.2l6-6C34.9 3.1 29.8 1 24 1 14.8 1 6.9 6.3 3.2 14.1l7.7 6c1.8-5.8 7.2-10.6 13.1-10.6z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M46.5 24.5c0-1.6-.1-2.8-.4-4.1H24v7.8h12.7c-.6 3-2.4 5.5-5.1 7.2l7.8 6c4.6-4.3 7.1-10.7 7.1-16.9z"
+      />
+      <path
+        fill="#34A853"
+        d="M10.9 27.8a14.5 14.5 0 0 1-.8-4.8c0-1.6.3-3.3.8-4.8l-7.7-6A23 23 0 0 0 1 23c0 3.7.9 7.3 2.6 10.5l7.3-5.7z"
+      />
+      <path
+        fill="#4285F4"
+        d="M24 47c6.5 0 12-2.1 16-5.9l-7.8-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.7-4.2-13.6-9.9l-7.7 6C6.4 42.1 14.5 47 24 47z"
+      />
     </svg>
   );
 }
 function MicrosoftMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 23 23" aria-hidden="true" {...props}>
-      <rect x="1" y="1" width="9" height="9" fill="#F25022" rx="1" />
+      <rect x="1" y="1" width="10" height="10" fill="#F25022" rx="1" />
       <rect x="13" y="1" width="9" height="9" fill="#7FBA00" rx="1" />
       <rect x="1" y="13" width="9" height="9" fill="#00A4EF" rx="1" />
       <rect x="13" y="13" width="9" height="9" fill="#FFB900" rx="1" />
@@ -87,7 +117,10 @@ function MicrosoftMark(props: React.SVGProps<SVGSVGElement>) {
 function LinkedInMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8.5h4.9V24H.5zM9 8.5h4.7v2.1h.1c.7-1.2 2.5-2.5 5.1-2.5 5.5 0 6.5 3.6 6.5 8.3V24h-4.9v-7.4c0-1.8 0-4.2-2.6-4.2s-3 2-3 4V24H9z"/>
+      <path
+        fill="currentColor"
+        d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8.5h4.9V24H.5zM9 8.5h4.7v2.1h.1c.7-1.2 2.5-2.5 5.1-2.5 5.5 0 6.5 3.6 6.5 8.3V24h-4.9v-7.4c0-1.8 0-4.2-2.6-4.2s-3 2-3 4V24H9z"
+      />
     </svg>
   );
 }
@@ -102,53 +135,7 @@ function GitHubMark(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-/* =========================
-   Rating Marks — Icons only (no text)
-========================= */
-function CapterraMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path fill="#1F6FB2" d="M2 4h7l9 8-9 8H2l9-8L2 4z" />
-    </svg>
-  );
-}
-function G2Mark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <circle cx="12" cy="12" r="12" fill="#EF4B2B" />
-      <path
-        d="M16.8 8.8c-.9-1.1-2.1-1.8-3.7-1.8-2.9 0-5.1 2-5.1 5s2.2 5 5.1 5c1.9 0 3.3-.8 4.2-2.2l-2-1.3c-.5.8-1.2 1.3-2.2 1.3-1.6 0-2.7-1.2-2.7-2.8s1.1-2.8 2.7-2.8c.6 0 1 .1 1.4.4l-1.5 1.4h4.1V8.8z"
-        fill="#fff"
-      />
-      <path d="M17 16.4h2.5V14H17v2.4z" fill="#fff" />
-    </svg>
-  );
-}
-function PlayMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <rect width="24" height="24" rx="5" fill="#1A73E8" />
-      <polygon points="9,6 19,12 9,18" fill="#34A853" />
-      <polygon points="9,6 15,10 13.7,10.8 9,6" fill="#FBBC05" />
-      <polygon points="9,18 15,14 13.7,13.2 9,18" fill="#EA4335" />
-    </svg>
-  );
-}
-function AppStoreMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <rect width="24" height="24" rx="5" fill="#0A84FF" />
-      <path
-        d="M8.7 17.7h6.6a.9.9 0 0 0 0-1.8H8.7a.9.9 0 0 0 0 1.8zm6.1-6.9c-.3-.5-.8-.8-1.3-.8-.3 0-.7.1-1 .3l3 5.2c.5-.3.8-.8.8-1.3 0-.3-.1-.7-.2-1l-1.3-2.4zm-5.6 0c.3-.5.8-.8 1.3-.8.3 0 .7.1 1 .3l-3 5.2a1.9 1.9 0 0 1-.8-1.3c0-.3.1-.7.2-1l1.3-2.4z"
-        fill="#fff"
-      />
-    </svg>
-  );
-}
-
-/* =========================
-   Reusable Provider Button
-========================= */
+/* ----------------- Reusable provider button ----------------- */
 type ProviderBtnProps = {
   label: "Google" | "Microsoft" | "Apple" | "LinkedIn" | "GitHub";
   children: React.ReactNode;
@@ -175,9 +162,7 @@ function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
   );
 }
 
-/* =========================
-   Types
-========================= */
+/* ----------------- Types ----------------- */
 type FormData = {
   companyName: string;
   email: string;
@@ -196,74 +181,91 @@ type Testimonial = {
   avatar?: string;
 };
 
-const statesOfIndia = [
-  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat",
-  "Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh",
-  "Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab",
-  "Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh",
-  "Uttarakhand","West Bengal","Delhi","Jammu and Kashmir","Ladakh"
-];
-
-/* =========================
-   Rating Badge (compact, no overflow)
-========================= */
-function RatingBadge({
-  icon,
+/* ----------------- Rating card (uses PNG logos) ----------------- */
+function RatingCard({
+  logoSrc,
   label,
   score,
+  id,
+  labelTint,
 }: {
-  icon: React.ReactNode;
+  logoSrc: string;
   label: string;
-  score: string;
+  score: number;
+  id: string;
+  labelTint?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80 px-3.5 py-2.5">
-      <div className="flex w-full items-center gap-2.5">
-        <span className="grid size-8 shrink-0 place-items-center rounded-md bg-slate-50">
-          {icon}
-        </span>
-
-        <span className="shrink-0 text-sm font-medium text-slate-700">{label}</span>
-
-        <span className="shrink-0 text-[12px] text-slate-600 tabular-nums">{score}</span>
-
-        <div className="ml-auto flex shrink-0">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <StarIcon key={i} className="h-3.5 w-3.5 text-amber-400" />
-          ))}
+    <div className="rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="grid size-8 place-items-center rounded-md bg-slate-50">
+            <Image
+              src={logoSrc}
+              alt={label}
+              width={20}
+              height={20}
+              className="h-5 w-5 object-contain"
+              priority
+            />
+          </span>
+          <span
+            className="text-[14px] font-semibold"
+            style={labelTint ? { color: labelTint } : undefined}
+          >
+            {label}
+          </span>
         </div>
+        <span className="text-[13px] text-slate-600 tabular-nums">
+          {score.toFixed(1)}/5
+        </span>
       </div>
+      <StarRow rating={score} id={id} />
     </div>
   );
 }
 
 function RatingsRow() {
   return (
-    <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
-      <RatingBadge
+    <div
+      className="
+        mt-4
+        grid
+        grid-cols-[repeat(auto-fit,minmax(160px,1fr))]  /* auto-fit within container */
+        gap-3 sm:gap-4
+      "
+    >
+      <RatingCard
+        id="capterra"
         label="Capterra"
-        score="4.4/5"
-        icon={<CapterraMark className="h-4 w-4" />}
+        score={4.4}
+        labelTint="#1F6FB2"
+        logoSrc="/images/capterra.png"
       />
-      <RatingBadge label="G2" score="4.4/5" icon={<G2Mark className="h-4 w-4" />} />
-      <RatingBadge label="Play" score="4.7/5" icon={<PlayMark className="h-4 w-4" />} />
-      <RatingBadge
+      <RatingCard id="g2" label="G2" score={4.4} logoSrc="/images/g2.png" />
+      <RatingCard
+        id="play"
+        label="Play"
+        score={4.7}
+        logoSrc="/images/playstore.png"
+      />
+      <RatingCard
+        id="appstore"
         label="App Store"
-        score="4.8/5"
-        icon={<AppStoreMark className="h-4 w-4" />}
+        score={4.8}
+        logoSrc="/images/appstore.png"
       />
     </div>
   );
 }
 
+/* ----------------- Page ----------------- */
 export default function Register() {
-  /* ---------- Phone defaults ---------- */
   const defaultIN = useMemo(
     () => ALL_PHONE_OPTIONS.find((o) => o.iso2 === "IN" && o.dial === "+91"),
     []
   );
 
-  /* ---------- Form state ---------- */
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<FormData>({
     companyName: "",
@@ -286,21 +288,26 @@ export default function Register() {
           : e.target.value;
       setForm((prev) => ({ ...prev, [key]: value as never }));
     };
+
   const onPhoneCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const [dial, iso2] = e.target.value.split("|");
     setForm((prev) => ({ ...prev, phoneDialCode: dial, phoneIso2: iso2 }));
   };
 
-  /* ---------- Submit ---------- */
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    if (!form.companyName.trim()) return alert("Please enter your company name.");
-    if (!/^\S+@\S+\.\S+$/.test(form.email)) return alert("Please enter a valid email.");
-    if (!form.phoneNumber.trim()) return alert("Please enter your mobile number.");
-    if (form.password.length < 6) return alert("Password must be at least 6 characters.");
-    if (!form.agree) return alert("You must agree to the Terms of Service and Privacy Policy.");
-
+    if (!form.companyName.trim())
+      return alert("Please enter your company name.");
+    if (!/^\S+@\S+\.\S+$/.test(form.email))
+      return alert("Please enter a valid email.");
+    if (!form.phoneNumber.trim())
+      return alert("Please enter your mobile number.");
+    if (form.password.length < 6)
+      return alert("Password must be at least 6 characters.");
+    if (!form.agree)
+      return alert(
+        "You must agree to the Terms of Service and Privacy Policy."
+      );
     try {
       setLoading(true);
       console.log("Submitting form:", form);
@@ -313,14 +320,13 @@ export default function Register() {
     }
   };
 
-  /* ---------- OAuth ---------- */
+  /* social OAuth — this was missing */
   const handleSocial = (
     provider: "google" | "azure-ad" | "linkedin" | "apple" | "github"
   ) => {
     window.location.href = `/api/auth/signin/${provider}`;
   };
 
-  /* ---------- Testimonials slider ---------- */
   const testimonials: Testimonial[] = [
     {
       quote:
@@ -344,7 +350,6 @@ export default function Register() {
       avatar: "/images/testimonial-3.jpg",
     },
   ];
-
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -369,7 +374,10 @@ export default function Register() {
       ].join(" ")}
     >
       {/* Ambient blobs */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
         <div
           className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-25"
           style={{
@@ -388,9 +396,12 @@ export default function Register() {
 
       {/* Card container */}
       <section className="relative grid overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 md:grid-cols-2">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 to-emerald-500"
+        />
 
-        {/* LEFT: Trusted by + slider + rating badges */}
+        {/* LEFT: Trusted + testimonial + ratings (PNG logos) */}
         <aside className="relative overflow-hidden p-6 sm:p-8 md:p-10 bg-gradient-to-b from-blue-600 via-blue-600 to-emerald-600 text-white">
           <div
             aria-hidden
@@ -400,14 +411,14 @@ export default function Register() {
                 "radial-gradient(800px 400px at 120% -10%, rgba(255,255,255,0.08), transparent 60%), radial-gradient(600px 300px at -10% 110%, rgba(255,255,255,0.06), transparent 60%)",
             }}
           />
-          <div className="relative">
+
+          <div className="relative mx-auto w-full max-w-[640px] lg:max-w-[700px]">
             <h2 className="text-3xl sm:text-4xl font-semibold leading-tight">
               Trusted by
-              <br className="hidden sm:block" />
-              {" "}businesses and CAs
+              <br className="hidden sm:block" /> businesses and CAs
             </h2>
 
-            {/* Testimonial slider */}
+            {/* Testimonial card */}
             <div
               className="mt-6 sm:mt-8 rounded-3xl bg-blue-900/50 backdrop-blur-md ring-1 ring-white/15 p-5 sm:p-7"
               onMouseEnter={() => setPaused(true)}
@@ -429,7 +440,9 @@ export default function Register() {
                       {t.quote.includes("20% YoY") ? (
                         <>
                           {t.quote.split("20% YoY")[0]}
-                          <span className="font-semibold text-emerald-200">20% YoY</span>
+                          <span className="font-semibold text-emerald-200">
+                            20% YoY
+                          </span>
                           {t.quote.split("20% YoY")[1]}
                         </>
                       ) : (
@@ -438,16 +451,13 @@ export default function Register() {
                     </p>
 
                     <div className="mt-5 flex items-center gap-4">
-                      <div className="relative">
-                        <Image
-                          src={t.avatar ?? "/images/testimonial-1.jpg"}
-                          alt={t.author}
-                          width={44}
-                          height={44}
-                          className="h-11 w-11 rounded-full ring-2 ring-emerald-400/60 object-cover"
-                        />
-                        <span className="pointer-events-none absolute -inset-1 rounded-full ring-1 ring-white/10" />
-                      </div>
+                      <Image
+                        src={t.avatar ?? "/images/testimonial-1.jpg"}
+                        alt={t.author}
+                        width={44}
+                        height={44}
+                        className="h-11 w-11 rounded-full ring-2 ring-emerald-400/60 object-cover"
+                      />
                       <div className="leading-tight">
                         <p className="font-semibold">{t.author}</p>
                         <p className="text-white/80 text-[13px]">{t.role}</p>
@@ -473,9 +483,9 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Rating badges row */}
+            {/* Ratings row with PNGs */}
             <div className="mt-7 sm:mt-9">
-              <div className="relative mx-auto max-w-sm">
+              <div className="relative mx-auto max-w-[520px]">
                 <p className="text-center text-[12px] tracking-widest text-white/90">
                   RATED BY THE BEST
                 </p>
@@ -502,13 +512,19 @@ export default function Register() {
             <span className="font-semibold tracking-tight">Robo Books</span>
           </div>
 
-          <h1 className="mt-6 text-[28px] font-semibold leading-7 tracking-tight">Create your account</h1>
-          <p className="text-slate-500">Start your 14-day free trial. No credit card required.</p>
+          <h1 className="mt-6 text-[28px] font-semibold leading-7 tracking-tight">
+            Create your account
+          </h1>
+          <p className="text-slate-500">
+            Start your 14-day free trial. No credit card required.
+          </p>
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             {/* Company */}
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Company name</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Company name
+              </span>
               <div className="relative">
                 <input
                   id="companyName"
@@ -523,7 +539,9 @@ export default function Register() {
 
             {/* Email */}
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Email address</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Email address
+              </span>
               <div className="relative">
                 <input
                   id="email"
@@ -537,9 +555,11 @@ export default function Register() {
               </div>
             </label>
 
-            {/* Phone — unified group */}
+            {/* Phone (country code + number in one group) */}
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Mobile number</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Mobile number
+              </span>
               <div className="rounded-2xl border border-slate-300/80 bg-white/70 transition focus-within:border-emerald-400 focus-within:ring-4 focus-within:ring-emerald-500/20">
                 <div className="flex items-stretch">
                   <div className="relative">
@@ -557,18 +577,27 @@ export default function Register() {
                       ].join(" ")}
                     >
                       <optgroup label="Popular">
-                        {["IN|+91", "US|+1", "GB|+44", "AU|+61", "AE|+971"].map((k) => {
-                          const [iso2, dial] = k.split("|");
-                          return (
-                            <option key={`popular-${k}`} value={`${dial}|${iso2}`}>
-                              {shortLabel(iso2, dial)}
-                            </option>
-                          );
-                        })}
+                        {["IN|+91", "US|+1", "GB|+44", "AU|+61", "AE|+971"].map(
+                          (k) => {
+                            const [iso2, dial] = k.split("|");
+                            return (
+                              <option
+                                key={`popular-${k}`}
+                                value={`${dial}|${iso2}`}
+                              >
+                                {shortLabel(iso2, dial)}
+                              </option>
+                            );
+                          }
+                        )}
                       </optgroup>
                       <optgroup label="All countries (A–Z)">
                         {ALL_PHONE_OPTIONS.map((o) => (
-                          <option key={`${o.iso2}-${o.dial}`} value={`${o.dial}|${o.iso2}`} title={o.name}>
+                          <option
+                            key={`${o.iso2}-${o.dial}`}
+                            value={`${o.dial}|${o.iso2}`}
+                            title={o.name}
+                          >
                             {shortLabel(o.iso2, o.dial)}
                           </option>
                         ))}
@@ -590,13 +619,16 @@ export default function Register() {
                 </div>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                {flagEmoji(form.phoneIso2)} {form.phoneIso2} • {form.phoneDialCode}
+                {flagEmoji(form.phoneIso2)} {form.phoneIso2} •{" "}
+                {form.phoneDialCode}
               </p>
             </label>
 
             {/* Password */}
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Password</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Password
+              </span>
               <div className="relative">
                 <input
                   id="password"
@@ -613,7 +645,9 @@ export default function Register() {
             {/* Country & State */}
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Country</span>
+                <span className="mb-2 block text-sm font-medium text-slate-700">
+                  Country
+                </span>
                 <select
                   id="country"
                   value={form.country}
@@ -629,14 +663,48 @@ export default function Register() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">State</span>
+                <span className="mb-2 block text-sm font-medium text-slate-700">
+                  State
+                </span>
                 <select
                   id="state"
                   value={form.state}
                   onChange={onChange("state")}
                   className="w-full rounded-2xl border border-slate-300/80 bg-white/70 px-3 py-3 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
                 >
-                  {statesOfIndia.map((s) => (
+                  {[
+                    "Andhra Pradesh",
+                    "Arunachal Pradesh",
+                    "Assam",
+                    "Bihar",
+                    "Chhattisgarh",
+                    "Goa",
+                    "Gujarat",
+                    "Haryana",
+                    "Himachal Pradesh",
+                    "Jharkhand",
+                    "Karnataka",
+                    "Kerala",
+                    "Madhya Pradesh",
+                    "Maharashtra",
+                    "Manipur",
+                    "Meghalaya",
+                    "Mizoram",
+                    "Nagaland",
+                    "Odisha",
+                    "Punjab",
+                    "Rajasthan",
+                    "Sikkim",
+                    "Tamil Nadu",
+                    "Telangana",
+                    "Tripura",
+                    "Uttar Pradesh",
+                    "Uttarakhand",
+                    "West Bengal",
+                    "Delhi",
+                    "Jammu and Kashmir",
+                    "Ladakh",
+                  ].map((s) => (
                     <option key={s} value={s}>
                       {s}
                     </option>
@@ -655,11 +723,17 @@ export default function Register() {
               />
               <span>
                 I agree to the{" "}
-                <Link href="/legal/terms" className="text-blue-700 hover:underline">
+                <Link
+                  href="/legal/terms"
+                  className="text-blue-700 hover:underline"
+                >
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/legal/privacy" className="text-blue-700 hover:underline">
+                <Link
+                  href="/legal/privacy"
+                  className="text-blue-700 hover:underline"
+                >
                   Privacy Policy
                 </Link>
                 .
@@ -678,22 +752,32 @@ export default function Register() {
             >
               <span
                 className="absolute inset-0 opacity-30"
-                style={{ maskImage: "linear-gradient(90deg, transparent, black, transparent)" }}
+                style={{
+                  maskImage:
+                    "linear-gradient(90deg, transparent, black, transparent)",
+                }}
               >
                 <span className="absolute -left-6 top-0 h-full w-16 bg-white/70 blur-lg animate-[shine_2.2s_ease-in-out_infinite]" />
               </span>
-              <span>{loading ? "Creating your account..." : "Create my account"}</span>
+              <span>
+                {loading ? "Creating your account..." : "Create my account"}
+              </span>
               <ArrowRightIcon className="size-4" />
             </button>
 
-            <p className="mt-1 text-[12px] text-slate-500">*No credit card required</p>
+            <p className="mt-1 text-[12px] text-slate-500">
+              *No credit card required
+            </p>
           </form>
 
-          {/* Social sign up */}
+          {/* Social sign up — now visible because components exist */}
           <div className="mt-5 sm:mt-6">
             <p className="text-sm text-slate-500">Sign in using</p>
             <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-              <ProviderButton label="Apple" onClick={() => handleSocial("apple")}>
+              <ProviderButton
+                label="Apple"
+                onClick={() => handleSocial("apple")}
+              >
                 <Image
                   src="/images/apple.png"
                   alt="Apple"
@@ -703,16 +787,32 @@ export default function Register() {
                   priority
                 />
               </ProviderButton>
-              <ProviderButton label="Google" onClick={() => handleSocial("google")}>
+
+              <ProviderButton
+                label="Google"
+                onClick={() => handleSocial("google")}
+              >
                 <GoogleMark className="h-5 w-5" />
               </ProviderButton>
-              <ProviderButton label="LinkedIn" onClick={() => handleSocial("linkedin")}>
-                <LinkedInMark className="h-5 w-5 text-[#0A66C2]" />
+
+              <ProviderButton
+                label="LinkedIn"
+                onClick={() => handleSocial("linkedin")}
+              >
+                <LinkedInMark className="h-6 w-6 overflow-visible shrink-0 text-[#0A66C2]" />
               </ProviderButton>
-              <ProviderButton label="GitHub" onClick={() => handleSocial("github")}>
+
+              <ProviderButton
+                label="GitHub"
+                onClick={() => handleSocial("github")}
+              >
                 <GitHubMark className="h-5 w-5 text-black" />
               </ProviderButton>
-              <ProviderButton label="Microsoft" onClick={() => handleSocial("azure-ad")}>
+
+              <ProviderButton
+                label="Microsoft"
+                onClick={() => handleSocial("azure-ad")}
+              >
                 <MicrosoftMark className="h-5 w-5" />
               </ProviderButton>
             </div>
@@ -721,18 +821,24 @@ export default function Register() {
           {/* Login link */}
           <p className="mt-6 text-sm text-slate-600">
             Already have a Robo Books account?{" "}
-            <a className="font-semibold text-blue-700 hover:underline" href="/signin">
+            <a
+              className="font-semibold text-blue-700 hover:underline"
+              href="/signin"
+            >
               Sign in
             </a>
           </p>
         </div>
       </section>
 
-      {/* Keyframes */}
       <style jsx>{`
         @keyframes shine {
-          0% { transform: translateX(-20%); }
-          100% { transform: translateX(120%); }
+          0% {
+            transform: translateX(-20%);
+          }
+          100% {
+            transform: translateX(120%);
+          }
         }
       `}</style>
     </main>
