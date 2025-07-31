@@ -6,6 +6,8 @@ import FeaturesSection from './homepage/components/FeaturesSection'
 import BusinessBenefits from './homepage/components/BusinessBenefits'
 import AboutSplit from './homepage/components/AboutSplit'
 import TeamManagement from './homepage/components/TeamManagement'
+import FaqSection from './homepage/components/FaqSection'
+import TestimonialsCarousel from './homepage/components/TestimonialsCarousel'
 
 const page = () => {
   return (
@@ -17,6 +19,8 @@ const page = () => {
     <BusinessBenefits/>
     <AboutSplit/>
     <TeamManagement/>
+    <FaqSection/>
+    <TestimonialsCarousel/>
     </>
   )
 }
