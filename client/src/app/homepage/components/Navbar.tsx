@@ -59,7 +59,7 @@ const Navbar: React.FC = () => {
 
         {/* Menu */}
         <div
-          className={`hidden md:flex space-x-6 font-semibold transition-colors duration-500 ${
+          className={`hidden md:flex space-x-6  transition-colors duration-500 ${
             scrolled ? 'text-gray-800' : 'text-white'
           }`}
         >
