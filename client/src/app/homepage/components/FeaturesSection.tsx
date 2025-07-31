@@ -35,12 +35,12 @@ const cardV = {
 
 export default function FeaturesSection() {
   return (
-    <section className="relative isolate overflow-hidden py-14 lg:py-20">
+    <section className="relative isolate overflow-hidden py-10 lg:py-14">
       {/* background tint */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-white via-[#f0f8ff] to-white" />
 
       {/* heading */}
-      <h2 className="mb-20 text-center text-4xl sm:text-5xl font-extrabold">
+      <h2 className="mb-20 text-center text-4xl sm:text-5xl font-bold">
         <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
           Our&nbsp;Features
         </span>

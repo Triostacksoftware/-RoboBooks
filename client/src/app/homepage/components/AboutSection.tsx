@@ -89,7 +89,7 @@ export default function AboutCreative() {
           <motion.h2
             variants={fadeUp}
             className="
-              text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight
+              text-3xl sm:text-4xl md:text-5xl font-bold leading-tight
               bg-gradient-to-r from-blue-600 via-cyan-500 to-green-500
               bg-clip-text text-transparent
             "

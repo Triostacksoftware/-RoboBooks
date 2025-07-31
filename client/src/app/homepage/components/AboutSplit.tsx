@@ -12,7 +12,7 @@ const fade = (d = 0) => ({
 
 export default function AboutSplit() {
   return (
-    <section className="relative isolate overflow-hidden bg-white py-24 lg:py-32">
+    <section className="relative isolate overflow-hidden bg-white py-18 lg:py-24">
       {/* background blob */}
       <div className="absolute -z-10 top-[-6rem] left-[-10rem] h-[28rem] w-[28rem]
                       rounded-full bg-gradient-to-br from-teal-100 to-blue-100
@@ -62,7 +62,7 @@ export default function AboutSplit() {
           </motion.p>
 
           <motion.h2 variants={fade(.1)}
-            className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight
+            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight
                        bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent">
             Powerful alone,<br />
             unbeatable{' '}
