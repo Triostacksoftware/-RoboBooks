@@ -123,7 +123,7 @@ export default function BusinessBenefits() {
           {/* desktop screenshot */}
           <motion.div whileHover={{ scale: 1.04, rotate: -2 }}>
             <Image
-              src="/images/businessbenefits.png"
+              src="/images/usability.png"
               alt="Robo Books dashboard"
               width={720}
               height={425}
@@ -138,13 +138,13 @@ export default function BusinessBenefits() {
             className="absolute bottom-6 right-6 hidden sm:block
                        lg:bottom-8 lg:right-8 xl:bottom-10 xl:right-10"
           >
-            <Image
+            {/* <Image
               src="/images/businessbenefits.png"
               alt="Mobile analytics"
               width={180}
               height={310}
               className="rounded-xl shadow-xl"
-            />
+            /> */}
           </motion.div>
         </motion.div>
       </div>

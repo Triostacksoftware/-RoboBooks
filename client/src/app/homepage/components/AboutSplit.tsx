@@ -28,7 +28,7 @@ export default function AboutSplit() {
           {/* arched mask */}
           <div className="overflow-hidden rounded-[50%_50%_0_50%/50%_50%_50%_0]">
             <Image
-              src="/images/homehero.jpg"         /* change path accordingly */
+              src="/images/aboutsplit.jpeg"         /* change path accordingly */
               alt="Team collaborating"
               width={600}
               height={600}

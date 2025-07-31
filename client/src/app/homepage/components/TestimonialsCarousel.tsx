@@ -129,7 +129,7 @@ export default function TestimonialsCarousel() {
         <div className="relative flex-1 space-y-8 px-10 pb-14 pt-14">
           <p className="uppercase tracking-[.25em] text-cyan-500 font-semibold">Testimonials</p>
 
-          <h3 className="text-3xl sm:text-4xl md:text-5xl font-extrabold">
+          <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold">
             We <span className="text-pink-500">❤</span> Feedback
           </h3>
 
