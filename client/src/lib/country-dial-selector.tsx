@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-/** this file is in /app/lib, so use a relative import */
-import { flagEmoji } from "@/lib/phone-codes";
+
+/** Local helper for flags (no external import) */
+function flagEmoji(iso2: string) {
+  const code = iso2.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return "🏳️";
+  return String.fromCodePoint(
+    127397 + code.charCodeAt(0),
+    127397 + code.charCodeAt(1)
+  );
+}
 
 type Option = { name: string; iso2: string; dial: string };
 
