@@ -8,6 +8,8 @@ import AboutSplit from './homepage/components/AboutSplit'
 import TeamManagement from './homepage/components/TeamManagement'
 import FaqSection from './homepage/components/FaqSection'
 import TestimonialsCarousel from './homepage/components/TestimonialsCarousel'
+import Footer from './homepage/components/Footer'
+
 
 const page = () => {
   return (
@@ -21,6 +23,7 @@ const page = () => {
     <TeamManagement/>
     <FaqSection/>
     <TestimonialsCarousel/>
+    <Footer/>
     </>
   )
 }

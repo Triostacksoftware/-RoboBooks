@@ -7,7 +7,7 @@ import { SparklesIcon } from '@heroicons/react/24/solid';
 /* ----------- helpers ----------- */
 const fade = (d = 0) => ({
   hidden: { opacity: 0, y: 40 },
-  show:   { opacity: 1, y: 0, transition: { duration: .7, delay: d } },P
+  show:   { opacity: 1, y: 0, transition: { duration: .7, delay: d } },
 });
 
 export default function AboutSplit() {
