@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
-/* ---------- Basic UI icons ---------- */
+/* -------------------- Small UI icons -------------------- */
 function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path d="M5 12h12m0 0-5-5m5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M5 12h12m0 0-5-5m5 5-5 5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -29,9 +37,26 @@ function ShieldCheckIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+function LockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <rect x="4" y="10" width="16" height="10" rx="2.2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8 10V8a4 4 0 1 1 8 0v2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="12" cy="15" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+function KeyIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="9" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M13 12h7m-3 0v3m0-3v-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
 
-/* ---------- Brand SVG icons (inline, no deps) ---------- */
-/* Google “G” */
+/* -------------------- Brand SVGs (inline) -------------------- */
+/** Google “G” */
 function GoogleMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true" {...props}>
@@ -42,7 +67,7 @@ function GoogleMark(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-/* Microsoft 4-squares */
+/** Microsoft */
 function MicrosoftMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 23 23" aria-hidden="true" {...props}>
@@ -53,26 +78,21 @@ function MicrosoftMark(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-/* Apple */
-function AppleMark(props: React.SVGProps<SVGSVGElement>) {
+/** LinkedIn – square so it never crops */
+function LinkedInMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <rect x="2" y="2" width="20" height="20" rx="3" fill="#0A66C2" />
+      <circle cx="7.25" cy="7.25" r="1.55" fill="#fff" />
+      <rect x="6.4" y="9.6" width="1.7" height="7.8" fill="#fff" />
       <path
-        fill="currentColor"
-        d="M16.365 1.43c0 1.14-.45 2.22-1.27 3.02-.94.94-2.17 1.35-3.32 1.24-.08-1.1.46-2.29 1.3-3.12.91-.93 2.41-1.63 3.29-1.14.03.02.04.04.04.08zM21 17.3c-.45 1.03-.66 1.49-1.24 2.39-.8 1.2-1.93 2.7-3.36 2.72-1.26.03-1.59-.79-3.32-.79s-2.11.77-3.36.81c-1.44.06-2.55-1.31-3.36-2.51C3.65 18 2.2 14.62 3.64 11.8c.94-1.88 2.93-3.07 4.98-3.1 1.56-.03 2.84.86 3.32.86.47 0 2.3-1.06 3.89-.9.66.03 2.52.27 3.72 2.04-.1.06-2.21 1.3-2.15 3.85.06 2.99 2.59 4 2.6 4.55z"
+        d="M11 9.6h1.7v1.15h.03c.35-.67 1.22-1.32 2.5-1.32 2.34 0 3.27 1.46 3.27 3.9v3.67h-1.82v-3.35c0-1.1-.02-2.52-1.67-2.52-1.67 0-1.92 1.15-1.92 2.44v3.43H11V9.6Z"
+        fill="#fff"
       />
     </svg>
   );
 }
-/* LinkedIn */
-function LinkedInMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path fill="currentColor" d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8.5h4.9V24H.5zM9 8.5h4.7v2.1h.1c.7-1.2 2.5-2.5 5.1-2.5 5.5 0 6.5 3.6 6.5 8.3V24h-4.9v-7.4c0-1.8 0-4.2-2.6-4.2s-3 2-3 4V24H9z"/>
-    </svg>
-  );
-}
-/* GitHub */
+/** GitHub */
 function GitHubMark(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
@@ -84,13 +104,12 @@ function GitHubMark(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-/* ---------- Reusable provider button ---------- */
+/* -------------------- Social provider button -------------------- */
 type ProviderBtnProps = {
   label: "Google" | "Microsoft" | "Apple" | "LinkedIn" | "GitHub";
   children: React.ReactNode;
   onClick?: () => void;
 };
-
 function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
   return (
     <button
@@ -99,7 +118,8 @@ function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
       title={label}
       onClick={onClick}
       className={[
-        "group h-12 w-12 grid place-items-center rounded-2xl",
+        "group grid place-items-center rounded-2xl",
+        "h-11 w-11 sm:h-12 sm:w-12",
         "bg-white border border-slate-200/80 shadow-sm",
         "transition duration-200 ease-out will-change-transform",
         "hover:shadow-md hover:scale-105 active:scale-95",
@@ -112,55 +132,163 @@ function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
   );
 }
 
+/* -------------------- Page -------------------- */
 export default function SignIn() {
   const [value, setValue] = useState("");
 
+  // OAuth navigation (adjust to your auth setup)
+  const goOAuth = (provider: "google" | "azure-ad" | "apple" | "linkedin" | "github") => {
+    window.location.href = `/api/auth/signin/${provider}`;
+  };
+
+  // Security slider content
+  const slides = [
+    { title: "Passwordless sign-in", body: "Move away from risky passwords and experience one-tap access with our authenticator.", icon: <FingerprintIcon className="size-6 text-emerald-600" /> },
+    { title: "MFA for all accounts", body: "Protect every login with time-based OTP and hardware keys. Back up secrets safely.", icon: <ShieldCheckIcon className="size-6 text-blue-600" /> },
+    { title: "Encryption & recovery", body: "Your data is encrypted at rest and in transit with secure recovery options.", icon: <LockIcon className="size-6 text-sky-600" /> },
+  ] as const;
+
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setActive((n) => (n + 1) % slides.length), 4200);
+    return () => clearInterval(id);
+  }, [slides.length]);
+
   return (
-    <main className="relative mx-auto max-w-6xl px-4 py-12">
+    <main className="relative mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-8 sm:py-12">
       {/* Ambient blobs */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="absolute -top-24 -left-24 h-72 w-72 rounded-full blur-3xl opacity-30"
-          style={{
-            background:
-              "radial-gradient(120px 120px at 40% 40%, rgba(34,197,94,0.33), transparent), radial-gradient(200px 200px at 70% 70%, rgba(37,99,235,0.33), transparent)",
-          }}
+          className="absolute -top-24 -left-24 h-56 w-56 sm:h-72 sm:w-72 rounded-full blur-3xl opacity-30"
+          style={{ background: "radial-gradient(120px 120px at 40% 40%, rgba(34,197,94,0.33), transparent), radial-gradient(200px 200px at 70% 70%, rgba(37,99,235,0.33), transparent)" }}
         />
         <div
-          className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl opacity-25"
-          style={{
-            background:
-              "radial-gradient(160px 160px at 60% 40%, rgba(16,185,129,0.33), transparent), radial-gradient(220px 220px at 30% 70%, rgba(59,130,246,0.33), transparent)",
-          }}
+          className="absolute -bottom-24 -right-24 h-64 w-64 sm:h-80 sm:w-80 rounded-full blur-3xl opacity-25"
+          style={{ background: "radial-gradient(160px 160px at 60% 40%, rgba(16,185,129,0.33), transparent), radial-gradient(220px 220px at 30% 70%, rgba(59,130,246,0.33), transparent)" }}
         />
       </div>
 
       {/* Card */}
-      <section className="relative grid overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 md:grid-cols-2">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 to-emerald-500" />
+      <section
+        className={[
+          "relative grid overflow-hidden rounded-3xl bg-white/70 backdrop-blur-xl shadow-2xl ring-1 ring-black/5",
+          "grid-cols-1 md:grid-cols-2",
+        ].join(" ")}
+      >
+        {/* top brand bar */}
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue-600 to-emerald-500" />
 
-        {/* Left */}
-        <div className="p-8 md:p-12">
-          {/* Logo / brand */}
-          <div className="flex items-center gap-2">
-            <div className="flex -space-x-1">
-              <span className="size-6 rounded-md bg-blue-600 shadow-sm" />
-              <span className="size-6 rounded-md bg-emerald-500 shadow-sm" />
-              <span className="size-6 rounded-md bg-blue-400 shadow-sm" />
+        {/* --- Security slider FIRST on phones (order-1), right on md+ --- */}
+        <aside
+          className={[
+            "order-1 md:order-none",
+            "relative overflow-hidden bg-gradient-to-b from-emerald-50/90 to-blue-50/90",
+            "p-5 sm:p-8 lg:p-12",
+            "border-b border-slate-100 md:border-b-0 md:border-l",
+          ].join(" ")}
+          // To HIDE on phones instead, replace previous class list with: "hidden sm:block md:order-none relative ..."
+        >
+          {/* soft glows */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-24 -top-24 size-56 sm:size-72 rounded-full blur-2xl"
+            style={{ background: "conic-gradient(from 120deg, #10b98155, #2563eb55, #10b98155)" }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -left-28 -bottom-28 size-64 sm:size-80 rounded-full blur-2xl"
+            style={{ background: "radial-gradient(circle at 60% 40%, #2563eb33, transparent 60%)" }}
+          />
+
+          <div className="mx-auto w-full max-w-md">
+            {/* Sliding card */}
+            <div className="relative w-full overflow-hidden rounded-3xl bg-white/70 ring-1 ring-white/60 backdrop-blur-xl shadow-xl">
+              <div className="flex w-[300%] transition-transform duration-500 ease-out" style={{ transform: `translateX(-${active * 100}%)` }}>
+                {[
+                  { icon: <FingerprintIcon className="size-6 text-emerald-600" />, bar: "bg-emerald-200" },
+                  { icon: <ShieldCheckIcon className="size-6 text-blue-600" />, bar: "bg-blue-200" },
+                  { icon: <LockIcon className="size-6 text-sky-600" />, bar: "bg-sky-200" },
+                ].map((v, i) => (
+                  <div key={i} className="w-full flex-shrink-0 p-5 sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="grid size-10 sm:size-12 place-items-center rounded-2xl bg-blue-600/10">
+                        {v.icon}
+                      </div>
+                      <div className={`h-2 w-20 sm:w-24 rounded-full ${v.bar}`} />
+                    </div>
+
+                    <div className="mt-5 sm:mt-6 h-28 sm:h-32 rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/70" />
+
+                    <div className="mt-5 sm:mt-6 flex items-center justify-between">
+                      <div className="h-2 w-28 sm:w-32 rounded-full bg-blue-200" />
+                      <div className="grid size-9 sm:size-10 place-items-center rounded-full bg-emerald-500/15">
+                        <KeyIcon className="size-4 sm:size-5 text-emerald-600" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* dots */}
+              <div className="flex items-center justify-center gap-2 pb-3 pt-2">
+                {[0, 1, 2].map((i) => (
+                  <button
+                    key={i}
+                    aria-label={`Go to slide ${i + 1}`}
+                    onClick={() => setActive(i)}
+                    className={[
+                      "h-1.5 rounded-full transition-all",
+                      active === i ? "w-7 sm:w-8 bg-blue-500" : "w-3 bg-slate-300",
+                    ].join(" ")}
+                  />
+                ))}
+              </div>
             </div>
-            <span className="font-semibold tracking-tight">Robo Books</span>
+
+            <h2 className="mt-6 sm:mt-8 text-base sm:text-lg font-semibold">
+              {["Passwordless sign-in", "MFA for all accounts", "Encryption & recovery"][active]}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {
+                [
+                  "Move away from risky passwords and experience one-tap access with our authenticator.",
+                  "Protect every login with time-based OTP and hardware keys. Back up secrets safely.",
+                  "Your data is encrypted at rest and in transit with secure recovery options.",
+                ][active]
+              }
+            </p>
+
+            <button
+              type="button"
+              className="mt-5 sm:mt-6 inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-white/80 px-4 py-2 text-sm font-medium text-emerald-700 hover:border-emerald-300 hover:shadow-sm"
+            >
+              Learn more
+            </button>
+          </div>
+        </aside>
+
+        {/* --- Form SECOND on phones (order-2), left on md+ --- */}
+        <div className="order-2 md:order-none p-5 sm:p-8 lg:p-12">
+          {/* Brand with logo.png */}
+          <div className="flex items-center gap-3">
+            <Image
+              src="/images/logo.png"
+              alt="Robo Books logo"
+              width={96}
+              height={32}
+              className="h-6 w-auto rounded-[10px]"
+              priority
+            />
+            <span className="font-semibold tracking-tight text-base sm:text-lg">Robo Books</span>
           </div>
 
           {/* Smart sign-in */}
-          <div className="mt-6">
+          <div className="mt-5 sm:mt-6">
             <button
               type="button"
-              className="relative inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-white shadow ring-1 ring-white/10 bg-gradient-to-tr from-blue-600 to-emerald-500 hover:opacity-95"
+              className="relative inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs sm:text-sm font-medium text-white shadow ring-1 ring-white/10 bg-gradient-to-tr from-blue-600 to-emerald-500 hover:opacity-95"
             >
-              <span
-                className="pointer-events-none absolute inset-0 rounded-full opacity-30"
-                style={{ maskImage: "linear-gradient(90deg, transparent, black, transparent)" }}
-              >
+              <span className="pointer-events-none absolute inset-0 rounded-full opacity-30" style={{ maskImage: "linear-gradient(90deg, transparent, black, transparent)" }}>
                 <span className="absolute -left-1 top-0 h-full w-8 bg-white/60 blur-md animate-[shine_2.2s_ease-in-out_infinite]" />
               </span>
               <FingerprintIcon className="size-4" />
@@ -168,38 +296,37 @@ export default function SignIn() {
             </button>
           </div>
 
-          <h1 className="mt-8 text-[28px] font-semibold leading-7 tracking-tight">Sign in</h1>
-          <p className="text-slate-500">to access Robo Books</p>
+          <h1 className="mt-6 sm:mt-8 text-2xl sm:text-[28px] font-semibold leading-7 tracking-tight">
+            Sign in
+          </h1>
+          <p className="text-slate-500 text-sm sm:text-base">to access Robo Books</p>
 
           {/* Form */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
-            className="mt-6 space-y-4"
-          >
+          <form onSubmit={(e) => e.preventDefault()} className="mt-5 sm:mt-6 space-y-3 sm:space-y-4">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Email address or mobile number</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Email address or mobile number
+              </span>
               <div className="relative">
                 <input
                   type="text"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   placeholder="you@example.com"
-                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none ring-emerald-500/20 transition focus:border-emerald-400 focus:ring-4"
+                  className="peer w-full rounded-2xl border border-slate-300/80 bg-white px-3.5 py-2.5 sm:px-4 sm:py-3 text-slate-900 outline-none ring-emerald-500/20 transition focus:border-emerald-400 focus:ring-4"
                 />
-                <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
             </label>
 
             <button
               type="submit"
-              className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl px-4 py-3 font-semibold text-white shadow-lg bg-gradient-to-tr from-blue-600 to-emerald-500"
+              className={[
+                "group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl",
+                "px-3.5 py-2.5 sm:px-4 sm:py-3",
+                "font-semibold text-white shadow-lg bg-gradient-to-tr from-blue-600 to-emerald-500",
+              ].join(" ")}
             >
-              <span
-                className="absolute inset-0 opacity-30"
-                style={{ maskImage: "linear-gradient(90deg, transparent, black, transparent)" }}
-              >
+              <span className="absolute inset-0 opacity-30" style={{ maskImage: "linear-gradient(90deg, transparent, black, transparent)" }}>
                 <span className="absolute -left-6 top-0 h-full w-16 bg-white/70 blur-lg animate-[shine_2.2s_ease-in-out_infinite]" />
               </span>
               <span>Next</span>
@@ -207,94 +334,54 @@ export default function SignIn() {
             </button>
           </form>
 
-          {/* Social sign-ins (only the five providers) */}
-          <div className="mt-6">
+          {/* Social sign-ins */}
+          <div className="mt-5 sm:mt-6">
             <p className="text-sm text-slate-500">Sign in using</p>
-
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              {/* Apple */}
-              <ProviderButton label="Apple">
-                <AppleMark className="h-5 w-5 text-black" />
+            <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
+              {/* Apple – your PNG */}
+              <ProviderButton label="Apple" onClick={() => goOAuth("apple")}>
+                <Image
+                  src="/images/apple.png"
+                  alt="Apple"
+                  width={24}
+                  height={24}
+                  className="h-5 w-5 sm:h-6 sm:w-6 select-none object-contain"
+                  priority
+                />
               </ProviderButton>
 
               {/* Google */}
-              <ProviderButton label="Google">
-                <GoogleMark className="h-5 w-5" />
+              <ProviderButton label="Google" onClick={() => goOAuth("google")}>
+                <GoogleMark className="h-5 w-5 sm:h-6 sm:w-6" />
               </ProviderButton>
 
               {/* LinkedIn */}
-              <ProviderButton label="LinkedIn">
-                <LinkedInMark className="h-5 w-5 text-[#0A66C2]" />
+              <ProviderButton label="LinkedIn" onClick={() => goOAuth("linkedin")}>
+                <LinkedInMark className="h-5 w-5 sm:h-6 sm:w-6" />
               </ProviderButton>
 
               {/* GitHub */}
-              <ProviderButton label="GitHub">
-                <GitHubMark className="h-5 w-5 text-black" />
+              <ProviderButton label="GitHub" onClick={() => goOAuth("github")}>
+                <GitHubMark className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
               </ProviderButton>
 
               {/* Microsoft */}
-              <ProviderButton label="Microsoft">
-                <MicrosoftMark className="h-5 w-5" />
+              <ProviderButton label="Microsoft" onClick={() => goOAuth("azure-ad")}>
+                <MicrosoftMark className="h-5 w-5 sm:h-6 sm:w-6" />
               </ProviderButton>
             </div>
           </div>
 
-          <p className="mt-6 text-sm text-slate-600">
+          <p className="mt-5 sm:mt-6 text-xs sm:text-sm text-slate-600">
             Don&apos;t have a Robo Books account?{" "}
-            <a className="font-semibold text-blue-700 hover:underline" href="/register">
+            <Link className="font-semibold text-blue-700 hover:underline" href="/register">
               Register now
-            </a>
+            </Link>
           </p>
         </div>
-
-        {/* Right: promo */}
-        <aside className="relative overflow-hidden bg-gradient-to-b from-emerald-50/90 to-blue-50/90 p-8 md:p-12">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full blur-2xl"
-            style={{ background: "conic-gradient(from 120deg, #10b98155, #2563eb55, #10b98155)" }}
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-28 -bottom-28 size-80 rounded-full blur-2xl"
-            style={{ background: "radial-gradient(circle at 60% 40%, #2563eb33, transparent 60%)" }}
-          />
-
-          <div className="mx-auto max-w-md">
-            <div className="mx-auto w-full max-w-sm rounded-3xl bg-white/60 p-6 shadow-xl ring-1 ring-white/50 backdrop-blur-xl">
-              <div className="flex items-center justify-between">
-                <div className="grid size-12 place-items-center rounded-2xl bg-blue-600/10">
-                  <ShieldCheckIcon className="size-6 text-blue-600" />
-                </div>
-                <div className="h-2 w-24 rounded-full bg-emerald-200" />
-              </div>
-
-              <div className="mt-6 h-32 rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/70" />
-
-              <div className="mt-6 flex items-center justify-between">
-                <div className="h-2 w-32 rounded-full bg-blue-200" />
-                <div className="grid size-10 place-items-center rounded-full bg-emerald-500/15">
-                  <FingerprintIcon className="size-5 text-emerald-600" />
-                </div>
-              </div>
-            </div>
-
-            <h2 className="mt-8 text-lg font-semibold">Passwordless sign-in</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Move away from risky passwords and experience one-tap access. Install our authenticator to enable One-tap sign-in.
-            </p>
-
-            <button
-              type="button"
-              className="mt-6 inline-flex items-center justify-center rounded-2xl border border-emerald-200 bg-white/80 px-4 py-2 text-sm font-medium text-emerald-700 hover:border-emerald-300 hover:shadow-sm"
-            >
-              Learn more
-            </button>
-          </div>
-        </aside>
       </section>
 
-      {/* Keyframes for shiny buttons */}
+      {/* Shine keyframes */}
       <style jsx>{`
         @keyframes shine {
           0% { transform: translateX(-20%); }
