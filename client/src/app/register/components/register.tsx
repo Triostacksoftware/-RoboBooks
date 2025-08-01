@@ -504,12 +504,14 @@ export default function Register() {
             <Image
               src="/images/logo.png"
               alt="Robo Books logo"
-              width={28}
-              height={28}
-              className="h-7 w-7 rounded-md"
+              width={30} // reduced from 38
+              height={30} // reduced from 38
+              className="h-7 w-auto object-contain" // h-7 matches 28–30px size
               priority
             />
-            <span className="font-semibold tracking-tight">Robo Books</span>
+            <span className="font-semibold tracking-tight text-lg">
+              Robo Books
+            </span>
           </div>
 
           <h1 className="mt-6 text-[28px] font-semibold leading-7 tracking-tight">
