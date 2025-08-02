@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, useInView, useAnimation } from 'framer-motion';
-import Image from 'next/image';
 import { useEffect, useRef } from 'react';
 
 const container = {
@@ -43,7 +42,7 @@ export default function AboutCreative() {
           lg:grid-cols-2
         "
       >
-        {/* -------- Illustration card -------- */}
+        {/* -------- Illustration card (GIF) -------- */}
         <motion.div
           whileHover={{ scale: 1.05 }}
           transition={{ type: 'spring', stiffness: 320 }}
@@ -54,18 +53,14 @@ export default function AboutCreative() {
               relative
               w-40 sm:w-64 md:w-72 lg:w-80 xl:w-[380px]
               aspect-[3/4]
-              rounded-xl  flex items-center justify-center
+              rounded-xl flex items-center justify-center
               ring-4 ring-transparent bg-white/20
-             
-              
             "
           >
-            <Image
-              src="/images/aboutsection.jpeg"  
-              alt="Robo Books illustration"
-              fill
-              priority
-              className="object-contain"
+            <img
+              src="/images/aboutsection.gif" // <-- Update path to your GIF
+              alt="Robo Books animated illustration"
+              className="object-contain w-full h-full rounded-xl"
             />
           </div>
         </motion.div>
