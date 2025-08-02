@@ -6,30 +6,15 @@ import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const [show, setShow] = useState(true);
-  const [scrolled, setScrolled] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // hide-on-scroll / show-on-scroll
-  const controlNavbar = () => {
-    if (typeof window === 'undefined') return;
-    const y = window.scrollY;
-
-    setShow(!(y > lastScrollY && y > 50));
-    setScrolled(y > 80);
-    setLastScrollY(y);
-  };
-
-  // listeners
+  // Body scroll lock when drawer is open
   useEffect(() => {
-    window.addEventListener('scroll', controlNavbar);
-    return () => window.removeEventListener('scroll', controlNavbar);
-  }, [lastScrollY]);
-
-  // body scroll lock जब ड्रॉअर खुला हो
-  useEffect(() => {
+    const prev = document.body.style.overflow;
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [mobileOpen]);
 
   const links = [
@@ -42,11 +27,13 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      {/* Top Navbar */}
+      {/* Always-fixed, white navbar */}
       <nav
-        className={`fixed top-0 left-0 w-full z-50 transition-transform duration-500
-          ${show ? 'translate-y-0' : '-translate-y-full'}
-          ${scrolled ? 'bg-white/70 backdrop-blur-lg shadow-md' : 'bg-transparent'}`}
+        className="
+          fixed top-0 left-0 z-50 w-full
+          bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90
+          border-b border-gray-100 shadow-sm
+        "
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           {/* Logo */}
@@ -55,12 +42,9 @@ const Navbar: React.FC = () => {
           </Link>
 
           {/* Desktop links */}
-          <div
-            className={`hidden md:flex space-x-6 transition-colors duration-500
-              ${scrolled ? 'text-gray-800' : 'text-white'}`}
-          >
+          <div className="hidden md:flex items-center space-x-6 text-gray-800">
             {links.map(({ href, label }) => (
-              <Link key={href} href={href} className="transition hover:text-blue-500">
+              <Link key={href} href={href} className="transition hover:text-blue-600">
                 {label}
               </Link>
             ))}
@@ -70,9 +54,7 @@ const Navbar: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Link
               href="/signin"
-              className={`font-medium transition
-                ${scrolled ? 'text-gray-800 hover:text-blue-600'
-                            : 'text-white hover:text-blue-400'}`}
+              className="font-medium text-gray-800 transition hover:text-blue-600"
             >
               Sign&nbsp;in
             </Link>
@@ -85,10 +67,10 @@ const Navbar: React.FC = () => {
               Register
             </Link>
 
-            {/* Hamburger (md से नीचे) */}
+            {/* Hamburger (md and below) */}
             <button
               aria-label="Toggle menu"
-              className={`ml-2 md:hidden ${scrolled ? 'text-gray-800' : 'text-white'}`}
+              className="ml-2 text-gray-900 md:hidden"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X size={28} strokeWidth={2.5} /> : <Menu size={28} strokeWidth={2.5} />}
@@ -97,24 +79,28 @@ const Navbar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer (white theme) */}
       <div
-        className={`fixed inset-0 top-0 z-[60] md:hidden transition-transform duration-500
+        className={`
+          fixed inset-0 z-[60] md:hidden transition-transform duration-500
           ${mobileOpen ? 'translate-y-0' : '-translate-y-full'}
-          ${scrolled ? 'bg-white/90 backdrop-blur-lg shadow-md' : 'bg-black/120 backdrop-blur'}`}
+        `}
       >
-       
-        <div className="pt-[72px] flex h-full flex-col text-white items-center space-y-6 overflow-y-auto px-6 pb-10">
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              className="w-full text-center text-lg font-medium transition hover:text-blue-500"
-            >
-              {label}
-            </Link>
-          ))}
+        <div className="h-full w-full bg-white">
+          {/* Spacer to avoid overlap with fixed navbar */}
+          <div className="h-[72px]" />
+          <div className="flex h-[calc(100%-72px)] flex-col items-center space-y-6 overflow-y-auto px-6 pb-10">
+            {links.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className="w-full text-center text-lg font-medium text-gray-800 transition hover:text-blue-600"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </>

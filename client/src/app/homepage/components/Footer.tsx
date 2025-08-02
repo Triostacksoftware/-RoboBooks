@@ -13,10 +13,12 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="
+    <footer
+      className="
         relative overflow-hidden text-white
-        bg-gradient-to-b from-[#0d1524] via-[#0b1c31]/90 to-[#08111e]
-      ">
+        bg-gradient-to-b from-[#1a263a] via-[#1b2f4a]/80 to-[#132033]
+      "
+    >
       {/* top glow border */}
       <div className="h-px w-full bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
 
@@ -36,7 +38,7 @@ export default function Footer() {
               />
             </Link>
 
-            <p className="mt-6 max-w-md text-sm text-white/70 leading-relaxed">
+            <p className="mt-6 max-w-md text-sm text-white/80 leading-relaxed">
               Robo&nbsp;Books is a comprehensive platform for billing, tax
               management and invoicing—offering seamless solutions for
               businesses and individuals. Designed for clarity, built for speed.
@@ -79,7 +81,7 @@ export default function Footer() {
                 <li key={l.label}>
                   <Link
                     href={l.href}
-                    className="text-sm text-white/70 transition hover:text-white"
+                    className="text-sm text-white/80 transition hover:text-white"
                   >
                     {l.label}
                   </Link>
@@ -102,7 +104,7 @@ export default function Footer() {
                 <li key={l.label}>
                   <Link
                     href={l.href}
-                    className="text-sm text-white/70 transition hover:text-white"
+                    className="text-sm text-white/80 transition hover:text-white"
                   >
                     {l.label}
                   </Link>
@@ -115,7 +117,7 @@ export default function Footer() {
 
         {/* bottom bar */}
         <div className="mt-12 flex flex-col gap-6 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-white/60">
+          <p className="text-sm text-white/70">
             © {year} Tax Square. All rights reserved.
           </p>
 
@@ -128,7 +130,7 @@ export default function Footer() {
               <Link
                 key={l.label}
                 href={l.href}
-                className="text-white/70 transition hover:text-white"
+                className="text-white/80 transition hover:text-white"
               >
                 {l.label}
               </Link>

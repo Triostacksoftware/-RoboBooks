@@ -11,19 +11,33 @@ interface StatProps {
   label: string;
 }
 const StatRing: FC<StatProps> = ({ value, label }) => (
-  <div className="relative flex h-32 px-10 w-32 items-center justify-center md:h-40 md:w-40 lg:h-48 lg:w-48">
-    <div className="absolute inset-0 rounded-full bg-gray-200/40" />
+  <div
+    className="
+      relative aspect-square w-24 sm:w-28 md:w-36 lg:w-44
+      flex items-center justify-center
+    "
+  >
+    {/* track */}
+    <div className="absolute inset-[6%] rounded-full bg-gray-200/40" />
+    {/* progress */}
     <div
-      className="absolute inset-0 rounded-full"
+      className="absolute inset-[6%] rounded-full"
       style={{
         background: `conic-gradient(#06b6d4 ${value * 3.6}deg, transparent 0deg)`,
       }}
+      aria-hidden
     />
-    <div className="relative z-10 flex h-24 w-24 flex-col items-center justify-center rounded-full bg-white text-center md:h-28 md:w-28 lg:h-36 lg:w-36">
-      <span className="text-2xl font-semibold text-gray-900 md:text-3xl">
+    {/* center */}
+    <div
+      className="
+        relative z-10 flex aspect-square w-[68%]
+        flex-col items-center justify-center rounded-full bg-white text-center
+      "
+    >
+      <span className="text-xl font-semibold text-gray-900 sm:text-2xl md:text-3xl">
         {value}%
       </span>
-      <span className="mt-0.5 text-xs font-medium text-gray-500 md:mt-1 md:text-sm">
+      <span className="mt-0.5 text-[10px] font-medium text-gray-500 sm:text-xs md:text-sm">
         {label}
       </span>
     </div>
@@ -37,7 +51,7 @@ const CardShell: FC<{ accent: string; children: React.ReactNode }> = ({
 }) => (
   <div
     className={clsx(
-      "group relative overflow-hidden rounded-[2rem] p-6 transition-all duration-300 sm:p-8 lg:p-10",
+      "group relative overflow-hidden rounded-[2rem] p-5 sm:p-7 lg:p-10",
       "bg-white/40 backdrop-blur-xl shadow-lg border border-slate-200/60",
       "before:absolute before:inset-0.5 before:-z-10 before:rounded-[calc(2rem-2px)]",
       "before:opacity-0 before:transition-opacity before:duration-300",
@@ -57,8 +71,14 @@ const cards = [
     accent: "before:bg-gradient-to-r before:from-blue-500 before:to-green-500",
     icons: ["/icons/hubspot.svg", "/icons/slack.svg", "/icons/airtable.svg"],
     emojis: [
-      { char: "🚀", class: "hidden sm:block top-6 right-7 text-2xl animate-bounce" },
-      { char: "✨", class: "hidden sm:block bottom-8 left-8 text-xl animate-pulse" },
+      {
+        char: "🚀",
+        class: "hidden sm:block top-6 right-7 text-2xl motion-safe:animate-bounce",
+      },
+      {
+        char: "✨",
+        class: "hidden sm:block bottom-8 left-8 text-xl motion-safe:animate-pulse",
+      },
     ],
   },
   {
@@ -67,8 +87,14 @@ const cards = [
     accent: "before:bg-gradient-to-r before:from-amber-400 before:to-pink-500",
     illus: "/illustrations/usability.png",
     emojis: [
-      { char: "🎯", class: "hidden sm:block top-8 left-8 text-2xl animate-float" },
-      { char: "💡", class: "hidden sm:block bottom-10 right-10 text-xl animate-spin" },
+      {
+        char: "🎯",
+        class: "hidden sm:block top-8 left-8 text-2xl motion-safe:animate-bounce",
+      },
+      {
+        char: "💡",
+        class: "hidden sm:block bottom-10 right-10 text-xl motion-safe:animate-spin",
+      },
     ],
   },
 ];
@@ -76,26 +102,29 @@ const cards = [
 /* ────────── Main Component ────────── */
 export default function TeamManagement() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
       {/* Top Grid */}
-      <div className="grid gap-12 md:grid-cols-2 md:items-center">
+      <div className="grid gap-10 md:grid-cols-2 md:items-center">
         {/* Text */}
         <div>
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-transparent bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text">
+          <p className="mb-3 inline-block bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-xs font-semibold uppercase tracking-widest text-transparent sm:text-sm">
             Team Management
           </p>
-          <h2 className="mb-6 text-3xl font-bold leading-tight text-transparent bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 bg-clip-text sm:text-4xl lg:text-5xl">
-            Manage team increase productivity
+
+          <h2 className="mb-5 bg-gradient-to-r from-blue-600 via-blue-500 to-green-500 bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl lg:text-5xl">
+            Manage team, increase productivity
           </h2>
-          <p className="mb-8 max-w-xl text-base leading-relaxed text-gray-700 md:text-lg">
-            We use as filler text for layouts, non-readability is of great importance but because
-            those who do not know how to pursue pleasure rationally encounter consequences that are
-            extremely painful. Nor again is there anyone who loves or pursues or desires to obtain.
+
+          <p className="mb-7 max-w-2xl text-sm leading-relaxed text-gray-700 sm:text-base md:text-lg">
+            We use as filler text for layouts, non-readability is of great
+            importance but because those who do not know how to pursue pleasure
+            rationally encounter consequences that are extremely painful. Nor
+            again is there anyone who loves or pursues or desires to obtain.
           </p>
 
           <a
             href="#"
-            className="inline-flex items-center gap-2 text-base font-medium text-blue-600 hover:underline"
+            className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline sm:text-base"
           >
             View Case Studies
             <ArrowRightIcon className="h-4 w-4 stroke-2" />
@@ -103,61 +132,76 @@ export default function TeamManagement() {
         </div>
 
         {/* Image Cluster */}
-        <div className="relative mx-auto w-full max-w-md sm:max-w-lg">
-          <div className="absolute inset-0 rounded-[45%] bg-purple-100/60" />
+        <div className="relative mx-auto w-full max-w-[640px]">
+          <div
+            className="absolute inset-0 rounded-[45%] bg-purple-100/60"
+            aria-hidden
+          />
           <Image
             src="/images/team.jpg"
             alt="Team working together"
             width={800}
             height={560}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 70vw, 520px"
-            className="relative z-10 rounded-[40%] object-cover shadow-lg"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 70vw, 640px"
+            className="relative z-10 w-full rounded-[40%] object-cover shadow-lg"
             priority
           />
 
           {/* Stat Badge */}
-          <div className="absolute left-4 top-6 z-20 w-44 sm:left-6 sm:top-8 sm:w-56 rounded-br-[2.5rem] rounded-tl-md rounded-tr-md bg-white p-4 shadow-md sm:p-5">
+          <div
+            className="
+              absolute left-3 top-4 z-20 w-36 sm:left-5 sm:top-6 sm:w-44 md:w-56
+              rounded-br-[2rem] rounded-tl-md rounded-tr-md bg-white p-3 shadow-md sm:p-4
+            "
+          >
             <p className="text-2xl font-bold text-gray-900 sm:text-3xl">
-              40<span className="align-super text-base sm:text-xl">%</span>
+              40<span className="align-super text-sm sm:text-base">%</span>
             </p>
-            <p className="mt-0.5 text-xs font-medium text-gray-600 sm:mt-1 sm:text-sm">
+            <p className="mt-0.5 text-[10px] font-medium text-gray-600 sm:mt-1 sm:text-xs md:text-sm">
               Reduction in time
             </p>
-            <span className="pointer-events-none absolute -right-3 top-6 hidden h-5 w-5 rotate-45 rounded-md bg-gradient-to-r from-blue-600 to-green-500 sm:block" />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-3 top-6 hidden h-5 w-5 rotate-45 rounded-md bg-gradient-to-r from-blue-600 to-green-500 sm:block"
+            />
           </div>
 
           {/* KPI Ring */}
-          <div className="absolute -bottom-8 right-4 z-20 sm:-bottom-10 sm:right-6">
+          <div className="absolute -bottom-8 right-2 z-20 sm:-bottom-10 sm:right-4 md:right-6">
             <StatRing value={92} label="Success rate" />
           </div>
         </div>
       </div>
 
       {/* Cards Grid */}
-      <div className="mt-20 grid gap-8 sm:grid-cols-2 sm:gap-10">
+      <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:gap-10">
         {cards.map((c) => (
           <CardShell key={c.title} accent={c.accent}>
             {/* Emojis */}
             {c.emojis?.map(({ char, class: extra }) => (
               <span
                 key={char + extra}
-                className={clsx("pointer-events-none absolute select-none", extra)}
+                className={clsx(
+                  "pointer-events-none absolute select-none",
+                  extra
+                )}
+                aria-hidden
               >
                 {char}
               </span>
             ))}
 
             {/* Title & Desc */}
-            <h3 className="mb-4 max-w-xs text-xl font-semibold leading-snug text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text sm:text-2xl">
+            <h3 className="mb-3 max-w-xs bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-lg font-semibold leading-snug text-transparent sm:text-xl md:text-2xl">
               {c.title}
             </h3>
-            <p className="mb-8 max-w-sm text-sm text-gray-700 sm:text-base">
+            <p className="mb-7 max-w-sm text-sm text-gray-700 sm:text-base">
               {c.desc}
             </p>
 
             {/* Icons / Illustration */}
             {c.icons && (
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-4 sm:gap-6">
                 {c.icons.map((src) => (
                   <Image
                     key={src}
@@ -165,7 +209,8 @@ export default function TeamManagement() {
                     alt=""
                     width={48}
                     height={48}
-                    className="h-12 w-12 rounded-full bg-white p-2 shadow sm:h-14 sm:w-14 sm:p-3"
+                    className="h-10 w-10 rounded-full bg-white p-2 shadow sm:h-12 sm:w-12 sm:p-2.5 md:h-14 md:w-14 md:p-3"
+                    aria-hidden
                   />
                 ))}
               </div>
@@ -177,8 +222,9 @@ export default function TeamManagement() {
                 alt=""
                 width={420}
                 height={280}
-                sizes="(max-width: 640px) 60vw, 260px"
-                className="absolute bottom-0 right-0 w-2/3 translate-y-1/3 sm:w-1/2"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 40vw, 260px"
+                className="pointer-events-none absolute bottom-0 right-0 w-1/2 translate-y-1/4 sm:w-2/5 md:w-1/3"
+                aria-hidden
               />
             )}
           </CardShell>

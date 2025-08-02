@@ -54,16 +54,14 @@ export default function AboutCreative() {
               relative
               w-40 sm:w-64 md:w-72 lg:w-80 xl:w-[380px]
               aspect-[3/4]
-              rounded-full overflow-hidden flex items-center justify-center
+              rounded-xl  flex items-center justify-center
               ring-4 ring-transparent bg-white/20
-              before:absolute before:inset-0 before:rounded-full before:p-[2px]
-              before:bg-gradient-to-br before:from-[#00c0ff] before:to-[#00ffa6]
-              before:content-[''] before:mask before:mask-rounded-full
-              before:mask-composite-exclude
+             
+              
             "
           >
             <Image
-              src="/images/aboutsection.png"  
+              src="/images/aboutsection.jpeg"  
               alt="Robo Books illustration"
               fill
               priority

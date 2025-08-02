@@ -1,5 +1,8 @@
-import Image from "next/image";
-import React, { type ReactElement, type ReactNode } from "react";
+'use client';
+
+import Image from 'next/image';
+import React, { type ReactElement, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
 
 type UsabilityProps = {
   /** Put your screenshot in /public/images and update path if needed */
@@ -8,24 +11,32 @@ type UsabilityProps = {
 };
 
 export default function Usability({
-  dashboardSrc = "/images/usability.png", // default path, update as needed
+  dashboardSrc = '/images/usability.png',
   className,
 }: UsabilityProps): ReactElement {
   return (
-    <section
+    <motion.section
+      initial={{ opacity: 0, y: 56 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
       className={cn(
-        "relative py-20 mb-44 sm:py-28 md:py-32",
+        'relative py-20 mb-5 sm:py-28 md:py-20 overflow-hidden',
         // subtle dotted background outside the card
-        "[background-image:radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-white",
+        '[background-image:radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] bg-white',
         className
       )}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* Main dark card */}
-        <div className="relative overflow-visible rounded-[36px] bg-[#1f2344] px-6 py-14 text-white sm:px-10 sm:py-16 md:px-16 md:py-20 lg:py-24">
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: 'spring', stiffness: 120, damping: 12 }}
+          className="relative overflow-visible rounded-[36px] bg-[#1f2344] px-6 py-14 text-white sm:px-10 sm:py-16 md:px-16 md:py-20 lg:py-24"
+        >
           {/* soft gradient decorations */}
-          <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-400/25 via-fuchsia-400/10 to-transparent blur-3xl" />
-          <div className="pointer-events-none absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-gradient-to-br from-fuchsia-400/20 via-indigo-400/10 to-transparent blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-400/25 via-fuchsia-400/10 to-transparent blur-3xl " />
+          <div className="pointer-events-none absolute -right-24 -bottom-24 h-72 w-72 rounded-full bg-gradient-to-br from-fuchsia-400/20 via-indigo-400/10 to-transparent blur-3xl animate-pulse-slow" />
 
           {/* Heading */}
           <h2 className="text-center font-semibold tracking-tight text-[1.875rem] leading-tight sm:text-4xl md:text-5xl">
@@ -42,7 +53,11 @@ export default function Usability({
           </div>
 
           {/* Screenshot overlap */}
-          <div className="pointer-events-none absolute left-1/2 bottom-0 w-[calc(100%-1.5rem)] -translate-x-1/2 translate-y-1/2 sm:w-[calc(100%-2rem)] md:w-[calc(100%-6rem)] lg:w-[calc(100%-8rem)]">
+          <motion.div
+            whileHover={{ rotateX: 4, rotateY: -4 }}
+            transition={{ type: 'spring', stiffness: 60, damping: 10 }}
+            className="pointer-events-none absolute left-1/2 bottom-0 w-[calc(100%-1.5rem)] -translate-x-1/2 translate-y-1/2 sm:w-[calc(100%-2rem)] md:w-[calc(100%-6rem)] lg:w-[calc(100%-8rem)]"
+          >
             <div className="pointer-events-auto rounded-2xl bg-white/5 p-1 shadow-2xl ring-1 ring-white/10 md:p-2">
               <div className="overflow-hidden rounded-xl bg-white">
                 <Image
@@ -55,13 +70,13 @@ export default function Usability({
                 />
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Spacer so overlap has room */}
           <div className="mt-64 sm:mt-72 md:mt-80" />
-        </div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
@@ -77,12 +92,16 @@ function Pill({
   label: string;
 }): ReactElement {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-white/6 px-4 py-2 text-sm font-medium ring-1 ring-inset ring-white/15 backdrop-blur-sm">
-      <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10">
+    <motion.span
+      whileHover={{ scale: 1.05 }}
+      transition={{ type: 'spring', stiffness: 250, damping: 15 }}
+      className="inline-flex items-center gap-2 rounded-full bg-white/6 px-4 py-2 text-sm font-medium ring-1 ring-inset ring-white/15 backdrop-blur-sm hover:ring-white/50"
+    >
+      <span className="grid h-7 w-7 place-items-center rounded-full bg-white/10 motion-safe:hover:animate-wiggle">
         {icon}
       </span>
       <span className="whitespace-nowrap">{label}</span>
-    </span>
+    </motion.span>
   );
 }
 
@@ -149,5 +168,5 @@ function IconActivity(): ReactElement {
 /* ----------------------- */
 
 function cn(...classes: Array<string | undefined | false>): string {
-  return classes.filter(Boolean).join(" ");
+  return classes.filter(Boolean).join(' ');
 }
