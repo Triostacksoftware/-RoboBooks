@@ -37,12 +37,12 @@ export default function AboutCreative() {
 
       <div
         className="
-          mx-auto grid max-w-7xl items-center gap-12
+          mx-auto grid max-w-7xl items-stretch gap-12
           px-6 sm:px-10 lg:px-20
           lg:grid-cols-2
         "
       >
-        {/* -------- Illustration card (GIF) -------- */}
+        {/* -------- Illustration card (Video) -------- */}
         <motion.div
           whileHover={{ scale: 1.05 }}
           transition={{ type: 'spring', stiffness: 320 }}
@@ -50,17 +50,18 @@ export default function AboutCreative() {
         >
           <div
             className="
-              relative
-              w-40 sm:w-64 md:w-72 lg:w-80 xl:w-[380px]
-              aspect-[3/4]
-              rounded-xl flex items-center justify-center
-              ring-4 ring-transparent bg-white/20
+              relative w-full max-w-xs sm:max-w-sm md:max-w-md xl:max-w-md
+              rounded-xl ring-4 ring-transparent bg-white/20 overflow-hidden
+              aspect-[3/4] lg:aspect-auto lg:h-full
             "
           >
-            <img
-              src="/images/aboutsection.gif" // <-- Update path to your GIF
-              alt="Robo Books animated illustration"
-              className="object-contain w-full h-full rounded-xl"
+            <video
+              src="/images/aboutsection.mp4"
+              className="absolute inset-0 w-full h-full object-cover rounded-xl"
+              autoPlay
+              loop
+              muted
+              playsInline
             />
           </div>
         </motion.div>

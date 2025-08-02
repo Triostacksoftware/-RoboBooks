@@ -1,25 +1,18 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import { ArrowRightIcon } from "@heroicons/react/24/outline";
-import clsx from "clsx";
-import { FC } from "react";
+import { FC } from 'react';
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import clsx from 'clsx';
+import { SiHubspot, SiSlack, SiAirtable } from 'react-icons/si';
 
-/* ────────── KPI Ring (responsive) ────────── */
+/* ────────── KPI Ring ────────── */
 interface StatProps {
   value: number;
   label: string;
 }
 const StatRing: FC<StatProps> = ({ value, label }) => (
-  <div
-    className="
-      relative aspect-square w-24 sm:w-28 md:w-36 lg:w-44
-      flex items-center justify-center
-    "
-  >
-    {/* track */}
+  <div className="relative aspect-square w-24 sm:w-28 md:w-36 lg:w-44 flex items-center justify-center">
     <div className="absolute inset-[6%] rounded-full bg-gray-200/40" />
-    {/* progress */}
     <div
       className="absolute inset-[6%] rounded-full"
       style={{
@@ -27,13 +20,7 @@ const StatRing: FC<StatProps> = ({ value, label }) => (
       }}
       aria-hidden
     />
-    {/* center */}
-    <div
-      className="
-        relative z-10 flex aspect-square w-[68%]
-        flex-col items-center justify-center rounded-full bg-white text-center
-      "
-    >
+    <div className="relative z-10 flex aspect-square w-[68%] flex-col items-center justify-center rounded-full bg-white text-center">
       <span className="text-xl font-semibold text-gray-900 sm:text-2xl md:text-3xl">
         {value}%
       </span>
@@ -51,12 +38,12 @@ const CardShell: FC<{ accent: string; children: React.ReactNode }> = ({
 }) => (
   <div
     className={clsx(
-      "group relative overflow-hidden rounded-[2rem] p-5 sm:p-7 lg:p-10",
-      "bg-white/40 backdrop-blur-xl shadow-lg border border-slate-200/60",
-      "before:absolute before:inset-0.5 before:-z-10 before:rounded-[calc(2rem-2px)]",
-      "before:opacity-0 before:transition-opacity before:duration-300",
+      'group relative overflow-hidden rounded-[2rem] p-5 sm:p-7 lg:p-10',
+      'bg-white/40 backdrop-blur-xl shadow-lg border border-slate-200/60',
+      'before:absolute before:inset-0.5 before:-z-10 before:rounded-[calc(2rem-2px)]',
+      'before:opacity-0 before:transition-opacity before:duration-300',
       accent,
-      "hover:-translate-y-1.5 hover:shadow-2xl hover:before:opacity-100"
+      'hover:-translate-y-1.5 hover:shadow-2xl hover:before:opacity-100'
     )}
   >
     {children}
@@ -66,34 +53,34 @@ const CardShell: FC<{ accent: string; children: React.ReactNode }> = ({
 /* ────────── Cards Data ────────── */
 const cards = [
   {
-    title: "Integrate with all apps you need",
-    desc: "Great importancebut because, combined with a handful of model sentence structures,",
-    accent: "before:bg-gradient-to-r before:from-blue-500 before:to-green-500",
-    icons: ["/icons/hubspot.svg", "/icons/slack.svg", "/icons/airtable.svg"],
+    title: 'Integrate with all apps you need',
+    desc: 'Great importancebut because, combined with a handful of model sentence structures,',
+    accent: 'before:bg-gradient-to-r before:from-blue-500 before:to-green-500',
+    icons: [SiHubspot, SiSlack, SiAirtable],
     emojis: [
       {
-        char: "🚀",
-        class: "hidden sm:block top-6 right-7 text-2xl motion-safe:animate-bounce",
+        char: '🚀',
+        class: 'hidden sm:block top-6 right-7 text-2xl motion-safe:animate-bounce',
       },
       {
-        char: "✨",
-        class: "hidden sm:block bottom-8 left-8 text-xl motion-safe:animate-pulse",
+        char: '✨',
+        class: 'hidden sm:block bottom-8 left-8 text-xl motion-safe:animate-pulse',
       },
     ],
   },
   {
-    title: "Easy concept with best usability",
-    desc: "Great importancebut because, combined with a handful of model sentence structures,",
-    accent: "before:bg-gradient-to-r before:from-amber-400 before:to-pink-500",
-    illus: "/illustrations/usability.png",
+    title: 'Easy concept with best usability',
+    desc: 'Great importancebut because, combined with a handful of model sentence structures,',
+    accent: 'before:bg-gradient-to-r before:from-amber-400 before:to-pink-500',
+    illus: '/illustrations/usability.png',
     emojis: [
       {
-        char: "🎯",
-        class: "hidden sm:block top-8 left-8 text-2xl motion-safe:animate-bounce",
+        char: '🎯',
+        class: 'hidden sm:block top-8 left-8 text-2xl motion-safe:animate-bounce',
       },
       {
-        char: "💡",
-        class: "hidden sm:block bottom-10 right-10 text-xl motion-safe:animate-spin",
+        char: '💡',
+        class: 'hidden sm:block bottom-10 right-10 text-xl motion-safe:animate-spin',
       },
     ],
   },
@@ -104,9 +91,9 @@ export default function TeamManagement() {
   return (
     <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
       {/* Top Grid */}
-      <div className="grid gap-10 md:grid-cols-2 md:items-center">
+      <div className="grid gap-10 md:grid-cols-2 md:items-stretch">
         {/* Text */}
-        <div>
+        <div className="flex flex-col justify-center">
           <p className="mb-3 inline-block bg-gradient-to-r from-blue-600 to-green-500 bg-clip-text text-xs font-semibold uppercase tracking-widest text-transparent sm:text-sm">
             Team Management
           </p>
@@ -118,8 +105,7 @@ export default function TeamManagement() {
           <p className="mb-7 max-w-2xl text-sm leading-relaxed text-gray-700 sm:text-base md:text-lg">
             We use as filler text for layouts, non-readability is of great
             importance but because those who do not know how to pursue pleasure
-            rationally encounter consequences that are extremely painful. Nor
-            again is there anyone who loves or pursues or desires to obtain.
+            rationally encounter consequences that are extremely painful.
           </p>
 
           <a
@@ -131,29 +117,24 @@ export default function TeamManagement() {
           </a>
         </div>
 
-        {/* Image Cluster */}
-        <div className="relative mx-auto w-full max-w-[640px]">
-          <div
-            className="absolute inset-0 rounded-[45%] bg-purple-100/60"
-            aria-hidden
-          />
-          <Image
-            src="/images/team.jpg"
-            alt="Team working together"
-            width={800}
-            height={560}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 70vw, 640px"
-            className="relative z-10 w-full rounded-[40%] object-cover shadow-lg"
-            priority
-          />
+        {/* Oval Video Cluster */}
+        <div className="relative w-full h-full max-w-[640px] flex items-stretch">
+          <div className="absolute inset-0 rounded-[45%] bg-purple-100/60" aria-hidden />
+
+          {/* Oval Video */}
+          <div className="relative z-10 w-full h-80 overflow-hidden rounded-[40%] shadow-lg">
+            <video
+              src="/images/teammanagement.mp4" // Update this path as needed
+              className="w-full h-full object-cover rounded-[40%]"
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          </div>
 
           {/* Stat Badge */}
-          <div
-            className="
-              absolute left-3 top-4 z-20 w-36 sm:left-5 sm:top-6 sm:w-44 md:w-56
-              rounded-br-[2rem] rounded-tl-md rounded-tr-md bg-white p-3 shadow-md sm:p-4
-            "
-          >
+          <div className="absolute left-3 top-4 z-20 w-36 sm:left-5 sm:top-6 sm:w-44 md:w-56 rounded-br-[2rem] rounded-tl-md rounded-tr-md bg-white p-3 shadow-md sm:p-4">
             <p className="text-2xl font-bold text-gray-900 sm:text-3xl">
               40<span className="align-super text-sm sm:text-base">%</span>
             </p>
@@ -181,10 +162,7 @@ export default function TeamManagement() {
             {c.emojis?.map(({ char, class: extra }) => (
               <span
                 key={char + extra}
-                className={clsx(
-                  "pointer-events-none absolute select-none",
-                  extra
-                )}
+                className={clsx('pointer-events-none absolute select-none', extra)}
                 aria-hidden
               >
                 {char}
@@ -199,30 +177,25 @@ export default function TeamManagement() {
               {c.desc}
             </p>
 
-            {/* Icons / Illustration */}
+            {/* Icons or Illustration */}
             {c.icons && (
               <div className="flex flex-wrap gap-4 sm:gap-6">
-                {c.icons.map((src) => (
-                  <Image
-                    key={src}
-                    src={src}
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="h-10 w-10 rounded-full bg-white p-2 shadow sm:h-12 sm:w-12 sm:p-2.5 md:h-14 md:w-14 md:p-3"
+                {c.icons.map((Icon, idx) => (
+                  <div
+                    key={idx}
+                    className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 flex items-center justify-center rounded-full bg-white p-2 shadow"
                     aria-hidden
-                  />
+                  >
+                    <Icon className="h-full w-full text-blue-600" />
+                  </div>
                 ))}
               </div>
             )}
 
             {c.illus && (
-              <Image
+              <img
                 src={c.illus}
                 alt=""
-                width={420}
-                height={280}
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 40vw, 260px"
                 className="pointer-events-none absolute bottom-0 right-0 w-1/2 translate-y-1/4 sm:w-2/5 md:w-1/3"
                 aria-hidden
               />

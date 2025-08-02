@@ -10,7 +10,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 /* ------------------------------------------------------------------ */
 const TESTIMONIALS = [
   {
-    img: '/images/testi1.jpg',
+    img: '/images/testimonial1.jpg',
     name: 'Roe Smith',
     role: 'Director, Growth King',
     quote:
@@ -18,7 +18,7 @@ const TESTIMONIALS = [
     color: 'from-pink-500 via-fuchsia-500 to-purple-500',
   },
   {
-    img: '/images/testi2.jpg',
+    img: '/images/testimonial2.jpg',
     name: 'Alex M.',
     role: 'Founder, BrandUp',
     quote:
@@ -26,7 +26,7 @@ const TESTIMONIALS = [
     color: 'from-emerald-400 via-teal-500 to-cyan-500',
   },
   {
-    img: '/images/testi3.jpg',
+    img: '/images/testimonial3.jpg',
     name: 'Grace Lee',
     role: 'Finance Lead, PixelWave',
     quote:
@@ -34,7 +34,7 @@ const TESTIMONIALS = [
     color: 'from-amber-400 via-orange-500 to-rose-500',
   },
   {
-    img: '/images/testi4.jpg',
+    img: '/images/testimonial4.jpg',
     name: 'Daniel K.',
     role: 'COO, Craftify',
     quote:
@@ -42,7 +42,7 @@ const TESTIMONIALS = [
     color: 'from-sky-400 via-indigo-500 to-blue-600',
   },
   {
-    img: '/images/testi5.jpg',
+    img: '/images/testimonial5.jpg',
     name: 'Nora Garcia',
     role: 'CPA & Consultant',
     quote:
