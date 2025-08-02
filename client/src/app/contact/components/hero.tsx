@@ -119,7 +119,7 @@ export default function Hero({ className }: Props) {
         <div className="relative z-10 hidden justify-end lg:flex">
           <div className="relative h-[320px] w-[580px] rounded-2xl overflow-hidden">
             <Image
-              src="/images/robot-typing.gif"
+              src="/images/Robot-typing.gif"
               alt="Robot typing at a laptop"
               fill
               className="object-contain" // <- shows the whole GIF
