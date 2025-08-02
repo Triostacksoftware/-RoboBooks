@@ -1,7 +1,6 @@
 /* app/(marketing)/components/BusinessBenefits.tsx */
 'use client';
 
-import Image from 'next/image';
 import { FC, useEffect, useRef } from 'react';
 import {
   BanknotesIcon,
@@ -47,7 +46,6 @@ const fadeUp = {
 };
 
 export default function BusinessBenefits() {
-  /* trigger once on scroll into view */
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-15% 0px' });
   const ctrls = useAnimation();
@@ -88,7 +86,6 @@ export default function BusinessBenefits() {
               whileHover={{ scale: 1.03 }}
               className="flex items-start space-x-5"
             >
-              {/* icon badge w/ tilt-on-hover */}
               <motion.span
                 whileHover={{ rotate: 8 }}
                 className="flex h-12 w-12 flex-none items-center justify-center
@@ -98,7 +95,6 @@ export default function BusinessBenefits() {
                 <Icon className="h-7 w-7 stroke-[1.8] text-blue-600" />
               </motion.span>
 
-              {/* copy */}
               <div>
                 <h3 className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text
                                text-lg font-normal text-transparent sm:text-xl">
@@ -112,7 +108,7 @@ export default function BusinessBenefits() {
           ))}
         </motion.ul>
 
-        {/* screenshots with gentle hover parallax */}
+        {/* video preview instead of image */}
         <motion.div
           initial={{ opacity: 0, x: 60 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -120,32 +116,35 @@ export default function BusinessBenefits() {
           viewport={{ once: true }}
           className="relative mx-auto w-full max-w-lg"
         >
-          {/* desktop screenshot */}
           <motion.div whileHover={{ scale: 1.04, rotate: -2 }}>
-            <Image
-              src="/images/usability.png"
-              alt="Robo Books dashboard"
-              width={720}
-              height={425}
-              className="rounded-xl shadow-lg"
-              priority
-            />
+            <div className="rounded-xl shadow-lg overflow-hidden">
+              <video
+                src="/images/businessbenefits.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-300 h-70 rounded-xl object-cover"
+              />
+            </div>
           </motion.div>
 
-          {/* mobile overlay — only shows ≥ sm */}
+          {/* Optional mobile overlay (commented out) */}
+          {/* 
           <motion.div
             whileHover={{ scale: 1.08, rotate: 3 }}
             className="absolute bottom-6 right-6 hidden sm:block
                        lg:bottom-8 lg:right-8 xl:bottom-10 xl:right-10"
           >
-            {/* <Image
+            <Image
               src="/images/businessbenefits.png"
               alt="Mobile analytics"
               width={180}
               height={310}
               className="rounded-xl shadow-xl"
-            /> */}
-          </motion.div>
+            />
+          </motion.div> 
+          */}
         </motion.div>
       </div>
     </section>
