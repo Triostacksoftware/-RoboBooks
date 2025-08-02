@@ -115,16 +115,24 @@ export default function Hero({ className }: Props) {
           </div>
         </div>
 
-        {/* Illustration: full GIF, rounded corners, no crop */}
+        {/* Illustration: full GIF, clipped to rounded corners */}
         <div className="relative z-10 hidden justify-end lg:flex">
-          <div className="relative h-[320px] w-[580px] rounded-2xl overflow-hidden">
+          {/* 
+      - overflow-hidden + rounded-2xl on the wrapper
+      - explicit height/width so fill knows its container
+    */}
+          <div className="relative w-[440px] h-[480px] mt-16 overflow-hidden rounded-2xl">
             <Image
-              src="/images/Robot-Typing.gif"
+              src="/images/robo-typing.gif"
               alt="Robot typing at a laptop"
               fill
-              className="object-contain" // <- shows the whole GIF
               priority
               unoptimized
+              /* 
+          - object-cover makes the GIF fill the entire box
+          - rounded-2xl on the img itself ensures the image element is rounded
+        */
+              className="object-cover rounded-2xl"
             />
           </div>
         </div>
