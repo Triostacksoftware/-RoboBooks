@@ -53,11 +53,11 @@ const CardShell: FC<{ accent: string; children: React.ReactNode }> = ({
 /* ────────── Cards Data ────────── */
 const cards = [
   {
-    title: 'Integrate with all apps you need',
-    desc: 'Great importancebut because, combined with a handful of model sentence structures,',
-    accent: 'before:bg-gradient-to-r before:from-blue-500 before:to-green-500',
-    icons: [SiHubspot, SiSlack, SiAirtable],
-    emojis: [
+      title: 'Integrate with all apps you need',
+  desc: 'Great importancebut because, combined with a handful of model sentence structures,',
+  accent: 'before:bg-gradient-to-r before:from-green-500 before:to-yellow-400',
+  icons: [SiHubspot, SiSlack, SiAirtable],
+  emojis: [
       {
         char: '🚀',
         class: 'hidden sm:block top-6 right-7 text-2xl motion-safe:animate-bounce',
@@ -76,7 +76,7 @@ const cards = [
     emojis: [
       {
         char: '🎯',
-        class: 'hidden sm:block top-8 left-8 text-2xl motion-safe:animate-bounce',
+        class: 'hidden sm:block top-8 right-8 text-2xl motion-safe:animate-bounce',
       },
       {
         char: '💡',

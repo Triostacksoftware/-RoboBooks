@@ -32,10 +32,19 @@ const FAQ = [
   },
 ];
 
-/* ---------------- variants ---------------- */
+/* ---------------- animation variants ---------------- */
 const itemVar = {
-  open:  { height: 'auto', opacity: 1, marginTop: 12 },
-  closed:{ height: 0,     opacity: 0, marginTop: 0 },
+  open: { height: 'auto', opacity: 1, marginTop: 12 },
+  closed: { height: 0, opacity: 0, marginTop: 0 },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, delay: i * 0.1 },
+  }),
 };
 
 export default function FaqSection() {
@@ -44,11 +53,16 @@ export default function FaqSection() {
   return (
     <section
       id="faq"
-      className="relative isolate overflow-hidden bg-white py-16 lg:py-24 "
+      className="relative isolate overflow-hidden bg-white py-16 lg:py-24"
     >
-      <div className="mx-auto grid max-w-7xl gap-4 px-18 lg:grid-cols-2">
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+        className="mx-auto grid max-w-7xl gap-4 px-6 sm:px-10 lg:grid-cols-2"
+      >
         {/* ---------------- LEFT ---------------- */}
-        <div>
+        <motion.div variants={fadeUp} custom={0}>
           <p className="uppercase tracking-[.25em] text-blue-600 font-semibold">
             Questions & Answers
           </p>
@@ -63,7 +77,8 @@ export default function FaqSection() {
 
           <p className="mt-10 text-xl font-semibold">Don’t get answer?</p>
           <p className="mt-2 text-gray-600">
-            We will answer you in less than <span className="font-semibold">2 Hours</span>!!
+            We will answer you in less than{' '}
+            <span className="font-semibold">2 Hours</span>!!
           </p>
 
           <a
@@ -83,34 +98,47 @@ export default function FaqSection() {
           </a>
 
           <ChatBubbleBottomCenterTextIcon className="mt-14 h-16 w-16 text-teal-500" />
-        </div>
+        </motion.div>
 
         {/* ---------------- RIGHT: Accordion ---------------- */}
-        <div className="space-y-6">
+        <motion.div className="space-y-6">
           {FAQ.map(({ q, a }, i) => {
             const isOpen = open === i;
+
             return (
-              <div
+              <motion.div
                 key={q}
-                className={`rounded-3xl border border-gray-200/60 px-6 py-5 shadow-sm transition
-                            ${isOpen ? 'bg-white ring-1 ring-cyan-500/60 shadow-lg' : 'hover:ring-1 hover:ring-gray-200'}`
-                }
+                custom={i + 1}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                className={`
+                  rounded-3xl border px-6 py-5 transition-all duration-300 ease-in-out shadow-sm
+                  ${isOpen
+                    ? 'bg-white ring-1 ring-cyan-500/60 shadow-lg'
+                    : 'hover:ring-1 hover:ring-gray-200'}
+                `}
               >
                 {/* header */}
                 <button
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 text-left"
+                  className="flex w-full items-center justify-between gap-4 text-left transition-colors duration-200 group"
                 >
-                  <span className="font-medium text-lg text-gray-800">{q}</span>
-                  <svg
-                    className={`h-5 w-5 transition-transform ${isOpen ? 'rotate-45 text-cyan-500' : 'text-gray-400'}`}
+                  <span className="font-medium text-lg text-gray-800 group-hover:text-blue-600">
+                    {q}
+                  </span>
+                  <motion.svg
+                    animate={{ rotate: isOpen ? 45 : 0, scale: isOpen ? 1.2 : 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    className={`h-5 w-5 text-cyan-500 group-hover:scale-110 transition-transform`}
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m7-7H5" />
-                  </svg>
+                  </motion.svg>
                 </button>
 
                 {/* animated body */}
@@ -122,18 +150,18 @@ export default function FaqSection() {
                       initial="closed"
                       animate="open"
                       exit="closed"
-                      transition={{ duration: .35, ease: 'easeInOut' }}
+                      transition={{ duration: 0.35, ease: 'easeInOut' }}
                       className="overflow-hidden"
                     >
                       <p className="pt-4 pb-2 text-gray-600 leading-relaxed">{a}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
