@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 
-/* ----------- helpers ----------- */
+/* Animation helper */
 const fade = (d = 0) => ({
   hidden: { opacity: 0, y: 40 },
   show: { opacity: 1, y: 0, transition: { duration: 0.7, delay: d } },
@@ -11,23 +11,21 @@ const fade = (d = 0) => ({
 
 export default function AboutSplit() {
   return (
-    <section className="relative isolate overflow-hidden bg-white py-18 lg:py-24">
+    <section className="relative isolate overflow-hidden bg-white py-16 sm:py-20 lg:py-24">
       {/* background blob */}
-      <div className="absolute -z-10 top-[-6rem] left-[-10rem] h-[28rem] w-[28rem]
-                      rounded-full bg-gradient-to-br from-teal-100 to-blue-100
-                      blur-3xl opacity-40" />
+      <div className="absolute -z-10 top-[-6rem] left-[-10rem] h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-teal-100 to-blue-100 blur-3xl opacity-40" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-16 px-6 lg:grid-cols-2">
-        {/* ------------- LEFT VIDEO (SQUARE & MATCH HEIGHT) ------------- */}
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 md:px-12 lg:grid-cols-2">
+        {/* --------- LEFT VIDEO (balanced size) --------- */}
         <motion.div
           whileHover={{ scale: 1.05, rotate: -2 }}
           transition={{ type: 'spring', stiffness: 250 }}
-          className="relative aspect-square w-full max-w-sm md:max-w-md lg:max-w-full h-full mx-auto"
+          className="relative w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[400px] aspect-square mx-auto"
         >
-          <div className="relative h-110 w-110 ml-[10%] overflow-hidden rounded-[50%_50%_0_50%/50%_50%_50%_0]">
+          <div className="relative h-full w-full overflow-hidden rounded-[50%_50%_0_50%/50%_50%_50%_0]">
             <video
-              src="/images/aboutsplit.mp4" // update your path accordingly
-              className="absolute inset-0 h-full w-full object-cover"
+              src="/images/aboutsplit.mp4"
+              className="absolute inset-0 w-full h-full object-cover"
               autoPlay
               loop
               muted
@@ -35,7 +33,7 @@ export default function AboutSplit() {
             />
           </div>
 
-          {/* animated sparkles */}
+          {/* sparkles */}
           {[...Array(4)].map((_, i) => (
             <motion.div
               key={i}
@@ -53,12 +51,12 @@ export default function AboutSplit() {
           ))}
         </motion.div>
 
-        {/* ------------- RIGHT COPY ------------- */}
+        {/* --------- RIGHT TEXT --------- */}
         <motion.div
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="space-y-8 h-full"
+          className="space-y-8 text-center lg:text-left"
         >
           <motion.p
             variants={fade()}
@@ -69,22 +67,18 @@ export default function AboutSplit() {
 
           <motion.h2
             variants={fade(0.1)}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight
-                       bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent"
+            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent"
           >
             Powerful alone,<br />
             unbeatable{' '}
-            <span
-              className="inline-block rounded-xl px-4 py-1 text-white
-                         bg-gradient-to-r from-teal-500 to-blue-600"
-            >
+            <span className="inline-block rounded-xl px-4 py-1 text-white bg-gradient-to-r from-teal-500 to-blue-600">
               marketing
             </span>
           </motion.h2>
 
           <motion.p
             variants={fade(0.2)}
-            className="max-w-xl text-lg text-gray-700"
+            className="mx-auto lg:mx-0 max-w-xl text-lg text-gray-700"
           >
             We use filler text for layouts; non-readability is of great importance—those who
             don’t pursue pleasure rationally face painful consequences.
@@ -95,7 +89,7 @@ export default function AboutSplit() {
               <motion.li
                 key={t}
                 variants={fade(0.3 + i * 0.1)}
-                className="flex gap-3 items-start group"
+                className="flex gap-3 items-start justify-center lg:justify-start group"
               >
                 <svg
                   className="mt-[2px] h-4 w-4 text-teal-500 group-hover:text-blue-600 transition-colors"
