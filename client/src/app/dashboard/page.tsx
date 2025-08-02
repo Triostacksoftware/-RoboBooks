@@ -1,15 +1,15 @@
 'use client'
 
-import HomeTabs from './components/home/HomeTabs'
-import MetricCard from './components/home/MetricCard'
-import CashFlow from './components/home/CashFlow'
-import IncomeExpense from './components/home/IncomeExpense'
-import TopExpenses from './components/home/TopExpenses'
-import Projects from './components/home/Projects'
-import BankAndCards from './components/home/BankAndCards'
-import Watchlist from './components/home/Watchlist'
-import Footer from './components/home/Footer'
-import RightRail from './components/home/RightRail'
+import HomeTabs from './home/HomeTabs'
+import MetricCard from './home/MetricCard'
+import CashFlow from './home/CashFlow'
+import IncomeExpense from './home/IncomeExpense'
+import TopExpenses from './home/TopExpenses'
+import Projects from './home/Projects'
+import BankAndCards from './home/BankAndCards'
+import Watchlist from './home/Watchlist'
+import Footer from './home/Footer'
+import RightRail from './home/RightRail'
 
 export default function DashboardHome() {
   return (
