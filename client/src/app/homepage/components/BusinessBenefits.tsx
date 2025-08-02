@@ -116,18 +116,19 @@ export default function BusinessBenefits() {
           viewport={{ once: true }}
           className="relative mx-auto w-full max-w-lg"
         >
-          <motion.div whileHover={{ scale: 1.04, rotate: -2 }}>
-            <div className="rounded-xl shadow-lg overflow-hidden">
-              <video
-                src="/images/businessbenefits.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-300 h-70 rounded-xl object-cover"
-              />
-            </div>
-          </motion.div>
+      <motion.div whileHover={{ scale: 1.04 }}>
+  <div className="rounded-xl shadow-lg overflow-hidden">
+    <video
+      src="/images/businessbenefits.mp4"
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="w-300 h-70 rounded-xl object-cover"
+    />
+  </div>
+</motion.div>
+
 
           {/* Optional mobile overlay (commented out) */}
           {/* 
