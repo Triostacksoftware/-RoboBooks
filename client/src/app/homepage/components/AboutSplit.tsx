@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { SparklesIcon } from '@heroicons/react/24/solid';
+import { motion } from "framer-motion";
+import { SparklesIcon } from "@heroicons/react/24/solid";
 
 /* Animation helper */
 const fade = (d = 0) => ({
@@ -18,8 +18,8 @@ export default function AboutSplit() {
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-8 md:px-12 lg:grid-cols-2">
         {/* --------- LEFT VIDEO (balanced size) --------- */}
         <motion.div
-          whileHover={{ scale: 1.05, rotate: -2 }}
-          transition={{ type: 'spring', stiffness: 250 }}
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: "spring", stiffness: 250 }}
           className="relative w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[400px] aspect-square mx-auto"
         >
           <div className="relative h-full w-full overflow-hidden rounded-[50%_50%_0_50%/50%_50%_50%_0]">
@@ -39,7 +39,11 @@ export default function AboutSplit() {
               key={i}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: [0, 1, 0], scale: [0, 1, 0] }}
-              transition={{ delay: 0.8 + i * 0.3, repeat: Infinity, duration: 3 }}
+              transition={{
+                delay: 0.8 + i * 0.3,
+                repeat: Infinity,
+                duration: 3,
+              }}
               className="absolute"
               style={{
                 top: `${22 + i * 14}%`,
@@ -69,8 +73,9 @@ export default function AboutSplit() {
             variants={fade(0.1)}
             className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight bg-gradient-to-r from-blue-600 to-teal-500 bg-clip-text text-transparent"
           >
-            Powerful alone,<br />
-            unbeatable{' '}
+            Powerful alone,
+            <br />
+            unbeatable{" "}
             <span className="inline-block rounded-xl px-4 py-1 text-white bg-gradient-to-r from-teal-500 to-blue-600">
               marketing
             </span>
@@ -80,29 +85,32 @@ export default function AboutSplit() {
             variants={fade(0.2)}
             className="mx-auto lg:mx-0 max-w-xl text-lg text-gray-700"
           >
-            We use filler text for layouts; non-readability is of great importance—those who
-            don’t pursue pleasure rationally face painful consequences.
+            We use filler text for layouts; non-readability is of great
+            importance—those who don’t pursue pleasure rationally face painful
+            consequences.
           </motion.p>
 
           <ul className="space-y-4 pt-4">
-            {['Share multiple screens at a time', 'High quality screen'].map((t, i) => (
-              <motion.li
-                key={t}
-                variants={fade(0.3 + i * 0.1)}
-                className="flex gap-3 items-start justify-center lg:justify-start group"
-              >
-                <svg
-                  className="mt-[2px] h-4 w-4 text-teal-500 group-hover:text-blue-600 transition-colors"
-                  fill="currentColor"
-                  viewBox="0 0 16 16"
+            {["Share multiple screens at a time", "High quality screen"].map(
+              (t, i) => (
+                <motion.li
+                  key={t}
+                  variants={fade(0.3 + i * 0.1)}
+                  className="flex gap-3 items-start justify-center lg:justify-start group"
                 >
-                  <path d="M6.003 10.803 3.2 8l-1.2 1.2 4.002 4L14 5.202 12.8 4l-6.797 6.803Z" />
-                </svg>
-                <span className="text-gray-700 group-hover:text-blue-600 transition-colors">
-                  {t}
-                </span>
-              </motion.li>
-            ))}
+                  <svg
+                    className="mt-[2px] h-4 w-4 text-teal-500 group-hover:text-blue-600 transition-colors"
+                    fill="currentColor"
+                    viewBox="0 0 16 16"
+                  >
+                    <path d="M6.003 10.803 3.2 8l-1.2 1.2 4.002 4L14 5.202 12.8 4l-6.797 6.803Z" />
+                  </svg>
+                  <span className="text-gray-700 group-hover:text-blue-600 transition-colors">
+                    {t}
+                  </span>
+                </motion.li>
+              )
+            )}
           </ul>
         </motion.div>
       </div>
