@@ -18,17 +18,16 @@ export default function AboutSplit() {
                       blur-3xl opacity-40" />
 
       <div className="mx-auto grid max-w-7xl items-center gap-16 px-6 lg:grid-cols-2">
-        {/* ------------- LEFT VIDEO (SQUARE) ------------- */}
+        {/* ------------- LEFT VIDEO (SQUARE & MATCH HEIGHT) ------------- */}
         <motion.div
           whileHover={{ scale: 1.05, rotate: -2 }}
           transition={{ type: 'spring', stiffness: 250 }}
-          className="relative mx-auto w-full max-w-[320px] aspect-square overflow-hidden"
+          className="relative aspect-square w-full max-w-sm md:max-w-md lg:max-w-full h-full mx-auto"
         >
-          {/* arched mask with video inside */}
-          <div className="overflow-hidden rounded-[50%_50%_0_50%/50%_50%_50%_0] relative w-full h-full">
+          <div className="relative h-110 w-110 ml-[10%] overflow-hidden rounded-[50%_50%_0_50%/50%_50%_50%_0]">
             <video
-              src="/images/aboutsplit.mp4" // Update path to your video
-              className="absolute inset-0 w-full h-full object-cover"
+              src="/images/aboutsplit.mp4" // update your path accordingly
+              className="absolute inset-0 h-full w-full object-cover"
               autoPlay
               loop
               muted
@@ -59,7 +58,7 @@ export default function AboutSplit() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="space-y-8"
+          className="space-y-8 h-full"
         >
           <motion.p
             variants={fade()}
