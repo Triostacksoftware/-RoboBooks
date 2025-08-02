@@ -1,10 +1,10 @@
-'use client'
-import { Portal, useKey } from './hooks'
-import { DocumentTextIcon } from '@heroicons/react/24/outline'
+'use client';
+import { Portal, useKey } from './hooks';
+import { DocumentTextIcon } from '@heroicons/react/24/outline';
 
 export default function RecentActivities({ open, onClose }: { open: boolean; onClose: () => void }) {
-  useKey('Escape', onClose, open)
-  if (!open) return null
+  useKey('Escape', onClose, open);
+  if (!open) return null;
   return (
     <Portal>
       <div className="fixed inset-0 z-[70]" onClick={onClose} />
@@ -15,7 +15,7 @@ export default function RecentActivities({ open, onClose }: { open: boolean; onC
         </div>
         <p className="mt-4 text-center text-gray-600">Your activities will show up here!</p>
         <div className="mt-4 border-t pt-4 space-y-2">
-          {['Create Invoice','Create Bill','Create Expense'].map((t) => (
+          {['Create Invoice','Create Bill','Create Expense'].map(t => (
             <button key={t} className="flex items-center gap-2 text-sky-700 hover:underline">
               <DocumentTextIcon className="h-4 w-4" /> {t}
             </button>
@@ -23,5 +23,5 @@ export default function RecentActivities({ open, onClose }: { open: boolean; onC
         </div>
       </div>
     </Portal>
-  )
+  );
 }

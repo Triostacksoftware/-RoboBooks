@@ -1,8 +1,8 @@
-'use client'
-import { useState } from 'react'
+'use client';
+import { useState } from 'react';
 
 export default function PremiumTooltip({ children }: { children: React.ReactNode }) {
-  const [show, setShow] = useState(false)
+  const [show, setShow] = useState(false);
   return (
     <div onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)} className="relative">
       {children}
@@ -13,5 +13,5 @@ export default function PremiumTooltip({ children }: { children: React.ReactNode
         </div>
       )}
     </div>
-  )
+  );
 }

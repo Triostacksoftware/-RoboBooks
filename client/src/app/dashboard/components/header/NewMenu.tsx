@@ -1,19 +1,19 @@
-'use client'
-import { useRef } from 'react'
-import { Portal, useKey, useOnClickOutside } from './hooks'
-import { PlusSmallIcon } from '@heroicons/react/24/outline'
+'use client';
+import { useRef } from 'react';
+import { Portal, useKey, useOnClickOutside } from './hooks';
+import { PlusSmallIcon } from '@heroicons/react/24/outline';
 
 export default function NewMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useOnClickOutside(ref, onClose)
-  useKey('Escape', onClose, open)
-  if (!open) return null
+  const ref = useRef<HTMLDivElement>(null);
+  useOnClickOutside(ref, onClose, open);
+  useKey('Escape', onClose, open);
+  if (!open) return null;
 
   const Section = ({ title, items }: { title: string; items: string[] }) => (
     <div className="min-w-[220px]">
       <div className="px-4 pb-2 text-xs font-semibold tracking-wide text-gray-500">{title}</div>
       <ul className="px-2">
-        {items.map((label) => (
+        {items.map(label => (
           <li key={label}>
             <button className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left hover:bg-gray-50">
               <span className="grid h-5 w-5 place-items-center rounded-full bg-gray-900 text-white">
@@ -25,7 +25,7 @@ export default function NewMenu({ open, onClose }: { open: boolean; onClose: () 
         ))}
       </ul>
     </div>
-  )
+  );
 
   return (
     <Portal>
@@ -39,5 +39,5 @@ export default function NewMenu({ open, onClose }: { open: boolean; onClose: () 
         </div>
       </div>
     </Portal>
-  )
+  );
 }

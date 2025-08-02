@@ -8,7 +8,7 @@ export default function HomeTabs() {
           <div className="h-10 w-10 rounded-lg border flex items-center justify-center">🏷️</div>
           <div>
             <div className="text-xl md:text-2xl font-semibold">Hello, Try</div>
-            <div className="text-gray-500 -mt-1 text-sm">aat jhat company</div>
+            <div className="text-gray-500 -mt-1 text-sm">Triostack</div>
           </div>
         </div>
 
