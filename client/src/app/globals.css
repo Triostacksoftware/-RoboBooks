@@ -30,3 +30,18 @@ html, body, :root { height: 100%; }
   box-shadow: 0 0 0 4px rgba(16,185,129,.18), 0 0 0 10px rgba(37,99,235,.10);
   border-radius: .75rem;
 }
+
+/* --- search width animation -------------------------------------------- */
+@layer utilities {
+  /* Base shell – width is driven by a CSS var so we can change it per breakpoint */
+  .search-shell {
+    width: var(--search-w, 28rem);
+    transition: width 220ms ease, box-shadow 220ms ease;
+  }
+
+  /* Grow 10% on hover and while an input inside has focus */
+  .search-shell:hover,
+  .search-shell:focus-within {
+    width: calc(var(--search-w, 28rem) * 1.1);
+  }
+}
