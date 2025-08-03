@@ -3,7 +3,13 @@
 import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { Portal, useKey } from '../hooks';
 
-export default function ZiaSearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function ZiaSearchOverlay({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   useKey('Escape', onClose, open);
   if (!open) return null;
 

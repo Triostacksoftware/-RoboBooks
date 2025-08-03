@@ -1,6 +1,7 @@
 'use client';
-import { Portal, useKey } from './hooks';
+
 import { XMarkIcon, Cog6ToothIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { Portal, useKey } from './hooks';
 
 export default function OrgSwitcher({ open, onClose }: { open: boolean; onClose: () => void }) {
   useKey('Escape', onClose, open);
@@ -11,10 +12,13 @@ export default function OrgSwitcher({ open, onClose }: { open: boolean; onClose:
       <div className="absolute right-48 top-14 z-[85] w-[480px] rounded-xl border bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="text-lg font-semibold">Organizations</div>
-          <button onClick={onClose} className="p-2 rounded hover:bg-gray-100"><XMarkIcon className="h-5 w-5" /></button>
+          <button onClick={onClose} className="p-2 rounded hover:bg-gray-100">
+            <XMarkIcon className="h-5 w-5" />
+          </button>
         </div>
         <div className="flex items-center gap-2 px-4 py-3 text-sm text-sky-700">
-          <Cog6ToothIcon className="h-4 w-4" /> Manage
+          <Cog6ToothIcon className="h-4 w-4" />
+          Manage
         </div>
         <div className="px-4 pb-4">
           <div className="text-sm font-medium text-gray-600 mb-2">My Organizations</div>

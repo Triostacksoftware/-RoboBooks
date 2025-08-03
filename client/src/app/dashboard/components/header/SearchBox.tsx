@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
-import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 import { useKey, useOnClickOutside } from './hooks';
 import SearchableSelect from './search/SearchableSelect';
 import ZiaSearchOverlay from './search/ZiaSearchOverlay';
 import AdvancedSearchModal from './search/AdvancedSearchModal';
 
-/* Categories */
+// your 25 top‐level categories
 const CATEGORIES = [
   'Customers','Items','Banking','Quotes','Sales Orders','Delivery Challans',
   'Invoices','Credit Notes','Vendors','Expenses','Recurring Expenses',
@@ -18,109 +18,105 @@ const CATEGORIES = [
 ];
 
 export default function SearchBox() {
-  const [catOpen, setCatOpen] = useState(false);
-  const [category, setCategory] = useState<string>('Customers');
-  const [q, setQ] = useState('');
-  const [showZia, setShowZia] = useState(false);
+  const [catOpen, setCatOpen]           = useState(false);
+  const [category, setCategory]         = useState('Customers');
+  const [query, setQuery]               = useState('');
+  const [showZia, setShowZia]           = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const wrapRef = useRef<HTMLDivElement | null>(null);
+  // close dropdown if you click outside:
+  const wrapRef = useRef<HTMLDivElement>(null);
   useOnClickOutside(wrapRef, () => setCatOpen(false));
 
+  // Escape closes everything:
   useKey('Escape', () => {
     setCatOpen(false);
-    setShowAdvanced(false);
     setShowZia(false);
+    setShowAdvanced(false);
   });
 
-  // Alt + /  = Advanced Search
+  // Alt + / → advanced
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    function onKey(e: KeyboardEvent) {
       if (e.altKey && e.key === '/') {
         e.preventDefault();
         setCatOpen(false);
         setShowAdvanced(true);
       }
-    };
+    }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const onSubmit = (e: React.FormEvent) => {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setShowZia(true);
-  };
+  }
 
   return (
     <>
-      <div
-        ref={wrapRef}
-        className={clsx(
-          'group relative',
-          'w-[clamp(18rem,42vw,36rem)]',
-          'transition-[width] duration-300',
-          'hover:w-[clamp(19.8rem,46.2vw,39.6rem)]',
-          'focus-within:w-[clamp(19.8rem,46.2vw,39.6rem)]',
-        )}
-      >
+      <div ref={wrapRef} className="relative w-[clamp(18rem,42vw,36rem)] group">
         <form
-          onSubmit={onSubmit}
-          className="
-            flex items-center rounded-lg border border-white/20 bg-white/5
-            px-2 py-[6px] text-sm text-white
-            focus-within:border-sky-400/60 focus-within:shadow-[0_0_0_2px_rgba(56,189,248,.35)]
-          "
+          onSubmit={handleSubmit}
+          className={clsx(
+            'flex items-center gap-2 rounded-md border border-gray-300',
+            'bg-white px-3 py-2 text-gray-800'
+          )}
         >
-          {/* LEFT trigger (only this toggles categories) */}
+          {/* toggle categories */}
           <button
             type="button"
             onClick={() => setCatOpen(v => !v)}
+            className="flex items-center gap-1"
             aria-expanded={catOpen}
-            aria-controls="search-category-menu"
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-white/10 focus:outline-none focus-visible:ring-0"
+            aria-label="Toggle category"
           >
-            <MagnifyingGlassIcon className="h-5 w-5 text-white" />
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-600" />
             <ChevronDownIcon
               className={clsx(
-                'h-4 w-4 text-sky-300/90 transition-transform',
-                catOpen ? 'rotate-180' : 'rotate-0',
+                'h-4 w-4 transition-transform',
+                catOpen && 'rotate-180'
               )}
             />
           </button>
 
-          {/* divider */}
-          <div className="mx-2 h-5 w-px bg-white/20" />
-
-          {/* RIGHT – plain input */}
+          {/* search input */}
           <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={`Search in ${category} ( / )`}
-            className="min-w-0 flex-1 bg-transparent placeholder:text-white/50 outline-none"
+            type="text"
+            className="flex-1 bg-transparent placeholder-gray-400 outline-none"
+            placeholder={`Search in ${category}`}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
           />
         </form>
 
-        {/* category dropdown container (menu renders in portal) */}
+        {/* Category dropdown portal */}
         {catOpen && (
-          <div id="search-category-menu" className="absolute left-0 top-[110%] z-[120] w-[min(38rem,95vw)] overflow-visible">
+          <div className="absolute left-0 top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10">
             <SearchableSelect
-              value={category}
-              onChange={(v) => { setCategory(v); setCatOpen(false); }}
               options={CATEGORIES}
-              autoOpen
-              onOpenChange={(open) => !open && setCatOpen(false)}
+              value={category}
+              onChange={val => {
+                setCategory(val);
+                setCatOpen(false);
+              }}
+              placeholder="Search"
               footerActions={[
                 {
-                  icon: 'search',
                   label: 'Advanced Search',
                   kbd: 'Alt + /',
-                  onClick: () => { setCatOpen(false); setShowAdvanced(true); },
+                  onClick: () => {
+                    setCatOpen(false);
+                    setShowAdvanced(true);
+                  },
                 },
                 {
-                  icon: 'zoho',
                   label: 'Search across Zoho',
                   kbd: 'Ctrl + /',
-                  onClick: () => { setCatOpen(false); setShowZia(true); },
+                  onClick: () => {
+                    setCatOpen(false);
+                    setShowZia(true);
+                  },
                 },
               ]}
             />
@@ -128,9 +124,13 @@ export default function SearchBox() {
         )}
       </div>
 
-      {/* overlays */}
+      {/* Overlays */}
       <ZiaSearchOverlay open={showZia} onClose={() => setShowZia(false)} />
-      <AdvancedSearchModal open={showAdvanced} onClose={() => setShowAdvanced(false)} category={category} />
+      <AdvancedSearchModal
+        open={showAdvanced}
+        onClose={() => setShowAdvanced(false)}
+        category={category}
+      />
     </>
   );
 }

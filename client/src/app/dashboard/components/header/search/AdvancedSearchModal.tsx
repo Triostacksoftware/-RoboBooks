@@ -36,7 +36,7 @@ const DEFAULT_RIGHT: Field[] = [
   { label: 'Phone', key: 'phone', type: 'tel' },
 ];
 
-/* Options */
+/* Options (flat) */
 const CATEGORY_OPTIONS = [
   'Customers','Items','Banking','Quotes','Sales Orders','Delivery Challans','Invoices',
   'Payments Received','Recurring Invoices','Credit Notes','Vendors','Expenses',
@@ -89,7 +89,11 @@ function FieldInput({
         </select>
       );
     }
-    return <select className={base}><option>All</option></select>;
+    return (
+      <select className={base}>
+        <option>All</option>
+      </select>
+    );
   }
 
   return <input ref={inputRef} type={field.type ?? 'text'} className={base} />;
@@ -115,18 +119,27 @@ export default function AdvancedSearchModal({ open, category, onClose }: Props) 
     return { leftFields: DEFAULT_LEFT, rightFields: DEFAULT_RIGHT };
   }, [categoryValue]);
 
-  useOnClickOutside(shellRef, onClose, open);
+  useOnClickOutside(shellRef, onClose);
   useKey('Escape', onClose, open);
 
-  useEffect(() => { if (open) setTimeout(() => firstRef.current?.focus(), 30); }, [open]);
+  useEffect(() => {
+    if (open) setTimeout(() => firstRef.current?.focus(), 30);
+  }, [open]);
+
   if (!open) return null;
 
-  function submit(e: React.FormEvent) { e.preventDefault(); onClose(); }
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    onClose();
+  }
 
   return (
     <Portal>
       <div className="fixed inset-0 z-[120] overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
-        <div ref={shellRef} className="mx-auto w-full max-w-[1200px] rounded-xl bg-white shadow-2xl ring-1 ring-black/5">
+        <div
+          ref={shellRef}
+          className="mx-auto w-full max-w-[1200px] rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
+        >
           {/* Top bar */}
           <div className="flex items-center justify-between border-b px-6 py-3">
             <div className="flex flex-wrap items-center gap-6">
@@ -152,7 +165,11 @@ export default function AdvancedSearchModal({ open, category, onClose }: Props) 
               </div>
             </div>
 
-            <button onClick={onClose} className="rounded p-2 hover:bg-gray-100" aria-label="Close">
+            <button
+              onClick={onClose}
+              className="rounded p-2 hover:bg-gray-100"
+              aria-label="Close"
+            >
               <XMarkIcon className="h-5 w-5 text-gray-600" />
             </button>
           </div>
@@ -160,6 +177,7 @@ export default function AdvancedSearchModal({ open, category, onClose }: Props) 
           {/* Body */}
           <form onSubmit={submit}>
             <div className="grid gap-8 px-6 py-6 lg:grid-cols-2">
+              {/* Left */}
               <div className="space-y-4">
                 {leftFields.map((f, i) => (
                   <Row key={f.key} label={f.label}>
@@ -167,8 +185,10 @@ export default function AdvancedSearchModal({ open, category, onClose }: Props) 
                   </Row>
                 ))}
               </div>
+
+              {/* Right */}
               <div className="space-y-4">
-                {rightFields.map(f => (
+                {rightFields.map((f) => (
                   <Row key={f.key} label={f.label}>
                     <FieldInput field={f} />
                   </Row>
@@ -178,10 +198,17 @@ export default function AdvancedSearchModal({ open, category, onClose }: Props) 
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
-              <button type="submit" className="h-10 rounded-md bg-sky-600 px-5 text-sm font-medium text-white hover:bg-sky-700">
+              <button
+                type="submit"
+                className="h-10 rounded-md bg-sky-600 px-5 text-sm font-medium text-white hover:bg-sky-700"
+              >
                 Search
               </button>
-              <button type="button" onClick={onClose} className="h-10 rounded-md border border-gray-300 bg-white px-5 text-sm text-gray-700 hover:bg-gray-50">
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-10 rounded-md border border-gray-300 bg-white px-5 text-sm text-gray-700 hover:bg-gray-50"
+              >
                 Cancel
               </button>
             </div>

@@ -1,78 +1,55 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useEffect, useRef, type RefObject, type ReactNode } from 'react';
 
-/**
- * Fires `handler` when a click/touch happens outside ALL the given elements.
- * - Accepts multiple refs (panel, trigger button, etc.)
- * - Ignores the click that *opened* the panel by enabling the listener
- *   on the next tick.
- */
-export function useClickOutside(
-  refs: Array<RefObject<HTMLElement | null>>,
-  handler: () => void,
-  enabled: boolean = true
+/** Click/Tap outside a given element */
+export function useOnClickOutside<T extends HTMLElement>(
+  ref: React.RefObject<T | null>,
+  handler: () => void
 ) {
   useEffect(() => {
-    if (!enabled) return;
-
-    let active = false;
-    const timer = setTimeout(() => (active = true), 0); // ignore opening click
-
-    const onEvt = (e: MouseEvent | TouchEvent) => {
-      if (!active) return;
-      const target = e.target as Node;
-      const inside = refs.some(r => r.current && r.current.contains(target));
-      if (!inside) handler();
-    };
-
-    document.addEventListener('mousedown', onEvt, true);
-    document.addEventListener('touchstart', onEvt, true);
+    function onClick(e: MouseEvent | TouchEvent) {
+      const el = ref.current;
+      if (!el || el.contains(e.target as Node)) return;
+      handler();
+    }
+    document.addEventListener('mousedown', onClick, true);
+    document.addEventListener('touchstart', onClick, true);
     return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', onEvt, true);
-      document.removeEventListener('touchstart', onEvt, true);
+      document.removeEventListener('mousedown', onClick, true);
+      document.removeEventListener('touchstart', onClick, true);
     };
-  }, [refs, handler, enabled]);
-}
-
-/** Back-compat single-ref wrapper. */
-export function useOnClickOutside<T extends HTMLElement>(
-  ref: RefObject<T | null>,
-  handler: () => void,
-  enabled: boolean = true
-) {
-  useClickOutside([ref as RefObject<HTMLElement | null>], handler, enabled);
+  }, [ref, handler]);
 }
 
 /** Case-insensitive key listener; set `enabled=false` to stop listening. */
 export function useKey(key: string, handler: () => void, enabled = true) {
   useEffect(() => {
     if (!enabled) return;
-    const onKey = (e: KeyboardEvent) => {
+    function onKey(e: KeyboardEvent) {
       if (e.key.toLowerCase() === key.toLowerCase()) handler();
-    };
+    }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [key, handler, enabled]);
 }
 
-/** Minimal portal helper. */
-export function Portal({ children }: { children: ReactNode }) {
-  const elRef = useRef<HTMLDivElement | null>(null);
+/** Simple Portal helper */
+export function Portal({ children }: { children: React.ReactNode }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const el = document.createElement('div');
     document.body.appendChild(el);
-    elRef.current = el;
+    containerRef.current = el;
     return () => {
       document.body.removeChild(el);
-      elRef.current = null;
+      containerRef.current = null;
     };
   }, []);
 
-  if (!elRef.current) return null;
-  return createPortal(children, elRef.current);
+  if (!containerRef.current) return null;
+  return createPortal(children, containerRef.current);
 }
