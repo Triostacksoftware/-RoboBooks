@@ -1,4 +1,3 @@
-import Project from '../models/project.model.js';
+import Project from "../models/projectmodel.js";
 export const createProject = (data) => Project.create(data);
 export const listProjects = () => Project.find();
-
