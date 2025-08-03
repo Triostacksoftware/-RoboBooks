@@ -1,164 +1,101 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import clsx from 'clsx';
-import { useKey, useOnClickOutside } from '../hooks';
-import SearchableSelect from '../search/SearchableSelect';           // ← fixed
-import ZiaSearchOverlay from '../search/ZiaSearchOverlay';         // ← fixed
-import AdvancedSearchModal from '../search/AdvancedSearchModal';   // ← fixed
+import React, { useState, useRef, useEffect } from "react";
+import clsx from "clsx";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
-/** Your 25 top-level categories */
-const CATEGORIES = [
-  'Customers','Items','Banking','Quotes','Sales Orders','Delivery Challans',
-  'Invoices','Credit Notes','Vendors','Expenses','Recurring Expenses',
-  'Purchase Orders','Bills','Payments Made','Recurring Bills','Vendor Credits',
-  'Projects','Timesheet','Journals','Chart of Accounts','Documents','Tasks',
-];
+interface FooterAction {
+  label: string;
+  kbd: string;
+  onClick: () => void;
+}
 
+interface SearchableSelectProps {
+  options: string[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  footerActions?: FooterAction[];
+  align?: "left" | "right";
+}
 
-export default function SearchBox() {
-  const [catOpen, setCatOpen]           = useState(false);
-  const [category, setCategory]         = useState<string>('Customers');
-  const [query, setQuery]               = useState('');
-  const [showZia, setShowZia]           = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+export default function SearchableSelect({
+  options,
+  value,
+  onChange,
+  placeholder = "Search",
+  footerActions = [],
+}: SearchableSelectProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredOptions, setFilteredOptions] = useState(options);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const wrapRef = useRef<HTMLDivElement>(null);
-  useOnClickOutside(wrapRef, () => setCatOpen(false));
-
-  // Escape closes everything
-  useKey('Escape', () => {
-    setCatOpen(false);
-    setShowAdvanced(false);
-    setShowZia(false);
-  });
-
-  // Alt+/ opens advanced search
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.altKey && e.key === '/') {
-        e.preventDefault();
-        setCatOpen(false);
-        setShowAdvanced(true);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const filtered = options.filter((option) =>
+      option.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredOptions(filtered);
+  }, [searchQuery, options]);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   }, []);
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowZia(true);
-  };
-
   return (
-    <>
-      <div
-        ref={wrapRef}
-        className={clsx(
-          'group relative',
-          'w-[clamp(18rem,42vw,36rem)]',
-          'transition-[width] duration-300',
-          'hover:w-[clamp(19.8rem,46.2vw,39.6rem)]',
-          'focus-within:w-[clamp(19.8rem,46.2vw,39.6rem)]'
-        )}
-      >
-        <form
-          onSubmit={onSubmit}
-          className="
-            flex items-center rounded-lg border border-white/20 bg-white/5
-            px-2 py-[6px] text-sm text-white
-            focus-within:border-sky-400/60 focus-within:shadow-[0_0_0_2px_rgba(56,189,248,.35)]
-          "
-        >
-          {/* LEFT trigger */}
+    <div className="p-4">
+      {/* Search input */}
+      <div className="relative mb-4">
+        <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <input
+          ref={inputRef}
+          type="text"
+          className="w-full rounded-md border border-gray-300 bg-white px-10 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          placeholder={placeholder}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* Options list */}
+      <div className="max-h-60 overflow-y-auto">
+        {filteredOptions.map((option) => (
           <button
-            type="button"
-            onClick={() => setCatOpen(v => !v)}
-            aria-expanded={catOpen}
-            aria-controls="search-category-menu"
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-white/10 focus:outline-none focus-visible:ring-0"
+            key={option}
+            className={clsx(
+              "w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none",
+              option === value && "bg-blue-50 text-blue-600"
+            )}
+            onClick={() => onChange(option)}
           >
-            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M21 21l-4.35-4.35M10 17a7 7 0 100-14 7 7 0 000 14z"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <svg
-              className={clsx(
-                'h-4 w-4 text-sky-300/90 transition-transform',
-                catOpen ? 'rotate-180' : 'rotate-0'
-              )}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M19 9l-7 7-7-7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            {option}
           </button>
-
-          {/* divider */}
-          <div className="mx-2 h-5 w-px bg-white/20" />
-
-          {/* RIGHT input */}
-          <input
-            type="text"
-            className="min-w-0 flex-1 bg-transparent placeholder:text-white/50 outline-none"
-            placeholder={`Search in ${category} ( / )`}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
-        </form>
-
-        {/* Category dropdown */}
-        {catOpen && (
-          <div
-            id="search-category-menu"
-            className="absolute left-0 top-[110%] z-[120] w-[min(38rem,95vw)] overflow-hidden rounded-lg border border-white/15 bg-[#0f1524] shadow-2xl"
-          >
-            <SearchableSelect
-              options={CATEGORIES}                         // now recognized as a prop
-              value={category}
-              onChange={(val: string) => {                // explicitly typed
-                setCategory(val);
-                setCatOpen(false);
-              }}
-              placeholder="Search"
-              footerActions={[
-                {
-                  icon: 'search',
-                  label: 'Advanced Search',
-                  kbd: 'Alt + /',
-                  onClick: () => {
-                    setCatOpen(false);
-                    setShowAdvanced(true);
-                  },
-                },
-                {
-                  icon: 'zoho',
-                  label: 'Search across Zoho',
-                  kbd: 'Ctrl + /',
-                  onClick: () => {
-                    setCatOpen(false);
-                    setShowZia(true);
-                  },
-                },
-              ]}
-            />
+        ))}
+        {filteredOptions.length === 0 && (
+          <div className="px-3 py-2 text-sm text-gray-500">
+            No options found
           </div>
         )}
       </div>
 
-      {/* Overlays */}
-      <ZiaSearchOverlay open={showZia} onClose={() => setShowZia(false)} />
-      <AdvancedSearchModal
-        open={showAdvanced}
-        onClose={() => setShowAdvanced(false)}
-        category={category}
-      />
-    </>
+      {/* Footer actions */}
+      {footerActions.length > 0 && (
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          {footerActions.map((action, index) => (
+            <button
+              key={index}
+              className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+              onClick={action.onClick}
+            >
+              <span>{action.label}</span>
+              <kbd className="rounded bg-gray-100 px-2 py-1 text-xs font-mono">
+                {action.kbd}
+              </kbd>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 // routes/bankTransactionRoutes.js
 import { Router } from 'express';
-import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { authenticate, authorize } from '../middlewares/authMiddleware.js';
 import {
   listTransactions,
   createTransaction,

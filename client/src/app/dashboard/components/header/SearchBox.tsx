@@ -1,27 +1,48 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import clsx from 'clsx';
-import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import React, { useState, useRef, useEffect } from "react";
+import clsx from "clsx";
+import {
+  MagnifyingGlassIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 
-import { useKey, useOnClickOutside } from './hooks';
-import SearchableSelect from './search/SearchableSelect';
-import ZiaSearchOverlay from './search/ZiaSearchOverlay';
-import AdvancedSearchModal from './search/AdvancedSearchModal';
+import { useKey, useOnClickOutside } from "./hooks";
+import SearchableSelect from "./search/SearchableSelect";
+import ZiaSearchOverlay from "./search/ZiaSearchOverlay";
+import AdvancedSearchModal from "./search/AdvancedSearchModal";
 
 // your 25 top‐level categories
 const CATEGORIES = [
-  'Customers','Items','Banking','Quotes','Sales Orders','Delivery Challans',
-  'Invoices','Credit Notes','Vendors','Expenses','Recurring Expenses',
-  'Purchase Orders','Bills','Payments Made','Recurring Bills','Vendor Credits',
-  'Projects','Timesheet','Journals','Chart of Accounts','Documents','Tasks',
+  "Customers",
+  "Items",
+  "Banking",
+  "Quotes",
+  "Sales Orders",
+  "Delivery Challans",
+  "Invoices",
+  "Credit Notes",
+  "Vendors",
+  "Expenses",
+  "Recurring Expenses",
+  "Purchase Orders",
+  "Bills",
+  "Payments Made",
+  "Recurring Bills",
+  "Vendor Credits",
+  "Projects",
+  "Timesheet",
+  "Journals",
+  "Chart of Accounts",
+  "Documents",
+  "Tasks",
 ];
 
 export default function SearchBox() {
-  const [catOpen, setCatOpen]           = useState(false);
-  const [category, setCategory]         = useState('Customers');
-  const [query, setQuery]               = useState('');
-  const [showZia, setShowZia]           = useState(false);
+  const [catOpen, setCatOpen] = useState(false);
+  const [category, setCategory] = useState("Customers");
+  const [query, setQuery] = useState("");
+  const [showZia, setShowZia] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // close dropdown if you click outside:
@@ -29,7 +50,7 @@ export default function SearchBox() {
   useOnClickOutside(wrapRef, () => setCatOpen(false));
 
   // Escape closes everything:
-  useKey('Escape', () => {
+  useKey("Escape", () => {
     setCatOpen(false);
     setShowZia(false);
     setShowAdvanced(false);
@@ -38,14 +59,14 @@ export default function SearchBox() {
   // Alt + / → advanced
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.altKey && e.key === '/') {
+      if (e.altKey && e.key === "/") {
         e.preventDefault();
         setCatOpen(false);
         setShowAdvanced(true);
       }
     }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   function handleSubmit(e: React.FormEvent) {
@@ -59,14 +80,14 @@ export default function SearchBox() {
         <form
           onSubmit={handleSubmit}
           className={clsx(
-            'flex items-center gap-2 rounded-md border border-gray-300',
-            'bg-white px-3 py-2 text-gray-800'
+            "flex items-center gap-2 rounded-md border border-gray-300",
+            "bg-white px-3 py-2 text-gray-800"
           )}
         >
           {/* toggle categories */}
           <button
             type="button"
-            onClick={() => setCatOpen(v => !v)}
+            onClick={() => setCatOpen((v) => !v)}
             className="flex items-center gap-1"
             aria-expanded={catOpen}
             aria-label="Toggle category"
@@ -74,8 +95,8 @@ export default function SearchBox() {
             <MagnifyingGlassIcon className="h-5 w-5 text-gray-600" />
             <ChevronDownIcon
               className={clsx(
-                'h-4 w-4 transition-transform',
-                catOpen && 'rotate-180'
+                "h-4 w-4 transition-transform",
+                catOpen && "rotate-180"
               )}
             />
           </button>
@@ -86,7 +107,7 @@ export default function SearchBox() {
             className="flex-1 bg-transparent placeholder-gray-400 outline-none"
             placeholder={`Search in ${category}`}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={(e) => setQuery(e.target.value)}
           />
         </form>
 
@@ -96,23 +117,23 @@ export default function SearchBox() {
             <SearchableSelect
               options={CATEGORIES}
               value={category}
-              onChange={val => {
+              onChange={(val: React.SetStateAction<string>) => {
                 setCategory(val);
                 setCatOpen(false);
               }}
               placeholder="Search"
               footerActions={[
                 {
-                  label: 'Advanced Search',
-                  kbd: 'Alt + /',
+                  label: "Advanced Search",
+                  kbd: "Alt + /",
                   onClick: () => {
                     setCatOpen(false);
                     setShowAdvanced(true);
                   },
                 },
                 {
-                  label: 'Search across Zoho',
-                  kbd: 'Ctrl + /',
+                  label: "Search across Zoho",
+                  kbd: "Ctrl + /",
                   onClick: () => {
                     setCatOpen(false);
                     setShowZia(true);
