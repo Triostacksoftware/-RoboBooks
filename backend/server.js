@@ -22,8 +22,6 @@ import './config/passport.js';
 //import accountRoutes from './routes/accountRoutes.js';
 //import journalRoutes from './routes/journalRoutes.js';
 import bankTransactionRoutes from './routes/bankTransactionRoutes.js';
-import authRoutes from './routes/auth.js';
-import connectDB from './config/db.js';
 // ────────────────────────────────────────────────────────────────────────────────
 
 dotenv.config();
