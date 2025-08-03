@@ -1,36 +1,56 @@
-import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import connectDB from "./config/db.js";
-import authRoutes from "./routes/auth.js";
+// server.js  (or index.js)
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
+import passport from 'passport';
+import session from 'express-session';
 
+import './config/db.js';
+import './config/passport.js';
+
+// ─── Route imports ───────────────────────────────────────────────────────────────
+//import accountRoutes from './routes/accountRoutes.js';
+//import journalRoutes from './routes/journalRoutes.js';
+import bankTransactionRoutes from './routes/bankTransactionRoutes.js';
+import authRoutes from './routes/auth.js';
+import connectDB from './config/db.js';
+// ────────────────────────────────────────────────────────────────────────────────
+
+dotenv.config();
 const app = express();
-
-// ── middleware ──────────────────────────────────────────────
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true
-  })
-);
+connectDB();
+// ─── Global middleware ──────────────────────────────────────────────────────────
+app.use(cors({
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
+app.use(morgan('dev'));
 
-// ── DB ───────────────────────────────────────────────────────
-connectDB();
+// Passport session (for OAuth)
+app.use(session({
+  secret: process.env.ACCESS_TOKEN_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false },       // set true behind HTTPS
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+// ────────────────────────────────────────────────────────────────────────────────
 
-// ── routes ───────────────────────────────────────────────────
-app.use("/api/auth", authRoutes);
+// ─── API routes ────────────────────────────────────────────────────────────────
+//app.use('/api/accounts',           accountRoutes);
+//app.use('/api/journal-entries',    journalRoutes);
+app.use('/api/bank-transactions',  bankTransactionRoutes);
+app.use('/api/auth',               authRoutes);
 
-// ── error handler ────────────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(err.status || 500).json({ message: err.message || "Server error" });
-});
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+// ────────────────────────────────────────────────────────────────────────────────
 
-// ── start ────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;   // 5000 default
-app.listen(PORT, () =>
-  console.log(`🔑 Auth API running on http://localhost:${PORT}`)
-);
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
