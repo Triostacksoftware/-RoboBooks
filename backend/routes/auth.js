@@ -13,74 +13,57 @@ function issueCookie(res, token) {
     httpOnly: true,
     sameSite: isProd ? "strict" : "lax",
     secure: isProd,
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    maxAge: 1000 * 60 * 60 * 24 * 7
   });
 }
 
-// ───────────────────────── REGISTER ─────────────────────────
+// REGISTER
 router.post("/register", async (req, res, next) => {
   try {
     const { email, phone, password } = req.body;
     if (!email && !phone) throw new Error("Email or phone is required");
-
-    const passwordHash = password
-      ? await bcrypt.hash(password, 12)
-      : undefined;
-
+    const passwordHash = password ? await bcrypt.hash(password, 12) : undefined;
     const user = await User.create({ email, phone, passwordHash });
-
     const token = signToken({ uid: user._id });
     issueCookie(res, token);
-
-    res.status(201).json({
-      user: { id: user._id, email: user.email, phone: user.phone }
-    });
+    res.status(201).json({ user: { id: user._id, email: user.email, phone: user.phone } });
   } catch (err) {
     if (err.code === 11000) err.message = "User already exists";
     next(err);
   }
 });
 
-// ───────────────────────── LOGIN (email / phone) ────────────
+// LOGIN (email or phone)
 router.post("/login", async (req, res, next) => {
   try {
     const { emailOrPhone, password } = req.body;
     if (!emailOrPhone || !password) throw new Error("Missing credentials");
-
     const query = emailOrPhone.includes("@")
       ? { email: emailOrPhone.toLowerCase() }
       : { phone: emailOrPhone };
-
     const user = await User.findOne(query);
     if (!user || !user.passwordHash) throw new Error("Invalid credentials");
-
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) throw new Error("Invalid credentials");
-
     const token = signToken({ uid: user._id });
     issueCookie(res, token);
-
     res.json({ user: { id: user._id, email: user.email, phone: user.phone } });
   } catch (err) {
     next(err);
   }
 });
 
-// ───────────────────────── GOOGLE login ─────────────────────
+// GOOGLE OAuth Login
 router.post("/login/google", async (req, res, next) => {
   const { idToken } = req.body;
   if (!idToken) return res.status(400).json({ message: "idToken required" });
-
   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
   try {
     const ticket = await client.verifyIdToken({
       idToken,
       audience: process.env.GOOGLE_CLIENT_ID
     });
-    const payload = ticket.getPayload();
-    const { sub: providerId, email, name } = payload;
-
+    const { sub: providerId, email, name } = ticket.getPayload();
     let user = await User.findOne({
       "providers.name": "google",
       "providers.providerId": providerId
@@ -91,23 +74,21 @@ router.post("/login/google", async (req, res, next) => {
         providers: [{ name: "google", providerId }]
       });
     }
-
     const token = signToken({ uid: user._id });
     issueCookie(res, token);
-
     res.json({ user: { id: user._id, email: user.email, name } });
   } catch (err) {
     next(err);
   }
 });
 
-// ───────────────────────── SESSION probe ────────────────────
+// SESSION PROBE
 router.get("/me", authGuard, async (req, res) => {
   const user = await User.findById(req.user.uid).lean();
   res.json({ user: { id: user._id, email: user.email, phone: user.phone } });
 });
 
-// ───────────────────────── LOGOUT ───────────────────────────
+// LOGOUT
 router.post("/logout", (_req, res) => {
   res.clearCookie("rb_session");
   res.json({ message: "Logged out" });

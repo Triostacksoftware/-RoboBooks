@@ -1,22 +1,23 @@
 import jwt from "jsonwebtoken";
 
-const TOKEN_TTL = "7d";                    // cookie lifetime
+export function signToken(payload) {
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
+}
 
-export const signToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: TOKEN_TTL });
-
-export const verifyToken = (token) =>
-  jwt.verify(token, process.env.JWT_SECRET);
-
-// Express middleware – attaches req.user
-export const authGuard = (req, res, next) => {
-  const token = req.cookies["rb_session"];
-  if (!token) return res.status(401).json({ message: "Unauthenticated" });
+export function authGuard(req, res, next) {
+  // try HTTP-only cookie first, then Bearer header
+  const token =
+    req.cookies?.rb_session ||
+    req.headers.authorization?.replace("Bearer ", "");
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
+  }
 
   try {
-    req.user = verifyToken(token);
-    return next();
-  } catch {
-    return res.status(401).json({ message: "Invalid / expired token" });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({ message: "Invalid or expired token" });
   }
-};
+}
