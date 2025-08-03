@@ -1,11 +1,26 @@
-import { Schema, model, Types } from "mongoose";
+// models/BankTransaction.js
+import mongoose from 'mongoose';
 
-const BankTxnSchema = new Schema({
-  account_id: { type: Types.ObjectId, ref: "Account", required: true },
-  amount: { type: Number, required: true },
-  txn_date: { type: Date, required: true },
-  reconciled: { type: Boolean, default: false },
-  description: String
-});
+const bankTransactionSchema = new mongoose.Schema(
+  {
+    account: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Account',
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ['deposit', 'withdrawal'],
+      required: true,
+    },
+    amount: { type: Number, required: true, min: 0 },
+    currency: { type: String, default: 'INR' },
+    txn_date: { type: Date, default: Date.now },
+    reference: String,
+    reconciled: { type: Boolean, default: false },
+    description: String,
+  },
+  { timestamps: true },
+);
 
-export default model("BankTransaction", BankTxnSchema);
+export default mongoose.model('BankTransaction', bankTransactionSchema);
