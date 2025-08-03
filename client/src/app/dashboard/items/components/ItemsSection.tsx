@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ChevronDownIcon,
@@ -32,16 +32,52 @@ const filters = [
 export default function ItemsSection() {
   const [items, setItems] = useState<Item[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
+  const [exportSubmenuOpen, setExportSubmenuOpen] = useState(false);
   const [selectedView, setSelectedView] = useState('All Items');
   const [activeHeader, setActiveHeader] = useState<string | null>(null);
   const router = useRouter();
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const moreActionsRef = useRef<HTMLDivElement>(null);
+
+  // Close all dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+      if (
+        moreActionsRef.current &&
+        !moreActionsRef.current.contains(event.target as Node)
+      ) {
+        setMoreActionsOpen(false);
+        setExportSubmenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleHeaderClick = (key: string) => {
     setActiveHeader((prev) => (prev === key ? null : key));
   };
 
   const handleNewItem = () => {
+    console.log('Navigating to create item...');
     router.push('/dashboard/items/new');
+  };
+
+  const handleActionClick = (action: string) => {
+    console.log(`Action clicked: ${action}`);
+    setMoreActionsOpen(false);
+    setExportSubmenuOpen(false);
   };
 
   return (
@@ -49,7 +85,7 @@ export default function ItemsSection() {
       {/* Top Bar */}
       <div className="flex items-center justify-between border-b p-4 relative">
         {/* View Dropdown */}
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-1 text-xl font-medium text-gray-800 hover:bg-gray-100 px-3 py-1 rounded"
@@ -67,6 +103,7 @@ export default function ItemsSection() {
                     onClick={() => {
                       setSelectedView(view);
                       setDropdownOpen(false);
+                      console.log(`View selected: ${view}`);
                     }}
                     className="flex justify-between items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
                   >
@@ -76,7 +113,10 @@ export default function ItemsSection() {
                 ))}
               </ul>
               <div
-                onClick={() => setDropdownOpen(false)}
+                onClick={() => {
+                  setDropdownOpen(false);
+                  console.log('New Custom View clicked');
+                }}
                 className="flex items-center gap-2 px-4 py-3 text-blue-600 text-sm cursor-pointer hover:bg-gray-50"
               >
                 <PlusIcon className="h-4 w-4" />
@@ -102,9 +142,82 @@ export default function ItemsSection() {
             </div>
           </div>
 
-          <button className="p-2 rounded-md hover:bg-gray-100">
-            <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
-          </button>
+          {/* More Actions Dropdown */}
+          <div className="relative" ref={moreActionsRef}>
+            <button
+              onClick={() => {
+                setMoreActionsOpen((prev) => !prev);
+                setExportSubmenuOpen(false);
+              }}
+              className="p-2 rounded-md hover:bg-gray-100"
+              title="More Actions"
+            >
+              <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
+            </button>
+
+            {moreActionsOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-md border bg-white shadow-lg z-20 text-sm">
+                <ul className="divide-y divide-gray-100 text-gray-700">
+                  <li
+                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleActionClick('Sort by')}
+                  >
+                    Sort by
+                  </li>
+                  <li
+                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleActionClick('Import Items')}
+                  >
+                    Import Items
+                  </li>
+                  <li
+                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer relative"
+                    onMouseEnter={() => setExportSubmenuOpen(true)}
+                    onMouseLeave={() => setExportSubmenuOpen(false)}
+                  >
+                    Export
+                    {/* Export Submenu */}
+                    {exportSubmenuOpen && (
+                      <div className="absolute left-full top-0 ml-1 w-40 rounded-md border bg-white shadow-lg z-30">
+                        <ul className="text-gray-700 divide-y divide-gray-100">
+                          <li
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                            onClick={() => handleActionClick('Export as CSV')}
+                          >
+                            Export as CSV
+                          </li>
+                          <li
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                            onClick={() => handleActionClick('Export as PDF')}
+                          >
+                            Export as PDF
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                  </li>
+                  <li
+                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleActionClick('Preferences')}
+                  >
+                    Preferences
+                  </li>
+                  <li
+                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleActionClick('Refresh List')}
+                  >
+                    Refresh List
+                  </li>
+                  <li
+                    className="px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleActionClick('Reset Column Width')}
+                  >
+                    Reset Column Width
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

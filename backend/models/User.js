@@ -7,7 +7,7 @@ const providerSchema = new Schema(
       enum: ["google", "github", "linkedin", "apple", "azure-ad"],
       required: true,
     },
-    providerId: { type: String, required: true }
+    providerId: { type: String, required: true },
   },
   { _id: false }
 );
@@ -15,10 +15,10 @@ const providerSchema = new Schema(
 const userSchema = new Schema(
   {
     email: { type: String, lowercase: true, trim: true },
-    phone: { type: String, trim: true },            // optional E.164
-    passwordHash: String,                           // empty for OAuth-only
+    phone: { type: String, trim: true },
+    passwordHash: String,
     providers: [providerSchema],
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
