@@ -4,6 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
+import mongoose from 'mongoose';
+import app from './app.js';
 
 const app = express();
 
@@ -19,6 +21,9 @@ app.use(cookieParser());
 
 // ── DB ───────────────────────────────────────────────────────
 connectDB();
+mongoose.connect('mongodb://localhost:27017/robobooks')
+  .then(() => app.listen(5000, () => console.log('✅ Server on http://localhost:5000')))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // ── routes ───────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
