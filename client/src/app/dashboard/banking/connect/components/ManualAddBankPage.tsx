@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 export default function ManualAddBankPage() {
   const [form, setForm] = useState({
-    type: 'bank',
-    accountName: '',
-    accountCode: '',
-    currency: 'INR',
-    accountNumber: '',
-    bankName: '',
-    ifsc: '',
-    description: '',
+    type: "bank",
+    accountName: "",
+    accountCode: "",
+    currency: "INR",
+    accountNumber: "",
+    bankName: "",
+    ifsc: "",
+    description: "",
     isPrimary: false,
   });
 
@@ -22,38 +22,48 @@ export default function ManualAddBankPage() {
   }, []);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    let newValue: string | boolean = value;
+    if (type === "checkbox" && "checked" in e.target) {
+      newValue = (e.target as HTMLInputElement).checked;
+    }
     setForm((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: newValue,
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submitted:', form);
-    alert('Account saved successfully!');
+    console.log("Submitted:", form);
+    alert("Account saved successfully!");
   };
 
   const inputUnderline =
-    'w-full border-0 border-b border-gray-300 focus:border-blue-600 focus:ring-0 rounded-none px-0 py-2';
+    "w-full border-0 border-b border-gray-300 focus:border-blue-600 focus:ring-0 rounded-none px-0 py-2";
 
   return (
     <div className="w-full bg-white p-6 md:p-10">
-      <h1 className="text-2xl md:text-3xl font-semibold mb-6">Add Bank or Credit Card</h1>
+      <h1 className="text-2xl md:text-3xl font-semibold mb-6">
+        Add Bank or Credit Card
+      </h1>
 
       <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
         {/* Account Type */}
         <div className="flex items-center gap-6">
-          <label className="text-sm font-medium text-red-600">Select Account Type*</label>
+          <label className="text-sm font-medium text-red-600">
+            Select Account Type*
+          </label>
           <label className="flex items-center gap-2">
             <input
               type="radio"
               name="type"
               value="bank"
-              checked={form.type === 'bank'}
+              checked={form.type === "bank"}
               onChange={handleChange}
             />
             <span>Bank</span>
@@ -63,7 +73,7 @@ export default function ManualAddBankPage() {
               type="radio"
               name="type"
               value="credit"
-              checked={form.type === 'credit'}
+              checked={form.type === "credit"}
               onChange={handleChange}
             />
             <span>Credit Card</span>
@@ -72,7 +82,9 @@ export default function ManualAddBankPage() {
 
         {/* Account Name */}
         <div>
-          <label className="text-red-600 text-sm font-medium">Account Name*</label>
+          <label className="text-red-600 text-sm font-medium">
+            Account Name*
+          </label>
           <input
             ref={accountNameRef}
             required

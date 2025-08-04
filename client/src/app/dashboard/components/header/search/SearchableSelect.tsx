@@ -1,164 +1,90 @@
-'use client';
+// components/search/SearchableSelect.tsx
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import clsx from 'clsx';
-import { useKey, useOnClickOutside } from '../hooks';
-import SearchableSelect from '../search/SearchableSelect';           // ← fixed
-import ZiaSearchOverlay from '../search/ZiaSearchOverlay';         // ← fixed
-import AdvancedSearchModal from '../search/AdvancedSearchModal';   // ← fixed
+import React, { useState } from "react";
+import { CheckIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
-/** Your 25 top-level categories */
-const CATEGORIES = [
-  'Customers','Items','Banking','Quotes','Sales Orders','Delivery Challans',
-  'Invoices','Credit Notes','Vendors','Expenses','Recurring Expenses',
-  'Purchase Orders','Bills','Payments Made','Recurring Bills','Vendor Credits',
-  'Projects','Timesheet','Journals','Chart of Accounts','Documents','Tasks',
-];
+export interface Option {
+  label: string;
+  hotkey?: string;
+}
 
+interface SearchableSelectProps {
+  options: Option[];
+  selected: string;
+  onSelect: (label: string) => void;
+}
 
-export default function SearchBox() {
-  const [catOpen, setCatOpen]           = useState(false);
-  const [category, setCategory]         = useState<string>('Customers');
-  const [query, setQuery]               = useState('');
-  const [showZia, setShowZia]           = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+export default function SearchableSelect({
+  options,
+  selected,
+  onSelect,
+}: SearchableSelectProps) {
+  const main = options.filter((o) => !o.hotkey);
+  const actions = options.filter((o) => !!o.hotkey);
 
-  const wrapRef = useRef<HTMLDivElement>(null);
-  useOnClickOutside(wrapRef, () => setCatOpen(false));
-
-  // Escape closes everything
-  useKey('Escape', () => {
-    setCatOpen(false);
-    setShowAdvanced(false);
-    setShowZia(false);
-  });
-
-  // Alt+/ opens advanced search
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.altKey && e.key === '/') {
-        e.preventDefault();
-        setCatOpen(false);
-        setShowAdvanced(true);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowZia(true);
-  };
+  const [q, setQ] = useState("");
+  const filtered = main.filter((o) =>
+    o.label.toLowerCase().includes(q.toLowerCase())
+  );
 
   return (
-    <>
-      <div
-        ref={wrapRef}
-        className={clsx(
-          'group relative',
-          'w-[clamp(18rem,42vw,36rem)]',
-          'transition-[width] duration-300',
-          'hover:w-[clamp(19.8rem,46.2vw,39.6rem)]',
-          'focus-within:w-[clamp(19.8rem,46.2vw,39.6rem)]'
-        )}
-      >
-        <form
-          onSubmit={onSubmit}
-          className="
-            flex items-center rounded-lg border border-white/20 bg-white/5
-            px-2 py-[6px] text-sm text-white
-            focus-within:border-sky-400/60 focus-within:shadow-[0_0_0_2px_rgba(56,189,248,.35)]
-          "
-        >
-          {/* LEFT trigger */}
-          <button
-            type="button"
-            onClick={() => setCatOpen(v => !v)}
-            aria-expanded={catOpen}
-            aria-controls="search-category-menu"
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-white/10 focus:outline-none focus-visible:ring-0"
-          >
-            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M21 21l-4.35-4.35M10 17a7 7 0 100-14 7 7 0 000 14z"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <svg
-              className={clsx(
-                'h-4 w-4 text-sky-300/90 transition-transform',
-                catOpen ? 'rotate-180' : 'rotate-0'
-              )}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M19 9l-7 7-7-7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-
-          {/* divider */}
-          <div className="mx-2 h-5 w-px bg-white/20" />
-
-          {/* RIGHT input */}
+    <div className="w-full max-w-xs bg-white border border-gray-200 rounded-lg shadow-lg flex flex-col">
+      {/* Top search */}
+      <div className="px-4 py-2 border-b">
+        <div className="relative text-gray-500">
+          <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            className="min-w-0 flex-1 bg-transparent placeholder:text-white/50 outline-none"
-            placeholder={`Search in ${category} ( / )`}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none"
           />
-        </form>
-
-        {/* Category dropdown */}
-        {catOpen && (
-          <div
-            id="search-category-menu"
-            className="absolute left-0 top-[110%] z-[120] w-[min(38rem,95vw)] overflow-hidden rounded-lg border border-white/15 bg-[#0f1524] shadow-2xl"
-          >
-            <SearchableSelect
-              options={CATEGORIES}                         // now recognized as a prop
-              value={category}
-              onChange={(val: string) => {                // explicitly typed
-                setCategory(val);
-                setCatOpen(false);
-              }}
-              placeholder="Search"
-              footerActions={[
-                {
-                  icon: 'search',
-                  label: 'Advanced Search',
-                  kbd: 'Alt + /',
-                  onClick: () => {
-                    setCatOpen(false);
-                    setShowAdvanced(true);
-                  },
-                },
-                {
-                  icon: 'zoho',
-                  label: 'Search across Zoho',
-                  kbd: 'Ctrl + /',
-                  onClick: () => {
-                    setCatOpen(false);
-                    setShowZia(true);
-                  },
-                },
-              ]}
-            />
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Overlays */}
-      <ZiaSearchOverlay open={showZia} onClose={() => setShowZia(false)} />
-      <AdvancedSearchModal
-        open={showAdvanced}
-        onClose={() => setShowAdvanced(false)}
-        category={category}
-      />
-    </>
+      {/* Scrollable main list */}
+      <ul className="overflow-y-auto h-60 divide-y divide-gray-100">
+        {filtered.map(({ label }) => (
+          <li
+            key={label}
+            onClick={() => onSelect(label)}
+            className="
+              flex items-center justify-between
+              px-4 py-2 cursor-pointer
+              text-gray-800
+              hover:bg-blue-600 hover:text-white
+              rounded-md
+            "
+          >
+            <span>{label}</span>
+          </li>
+        ))}
+      </ul>
+
+      {/* Fixed footer actions */}
+      <div className="border-t border-gray-100 px-4 py-2 space-y-2">
+        {actions.map(({ label, hotkey }) => (
+          <div
+            key={label}
+            onClick={() => onSelect(label)}
+            className="
+              flex items-center justify-between
+              px-3 py-2 rounded-md cursor-pointer
+              text-gray-800
+              hover:bg-blue-600 hover:text-white
+            "
+          >
+            <span className="font-medium">{label}</span>
+            {hotkey && (
+              <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs text-gray-600">
+                {hotkey}
+              </kbd>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 import {
   ClipboardDocumentCheckIcon,
   BuildingStorefrontIcon,
@@ -11,26 +12,62 @@ import {
   DocumentArrowUpIcon,
   ShieldCheckIcon,
   TruckIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 /* ---------------- FEATURES DATA ---------------- */
 const FEATURES = [
-  { icon: BuildingStorefrontIcon,  title: 'Vendor & Suppliers',  desc: 'Manage suppliers & contacts seamlessly.' },
-  { icon: ClipboardDocumentCheckIcon, title: 'Items',           desc: 'Catalogue products with prices & tax.' },
-  { icon: DocumentDuplicateIcon,   title: 'Purchase Orders',     desc: 'PO → bill in one click.' },
-  { icon: WalletIcon,              title: 'Purchase Bill Entry', desc: 'Log vendor invoices instantly.' },
-  { icon: UsersIcon,               title: 'Clients / Customers', desc: 'Store GSTIN & contact data.' },
-  { icon: ChartBarSquareIcon,      title: 'Quotation Builder',   desc: 'Quotes that convert themselves.' },
-  { icon: DocumentArrowUpIcon,     title: 'E-Invoice & E-Way',   desc: 'Create compliant e-invoices.' },
-  { icon: ShieldCheckIcon,         title: 'GST/VAT Invoice',     desc: 'Issue global tax invoices.' }, // ← 8th card
-  { icon: TruckIcon,               title: 'Delivery Challan',    desc: 'Smart, custom challans.' },
+  {
+    icon: BuildingStorefrontIcon,
+    title: "Vendor & Suppliers",
+    desc: "Manage suppliers & contacts seamlessly.",
+  },
+  {
+    icon: ClipboardDocumentCheckIcon,
+    title: "Items",
+    desc: "Catalogue products with prices & tax.",
+  },
+  {
+    icon: DocumentDuplicateIcon,
+    title: "Purchase Orders",
+    desc: "PO → bill in one click.",
+  },
+  {
+    icon: WalletIcon,
+    title: "Purchase Bill Entry",
+    desc: "Log vendor invoices instantly.",
+  },
+  {
+    icon: UsersIcon,
+    title: "Clients / Customers",
+    desc: "Store GSTIN & contact data.",
+  },
+  {
+    icon: ChartBarSquareIcon,
+    title: "Quotation Builder",
+    desc: "Quotes that convert themselves.",
+  },
+  {
+    icon: DocumentArrowUpIcon,
+    title: "E-Invoice & E-Way",
+    desc: "Create compliant e-invoices.",
+  },
+  {
+    icon: ShieldCheckIcon,
+    title: "GST/VAT Invoice",
+    desc: "Issue global tax invoices.",
+  }, // ← 8th card
+  {
+    icon: TruckIcon,
+    title: "Delivery Challan",
+    desc: "Smart, custom challans.",
+  },
 ];
 
 /* ---------------- MOTION VARIANTS ---------------- */
 const wrapV = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 const cardV = {
   hidden: { opacity: 0, y: 40 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.5, ease: ['easeOut'] } },
 };
 
 export default function FeaturesSection() {
@@ -64,16 +101,20 @@ export default function FeaturesSection() {
                        rounded-3xl p-8 transition-transform"
           >
             {/* hover box effect */}
-            <div className="absolute inset-0 -z-10 rounded-3xl
+            <div
+              className="absolute inset-0 -z-10 rounded-3xl
                             bg-transparent border border-transparent
                             transition-all duration-300
                             group-hover:bg-white/70 group-hover:backdrop-blur-md
-                            group-hover:border-cyan-500/60 group-hover:shadow-xl" />
+                            group-hover:border-cyan-500/60 group-hover:shadow-xl"
+            />
 
             {/* icon chip */}
-            <div className="flex h-16 w-16 items-center justify-center
+            <div
+              className="flex h-16 w-16 items-center justify-center
                             rounded-2xl bg-blue-50 text-blue-600 shadow-inner
-                            transition-transform group-hover:scale-110">
+                            transition-transform group-hover:scale-110"
+            >
               <Icon className="h-8 w-8" />
             </div>
 
