@@ -1,22 +1,39 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
+import { XMarkIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import clsx from "clsx";
 import {
-  XMarkIcon,
-  FunnelIcon,
+  Squares2X2Icon,
+  UserIcon,
+  ChatBubbleLeftEllipsisIcon,
+  BanknotesIcon,
+  PencilSquareIcon,
+  QuestionMarkCircleIcon,
   Cog6ToothIcon,
-} from '@heroicons/react/24/outline';
-import clsx from 'clsx';
+} from "@heroicons/react/24/outline";
 
 // left‐nav apps
 const APPS = [
-  { key: 'all', label: 'All Apps' },
-  { key: 'contacts', label: 'Contacts' },
-  { key: 'cliq', label: 'Cliq' },
-  { key: 'books', label: 'Books' },
-  { key: 'creator', label: 'Creator' },
-  { key: 'help', label: 'Help Pages' },
-];
+  { key: "all", label: "All Apps" },
+  { key: "contacts", label: "Contacts" },
+  { key: "cliq", label: "Cliq" },
+  { key: "books", label: "Books" },
+  { key: "creator", label: "Creator" },
+  { key: "help", label: "Help Pages" },
+] as const;
+
+type AppKey = typeof APPS[number]["key"];
+
+// Mapping app.key to icon and label
+const appIconMap: Record<AppKey, { icon: React.ComponentType<any>; label: string }> = {
+  all: { icon: Squares2X2Icon, label: "All Apps" },
+  contacts: { icon: UserIcon, label: "Contacts" },
+  cliq: { icon: ChatBubbleLeftEllipsisIcon, label: "Cliq" },
+  books: { icon: BanknotesIcon, label: "Books" },
+  creator: { icon: PencilSquareIcon, label: "Creator" },
+  help: { icon: QuestionMarkCircleIcon, label: "Help Pages" },
+};
 
 // helper multi‐select (search + checkboxes)
 function MultiSelect({
@@ -33,7 +50,7 @@ function MultiSelect({
   onCancel: () => void;
 }) {
   const [local, setLocal] = useState<string[]>(selected);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState("");
   const filtered = options.filter((o) =>
     o.toLowerCase().includes(q.toLowerCase())
   );
@@ -55,9 +72,7 @@ function MultiSelect({
               checked={local.includes(opt)}
               onChange={() => {
                 setLocal((l) =>
-                  l.includes(opt)
-                    ? l.filter((x) => x !== opt)
-                    : [...l, opt]
+                  l.includes(opt) ? l.filter((x) => x !== opt) : [...l, opt]
                 );
               }}
             />
@@ -87,26 +102,35 @@ export default function ZiaSearchOverlay({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [searchQ, setSearchQ] = useState('');
-  const [activeApp, setActiveApp] = useState('all');
+  const [activeApp, setActiveApp] = useState<AppKey>("all");
+  const [searchQ, setSearchQ] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showMulti, setShowMulti] = useState<null | 'applications' | 'pageType'>(null);
+  const [showMulti, setShowMulti] = useState<
+    null | "applications" | "pageType"
+  >(null);
 
   // dummy options
-  const appFilterOpts = ['All Applications','Books','Expense','Billing'];
-  const pageTypeOpts = ['All Categories','Resources','Knowledge Base','Help Videos'];
-  const [appFilters, setAppFilters] = useState<string[]>(['All Applications']);
-  const [pageTypes, setPageTypes] = useState<string[]>(['All Categories']);
+  const appFilterOpts = ["All Applications", "Books", "Expense", "Billing"];
+  const pageTypeOpts = [
+    "All Categories",
+    "Resources",
+    "Knowledge Base",
+    "Help Videos",
+  ];
+  const [appFilters, setAppFilters] = useState<string[]>(["All Applications"]);
+  const [pageTypes, setPageTypes] = useState<string[]>(["All Categories"]);
+
+  // ref for overlay container
+  const ref = useRef<HTMLDivElement>(null);
 
   // close on outside click
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose();
     }
-    if (isOpen) document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    if (isOpen) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -118,37 +142,40 @@ export default function ZiaSearchOverlay({
         className="bg-white rounded-2xl flex flex-1 max-w-6xl mx-auto my-8 overflow-hidden"
       >
         {/* Sidebar */}
-        <nav className="w-16 bg-gray-900 text-white flex flex-col items-center py-4 space-y-4">
-          {APPS.map((a) => (
-            <button
-              key={a.key}
-              onClick={() => {
-                setActiveApp(a.key);
-                setShowSettings(false);
-              }}
-              className={clsx(
-                'w-10 h-10 flex items-center justify-center rounded-lg',
-                activeApp === a.key && !showSettings
-                  ? 'bg-blue-600'
-                  : 'hover:bg-gray-700'
-              )}
-            >
-              {/* placeholder icon */}
-              <span className="text-xs">{a.label.charAt(0)}</span>
-            </button>
-          ))}
+        <nav className="w-20 bg-gray-900 text-white flex flex-col items-center py-2 pt-6 space-y-2 rounded-tl-2xl rounded-bl-2xl min-h-[80vh]">
+          {APPS.map((app) => {
+            const Icon = appIconMap[app.key].icon;
+            const isActive = app.key === activeApp && !showSettings;
+            return (
+              <button
+                key={app.key}
+                onClick={() => {
+                  setActiveApp(app.key);
+                  setShowSettings(false);
+                }}
+                className={`w-16 h-16 flex flex-col items-center justify-center rounded-lg transition
+          ${
+            isActive
+              ? "bg-blue-600 text-white"
+              : "hover:bg-gray-800 text-gray-300"
+          }`}
+              >
+                <Icon className="w-7 h-7 mb-1" />
+                <span className="text-xs font-medium">
+                  {appIconMap[app.key].label}
+                </span>
+              </button>
+            );
+          })}
 
-          {/* Divider */}
-          <div className="border-t border-gray-700 w-full my-2"></div>
+          <div className="border-t border-gray-700 w-4/5 my-2" />
 
-          {/* Settings */}
           <button
-            onClick={() => {
-              setShowSettings((s) => !s);
-            }}
-            className="w-10 h-10 flex items-center justify-center hover:bg-gray-700 rounded-lg"
+            onClick={() => setShowSettings((s) => !s)}
+            className="w-16 h-16 flex flex-col items-center justify-center hover:bg-gray-800 rounded-lg text-gray-300 mt-auto mb-3"
           >
-            <Cog6ToothIcon className="w-5 h-5" />
+            <Cog6ToothIcon className="w-7 h-7 mb-1" />
+            <span className="text-xs font-medium">Settings</span>
           </button>
         </nav>
 
@@ -179,27 +206,31 @@ export default function ZiaSearchOverlay({
           {/* Body */}
           <div className="p-6 h-[70vh] overflow-auto">
             {/* Initial help screen */}
-            {activeApp === 'all' && !showSettings && !showFilter && (
+            {activeApp === "all" && !showSettings && !showFilter && (
               <div className="space-y-8 text-center text-gray-700">
                 <h2 className="text-2xl font-semibold">Zia Search</h2>
                 <p>Search, Refine, Review and Act – All in one place</p>
                 <div className="grid md:grid-cols-2 gap-6 mt-6">
                   <div>
-                    <h3 className="font-medium text-lg">Search by Application</h3>
+                    <h3 className="font-medium text-lg">
+                      Search by Application
+                    </h3>
                     <p className="text-sm">
-                      Limit search to a specific app. e.g. <code>#mail</code> or{' '}
+                      Limit search to a specific app. e.g. <code>#mail</code> or{" "}
                       <code>#cliq</code>
                     </p>
                   </div>
                   <div>
                     <h3 className="font-medium text-lg">Search by Contact</h3>
                     <p className="text-sm">
-                      Interested only in results related to a particular contact? Try{' '}
-                      <code>@john</code>
+                      Interested only in results related to a particular
+                      contact? Try <code>@john</code>
                     </p>
                   </div>
                   <div>
-                    <h3 className="font-medium text-lg">Fine-Grained Filters</h3>
+                    <h3 className="font-medium text-lg">
+                      Fine-Grained Filters
+                    </h3>
                     <p className="text-sm">
                       Too many results? Use filters to narrow down the results.
                     </p>
@@ -207,7 +238,8 @@ export default function ZiaSearchOverlay({
                   <div>
                     <h3 className="font-medium text-lg">Quick Actions</h3>
                     <p className="text-sm">
-                      Reply to a mail, start a conversation, edit a record and more…
+                      Reply to a mail, start a conversation, edit a record and
+                      more…
                     </p>
                   </div>
                 </div>
@@ -232,10 +264,12 @@ export default function ZiaSearchOverlay({
             )}
 
             {/* Search results placeholder */}
-            {activeApp !== 'all' && !showSettings && !showFilter && (
+            {activeApp !== "all" && !showSettings && !showFilter && (
               <div className="text-gray-500">
                 {/* you’d hook real results here */}
-                <p>No results yet for <strong>{activeApp}</strong></p>
+                <p>
+                  No results yet for <strong>{activeApp}</strong>
+                </p>
               </div>
             )}
 
@@ -251,14 +285,16 @@ export default function ZiaSearchOverlay({
                     </li>
                   ))}
                 </ul>
-                {activeApp !== 'all' && activeApp !== 'help' && (
+                {activeApp !== "all" && activeApp !== "help" && (
                   // per-app extra settings
                   <div className="mt-6">
                     <h4 className="font-medium mb-2">
                       {APPS.find((a) => a.key === activeApp)!.label} Settings
                     </h4>
                     <fieldset className="space-y-2">
-                      <legend className="text-sm font-medium">Sort results by</legend>
+                      <legend className="text-sm font-medium">
+                        Sort results by
+                      </legend>
                       <label className="flex items-center space-x-2">
                         <input type="radio" name="sort" defaultChecked />
                         <span>Relevance</span>
@@ -282,8 +318,8 @@ export default function ZiaSearchOverlay({
                   <h3 className="font-medium text-lg">1 Filter Applied</h3>
                   <button
                     onClick={() => {
-                      setAppFilters(['All Applications']);
-                      setPageTypes(['All Categories']);
+                      setAppFilters(["All Applications"]);
+                      setPageTypes(["All Categories"]);
                     }}
                     className="text-red-600"
                   >
@@ -292,14 +328,16 @@ export default function ZiaSearchOverlay({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <button
-                    onClick={() => setShowMulti('applications')}
-                    className="px-4 py-2 border rounded-lg text-left">
-                    Applications: {appFilters.join(', ')}
+                    onClick={() => setShowMulti("applications")}
+                    className="px-4 py-2 border rounded-lg text-left"
+                  >
+                    Applications: {appFilters.join(", ")}
                   </button>
                   <button
-                    onClick={() => setShowMulti('pageType')}
-                    className="px-4 py-2 border rounded-lg text-left">
-                    Page Type: {pageTypes.join(', ')}
+                    onClick={() => setShowMulti("pageType")}
+                    className="px-4 py-2 border rounded-lg text-left"
+                  >
+                    Page Type: {pageTypes.join(", ")}
                   </button>
                 </div>
                 <div className="mt-6 flex justify-end space-x-2">
@@ -319,7 +357,7 @@ export default function ZiaSearchOverlay({
               </div>
 
               {/* MultiSelect overlays */}
-              {showMulti === 'applications' && (
+              {showMulti === "applications" && (
                 <MultiSelect
                   label="Applications"
                   options={appFilterOpts}
@@ -331,7 +369,7 @@ export default function ZiaSearchOverlay({
                   onCancel={() => setShowMulti(null)}
                 />
               )}
-              {showMulti === 'pageType' && (
+              {showMulti === "pageType" && (
                 <MultiSelect
                   label="Page Type"
                   options={pageTypeOpts}

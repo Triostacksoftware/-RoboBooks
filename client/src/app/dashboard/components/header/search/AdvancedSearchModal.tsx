@@ -60,16 +60,14 @@ export default function AdvancedSearchModal({
   });
 
   const modalRef = useRef<HTMLDivElement>(null);
-
-  // Close when clicking outside
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    function handleClickOutside(e: MouseEvent) {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
         onClose();
       }
-    };
-    if (isOpen) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    }
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -86,15 +84,21 @@ export default function AdvancedSearchModal({
     onClose();
   };
 
+  // shared modern input/select classes
+  const formControlClass = `
+    mt-1 w-full rounded-lg border border-gray-300 bg-white
+    text-gray-800
+    px-3 py-2
+    hover:border-gray-400
+    focus:outline-none focus:border-blue-600
+    transition
+  `;
+
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 overflow-auto p-4">
-      <div
-        ref={modalRef}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-4xl"
-      >
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div ref={modalRef} className="bg-white rounded-2xl shadow-xl w-full max-w-4xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
-          {/* Search selector */}
           <div className="flex items-center space-x-3">
             <span className="text-gray-700 font-medium">Search</span>
             <div className="relative">
@@ -102,19 +106,15 @@ export default function AdvancedSearchModal({
                 name="entity"
                 value={data.entity}
                 onChange={handleChange}
-                className="appearance-none pl-3 pr-8 py-2 border rounded-lg bg-white text-gray-800"
+                className={`${formControlClass} appearance-none pr-8`}
               >
                 {entityOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
+                  <option key={opt}>{opt}</option>
                 ))}
               </select>
               <ChevronDownIcon className="w-5 h-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
-
-          {/* Filter selector */}
           <div className="flex items-center space-x-3">
             <span className="text-gray-700 font-medium">Filter</span>
             <div className="relative">
@@ -122,29 +122,22 @@ export default function AdvancedSearchModal({
                 name="filter"
                 value={data.filter}
                 onChange={handleChange}
-                className="appearance-none pl-3 pr-8 py-2 border rounded-lg bg-white text-gray-800"
+                className={`${formControlClass} appearance-none pr-8`}
               >
                 {filterOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
+                  <option key={opt}>{opt}</option>
                 ))}
               </select>
               <ChevronDownIcon className="w-5 h-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
-
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Left column */}
           <div className="space-y-4">
             {[
@@ -158,37 +151,35 @@ export default function AdvancedSearchModal({
                   name={name}
                   value={(data as any)[name]}
                   onChange={handleChange}
-                  className="mt-1 w-full rounded-lg border-gray-300"
+                  className={formControlClass}
                 />
               </div>
             ))}
 
-            {/* Status */}
             <div>
               <label className="block text-sm text-gray-600">Status</label>
               <select
                 name="status"
                 value={data.status}
                 onChange={handleChange}
-                className="mt-1 w-full rounded-lg border-gray-300 appearance-none pr-8"
+                className={`${formControlClass} appearance-none`}
               >
-                <option>All</option>
-                <option>Active</option>
-                <option>Inactive</option>
+                {['All', 'Active', 'Inactive'].map((opt) => (
+                  <option key={opt}>{opt}</option>
+                ))}
               </select>
             </div>
 
-            {/* Address & Notes */}
-            {['address', 'notes'].map((name) => (
-              <div key={name}>
+            {['address', 'notes'].map((field) => (
+              <div key={field}>
                 <label className="block text-sm text-gray-600">
-                  {name.charAt(0).toUpperCase() + name.slice(1)}
+                  {field.charAt(0).toUpperCase() + field.slice(1)}
                 </label>
                 <input
-                  name={name}
-                  value={(data as any)[name]}
+                  name={field}
+                  value={(data as any)[field]}
                   onChange={handleChange}
-                  className="mt-1 w-full rounded-lg border-gray-300"
+                  className={formControlClass}
                 />
               </div>
             ))}
@@ -196,16 +187,13 @@ export default function AdvancedSearchModal({
 
           {/* Right column */}
           <div className="space-y-4">
-            {/* Customer Type */}
             <div>
-              <label className="block text-sm text-gray-600">
-                Customer Type
-              </label>
+              <label className="block text-sm text-gray-600">Customer Type</label>
               <select
                 name="customerType"
                 value={data.customerType}
                 onChange={handleChange}
-                className="mt-1 w-full rounded-lg border-gray-300 appearance-none pr-8"
+                className={`${formControlClass} appearance-none`}
               >
                 <option value="">Select type</option>
                 <option>Business</option>
@@ -213,7 +201,6 @@ export default function AdvancedSearchModal({
               </select>
             </div>
 
-            {/* First Name, Email, Phone, PAN */}
             {[
               { label: 'First Name', name: 'firstName', type: 'text' },
               { label: 'Email', name: 'email', type: 'email' },
@@ -224,10 +211,10 @@ export default function AdvancedSearchModal({
                 <label className="block text-sm text-gray-600">{label}</label>
                 <input
                   name={name}
+                  type={type}
                   value={(data as any)[name]}
                   onChange={handleChange}
-                  type={type}
-                  className="mt-1 w-full rounded-lg border-gray-300"
+                  className={formControlClass}
                 />
               </div>
             ))}
@@ -235,16 +222,16 @@ export default function AdvancedSearchModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end space-x-3 px-6 py-4 border-t">
+        <div className="flex justify-end space-x-4 px-6 py-4 border-t">
           <button
             onClick={handleSearch}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
           >
             Search
           </button>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
+            className="px-5 py-2 rounded-lg border border-gray-300 text-gray-800 hover:bg-gray-100 transition"
           >
             Cancel
           </button>
