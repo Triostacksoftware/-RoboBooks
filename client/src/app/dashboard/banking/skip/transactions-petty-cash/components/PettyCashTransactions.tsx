@@ -6,34 +6,47 @@ import {
   XMarkIcon,
   ChevronDownIcon,
   MagnifyingGlassIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ReferenceDot,
+} from "recharts";
+
+// --- MOCK DATA for chart: 30 days, closing balance is always 0
+const chartData = [
+  { date: '2025-07-07', closing: 0 },
+  { date: '2025-07-09', closing: 0 },
+  { date: '2025-07-11', closing: 0 },
+  { date: '2025-07-13', closing: 0 },
+  { date: '2025-07-17', closing: 0 },
+  { date: '2025-07-19', closing: 0 },
+  { date: '2025-07-21', closing: 0 },
+  { date: '2025-07-23', closing: 0 },
+  { date: '2025-07-25', closing: 0 },
+  { date: '2025-07-27', closing: 0 },
+  { date: '2025-07-29', closing: 0 },
+  { date: '2025-07-31', closing: 0 },
+  { date: '2025-08-01', closing: 0 },
+  { date: '2025-08-03', closing: 0 },
+];
 
 const moneyOut = [
-  "Expense",
-  "Vendor Advance",
-  "Vendor Payment",
-  "Transfer To Another Account",
-  "Card Payment",
-  "Owner Drawings",
-  "Deposit To Other Accounts",
-  "Credit Note Refund",
-  "Payment Refund",
+  "Expense", "Vendor Advance", "Vendor Payment", "Transfer To Another Account", "Card Payment",
+  "Owner Drawings", "Deposit To Other Accounts", "Credit Note Refund", "Payment Refund",
 ];
-
 const moneyIn = [
-  "Customer Advance",
-  "Customer Payment",
-  "Transfer From Another Account",
-  "Interest Income",
-  "Other Income",
-  "Expense Refund",
-  "Deposit From Other Accounts",
-  "Owner's Contribution",
-  "Vendor Credit Refund",
-  "Vendor Payment Refund",
+  "Customer Advance", "Customer Payment", "Transfer From Another Account", "Interest Income",
+  "Other Income", "Expense Refund", "Deposit From Other Accounts", "Owner's Contribution",
+  "Vendor Credit Refund", "Vendor Payment Refund",
 ];
-
 const settingsOptions = [
   { label: "Edit", path: "/dashboard/banking/skip/edit" },
   { label: "Reconcile Account", path: "/dashboard/banking/skip/reconcile" },
@@ -42,7 +55,7 @@ const settingsOptions = [
 ];
 
 export default function PettyCashTransactions() {
-  const [tab, setTab] = useState("transactions");
+  const [tab, setTab] = useState("dashboard");
   const [dropdown, setDropdown] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -54,17 +67,11 @@ export default function PettyCashTransactions() {
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
-        addTransRef.current &&
-        !addTransRef.current.contains(e.target as Node)
-      ) {
-        setDropdown(false);
-      }
+        addTransRef.current && !addTransRef.current.contains(e.target as Node)
+      ) setDropdown(false);
       if (
-        settingsRef.current &&
-        !settingsRef.current.contains(e.target as Node)
-      ) {
-        setSettingsOpen(false);
-      }
+        settingsRef.current && !settingsRef.current.contains(e.target as Node)
+      ) setSettingsOpen(false);
     }
     if (dropdown || settingsOpen) {
       window.addEventListener("mousedown", handleClick);
@@ -72,23 +79,21 @@ export default function PettyCashTransactions() {
     }
   }, [dropdown, settingsOpen]);
 
-  // Add Transaction option click (redirect, you can update URLs)
+  // Add Transaction option click
   const handleOptionClick = (type: string) => {
     setDropdown(false);
     router.push(`/dashboard/banking/skip/transactions/${type.toLowerCase().replaceAll(" ", "-")}`);
   };
-
-  // Settings dropdown option click (redirect)
+  // Settings option click
   const handleSettingsOption = (path: string) => {
     setSettingsOpen(false);
     router.push(path);
   };
-
-  // X (close) button navigation
+  // Close btn navigation
   const handleClose = () => router.push("/");
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-white rounded-2xl shadow border border-gray-100 mt-4 mb-10">
+    <div className="w-full max-w-6xl mx-auto bg-white rounded-2xl shadow border border-gray-100 mt-4 mb-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 pt-4">
         <div className="flex items-center gap-1">
@@ -212,34 +217,149 @@ export default function PettyCashTransactions() {
         </button>
       </div>
 
-      {/* Table Header */}
-      <div className="mt-4 overflow-x-auto">
-        <table className="min-w-full text-xs md:text-sm text-gray-500">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-2 py-2 w-8">
-                <input type="checkbox" className="accent-blue-500" />
-              </th>
-              <th className="px-2 py-2 font-semibold">DATE</th>
-              <th className="px-2 py-2 font-semibold">REF#</th>
-              <th className="px-2 py-2 font-semibold">TYPE</th>
-              <th className="px-2 py-2 font-semibold">STATUS</th>
-              <th className="px-2 py-2 font-semibold">DEPOSITS</th>
-              <th className="px-2 py-2 font-semibold">WITHDRAWALS</th>
-              <th className="px-2 py-2 font-semibold">BALANCE</th>
-              <th className="px-2 py-2">
-                <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
-              </th>
-            </tr>
-          </thead>
-        </table>
-      </div>
+      {/* Tab Content */}
+      <div className="mt-6">
+        {tab === "dashboard" && (
+          <div className="space-y-8">
+            {/* Activity + Recent Transactions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Activity Summary */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Activity Summary</h2>
+                <div className="bg-gray-50 rounded-2xl p-6 flex items-start gap-4 mb-6">
+                  <span className="flex items-center justify-center h-10 w-10 bg-gray-200 rounded-xl">
+                    <CalendarDaysIcon className="h-6 w-6 text-gray-400" />
+                  </span>
+                  <div>
+                    <div className="font-semibold text-gray-900 text-base">Last Reconciliation</div>
+                    <div className="text-gray-500 text-sm mt-1">
+                      You can reconcile your transactions to ensure that the transactions in Zoho Books match the transactions in your bank statement. Your last reconciliation details will be displayed here. <a href="#" className="text-blue-600 hover:underline">Learn more.</a>
+                    </div>
+                    <button className="flex items-center gap-2 mt-3 text-blue-600 font-medium hover:underline text-sm">
+                      <CalendarDaysIcon className="h-4 w-4" />
+                      Initiate Reconciliation
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {/* Recent Transactions */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
+                <div className="bg-gray-50 rounded-2xl flex flex-col justify-center items-center h-40">
+                  <div className="text-lg font-semibold text-gray-900 mb-2 text-center">
+                    There are no transactions in Zoho Books yet.
+                  </div>
+                  <div className="text-gray-400 text-center text-base">
+                    The transactions you create in Zoho Books can be matched with your bank transactions.
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Cash Summary Chart */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold">Cash Summary</h2>
+                <button className="text-blue-600 hover:underline text-sm flex items-center gap-1">
+                  Last 30 days
+                  <ChevronDownIcon className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="bg-gray-50 rounded-2xl p-4">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(date) => {
+                        const d = new Date(date);
+                        return `${d.getDate().toString().padStart(2, "0")} ${d.toLocaleString("en", { month: "short" })}`;
+                      }}
+                      fontSize={12}
+                      axisLine={false}
+                      tickLine={false}
+                      dy={8}
+                    />
+                    <YAxis
+                      tickFormatter={val => (val >= 1000 ? `${val / 1000} K` : val)}
+                      ticks={[0, 1000, 2000, 3000, 4000, 5000]}
+                      domain={[0, 5000]}
+                      width={32}
+                      fontSize={12}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 12, fontSize: 16, fontWeight: 500 }}
+                      labelFormatter={label => {
+                        const d = new Date(label);
+                        return d.toLocaleDateString("en-GB", { day: '2-digit', month: '2-digit', year: 'numeric' });
+                      }}
+                      formatter={() => [ "₹0.00", <span key="label" style={{ color: "#6366f1" }}>Closing Balance</span> ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="closing"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      dot={{
+                        stroke: "#6366f1",
+                        strokeWidth: 2,
+                        fill: "#fff",
+                        r: 4
+                      }}
+                      activeDot={{
+                        fill: "#6366f1",
+                        r: 7,
+                        strokeWidth: 0,
+                        stroke: "#fff"
+                      }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="mt-2 ml-2 text-xs text-gray-500 flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-indigo-400" /> Closing Balance
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Empty State */}
-      <div className="flex flex-col items-center justify-center h-48 sm:h-56 bg-white border-t border-gray-100">
-        <div className="text-base text-gray-400 font-medium text-center px-3">
-          No transactions yet. <span className="hidden sm:inline">Begin by adding new transactions or import your latest account statement.</span>
-        </div>
+        {/* Transactions Tab */}
+        {tab === "transactions" && (
+          <>
+            {/* Table Header */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-xs md:text-sm text-gray-500">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-2 py-2 w-8">
+                      <input type="checkbox" className="accent-blue-500" />
+                    </th>
+                    <th className="px-2 py-2 font-semibold">DATE</th>
+                    <th className="px-2 py-2 font-semibold">REF#</th>
+                    <th className="px-2 py-2 font-semibold">TYPE</th>
+                    <th className="px-2 py-2 font-semibold">STATUS</th>
+                    <th className="px-2 py-2 font-semibold">DEPOSITS</th>
+                    <th className="px-2 py-2 font-semibold">WITHDRAWALS</th>
+                    <th className="px-2 py-2 font-semibold">BALANCE</th>
+                    <th className="px-2 py-2">
+                      <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
+                    </th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+            {/* Empty State */}
+            <div className="flex flex-col items-center justify-center h-48 sm:h-56 bg-white border-t border-gray-100">
+              <div className="text-base text-gray-400 font-medium text-center px-3">
+                No transactions yet. <span className="hidden sm:inline">Begin by adding new transactions or import your latest account statement.</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
