@@ -48,7 +48,7 @@ const moneyIn = [
   "Vendor Credit Refund", "Vendor Payment Refund",
 ];
 const settingsOptions = [
-  { label: "Edit", path: "/dashboard/banking/skip/edit" },
+  { label: "Edit", path: "/dashboard/banking/skip/edit-petty-cash" },
   { label: "Reconcile Account", path: "/dashboard/banking/skip/reconcile" },
   { label: "Mark as Inactive", path: "/dashboard/banking/skip/mark-inactive" },
   { label: "Delete", path: "/dashboard/banking/skip/delete" },
