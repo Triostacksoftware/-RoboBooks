@@ -1,5 +1,5 @@
 import React from 'react';
-import InvoicesPage from './components/InvoicesPage';
+import InvoicesPage from './components/Invoices';
 const  page = () => {
   return (
     <>

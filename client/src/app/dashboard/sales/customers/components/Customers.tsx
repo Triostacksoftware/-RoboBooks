@@ -1,4 +1,5 @@
-import { FC } from 'react';
+ 'use client'; // ← STEP 1: tells Next it's a Client Component
+ import { FC } from 'react';
 
 const CustomersPage: FC = () => (
   <section className="space-y-6">
