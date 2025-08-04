@@ -9,13 +9,9 @@ import Projects from './home/Projects'
 import BankAndCards from './home/BankAndCards'
 import Watchlist from './home/Watchlist'
 import Footer from './home/Footer'
-import RightRail from './home/RightRail'
 
 export default function DashboardHome() {
   return (
-    <div className="relative">
-      {/* right sticky rail like the screenshots */}
-      <RightRail />
 
       <div className="mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8 pb-10">
         {/* Greeting + Tabs */}
@@ -60,6 +56,5 @@ export default function DashboardHome() {
         {/* Big footer block like images */}
         <Footer />
       </div>
-    </div>
   )
 }

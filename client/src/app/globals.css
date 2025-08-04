@@ -45,3 +45,32 @@ html, body, :root { height: 100%; }
     width: calc(var(--search-w, 28rem) * 1.1);
   }
 }
+
+/* globals.css */
+
+/* when sidebar is fully expanded (width ~18rem): push main right by 18rem */
+.rs-expanded main {
+  margin-right: 5rem;
+  transition: margin 0.2s ease;
+}
+
+/* when sidebar is collapsed (only the toggle “peeking” out, ~3rem): push by 3rem */
+.rs-collapsed main {
+  margin-right: 0rem;
+  transition: margin 0.2s ease;
+}
+
+/* default (no class): no extra margin */
+main {
+  margin-right: 0;
+  transition: margin 0.2s ease;
+}
+/* When expanded, push main left by sidebar width (e.g. 64px + padding) */
+body.rs-expanded main {
+  margin-right: 4.5rem; /* adjust to match your sidebar width */
+}
+
+/* When collapsed, remove that margin */
+body.rs-collapsed main {
+  margin-right: 0;
+}
