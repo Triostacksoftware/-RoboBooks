@@ -1,3 +1,4 @@
+// app/dashboard/banking/BankingSection.tsx
 'use client';
 
 import React from 'react';
@@ -15,7 +16,7 @@ export default function BankingSection() {
   };
 
   const handleSkip = () => {
-    router.push('/dashboard'); // Skips to dashboard home
+    router.push('/dashboard/banking/skip');
   };
 
   const handleWatchVideo = () => {
@@ -23,36 +24,36 @@ export default function BankingSection() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-white">
-      <h2 className="text-2xl md:text-3xl font-semibold mb-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 sm:p-8 md:p-12 bg-white">
+      <h2 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-4 text-center">
         Stay on top of your money
       </h2>
 
-      <p className="max-w-xl text-gray-500 text-sm md:text-base mb-6">
+      <p className="max-w-2xl text-gray-600 text-sm sm:text-base md:text-lg mb-8 text-center">
         Connect your bank and credit cards to fetch all your transactions. Create,
         categorize and match these transactions to those you have in Zoho Books.
       </p>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-4 justify-center mb-4">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center mb-6">
         <button
           onClick={handleConnect}
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+          className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
         >
           Connect Bank / Credit Card
         </button>
         <button
           onClick={handleAddManual}
-          className="border border-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-100 transition"
+          className="w-full sm:w-auto border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-100 transition"
         >
           Add Manually
         </button>
       </div>
 
       {/* Skip Option */}
-      <div className="text-xs text-gray-600 mb-6">
+      <div className="text-xs sm:text-sm text-gray-600 mb-8 text-center">
         <span className="text-yellow-800 font-medium">
-          Don&apos;t use banking for your business?
+          Don’t use banking for your business?
         </span>
         <button
           onClick={handleSkip}
@@ -63,10 +64,10 @@ export default function BankingSection() {
       </div>
 
       {/* Watch Video */}
-      <div className="w-full max-w-2xl border-t pt-6">
+      <div className="w-full max-w-lg border-t pt-6">
         <button
           onClick={handleWatchVideo}
-          className="flex items-center justify-center gap-2 text-blue-600 font-medium hover:underline text-sm"
+          className="flex items-center justify-center gap-2 text-blue-600 font-medium hover:underline text-sm sm:text-base"
         >
           <svg
             className="w-5 h-5 text-blue-600"
