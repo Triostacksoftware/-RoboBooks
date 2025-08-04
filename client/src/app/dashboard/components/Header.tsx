@@ -7,7 +7,6 @@ import {
   Bars3Icon,
   ClockIcon,
   PlusIcon,
-  UsersIcon,
   BellIcon,
   Cog6ToothIcon,
   Squares2X2Icon,
@@ -22,16 +21,19 @@ import AppsPanel from './header/AppsPanel';
 import ProfilePanel from './header/ProfilePanel';
 import NewMenu from './header/NewMenu';
 import AdvancedSearchModal from './header/search/AdvancedSearchModal';
+import ReferralPanel from './header/ReferralPanel';
+import { UsersIcon /* only this one */ } from '@heroicons/react/24/outline'
 
 type Props = {
   onToggleSidebar?: () => void;
 };
-type Panel = null | 'recent' | 'new' | 'org' | 'noti' | 'apps' | 'profile';
+
+type Panel = null | 'recent' | 'new' | 'org' | 'noti' | 'apps' | 'profile' | 'ref';
 
 export default function Header({ onToggleSidebar }: Props) {
-  const [activePanel, setActivePanel]   = useState<Panel>(null);
+  const [activePanel, setActivePanel] = useState<Panel>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const recentButtonRef                 = useRef<HTMLButtonElement>(null);
+  const recentButtonRef = useRef<HTMLButtonElement>(null);
 
   const openPanel = (panel: Exclude<Panel, null>) =>
     setActivePanel(cur => (cur === panel ? null : panel));
@@ -41,7 +43,6 @@ export default function Header({ onToggleSidebar }: Props) {
     <>
       <header className="sticky top-0 z-30 bg-[#121a2a] text-white">
         <div className="mx-auto flex h-14 items-center gap-2 px-3 sm:px-4">
-          {/* Sidebar toggle (mobile) */}
           <button
             onClick={() => onToggleSidebar?.()}
             className="lg:hidden rounded-md p-2 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
@@ -50,14 +51,12 @@ export default function Header({ onToggleSidebar }: Props) {
             <Bars3Icon className="h-5 w-5" />
           </button>
 
-          {/* Brand / Logo */}
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-600 font-bold text-white">
               B
             </div>
           </Link>
 
-          {/* Premium trial tooltip */}
           <div className="hidden md:block ml-2">
             <PremiumTooltip>
               <span className="text-sm text-white/80 hover:text-white transition">
@@ -66,7 +65,6 @@ export default function Header({ onToggleSidebar }: Props) {
             </PremiumTooltip>
           </div>
 
-          {/* Recent Activities */}
           <div className="relative">
             <button
               ref={recentButtonRef}
@@ -83,12 +81,10 @@ export default function Header({ onToggleSidebar }: Props) {
             />
           </div>
 
-          {/* Main Search */}
-          <div className="ml-2 flex-1 min-w-0">
+            <div className="ml-2 flex-1 min-w-0">
             <SearchBox onAdvancedRequest={() => setShowAdvanced(true)} />
-          </div>
+            </div>
 
-          {/* Org switcher */}
           <div className="hidden sm:flex items-center">
             <button
               onClick={() => openPanel('org')}
@@ -97,11 +93,11 @@ export default function Header({ onToggleSidebar }: Props) {
               Organization
               <Cog6ToothIcon className="h-4 w-4 opacity-80" />
             </button>
-            <OrgSwitcher open={activePanel === 'org'} onClose={closeAll} />
+            <OrgSwitcher />
           </div>
 
-          {/* Right‐hand icons */}
           <div className="ml-1 flex items-center gap-1">
+
             <ActionWrap
               open={activePanel === 'new'}
               onOpen={() => openPanel('new')}
@@ -112,9 +108,15 @@ export default function Header({ onToggleSidebar }: Props) {
               <NewMenu open={activePanel === 'new'} onClose={closeAll} />
             </ActionWrap>
 
-            <TooltipLink href="/dashboard/refer" label="Refer and Earn">
+            <ActionWrap
+              open={activePanel === 'ref'}
+              onOpen={() => openPanel('ref')}
+              onClose={closeAll}
+              label="Refer and Earn"
+            >
               <UsersIcon className="h-5 w-5 text-white" />
-            </TooltipLink>
+              <ReferralPanel />
+            </ActionWrap>
 
             <ActionWrap
               open={activePanel === 'noti'}
@@ -123,10 +125,7 @@ export default function Header({ onToggleSidebar }: Props) {
               label="Notifications"
             >
               <BellIcon className="h-5 w-5 text-white" />
-              <NotificationsPanel
-                open={activePanel === 'noti'}
-                onClose={closeAll}
-              />
+              <NotificationsPanel open={activePanel === 'noti'} onClose={closeAll} />
             </ActionWrap>
 
             <Link
@@ -161,11 +160,13 @@ export default function Header({ onToggleSidebar }: Props) {
         </div>
       </header>
 
-      {/* Advanced Search Modal */}
       <AdvancedSearchModal
-        open={showAdvanced}
+        isOpen={showAdvanced}
         onClose={() => setShowAdvanced(false)}
-        category="Customers"
+        onSearch={(data) => {
+          // TODO: handle advanced search data
+          setShowAdvanced(false);
+        }}
       />
     </>
   );
@@ -199,31 +200,6 @@ function ActionWrap({
         {icon}
       </button>
       {open && panel}
-    </div>
-  );
-}
-
-function TooltipLink({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="relative group">
-      <Link
-        href={href}
-        className="grid h-9 w-9 place-items-center rounded-md hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-        aria-label={label}
-      >
-        {children}
-      </Link>
-      <div className="pointer-events-none absolute -bottom-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-black px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
-        {label}
-      </div>
     </div>
   );
 }

@@ -11,6 +11,10 @@ import SearchableSelect, { Option } from "./search/SearchableSelect";
 import AdvancedSearchModal from "./search/AdvancedSearchModal";
 import ZiaSearchOverlay from "./search/ZiaSearchOverlay";
 
+type SearchBoxProps = {
+  onAdvancedRequest?: () => void;
+};
+
 const OPTIONS: Option[] = [
   { label: "Customers" },
   { label: "Items" },
