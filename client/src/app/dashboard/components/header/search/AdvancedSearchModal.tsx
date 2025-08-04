@@ -1,220 +1,255 @@
+// components/AdvancedSearchModal.tsx
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { Portal, useKey, useOnClickOutside } from '../hooks';
-import SearchableSelect from './SearchableSelect';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-type Props = { open: boolean; category: string; onClose: () => void };
-
-type Field = { label: string; key: string; type?: 'text' | 'email' | 'tel' | 'select' };
-
-/* Field presets */
-const CUSTOMER_LEFT: Field[] = [
-  { label: 'Display Name', key: 'displayName' },
-  { label: 'Company Name', key: 'companyName' },
-  { label: 'Last Name', key: 'lastName' },
-  { label: 'Status', key: 'status', type: 'select' },
-  { label: 'Address', key: 'address' },
-  { label: 'Notes', key: 'notes' },
-];
-const CUSTOMER_RIGHT: Field[] = [
-  { label: 'Customer Type', key: 'customerType', type: 'select' },
-  { label: 'First Name', key: 'firstName' },
-  { label: 'Email', key: 'email', type: 'email' },
-  { label: 'Phone', key: 'phone', type: 'tel' },
-  { label: 'PAN', key: 'pan' },
-];
-const DEFAULT_LEFT: Field[] = [
-  { label: 'Name', key: 'name' },
-  { label: 'Code / ID', key: 'code' },
-  { label: 'Notes', key: 'notes' },
-];
-const DEFAULT_RIGHT: Field[] = [
-  { label: 'Created By', key: 'createdBy' },
-  { label: 'Email', key: 'email', type: 'email' },
-  { label: 'Phone', key: 'phone', type: 'tel' },
-];
-
-/* Options (flat) */
-const CATEGORY_OPTIONS = [
-  'Customers','Items','Banking','Quotes','Sales Orders','Delivery Challans','Invoices',
-  'Payments Received','Recurring Invoices','Credit Notes','Vendors','Expenses',
-  'Recurring Expenses','Purchase Orders','Bills','Payments Made','Recurring Bills',
-  'Vendor Credits','Projects','Timesheet','Journals','Chart of Accounts','Documents','Tasks',
-];
-
-const FILTER_OPTIONS = [
-  'All Customers','Active Customers','CRM Customers','Duplicate Customers','Inactive Customers',
-  'Customer Portal Enabled','Customer Portal Disabled','Overdue Customers','Unpaid Customers',
-];
-
-/* Row */
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[175px_1fr] items-center gap-4">
-      <div className="text-[15px] text-gray-700">{label}</div>
-      <div>{children}</div>
-    </div>
-  );
+export interface AdvancedSearchData {
+  entity: string;
+  filter: string;
+  displayName: string;
+  companyName: string;
+  lastName: string;
+  status: string;
+  address: string;
+  notes: string;
+  customerType: string;
+  firstName: string;
+  email: string;
+  phone: string;
+  pan: string;
 }
 
-/* Field renderer */
-function FieldInput({
-  field,
-  inputRef,
-}: {
-  field: Field;
-  inputRef?: React.Ref<HTMLInputElement>;
-}) {
-  const base =
-    'h-10 w-full rounded-md border border-gray-300 px-3 text-[15px] outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200';
-
-  if (field.type === 'select') {
-    if (field.key === 'status') {
-      return (
-        <select className={base}>
-          <option>All</option>
-          <option>Active</option>
-          <option>Inactive</option>
-        </select>
-      );
-    }
-    if (field.key === 'customerType') {
-      return (
-        <select className={base}>
-          <option>All Customers</option>
-          <option>Business</option>
-          <option>Individual</option>
-        </select>
-      );
-    }
-    return (
-      <select className={base}>
-        <option>All</option>
-      </select>
-    );
-  }
-
-  return <input ref={inputRef} type={field.type ?? 'text'} className={base} />;
+interface AdvancedSearchModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSearch: (data: AdvancedSearchData) => void;
 }
 
-/* Modal */
-export default function AdvancedSearchModal({ open, category, onClose }: Props) {
-  const shellRef = useRef<HTMLDivElement>(null);
-  const firstRef = useRef<HTMLInputElement>(null);
+const entityOptions = [
+  'Customers','Items','Banking','Quotes','Sales Orders','Delivery Challans',
+  'Invoices','Credit Notes','Vendors','Projects','Timesheet',
+  'Chart of Accounts','Documents','Tasks',
+];
 
-  const [localCategory, setLocalCategory] = useState(category);
-  useEffect(() => setLocalCategory(category), [category]);
+const filterOptions = [
+  'All Customers','Active Customers','CRM Customers','Duplicate Customers',
+  'Inactive Customers','Customer Portal Enabled','Customer Portal Disabled',
+  'Overdue Customers','Unpaid Customers',
+];
 
-  const [categoryValue, setCategoryValue] = useState<string>('Customers');
-  const [filterValue, setFilterValue] = useState<string>('All Customers');
+export default function AdvancedSearchModal({
+  isOpen,
+  onClose,
+  onSearch,
+}: AdvancedSearchModalProps) {
+  const [data, setData] = useState<AdvancedSearchData>({
+    entity: entityOptions[0],
+    filter: filterOptions[0],
+    displayName: '',
+    companyName: '',
+    lastName: '',
+    status: 'All',
+    address: '',
+    notes: '',
+    customerType: '',
+    firstName: '',
+    email: '',
+    phone: '',
+    pan: '',
+  });
 
-  useEffect(() => setCategoryValue(localCategory || 'Customers'), [localCategory]);
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  const { leftFields, rightFields } = useMemo(() => {
-    if (categoryValue.toLowerCase() === 'customers') {
-      return { leftFields: CUSTOMER_LEFT, rightFields: CUSTOMER_RIGHT };
-    }
-    return { leftFields: DEFAULT_LEFT, rightFields: DEFAULT_RIGHT };
-  }, [categoryValue]);
-
-  useOnClickOutside(shellRef, onClose);
-  useKey('Escape', onClose, open);
-
+  // Close when clicking outside
   useEffect(() => {
-    if (open) setTimeout(() => firstRef.current?.focus(), 30);
-  }, [open]);
+    const handler = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen, onClose]);
 
-  if (!open) return null;
+  if (!isOpen) return null;
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSearch = () => {
+    onSearch(data);
     onClose();
-  }
+  };
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-[120] overflow-y-auto bg-black/50 p-4 backdrop-blur-sm">
-        <div
-          ref={shellRef}
-          className="mx-auto w-full max-w-[1200px] rounded-xl bg-white shadow-2xl ring-1 ring-black/5"
-        >
-          {/* Top bar */}
-          <div className="flex items-center justify-between border-b px-6 py-3">
-            <div className="flex flex-wrap items-center gap-6">
-              <div className="flex items-center gap-3">
-                <span className="text-[15px] text-gray-700">Search</span>
-                <SearchableSelect
-                  value={categoryValue}
-                  onChange={setCategoryValue}
-                  options={CATEGORY_OPTIONS}
-                  placeholder="Search"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-[15px] text-gray-700">Filter</span>
-                <SearchableSelect
-                  value={filterValue}
-                  onChange={setFilterValue}
-                  options={FILTER_OPTIONS}
-                  placeholder="Search"
-                  align="right"
-                />
-              </div>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 overflow-auto p-4">
+      <div
+        ref={modalRef}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-4xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          {/* Search selector */}
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-700 font-medium">Search</span>
+            <div className="relative">
+              <select
+                name="entity"
+                value={data.entity}
+                onChange={handleChange}
+                className="appearance-none pl-3 pr-8 py-2 border rounded-lg bg-white text-gray-800"
+              >
+                {entityOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+              <ChevronDownIcon className="w-5 h-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
-
-            <button
-              onClick={onClose}
-              className="rounded p-2 hover:bg-gray-100"
-              aria-label="Close"
-            >
-              <XMarkIcon className="h-5 w-5 text-gray-600" />
-            </button>
           </div>
 
-          {/* Body */}
-          <form onSubmit={submit}>
-            <div className="grid gap-8 px-6 py-6 lg:grid-cols-2">
-              {/* Left */}
-              <div className="space-y-4">
-                {leftFields.map((f, i) => (
-                  <Row key={f.key} label={f.label}>
-                    <FieldInput field={f} inputRef={i === 0 ? firstRef : undefined} />
-                  </Row>
+          {/* Filter selector */}
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-700 font-medium">Filter</span>
+            <div className="relative">
+              <select
+                name="filter"
+                value={data.filter}
+                onChange={handleChange}
+                className="appearance-none pl-3 pr-8 py-2 border rounded-lg bg-white text-gray-800"
+              >
+                {filterOptions.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
                 ))}
-              </div>
+              </select>
+              <ChevronDownIcon className="w-5 h-5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
 
-              {/* Right */}
-              <div className="space-y-4">
-                {rightFields.map((f) => (
-                  <Row key={f.key} label={f.label}>
-                    <FieldInput field={f} />
-                  </Row>
-                ))}
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+          {/* Left column */}
+          <div className="space-y-4">
+            {[
+              { label: 'Display Name', name: 'displayName' },
+              { label: 'Company Name', name: 'companyName' },
+              { label: 'Last Name', name: 'lastName' },
+            ].map(({ label, name }) => (
+              <div key={name}>
+                <label className="block text-sm text-gray-600">{label}</label>
+                <input
+                  name={name}
+                  value={(data as any)[name]}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-lg border-gray-300"
+                />
               </div>
+            ))}
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm text-gray-600">Status</label>
+              <select
+                name="status"
+                value={data.status}
+                onChange={handleChange}
+                className="mt-1 w-full rounded-lg border-gray-300 appearance-none pr-8"
+              >
+                <option>All</option>
+                <option>Active</option>
+                <option>Inactive</option>
+              </select>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 border-t bg-gray-50 px-6 py-4">
-              <button
-                type="submit"
-                className="h-10 rounded-md bg-sky-600 px-5 text-sm font-medium text-white hover:bg-sky-700"
+            {/* Address & Notes */}
+            {['address', 'notes'].map((name) => (
+              <div key={name}>
+                <label className="block text-sm text-gray-600">
+                  {name.charAt(0).toUpperCase() + name.slice(1)}
+                </label>
+                <input
+                  name={name}
+                  value={(data as any)[name]}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-lg border-gray-300"
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Right column */}
+          <div className="space-y-4">
+            {/* Customer Type */}
+            <div>
+              <label className="block text-sm text-gray-600">
+                Customer Type
+              </label>
+              <select
+                name="customerType"
+                value={data.customerType}
+                onChange={handleChange}
+                className="mt-1 w-full rounded-lg border-gray-300 appearance-none pr-8"
               >
-                Search
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="h-10 rounded-md border border-gray-300 bg-white px-5 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
+                <option value="">Select type</option>
+                <option>Business</option>
+                <option>Individual</option>
+              </select>
             </div>
-          </form>
+
+            {/* First Name, Email, Phone, PAN */}
+            {[
+              { label: 'First Name', name: 'firstName', type: 'text' },
+              { label: 'Email', name: 'email', type: 'email' },
+              { label: 'Phone', name: 'phone', type: 'text' },
+              { label: 'PAN', name: 'pan', type: 'text' },
+            ].map(({ label, name, type }) => (
+              <div key={name}>
+                <label className="block text-sm text-gray-600">{label}</label>
+                <input
+                  name={name}
+                  value={(data as any)[name]}
+                  onChange={handleChange}
+                  type={type}
+                  className="mt-1 w-full rounded-lg border-gray-300"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end space-x-3 px-6 py-4 border-t">
+          <button
+            onClick={handleSearch}
+            className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Search
+          </button>
+          <button
+            onClick={onClose}
+            className="px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
         </div>
       </div>
-    </Portal>
+    </div>
   );
 }

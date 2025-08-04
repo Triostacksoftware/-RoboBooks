@@ -1,77 +1,352 @@
 'use client';
 
-import { FunnelIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { Portal, useKey } from '../hooks';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  XMarkIcon,
+  FunnelIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline';
+import clsx from 'clsx';
 
-export default function ZiaSearchOverlay({
-  open,
-  onClose,
+// left‐nav apps
+const APPS = [
+  { key: 'all', label: 'All Apps' },
+  { key: 'contacts', label: 'Contacts' },
+  { key: 'cliq', label: 'Cliq' },
+  { key: 'books', label: 'Books' },
+  { key: 'creator', label: 'Creator' },
+  { key: 'help', label: 'Help Pages' },
+];
+
+// helper multi‐select (search + checkboxes)
+function MultiSelect({
+  label,
+  options,
+  selected,
+  onDone,
+  onCancel,
 }: {
-  open: boolean;
-  onClose: () => void;
+  label: string;
+  options: string[];
+  selected: string[];
+  onDone: (sel: string[]) => void;
+  onCancel: () => void;
 }) {
-  useKey('Escape', onClose, open);
-  if (!open) return null;
+  const [local, setLocal] = useState<string[]>(selected);
+  const [q, setQ] = useState('');
+  const filtered = options.filter((o) =>
+    o.toLowerCase().includes(q.toLowerCase())
+  );
 
   return (
-    <Portal>
-      <div className="fixed inset-0 z-[95] bg-black/60 p-4 overflow-y-auto">
-        <div className="mx-auto max-w-5xl rounded-2xl bg-white shadow-2xl">
-          <div className="flex items-center gap-3 border-b px-4 py-4">
-            <div className="grid place-items-center h-9 w-9 rounded-lg bg-gray-900 text-white">
-              <MagnifyingGlassIcon className="h-5 w-5" />
-            </div>
+    <div className="bg-white rounded-xl shadow-lg p-4 w-80">
+      <h3 className="font-medium mb-2">{label}</h3>
+      <input
+        className="w-full mb-3 px-3 py-2 border rounded-lg"
+        placeholder="Search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+      />
+      <div className="max-h-48 overflow-auto mb-3">
+        {filtered.map((opt) => (
+          <label key={opt} className="flex items-center space-x-2 py-1">
             <input
-              autoFocus
-              placeholder="Search across Apps"
-              className="flex-1 rounded-md border px-3 py-2 text-sm outline-none"
+              type="checkbox"
+              checked={local.includes(opt)}
+              onChange={() => {
+                setLocal((l) =>
+                  l.includes(opt)
+                    ? l.filter((x) => x !== opt)
+                    : [...l, opt]
+                );
+              }}
             />
-            <button className="rounded-md border px-3 py-2 text-sm flex items-center gap-2">
-              <FunnelIcon className="h-4 w-4" /> Filter
+            <span>{opt}</span>
+          </label>
+        ))}
+      </div>
+      <div className="flex justify-end space-x-2">
+        <button onClick={onCancel} className="px-3 py-1 rounded-lg border">
+          Cancel
+        </button>
+        <button
+          onClick={() => onDone(local)}
+          className="px-3 py-1 rounded-lg bg-blue-600 text-white"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function ZiaSearchOverlay({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [searchQ, setSearchQ] = useState('');
+  const [activeApp, setActiveApp] = useState('all');
+  const [showFilter, setShowFilter] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMulti, setShowMulti] = useState<null | 'applications' | 'pageType'>(null);
+
+  // dummy options
+  const appFilterOpts = ['All Applications','Books','Expense','Billing'];
+  const pageTypeOpts = ['All Categories','Resources','Knowledge Base','Help Videos'];
+  const [appFilters, setAppFilters] = useState<string[]>(['All Applications']);
+  const [pageTypes, setPageTypes] = useState<string[]>(['All Categories']);
+
+  // close on outside click
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    if (isOpen) document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex">
+      <div
+        ref={ref}
+        className="bg-white rounded-2xl flex flex-1 max-w-6xl mx-auto my-8 overflow-hidden"
+      >
+        {/* Sidebar */}
+        <nav className="w-16 bg-gray-900 text-white flex flex-col items-center py-4 space-y-4">
+          {APPS.map((a) => (
+            <button
+              key={a.key}
+              onClick={() => {
+                setActiveApp(a.key);
+                setShowSettings(false);
+              }}
+              className={clsx(
+                'w-10 h-10 flex items-center justify-center rounded-lg',
+                activeApp === a.key && !showSettings
+                  ? 'bg-blue-600'
+                  : 'hover:bg-gray-700'
+              )}
+            >
+              {/* placeholder icon */}
+              <span className="text-xs">{a.label.charAt(0)}</span>
+            </button>
+          ))}
+
+          {/* Divider */}
+          <div className="border-t border-gray-700 w-full my-2"></div>
+
+          {/* Settings */}
+          <button
+            onClick={() => {
+              setShowSettings((s) => !s);
+            }}
+            className="w-10 h-10 flex items-center justify-center hover:bg-gray-700 rounded-lg"
+          >
+            <Cog6ToothIcon className="w-5 h-5" />
+          </button>
+        </nav>
+
+        {/* Main Content */}
+        <div className="flex-1 relative">
+          {/* Header */}
+          <div className="flex items-center px-4 py-3 border-b">
+            <input
+              className="flex-1 bg-gray-100 px-4 py-2 rounded-lg placeholder-gray-500"
+              placeholder="Search"
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+            />
+            <button
+              onClick={() => setShowFilter(true)}
+              className="ml-3 p-2 hover:bg-gray-200 rounded-lg"
+            >
+              <FunnelIcon className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={onClose}
+              className="ml-2 p-2 hover:bg-gray-200 rounded-lg"
+            >
+              <XMarkIcon className="w-5 h-5 text-gray-600" />
             </button>
           </div>
 
-          <div className="flex">
-            <aside className="hidden w-48 shrink-0 border-r p-4 md:block">
-              <ul className="space-y-4 text-sm">
-                <li className="font-medium text-gray-900">All Apps</li>
-                <li>Books</li>
-                <li>Creator</li>
-                <li>Help Pages</li>
-              </ul>
-            </aside>
-            <main className="flex-1 p-6 text-gray-800">
-              <h2 className="text-2xl font-semibold mb-2">Zia Search</h2>
-              <p className="text-gray-600 mb-6">Search, Refine, Review and Act — All in one place</p>
-
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="rounded-xl border p-4">
-                  <h3 className="font-medium mb-2">Search by Application</h3>
-                  <p className="text-sm text-gray-600">Limit search to an app. e.g. #mail or #cliq</p>
+          {/* Body */}
+          <div className="p-6 h-[70vh] overflow-auto">
+            {/* Initial help screen */}
+            {activeApp === 'all' && !showSettings && !showFilter && (
+              <div className="space-y-8 text-center text-gray-700">
+                <h2 className="text-2xl font-semibold">Zia Search</h2>
+                <p>Search, Refine, Review and Act – All in one place</p>
+                <div className="grid md:grid-cols-2 gap-6 mt-6">
+                  <div>
+                    <h3 className="font-medium text-lg">Search by Application</h3>
+                    <p className="text-sm">
+                      Limit search to a specific app. e.g. <code>#mail</code> or{' '}
+                      <code>#cliq</code>
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg">Search by Contact</h3>
+                    <p className="text-sm">
+                      Interested only in results related to a particular contact? Try{' '}
+                      <code>@john</code>
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg">Fine-Grained Filters</h3>
+                    <p className="text-sm">
+                      Too many results? Use filters to narrow down the results.
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg">Quick Actions</h3>
+                    <p className="text-sm">
+                      Reply to a mail, start a conversation, edit a record and more…
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-xl border p-4">
-                  <h3 className="font-medium mb-2">Search by Contact</h3>
-                  <p className="text-sm text-gray-600">Try @john to search related items</p>
-                </div>
-                <div className="rounded-xl border p-4">
-                  <h3 className="font-medium mb-2">Fine-Grained Filters</h3>
-                  <p className="text-sm text-gray-600">Use filters to narrow down results.</p>
-                </div>
-                <div className="rounded-xl border p-4">
-                  <h3 className="font-medium mb-2">Quick Actions</h3>
-                  <p className="text-sm text-gray-600">Reply, start a conversation, edit a record and more.</p>
-                </div>
-              </div>
-
-              <div className="mt-8 text-right">
-                <button onClick={onClose} className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white">
-                  Close
+                <button className="mt-8 px-6 py-3 bg-gray-200 rounded-lg flex items-center mx-auto">
+                  <img
+                    src="https://www.google.com/chrome/static/images/chrome-logo.svg"
+                    alt="Chrome"
+                    className="w-5 h-5 mr-2"
+                  />
+                  Zia Search Chrome Extension
                 </button>
+                <div className="mt-4">
+                  <a
+                    href="https://search.zoho.in"
+                    target="_blank"
+                    className="text-blue-600"
+                  >
+                    Go to search.zoho.in
+                  </a>
+                </div>
               </div>
-            </main>
+            )}
+
+            {/* Search results placeholder */}
+            {activeApp !== 'all' && !showSettings && !showFilter && (
+              <div className="text-gray-500">
+                {/* you’d hook real results here */}
+                <p>No results yet for <strong>{activeApp}</strong></p>
+              </div>
+            )}
+
+            {/* Settings panel */}
+            {showSettings && (
+              <div className="p-6">
+                <h3 className="text-lg font-medium mb-4">Settings</h3>
+                <ul className="space-y-4">
+                  {APPS.slice(1).map((a) => (
+                    <li key={a.key} className="flex justify-between">
+                      <span>{a.label}</span>
+                      <input type="checkbox" defaultChecked />
+                    </li>
+                  ))}
+                </ul>
+                {activeApp !== 'all' && activeApp !== 'help' && (
+                  // per-app extra settings
+                  <div className="mt-6">
+                    <h4 className="font-medium mb-2">
+                      {APPS.find((a) => a.key === activeApp)!.label} Settings
+                    </h4>
+                    <fieldset className="space-y-2">
+                      <legend className="text-sm font-medium">Sort results by</legend>
+                      <label className="flex items-center space-x-2">
+                        <input type="radio" name="sort" defaultChecked />
+                        <span>Relevance</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input type="radio" name="sort" />
+                        <span>Modified Time</span>
+                      </label>
+                    </fieldset>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Filter panel */}
+          {showFilter && (
+            <div className="absolute inset-0 bg-white/95 p-6 flex items-start justify-center">
+              <div>
+                <div className="flex justify-between mb-4">
+                  <h3 className="font-medium text-lg">1 Filter Applied</h3>
+                  <button
+                    onClick={() => {
+                      setAppFilters(['All Applications']);
+                      setPageTypes(['All Categories']);
+                    }}
+                    className="text-red-600"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <button
+                    onClick={() => setShowMulti('applications')}
+                    className="px-4 py-2 border rounded-lg text-left">
+                    Applications: {appFilters.join(', ')}
+                  </button>
+                  <button
+                    onClick={() => setShowMulti('pageType')}
+                    className="px-4 py-2 border rounded-lg text-left">
+                    Page Type: {pageTypes.join(', ')}
+                  </button>
+                </div>
+                <div className="mt-6 flex justify-end space-x-2">
+                  <button
+                    onClick={() => setShowFilter(false)}
+                    className="px-4 py-2 rounded-lg border"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setShowFilter(false)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+
+              {/* MultiSelect overlays */}
+              {showMulti === 'applications' && (
+                <MultiSelect
+                  label="Applications"
+                  options={appFilterOpts}
+                  selected={appFilters}
+                  onDone={(sel) => {
+                    setAppFilters(sel);
+                    setShowMulti(null);
+                  }}
+                  onCancel={() => setShowMulti(null)}
+                />
+              )}
+              {showMulti === 'pageType' && (
+                <MultiSelect
+                  label="Page Type"
+                  options={pageTypeOpts}
+                  selected={pageTypes}
+                  onDone={(sel) => {
+                    setPageTypes(sel);
+                    setShowMulti(null);
+                  }}
+                  onCancel={() => setShowMulti(null)}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
-    </Portal>
+    </div>
   );
 }
