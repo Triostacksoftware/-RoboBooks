@@ -1,4 +1,3 @@
-// components/SearchBox.tsx
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -34,7 +33,7 @@ const OPTIONS: Option[] = [
   { label: "Search within Robo", hotkey: "Ctrl + /" },
 ];
 
-export default function SearchBox() {
+export default function SearchBox({ onAdvancedRequest }: SearchBoxProps) {
   const [selected, setSelected] = useState<string>("Customers");
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
