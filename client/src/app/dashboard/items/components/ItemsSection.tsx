@@ -234,7 +234,12 @@ export default function ItemsSection() {
                   }`}
                 >
                   <FunnelIcon className="h-4 w-4" />
-                  <input type="checkbox" className="accent-blue-500" />
+                  <input
+                    type="checkbox"
+                    className="accent-blue-500"
+                    aria-label="Select all items"
+                    title="Select all items"
+                  />
                   <span>NAME</span>
                 </button>
               </th>
