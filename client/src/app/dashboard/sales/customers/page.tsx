@@ -1,4 +1,4 @@
-// import React from 'react';
+import type { FC } from 'react';
 import CustomersPage from './components/Customers';
 
 const page = () => {
@@ -8,3 +8,4 @@ const page = () => {
     </>
   );
 };
+export default page;

@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import InvoicesPage from './components/Invoices';
 const  page = () => {
   return (
@@ -7,3 +7,4 @@ const  page = () => {
     </>
   );
 };
+export default page;
