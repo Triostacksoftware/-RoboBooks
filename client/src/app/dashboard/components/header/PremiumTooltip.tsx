@@ -32,7 +32,7 @@ export default function SubscribeButton() {
       {/* Subscribe trigger */}
       <button
         onClick={() => setOpen(true)}
-        className="text-blue-400 hover:text-blue-600 transition font-medium"
+        className="text-blue-400 hover:text-blue-600 transition font-medium mr-3"
       >
         Subscribe
       </button>
