@@ -1,10 +1,17 @@
-import type { FC } from 'react';
-import QuotesPage from './components/Quotes';
+import React from 'react'
+import QuotesDropdown from './components/QuotesDropdown'
+import QuoteIntroSection from './components/QuoteIntroSection'
+import QuotesModuleInfo from './components/QuotesModuleInfo'
+
 const page = () => {
   return (
     <>
-      <QuotesPage />
+    <QuotesDropdown/>
+    <QuoteIntroSection/>
+    <QuotesModuleInfo/>
+    
     </>
-  );
-};
-export default page;
+  )
+}
+
+export default page

@@ -117,6 +117,8 @@ export default function CustomerHeader() {
           <button
             onClick={() => setMenuOpen(!isMenuOpen)}
             className="p-2 rounded-full hover:bg-gray-100 text-gray-600"
+            title="Open menu"
+            aria-label="Open menu"
           >
             <EllipsisVerticalIcon className="w-5 h-5" />
           </button>
