@@ -54,7 +54,7 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   return createPortal(
     <>
       {/* backdrop */}
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50" onClick={onClose} />
+      <div className="fixed inset-0 z-50" onClick={onClose} />
 
       {/* panel */}
       <div className="fixed top-14 right-4 z-60 w-[380px] max-h-[85vh] overflow-auto bg-white rounded-2xl shadow-2xl">

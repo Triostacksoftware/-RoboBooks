@@ -17,7 +17,7 @@ import RecentActivities from "./header/RecentActivities";
 import PremiumTooltip from "./header/PremiumTooltip";
 import OrgSwitcher from "./header/OrgSwitcher";
 import NotificationsPanel from "./header/NotificationsPanel";
-import AppsPanel from "./header/AppsPanel";
+import AllZohoAppsPanel from "./header/AllZohoAppsPanel";
 import ProfilePanel from "./header/ProfilePanel";
 import NewMenu from "./header/NewMenu";
 import AdvancedSearchModal from "./header/search/AdvancedSearchModal";
@@ -122,7 +122,7 @@ export default function Header({ onToggleSidebar }: Props) {
               label="Refer and Earn"
             >
               <UsersIcon className="h-5 w-5 text-white" />
-            <ReferralPanel open={activePanel === 'ref'} onClose={closeAll} />
+              <ReferralPanel open={activePanel === "ref"} onClose={closeAll} />
             </ActionWrap>
 
             {/* Notifications */}
@@ -171,7 +171,10 @@ export default function Header({ onToggleSidebar }: Props) {
               label="All apps"
             >
               <Squares2X2Icon className="h-5 w-5 text-white" />
-              <AppsPanel open={activePanel === "apps"} onClose={closeAll} />
+              <AllZohoAppsPanel
+                open={activePanel === "apps"}
+                onClose={closeAll}
+              />
             </ActionWrap>
           </div>
         </div>
