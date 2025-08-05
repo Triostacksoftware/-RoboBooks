@@ -1,18 +1,113 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
-export default function PremiumTooltip({ children }: { children: React.ReactNode }) {
-  const [show, setShow] = useState(false);
+export default function SubscribeButton() {
+  const [open, setOpen] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // close on outside click or ESC
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    function onClick(e: MouseEvent) {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      window.addEventListener('keydown', onKey);
+      document.addEventListener('mousedown', onClick);
+    }
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+    };
+  }, [open]);
+
   return (
-    <div onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)} className="relative">
-      {children}
-      {show && (
-        <div className="absolute left-1/2 top-7 z-40 -translate-x-1/2 rounded-md bg-black px-3 py-1 text-xs text-white shadow">
-          Your premium trial plan ends in 14 days.
-          <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-black" />
+    <>
+      {/* Subscribe trigger */}
+      <button
+        onClick={() => setOpen(true)}
+        className="text-blue-400 hover:text-blue-600 transition font-medium mr-3"
+      >
+        Subscribe
+      </button>
+
+      {/* Modal */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 p-4">
+          <div
+            ref={modalRef}
+            className="relative w-full max-w-2xl bg-white rounded-lg shadow-xl overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-3 border-b">
+              <h3 className="text-lg font-medium text-gray-800">
+                Ready to make the switch?
+              </h3>
+              <button
+                onClick={() => setOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition"
+                aria-label="Close"
+              >
+                <XMarkIcon className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-6 text-center">
+              {/* Illustration */}
+              <img
+                src="/images/hourglass.svg"
+                alt="Hourglass"
+                className="mx-auto h-24"
+              />
+
+              <p className="text-xl">
+                Your trial expires in{' '}
+                <span className="font-semibold text-orange-500">11 days</span>
+              </p>
+              <p className="text-gray-600">
+                We hope you’ve enjoyed Robo Books so far. Here’s what you can do
+                once your trial ends:
+              </p>
+
+              <div className="bg-gray-50 border rounded-lg p-4 text-left text-sm text-gray-700 space-y-2">
+                <p>
+                  • <strong>Upgrade now</strong>, to a paid plan that best suits
+                  your business needs.{' '}
+                  <a href="#" className="text-blue-500 underline">
+                    Compare Plans
+                  </a>
+                </p>
+                <p>
+                  • Switch to the Free plan of Robo Books. Limited features
+                  apply. Visit our{' '}
+                  <a href="#" className="text-blue-500 underline">
+                    pricing page
+                  </a>{' '}
+                  to see what you get.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-center gap-4 px-6 py-4 border-t">
+              <button className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition">
+                Upgrade Plan
+              </button>
+              <button className="border px-4 py-2 rounded-xl text-black hover:bg-black hover:text-white transition">
+                Switch to Free Plan
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
+

@@ -55,7 +55,7 @@ export default function RightSidebar() {
 
   // Expanded view
   return (
-    <aside className="fixed top-0 right-0 h-full flex flex-col items-center bg-white shadow-lg px-2 py-4 select-none">
+    <aside data-settings-utils className="fixed top-0 right-0 h-full flex flex-col items-center bg-white shadow-lg px-2 py-4 select-none">
       {/* icon stack, pushed down via pt-6 */}
       <div className="flex-1 w-full overflow-y-auto space-y-3 pt-20">
         {ICON_BUTTONS.map(({ Icon, label }) => (

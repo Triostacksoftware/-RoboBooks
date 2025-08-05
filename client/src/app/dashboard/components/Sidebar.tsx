@@ -177,7 +177,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside
+    <aside data-settings-sidebar
       ref={containerRef}
       className={cn(
         'h-full bg-white border-r flex flex-col transition-all duration-300 ease-in-out',

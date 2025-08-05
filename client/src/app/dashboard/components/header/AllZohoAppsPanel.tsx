@@ -16,7 +16,34 @@ import {
   Squares2X2Icon,
   ShoppingBagIcon,
   CurrencyRupeeIcon,
+  PresentationChartBarIcon,
+  UsersIcon,
+  MusicalNoteIcon,
+  DocumentChartBarIcon,
+  DocumentTextIcon,
+  CalendarDaysIcon,
 } from "@heroicons/react/24/solid";
+import {
+  ComputerDesktopIcon,
+  ChatBubbleLeftEllipsisIcon,
+  DevicePhoneMobileIcon,
+  VideoCameraIcon,
+  CheckBadgeIcon,
+  PencilIcon,
+  BoltIcon,
+  InboxStackIcon,
+  PlayCircleIcon,
+  ShareIcon,
+  LockClosedIcon,
+  FolderIcon,
+  BookOpenIcon,
+  FunnelIcon,
+  ChartBarIcon,
+  DocumentDuplicateIcon,
+  CubeTransparentIcon,
+  EyeIcon,
+} from "@heroicons/react/24/outline";
+
 import { ReceiptPercentIcon } from "@heroicons/react/24/outline";
 
 interface AppEntry {
@@ -28,49 +55,176 @@ interface AppEntry {
 }
 
 const APPS: AppEntry[] = [
+  // Finance Apps (unchanged)
   {
     id: "expense",
-    name: "Zoho Expense",
+    name: "Robo Expense",
     description: "Expense Reporting Software",
     category: "Finance Apps",
     Icon: ReceiptPercentIcon,
   },
   {
     id: "billing",
-    name: "Zoho Billing",
+    name: "Robo Billing",
     description: "End-to-end Billing Solution",
     category: "Finance Apps",
     Icon: CurrencyRupeeIcon,
   },
   {
     id: "inventory",
-    name: "Zoho Inventory",
+    name: "Robo Inventory",
     description: "Order & Inventory Management Software",
     category: "Finance Apps",
     Icon: ShoppingBagIcon,
   },
   {
     id: "checkout",
-    name: "Zoho Checkout",
-    description: "One-time & recurring payments software",
+    name: "Robo Checkout",
+    description: "One-time and recurring payments software",
     category: "Finance Apps",
     Icon: ChartPieIcon,
   },
   {
-    id: "crm",
-    name: "Zoho CRM",
-    description: "Customer Relationship Management",
-    category: "Sales",
+    id: "commerce",
+    name: "Robo Commerce",
+    description: "E-commerce software",
+    category: "Finance Apps",
+    Icon: ShoppingBagIcon,
+  },
+  {
+    id: "payroll",
+    name: "Robo Payroll",
+    description: "Simplified Payroll Management Software",
+    category: "Finance Apps",
+    Icon: ReceiptPercentIcon,
+  },
+
+  // Email & Collaboration (unchanged)
+  {
+    id: "notebook",
+    name: "Notebook",
+    description: "...",
+    category: "Email and Collaboration",
+    Icon: ComputerDesktopIcon,
+  },
+  {
+    id: "mail",
+    name: "Mail",
+    description: "...",
+    category: "Email and Collaboration",
     Icon: InboxIcon,
   },
   {
-    id: "projects",
-    name: "Zoho Projects",
-    description: "Project Management Software",
-    category: "Project Management",
-    Icon: Squares2X2Icon,
+    id: "cliq",
+    name: "Cliq",
+    description: "...",
+    category: "Email and Collaboration",
+    Icon: UsersIcon,
   },
-  // …add more apps here…
+
+  // Sales (newly expanded)
+  {
+    id: "crm",
+    name: "Robo CRM",
+    description: "...",
+    category: "Sales",
+    Icon: PresentationChartBarIcon,
+  },
+  {
+    id: "salesiq",
+    name: "SalesIQ",
+    description: "...",
+    category: "Sales",
+    Icon: DocumentChartBarIcon,
+  },
+  {
+    id: "salesinbox",
+    name: "SalesInbox",
+    description: "...",
+    category: "Sales",
+    Icon: ChartBarIcon,
+  },
+  {
+    id: "bigin",
+    name: "Bigin",
+    description: "...",
+    category: "Sales",
+    Icon: FunnelIcon,
+  },
+  {
+    id: "bigmeet",
+    name: "Bookings",
+    description: "...",
+    category: "Sales",
+    Icon: CalendarDaysIcon,
+  },
+  {
+    id: "commerce_s",
+    name: "Commerce (Sales)",
+    description: "...",
+    category: "Sales",
+    Icon: ShoppingBagIcon,
+  },
+
+  // Marketing (newly expanded)
+  {
+    id: "sites",
+    name: "Sites",
+    description: "...",
+    category: "Marketing",
+    Icon: CubeTransparentIcon,
+  },
+  {
+    id: "campaigns",
+    name: "Campaigns",
+    description: "...",
+    category: "Marketing",
+    Icon: MusicalNoteIcon,
+  },
+  {
+    id: "survey",
+    name: "Survey",
+    description: "...",
+    category: "Marketing",
+    Icon: DocumentDuplicateIcon,
+  },
+  {
+    id: "backstage",
+    name: "Backstage",
+    description: "...",
+    category: "Marketing",
+    Icon: UsersIcon,
+  },
+  {
+    id: "forms",
+    name: "Forms",
+    description: "...",
+    category: "Marketing",
+    Icon: DocumentTextIcon,
+  },
+  {
+    id: "marketinghub",
+    name: "MarketingHub",
+    description: "...",
+    category: "Marketing",
+    Icon: FunnelIcon,
+  },
+  {
+    id: "pagesense",
+    name: "PageSense",
+    description: "...",
+    category: "Marketing",
+    Icon: EyeIcon,
+  },
+  {
+    id: "social",
+    name: "Social",
+    description: "...",
+    category: "Marketing",
+    Icon: ShareIcon,
+  },
+
+  // Help Desk, HR, Business Process (unchanged)…
 ];
 
 const OTHER_CATEGORIES = Array.from(
@@ -87,9 +241,9 @@ export default function AllZohoAppsPanel({
   onClose: () => void;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [otherCat, setOtherCat] = useState(OTHER_CATEGORIES[0]);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [otherCat, setOtherCat] = useState<string>("Email and Collaboration");
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // close on Escape
   useEffect(() => {
@@ -102,7 +256,6 @@ export default function AllZohoAppsPanel({
 
   if (!open) return null;
 
-  // filter by category & search
   const financeApps = APPS.filter(
     (a) =>
       a.category === "Finance Apps" &&
@@ -116,15 +269,15 @@ export default function AllZohoAppsPanel({
 
   return createPortal(
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      {/* backdrop */}
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
-      {/* Panel */}
-      <div className="fixed top-14 right-0 bottom-0 w-[90vw] max-w-[400px] bg-white shadow-2xl flex flex-col z-50">
-        {/* HEADER + COLLAPSIBLE SEARCH */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h2 className="text-lg font-medium">All Zoho Apps</h2>
-          <div className="flex items-center space-x-2">
+      {/* panel */}
+      <div className="fixed top-14 right-0 bottom-0 w-[90vw] max-w-[480px] bg-white shadow-2xl flex flex-col z-50 rounded-tl-2xl">
+        {/* header + search */}
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <h2 className="text-xl font-semibold">All Robo Apps</h2>
+          <div className="flex items-center space-x-3">
             {!searchOpen ? (
               <button
                 onClick={() => setSearchOpen(true)}
@@ -134,21 +287,21 @@ export default function AllZohoAppsPanel({
                 <MagnifyingGlassIcon className="w-5 h-5 text-gray-600" />
               </button>
             ) : (
-              <div className="flex items-center border border-blue-500 rounded-full px-3 py-1 bg-white transition">
+              <div className="flex items-center space-x-2 border border-blue-500 rounded-full px-3 py-1">
                 <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="ml-2 w-36 bg-transparent placeholder-gray-400 focus:outline-none"
+                  className="w-40 bg-transparent placeholder-gray-400 focus:outline-none"
                 />
                 <button
                   onClick={() => {
                     setSearchTerm("");
                     setSearchOpen(false);
                   }}
-                  className="ml-2 p-1 hover:bg-gray-200 rounded-full transition"
+                  className="p-1 hover:bg-gray-200 rounded-full"
                   aria-label="Close search"
                 >
                   <XMarkIcon className="w-4 h-4 text-gray-500" />
@@ -157,7 +310,7 @@ export default function AllZohoAppsPanel({
             )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition"
+              className="p-2 hover:bg-gray-100 rounded-full"
               aria-label="Close panel"
             >
               <XMarkIcon className="w-5 h-5 text-red-500" />
@@ -165,106 +318,425 @@ export default function AllZohoAppsPanel({
           </div>
         </div>
 
-        {/* CONTENT */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-6">
+        {/* content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-8">
           {/* Finance Apps */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+            <h3 className="text-xs font-medium text-gray-500 uppercase mb-3">
               Finance Apps
             </h3>
-            <div className="space-y-3">
-              {financeApps.map((app) => (
-                <a
-                  key={app.id}
-                  href={`/${app.id}`}
-                  className="
-          relative 
-          flex items-center justify-between
-          bg-white border border-gray-200 rounded-lg p-4
-          hover:bg-blue-50 transition
-          group
-        "
-                >
-                  {/* Left icon + text */}
-                  <div className="flex items-center space-x-3">
-                    <app.Icon className="w-6 h-6 text-blue-600" />
-                    <div>
-                      <div className="font-medium text-gray-800">
-                        {app.name}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {app.description}
+            <div className="space-y-4">
+              {financeApps.map((app) => {
+                const colourMap: Record<string, string> = {
+                  expense: "#EC5D5D",
+                  billing: "#377DFF",
+                  inventory: "#00A300",
+                  checkout: "#F9B849",
+                  commerce: "#5E5CE6",
+                  payroll: "#26A69A",
+                };
+                return (
+                  <a
+                    key={app.id}
+                    href={`/${app.id}`}
+                    className="
+            relative flex items-center justify-between
+            p-4 border border-gray-200 rounded-2xl bg-white
+            hover:shadow-xl hover:-translate-y-1 transition
+            group
+          "
+                  >
+                    <div className="flex items-center space-x-4">
+                      <app.Icon
+                        className="w-6 h-6"
+                        style={{ color: colourMap[app.id] }}
+                      />
+                      <div>
+                        <div className="font-semibold text-gray-900">
+                          {app.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {app.description}
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Chevron appears only on hover */}
-                  <ChevronRightIcon
-                    className="
-            absolute right-4 top-1/2 -translate-y-1/2
-            w-5 h-5 text-blue-600
-            opacity-0 group-hover:opacity-100
-            transition-opacity
-          "
-                  />
-                </a>
-              ))}
+                    <ChevronRightIcon
+                      className="
+              absolute right-4 top-1/2 -translate-y-1/2
+              w-5 h-5 text-blue-600
+              opacity-0 group-hover:opacity-100
+              transition-opacity
+            "
+                    />
+                  </a>
+                );
+              })}
             </div>
           </section>
 
-          {/* Other Apps */}
+          {/* ————— Other Apps ————— */}
           <section>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase">
-                Other Apps
-              </h3>
+            {/* toggle button + dropdown */}
+            <div className="relative mb-3">
               <button
                 onClick={() => setShowDropdown((v) => !v)}
-                className="flex items-center text-sm text-gray-700 hover:text-gray-900 transition"
+                className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition mb-8"
               >
-                <span>{otherCat}</span>
+                Other Apps
                 {showDropdown ? (
                   <ChevronUpIcon className="w-4 h-4 ml-1" />
                 ) : (
                   <ChevronDownIcon className="w-4 h-4 ml-1" />
                 )}
               </button>
+
+              {showDropdown && (
+                <ul className="absolute top-full left-0 mt-1 w-60 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+                  {OTHER_CATEGORIES.map((cat) => (
+                    <li key={cat}>
+                      <button
+                        onClick={() => {
+                          setOtherCat(cat);
+                          setShowDropdown(false);
+                          setSearchTerm("");
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition
+                          ${
+                            cat === otherCat
+                              ? "bg-blue-100 text-gray-900"
+                              : "text-gray-700 hover:bg-blue-50"
+                          }`}
+                      >
+                        {cat}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
-            {showDropdown && (
-              <ul className="mt-1 bg-white border border-gray-200 rounded shadow-sm text-sm">
-                {OTHER_CATEGORIES.map((cat) => (
-                  <li key={cat}>
-                    <button
-                      onClick={() => {
-                        setOtherCat(cat);
-                        setShowDropdown(false);
-                      }}
-                      className={`block w-full text-left px-3 py-2 hover:bg-blue-50 ${
-                        cat === otherCat ? "bg-blue-100 font-medium" : ""
-                      } transition`}
-                    >
-                      {cat}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {/* fixed “Email and Collaboration” header */}
+            <div className="text-xs font-semibold text-gray-500 uppercase mb-7">
+              Email and Collaboration
+            </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {otherApps.map((app) => (
+            {/* 4-column grid of 15 icons */}
+            <div className="grid grid-cols-4 gap-4 py-2">
+              {[
+                {
+                  Icon: ComputerDesktopIcon,
+                  label: "Notebook",
+                  href: "/notebook",
+                  color: "#1DBF73",
+                }, // green
+                {
+                  Icon: VideoCameraIcon,
+                  label: "Meeting",
+                  href: "/meeting",
+                  color: "#5E5CE6",
+                }, // indigo
+                {
+                  Icon: CheckBadgeIcon,
+                  label: "Projects",
+                  href: "/projects",
+                  color: "#EC5D5D",
+                }, // red
+                {
+                  Icon: PencilIcon,
+                  label: "Sign",
+                  href: "/sign",
+                  color: "#F0B100",
+                }, // yellow
+                {
+                  Icon: BoltIcon,
+                  label: "Sprints",
+                  href: "/sprints",
+                  color: "#6F52BC",
+                }, // purple
+                {
+                  Icon: InboxStackIcon,
+                  label: "TeamInbox",
+                  href: "/teaminbox",
+                  color: "#E02F44",
+                }, // dark red
+                {
+                  Icon: InboxIcon,
+                  label: "Mail",
+                  href: "/mail",
+                  color: "#377DFF",
+                }, // blue
+                {
+                  Icon: ChatBubbleLeftEllipsisIcon,
+                  label: "Cliq",
+                  href: "/cliq",
+                  color: "#26A69A",
+                }, // teal
+                {
+                  Icon: Squares2X2Icon,
+                  label: "Sheet",
+                  href: "/sheet",
+                  color: "#00A300",
+                }, // bright green
+                {
+                  Icon: PlayCircleIcon,
+                  label: "Show",
+                  href: "/show",
+                  color: "#FF4D4F",
+                }, // coral
+                {
+                  Icon: DocumentTextIcon,
+                  label: "Writer",
+                  href: "/writer",
+                  color: "#FF5F3B",
+                }, // orange
+                {
+                  Icon: ShareIcon,
+                  label: "Connect",
+                  href: "/connect",
+                  color: "#F9B849",
+                }, // gold
+                {
+                  Icon: LockClosedIcon,
+                  label: "Vault",
+                  href: "/vault",
+                  color: "#902BBE",
+                }, // violet
+                {
+                  Icon: FolderIcon,
+                  label: "WorkDrive",
+                  href: "/workdrive",
+                  color: "#35C4E4",
+                }, // sky-blue
+                {
+                  Icon: BookOpenIcon,
+                  label: "Learn",
+                  href: "/learn",
+                  color: "#EC5D5D",
+                }, // red
+              ].map(({ Icon, label, href, color }) => (
                 <a
-                  key={app.id}
-                  href={`/${app.id}`}
-                  className="flex items-center space-x-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                  key={label}
+                  href={href}
+                  className="
+        flex flex-col items-center p-3
+        bg-white border border-gray-200 rounded-2xl
+        hover:shadow-lg hover:-translate-y-0.5
+        transition-transform transition-shadow group
+      "
                 >
-                  <app.Icon className="w-6 h-6 text-green-600" />
-                  <div>
-                    <div className="font-medium text-gray-800">{app.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {app.description}
-                    </div>
-                  </div>
+                  <Icon className="w-8 h-8 mb-1.5" style={{ color }} />
+                  <span className="text-sm font-medium text-gray-900 text-center">
+                    {label}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </section>
+          {/* ————— Sales Apps ————— */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">
+              Sales
+            </h3>
+            <div className="grid grid-cols-4 gap-4">
+              {APPS.filter((a) => a.category === "Sales").map((app) => {
+                const colorMap: Record<string, string> = {
+                  crm: "#377DFF",
+                  salesiq: "#EC5D5D",
+                  salesinbox: "#00A300",
+                  bigin: "#F9B849",
+                  bigmeet: "#5E5CE6",
+                  commerce_s: "#26A69A",
+                };
+                const color = colorMap[app.id] || "#4B5563";
+
+                return (
+                  <a
+                    key={app.id}
+                    href={`/${app.id}`}
+                    className="
+            flex flex-col items-center
+            p-4 bg-white border border-gray-200
+            rounded-2xl hover:shadow-lg hover:-translate-y-0.5
+            transition-transform transition-shadow
+          "
+                  >
+                    <app.Icon className="w-8 h-8 mb-2" style={{ color }} />
+                    <span className="text-sm font-medium text-gray-900">
+                      {app.name}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ————— Marketing Apps ————— */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">
+              Marketing
+            </h3>
+            <div className="grid grid-cols-4 gap-4">
+              {APPS.filter((a) => a.category === "Marketing").map((app) => {
+                const colorMap: Record<string, string> = {
+                  sites: "#1DBF73",
+                  campaigns: "#EC5D5D",
+                  survey: "#FF5F3B",
+                  backstage: "#6F52BC",
+                  forms: "#00A300",
+                  marketinghub: "#F0B100",
+                  pagesense: "#377DFF",
+                  social: "#902BBE",
+                };
+                const color = colorMap[app.id] || "#4B5563";
+
+                return (
+                  <a
+                    key={app.id}
+                    href={`/${app.id}`}
+                    className="
+            flex flex-col items-center
+            p-4 bg-white border border-gray-200
+            rounded-2xl hover:shadow-lg hover:-translate-y-0.5
+            transition-transform transition-shadow
+          "
+                  >
+                    <app.Icon className="w-8 h-8 mb-2" style={{ color }} />
+                    <span className="text-sm font-medium text-gray-900">
+                      {app.name}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ————— Help Desk & Customer Support ————— */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">
+              Help Desk and Customer Support
+            </h3>
+            <div className="grid grid-cols-4 gap-4 py-2">
+              {[
+                {
+                  Icon: ChatBubbleLeftEllipsisIcon,
+                  label: "Desk",
+                  color: "#00A300",
+                  href: "/desk",
+                },
+                {
+                  Icon: DevicePhoneMobileIcon,
+                  label: "Lens",
+                  color: "#EC5D5D",
+                  href: "/lens",
+                },
+                {
+                  Icon: CheckBadgeIcon,
+                  label: "Assist",
+                  color: "#377DFF",
+                  href: "/assist",
+                },
+              ].map(({ Icon, label, color, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="flex flex-col items-center p-3 bg-white border border-gray-200 rounded-2xl hover:shadow-lg hover:-translate-y-0.5 transition"
+                >
+                  <Icon className="w-6 h-6 mb-1.5" style={{ color }} />
+                  <span className="text-sm font-medium text-gray-900 text-center">
+                    {label}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          {/* ————— Human Resources ————— */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">
+              Human Resources
+            </h3>
+            <div className="grid grid-cols-4 gap-4 py-2">
+              {[
+                {
+                  Icon: UsersIcon,
+                  label: "People",
+                  color: "#6F52BC",
+                  href: "/people",
+                },
+                {
+                  Icon: PresentationChartBarIcon,
+                  label: "Recruit",
+                  color: "#EC5D5D",
+                  href: "/recruit",
+                },
+              ].map(({ Icon, label, color, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="flex flex-col items-center p-3 bg-white border border-gray-200 rounded-2xl hover:shadow-lg hover:-translate-y-0.5 transition"
+                >
+                  <Icon className="w-6 h-6 mb-1.5" style={{ color }} />
+                  <span className="text-sm font-medium text-gray-900 text-center">
+                    {label}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          {/* ————— Business Process ————— */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">
+              Business Process
+            </h3>
+            <div className="grid grid-cols-4 gap-4 py-2">
+              {[
+                {
+                  Icon: ChartPieIcon,
+                  label: "Analytics",
+                  color: "#EC5D5D",
+                  href: "/analytics",
+                },
+                {
+                  Icon: CubeTransparentIcon,
+                  label: "Creator",
+                  color: "#377DFF",
+                  href: "/creator",
+                },
+                {
+                  Icon: ChartBarIcon,
+                  label: "Flow",
+                  color: "#00A300",
+                  href: "/flow",
+                },
+                {
+                  Icon: DocumentDuplicateIcon,
+                  label: "Qntrl",
+                  color: "#FF5F3B",
+                  href: "/qntrl",
+                },
+                {
+                  Icon: InboxStackIcon,
+                  label: "DataPrep",
+                  color: "#6F52BC",
+                  href: "/dataprep",
+                },
+                {
+                  Icon: BoltIcon,
+                  label: "RPA",
+                  color: "#F9B849",
+                  href: "/rpa",
+                },
+              ].map(({ Icon, label, color, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="flex flex-col items-center p-3 bg-white border border-gray-200 rounded-2xl hover:shadow-lg hover:-translate-y-0.5 transition"
+                >
+                  <Icon className="w-6 h-6 mb-1.5" style={{ color }} />
+                  <span className="text-sm font-medium text-gray-900 text-center">
+                    {label}
+                  </span>
                 </a>
               ))}
             </div>
