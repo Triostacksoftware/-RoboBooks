@@ -14,7 +14,7 @@ import {
 
 import SearchBox from "./header/SearchBox";
 import RecentActivities from "./header/RecentActivities";
-import PremiumTooltip from "./header/PremiumTooltip";
+import SubscribeButton from "./header/PremiumTooltip";
 import OrgSwitcher from "./header/OrgSwitcher";
 import NotificationsPanel from "./header/NotificationsPanel";
 import AllZohoAppsPanel from "./header/AllZohoAppsPanel";
@@ -22,7 +22,7 @@ import ProfilePanel from "./header/ProfilePanel";
 import NewMenu from "./header/NewMenu";
 import AdvancedSearchModal from "./header/search/AdvancedSearchModal";
 import ReferralPanel from "./header/ReferralPanel";
-
+import SettingsPanel from "./header/SettingsPanel";
 type Props = {
   onToggleSidebar?: () => void;
 };
@@ -40,6 +40,7 @@ export default function Header({ onToggleSidebar }: Props) {
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const recentButtonRef = useRef<HTMLButtonElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const openPanel = (panel: Exclude<Panel, null>) =>
     setActivePanel((cur) => (cur === panel ? null : panel));
@@ -47,7 +48,10 @@ export default function Header({ onToggleSidebar }: Props) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[#121a2a] text-white">
+      <header
+        data-settings-header
+        className="sticky top-0 z-30 bg-[#121a2a] text-white"
+      >
         <div className="mx-auto flex h-14 items-center gap-2 px-3 sm:px-4">
           {/* Mobile sidebar toggle */}
           <button
@@ -64,15 +68,6 @@ export default function Header({ onToggleSidebar }: Props) {
               B
             </div>
           </Link>
-
-          {/* Premium tooltip */}
-          <div className="hidden md:block ml-2">
-            <PremiumTooltip>
-              <span className="text-sm text-white/80 hover:text-white transition">
-                Your premium trial plan…
-              </span>
-            </PremiumTooltip>
-          </div>
 
           {/* Recent activities */}
           <div className="relative">
@@ -94,6 +89,21 @@ export default function Header({ onToggleSidebar }: Props) {
           {/* Search box */}
           <div className="ml-2 flex-1 min-w-0">
             <SearchBox onAdvancedRequest={() => setShowAdvanced(true)} />
+          </div>
+
+          {/* Premium tooltip */}
+          <div className="flex items-center space-x-6">
+            {/* your existing trial text */}
+            <span className="text-sm text-gray-200">
+              Your premium trial plan…
+            </span>
+
+            {/* ← add this: */}
+            <SubscribeButton />
+
+            {/* other icons */}
+            {/* ProfileMenu component is missing, replace or define it */}
+            {/* Example: <ProfilePanel open={activePanel === "profile"} onClose={closeAll} /> */}
           </div>
 
           {/* Org switcher */}
@@ -140,13 +150,17 @@ export default function Header({ onToggleSidebar }: Props) {
             </ActionWrap>
 
             {/* Settings link */}
-            <Link
-              href="/dashboard/configure"
-              className="grid h-9 w-9 place-items-center rounded-md hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-              aria-label="Settings"
+            <button
+              onClick={() => setSettingsOpen(true)}
+              className="p-2 rounded-full  hover:scale-110 transition-all duration-200 ease-in-out"
             >
-              <Cog6ToothIcon className="h-5 w-5 text-white" />
-            </Link>
+              <Cog6ToothIcon className="w-6 h-6 text-white" />
+            </button>
+
+            <SettingsPanel
+              open={settingsOpen}
+              onClose={() => setSettingsOpen(false)}
+            />
 
             {/* Profile */}
             <ActionWrap

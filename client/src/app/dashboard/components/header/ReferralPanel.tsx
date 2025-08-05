@@ -45,8 +45,9 @@ export default function ReferralPanel({
 
           {/* slide-in panel */}
           <div
+            /* sit under the header and shrink height accordingly */  
             ref={ref}
-            className="fixed top-0 right-0 z-50 w-80 h-full bg-white shadow-2xl overflow-auto flex flex-col"
+            className="fixed top-14 right-0 z-50 w-80 h-[calc(100%-3.5rem)] bg-white shadow-2xl overflow-auto flex flex-col"
           >
             {/* header */}
             <div className="flex items-center justify-between px-5 py-4 border-b">
