@@ -104,17 +104,20 @@ export default function VendorCreditsHeader() {
           {isMenuOpen && (
             <div className="absolute right-0 z-30 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200">
               <ul className="text-sm text-gray-800">
+
                 {/* Sort by */}
-                <li
-                  className="flex justify-between items-center px-4 py-2 hover:bg-blue-100 hover:text-blue-800 cursor-pointer"
+                <div
                   onMouseEnter={() => setActiveSubmenu('sort')}
                   onMouseLeave={() => setActiveSubmenu(null)}
+                  className="relative"
                 >
-                  <span className="flex items-center gap-2">
-                    <FunnelIcon className="w-4 h-4" />
-                    Sort by
-                  </span>
-                  <ChevronDownIcon className="w-4 h-4" />
+                  <li className="flex justify-between items-center px-4 py-2 hover:bg-blue-100 hover:text-blue-800 cursor-pointer">
+                    <span className="flex items-center gap-2">
+                      <FunnelIcon className="w-4 h-4" />
+                      Sort by
+                    </span>
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </li>
                   {activeSubmenu === 'sort' && (
                     <ul className="absolute right-full top-0 mr-2 w-56 bg-white border rounded-xl shadow-xl z-40">
                       {SORT_FIELDS.map((field) => (
@@ -128,19 +131,21 @@ export default function VendorCreditsHeader() {
                       ))}
                     </ul>
                   )}
-                </li>
+                </div>
 
                 {/* Import */}
-                <li
-                  className="flex justify-between items-center px-4 py-2 hover:bg-blue-100 hover:text-blue-800 cursor-pointer"
+                <div
                   onMouseEnter={() => setActiveSubmenu('import')}
                   onMouseLeave={() => setActiveSubmenu(null)}
+                  className="relative"
                 >
-                  <span className="flex items-center gap-2">
-                    <ArrowDownTrayIcon className="w-4 h-4" />
-                    Import
-                  </span>
-                  <ChevronDownIcon className="w-4 h-4" />
+                  <li className="flex justify-between items-center px-4 py-2 hover:bg-blue-100 hover:text-blue-800 cursor-pointer">
+                    <span className="flex items-center gap-2">
+                      <ArrowDownTrayIcon className="w-4 h-4" />
+                      Import
+                    </span>
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </li>
                   {activeSubmenu === 'import' && (
                     <ul className="absolute right-full top-0 mr-2 w-64 bg-white border rounded-xl shadow-xl z-40">
                       {[
@@ -158,19 +163,21 @@ export default function VendorCreditsHeader() {
                       ))}
                     </ul>
                   )}
-                </li>
+                </div>
 
                 {/* Export */}
-                <li
-                  className="flex justify-between items-center px-4 py-2 hover:bg-blue-100 hover:text-blue-800 cursor-pointer"
+                <div
                   onMouseEnter={() => setActiveSubmenu('export')}
                   onMouseLeave={() => setActiveSubmenu(null)}
+                  className="relative"
                 >
-                  <span className="flex items-center gap-2">
-                    <ArrowUpTrayIcon className="w-4 h-4" />
-                    Export
-                  </span>
-                  <ChevronDownIcon className="w-4 h-4" />
+                  <li className="flex justify-between items-center px-4 py-2 hover:bg-blue-100 hover:text-blue-800 cursor-pointer">
+                    <span className="flex items-center gap-2">
+                      <ArrowUpTrayIcon className="w-4 h-4" />
+                      Export
+                    </span>
+                    <ChevronDownIcon className="w-4 h-4" />
+                  </li>
                   {activeSubmenu === 'export' && (
                     <ul className="absolute right-full top-0 mr-2 w-64 bg-white border rounded-xl shadow-xl z-40">
                       {[
@@ -189,7 +196,7 @@ export default function VendorCreditsHeader() {
                       ))}
                     </ul>
                   )}
-                </li>
+                </div>
 
                 {/* Preferences */}
                 <li
