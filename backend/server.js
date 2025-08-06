@@ -37,7 +37,6 @@ import bankTransactionRoutes from "./routes/bankTransactionRoutes.js";
 dotenv.config();
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 connectDB();
 // ─── Global middleware ──────────────────────────────────────────────────────────
 app.use(
