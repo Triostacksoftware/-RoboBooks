@@ -1,14 +1,15 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
   InformationCircleIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 interface CustomerFormData {
-  customerType: 'Business' | 'Individual';
+  customerType: "Business" | "Individual";
   salutation: string;
   firstName: string;
   lastName: string;
@@ -46,108 +47,119 @@ interface CustomerFormData {
 }
 
 const initialFormData: CustomerFormData = {
-  customerType: 'Business',
-  salutation: 'Mr.',
-  firstName: '',
-  lastName: '',
-  companyName: '',
-  displayName: '',
-  email: '',
-  workPhone: '',
-  mobile: '',
-  pan: '',
-  currency: 'INR',
-  openingBalance: '0',
-  paymentTerms: 'Due on Receipt',
+  customerType: "Business",
+  salutation: "Mr.",
+  firstName: "",
+  lastName: "",
+  companyName: "",
+  displayName: "",
+  email: "",
+  workPhone: "",
+  mobile: "",
+  pan: "",
+  currency: "INR",
+  openingBalance: "0",
+  paymentTerms: "Due on Receipt",
   portalEnabled: false,
-  portalLanguage: 'English',
+  portalLanguage: "English",
   billingAddress: {
-    street: '',
-    city: '',
-    state: '',
-    country: '',
-    zipCode: '',
+    street: "",
+    city: "",
+    state: "",
+    country: "",
+    zipCode: "",
   },
   shippingAddress: {
-    street: '',
-    city: '',
-    state: '',
-    country: '',
-    zipCode: '',
+    street: "",
+    city: "",
+    state: "",
+    country: "",
+    zipCode: "",
   },
   contactPersons: [],
 };
 
 export default function NewCustomerForm() {
   const [formData, setFormData] = useState<CustomerFormData>(initialFormData);
-  const [activeTab, setActiveTab] = useState('otherDetails');
+  const [activeTab, setActiveTab] = useState("otherDetails");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  const handleAddressChange = (type: 'billing' | 'shipping', field: string, value: string) => {
-    setFormData(prev => ({
+  const handleAddressChange = (
+    type: "billing" | "shipping",
+    field: string,
+    value: string
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [`${type}Address`]: {
-        ...prev[`${type}Address` as keyof CustomerFormData] as any,
-        [field]: value
-      }
+        ...(prev[`${type}Address` as keyof CustomerFormData] as any),
+        [field]: value,
+      },
     }));
   };
 
-  const handleContactPersonChange = (index: number, field: string, value: string) => {
-    setFormData(prev => ({
+  const handleContactPersonChange = (
+    index: number,
+    field: string,
+    value: string
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      contactPersons: prev.contactPersons.map((person, i) => 
+      contactPersons: prev.contactPersons.map((person, i) =>
         i === index ? { ...person, [field]: value } : person
-      )
+      ),
     }));
   };
 
   const addContactPerson = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      contactPersons: [...prev.contactPersons, {
-        name: '',
-        email: '',
-        phone: '',
-        designation: ''
-      }]
+      contactPersons: [
+        ...prev.contactPersons,
+        {
+          name: "",
+          email: "",
+          phone: "",
+          designation: "",
+        },
+      ],
     }));
   };
 
   const removeContactPerson = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      contactPersons: prev.contactPersons.filter((_, i) => i !== index)
+      contactPersons: prev.contactPersons.filter((_, i) => i !== index),
     }));
   };
 
-  const showToast = (message: string, type: 'success' | 'error') => {
+  const showToast = (message: string, type: "success" | "error") => {
     // Create toast element
-    const toast = document.createElement('div');
+    const toast = document.createElement("div");
     toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      type === "success" ? "bg-green-500" : "bg-red-500"
     }`;
     toast.textContent = message;
-    
+
     document.body.appendChild(toast);
-    
+
     // Animate in
     setTimeout(() => {
-      toast.classList.remove('translate-x-full');
+      toast.classList.remove("translate-x-full");
     }, 100);
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
-      toast.classList.add('translate-x-full');
+      toast.classList.add("translate-x-full");
       setTimeout(() => {
         document.body.removeChild(toast);
       }, 300);
@@ -160,42 +172,45 @@ export default function NewCustomerForm() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/customers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
 
       const result = await response.json();
 
       if (response.ok) {
-        showToast('Customer created successfully!', 'success');
+        showToast("Customer created successfully!", "success");
         // Redirect to customers page after a short delay
         setTimeout(() => {
-          router.push('/dashboard/customers');
+          router.push("/dashboard/customers");
         }, 1000);
       } else {
-        setError(result.message || 'Failed to create customer');
-        showToast(result.message || 'Failed to create customer', 'error');
+        setError(result.message || "Failed to create customer");
+        showToast(result.message || "Failed to create customer", "error");
       }
     } catch (error) {
-      console.error('Error creating customer:', error);
-      setError('Failed to create customer. Please try again.');
-      showToast('Failed to create customer. Please try again.', 'error');
+      console.error("Error creating customer:", error);
+      setError("Failed to create customer. Please try again.");
+      showToast("Failed to create customer. Please try again.", "error");
     } finally {
       setLoading(false);
     }
   };
 
   const tabs = [
-    { key: 'otherDetails', label: 'Other Details' },
-    { key: 'address', label: 'Address' },
-    { key: 'contactPersons', label: 'Contact Persons' },
-    { key: 'customFields', label: 'Custom Fields' },
-    { key: 'reportingTags', label: 'Reporting Tags' },
-    { key: 'remarks', label: 'Remarks' },
+    { key: "otherDetails", label: "Other Details" },
+    { key: "address", label: "Address" },
+    { key: "contactPersons", label: "Contact Persons" },
+    { key: "customFields", label: "Custom Fields" },
+    { key: "reportingTags", label: "Reporting Tags" },
+    { key: "remarks", label: "Remarks" },
   ];
 
   return (
@@ -224,8 +239,12 @@ export default function NewCustomerForm() {
             <div className="flex items-center">
               <InformationCircleIcon className="w-5 h-5 text-blue-600 mr-2" />
               <span className="text-blue-800 text-sm">
-                Prefill Customer details from the GST portal using the Customer's GSTIN.{' '}
-                <button type="button" className="text-blue-600 hover:text-blue-800 font-medium">
+                Prefill Customer details from the GST portal using the
+                Customer&rsquo;s GSTIN.{" "}
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
                   Prefill
                 </button>
               </span>
@@ -246,8 +265,10 @@ export default function NewCustomerForm() {
                       type="radio"
                       name="customerType"
                       value="Business"
-                      checked={formData.customerType === 'Business'}
-                      onChange={(e) => handleInputChange('customerType', e.target.value)}
+                      checked={formData.customerType === "Business"}
+                      onChange={(e) =>
+                        handleInputChange("customerType", e.target.value)
+                      }
                       className="mr-2"
                     />
                     <span className="text-sm text-gray-700">Business</span>
@@ -257,8 +278,10 @@ export default function NewCustomerForm() {
                       type="radio"
                       name="customerType"
                       value="Individual"
-                      checked={formData.customerType === 'Individual'}
-                      onChange={(e) => handleInputChange('customerType', e.target.value)}
+                      checked={formData.customerType === "Individual"}
+                      onChange={(e) =>
+                        handleInputChange("customerType", e.target.value)
+                      }
                       className="mr-2"
                     />
                     <span className="text-sm text-gray-700">Individual</span>
@@ -276,7 +299,9 @@ export default function NewCustomerForm() {
                   <div>
                     <select
                       value={formData.salutation}
-                      onChange={(e) => handleInputChange('salutation', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("salutation", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     >
                       <option value="Mr.">Mr.</option>
@@ -291,7 +316,9 @@ export default function NewCustomerForm() {
                       type="text"
                       placeholder="First Name"
                       value={formData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("firstName", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                       required
                     />
@@ -301,7 +328,9 @@ export default function NewCustomerForm() {
                       type="text"
                       placeholder="Last Name"
                       value={formData.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("lastName", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                       required
                     />
@@ -318,7 +347,9 @@ export default function NewCustomerForm() {
                   type="text"
                   placeholder="Company Name"
                   value={formData.companyName}
-                  onChange={(e) => handleInputChange('companyName', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("companyName", e.target.value)
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                 />
               </div>
@@ -332,7 +363,9 @@ export default function NewCustomerForm() {
                   type="text"
                   placeholder="Select or type to add"
                   value={formData.displayName}
-                  onChange={(e) => handleInputChange('displayName', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("displayName", e.target.value)
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                   required
                 />
@@ -348,7 +381,7 @@ export default function NewCustomerForm() {
                   type="email"
                   placeholder="Email Address"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                   required
                 />
@@ -362,33 +395,31 @@ export default function NewCustomerForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="flex items-center text-sm text-gray-600 mb-1">
-                      <input
-                        type="checkbox"
-                        className="mr-2"
-                      />
+                      <input type="checkbox" className="mr-2" />
                       Work Phone
                     </label>
                     <input
                       type="tel"
                       placeholder="Work Phone"
                       value={formData.workPhone}
-                      onChange={(e) => handleInputChange('workPhone', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("workPhone", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
                   </div>
                   <div>
                     <label className="flex items-center text-sm text-gray-600 mb-1">
-                      <input
-                        type="checkbox"
-                        className="mr-2"
-                      />
+                      <input type="checkbox" className="mr-2" />
                       Mobile
                     </label>
                     <input
                       type="tel"
                       placeholder="Mobile"
                       value={formData.mobile}
-                      onChange={(e) => handleInputChange('mobile', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("mobile", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
                   </div>
@@ -408,8 +439,8 @@ export default function NewCustomerForm() {
                     onClick={() => setActiveTab(tab.key)}
                     className={`py-4 px-1 border-b-2 font-medium text-sm ${
                       activeTab === tab.key
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                   >
                     {tab.label}
@@ -419,7 +450,7 @@ export default function NewCustomerForm() {
             </div>
 
             <div className="p-6">
-              {activeTab === 'otherDetails' && (
+              {activeTab === "otherDetails" && (
                 <div className="space-y-6">
                   <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
@@ -429,7 +460,7 @@ export default function NewCustomerForm() {
                       type="text"
                       placeholder="PAN"
                       value={formData.pan}
-                      onChange={(e) => handleInputChange('pan', e.target.value)}
+                      onChange={(e) => handleInputChange("pan", e.target.value)}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
                   </div>
@@ -440,7 +471,9 @@ export default function NewCustomerForm() {
                     </label>
                     <select
                       value={formData.currency}
-                      onChange={(e) => handleInputChange('currency', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("currency", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     >
                       <option value="INR">INR- Indian Rupee</option>
@@ -458,7 +491,9 @@ export default function NewCustomerForm() {
                       type="number"
                       placeholder="0"
                       value={formData.openingBalance}
-                      onChange={(e) => handleInputChange('openingBalance', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("openingBalance", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     />
                   </div>
@@ -469,7 +504,9 @@ export default function NewCustomerForm() {
                     </label>
                     <select
                       value={formData.paymentTerms}
-                      onChange={(e) => handleInputChange('paymentTerms', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("paymentTerms", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     >
                       <option value="Due on Receipt">Due on Receipt</option>
@@ -489,10 +526,14 @@ export default function NewCustomerForm() {
                       <input
                         type="checkbox"
                         checked={formData.portalEnabled}
-                        onChange={(e) => handleInputChange('portalEnabled', e.target.checked)}
+                        onChange={(e) =>
+                          handleInputChange("portalEnabled", e.target.checked)
+                        }
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-700">Allow portal access for this customer</span>
+                      <span className="text-sm text-gray-700">
+                        Allow portal access for this customer
+                      </span>
                     </label>
                   </div>
 
@@ -502,7 +543,9 @@ export default function NewCustomerForm() {
                     </label>
                     <select
                       value={formData.portalLanguage}
-                      onChange={(e) => handleInputChange('portalLanguage', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("portalLanguage", e.target.value)
+                      }
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                     >
                       <option value="English">English</option>
@@ -538,53 +581,95 @@ export default function NewCustomerForm() {
                 </div>
               )}
 
-              {activeTab === 'address' && (
+              {activeTab === "address" && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Billing Address</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Billing Address
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">Street</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Street
+                        </label>
                         <input
                           type="text"
                           value={formData.billingAddress.street}
-                          onChange={(e) => handleAddressChange('billing', 'street', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "billing",
+                              "street",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">City</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          City
+                        </label>
                         <input
                           type="text"
                           value={formData.billingAddress.city}
-                          onChange={(e) => handleAddressChange('billing', 'city', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "billing",
+                              "city",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">State</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          State
+                        </label>
                         <input
                           type="text"
                           value={formData.billingAddress.state}
-                          onChange={(e) => handleAddressChange('billing', 'state', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "billing",
+                              "state",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">Country</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Country
+                        </label>
                         <input
                           type="text"
                           value={formData.billingAddress.country}
-                          onChange={(e) => handleAddressChange('billing', 'country', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "billing",
+                              "country",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">ZIP Code</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          ZIP Code
+                        </label>
                         <input
                           type="text"
                           value={formData.billingAddress.zipCode}
-                          onChange={(e) => handleAddressChange('billing', 'zipCode', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "billing",
+                              "zipCode",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
@@ -592,50 +677,92 @@ export default function NewCustomerForm() {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Shipping Address</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Shipping Address
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">Street</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Street
+                        </label>
                         <input
                           type="text"
                           value={formData.shippingAddress.street}
-                          onChange={(e) => handleAddressChange('shipping', 'street', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "shipping",
+                              "street",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">City</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          City
+                        </label>
                         <input
                           type="text"
                           value={formData.shippingAddress.city}
-                          onChange={(e) => handleAddressChange('shipping', 'city', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "shipping",
+                              "city",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">State</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          State
+                        </label>
                         <input
                           type="text"
                           value={formData.shippingAddress.state}
-                          onChange={(e) => handleAddressChange('shipping', 'state', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "shipping",
+                              "state",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">Country</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Country
+                        </label>
                         <input
                           type="text"
                           value={formData.shippingAddress.country}
-                          onChange={(e) => handleAddressChange('shipping', 'country', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "shipping",
+                              "country",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-700 mb-2 block">ZIP Code</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          ZIP Code
+                        </label>
                         <input
                           type="text"
                           value={formData.shippingAddress.zipCode}
-                          onChange={(e) => handleAddressChange('shipping', 'zipCode', e.target.value)}
+                          onChange={(e) =>
+                            handleAddressChange(
+                              "shipping",
+                              "zipCode",
+                              e.target.value
+                            )
+                          }
                           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                       </div>
@@ -644,10 +771,12 @@ export default function NewCustomerForm() {
                 </div>
               )}
 
-              {activeTab === 'contactPersons' && (
+              {activeTab === "contactPersons" && (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium text-gray-900">Contact Persons</h3>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Contact Persons
+                    </h3>
                     <button
                       type="button"
                       onClick={addContactPerson}
@@ -658,9 +787,14 @@ export default function NewCustomerForm() {
                   </div>
 
                   {formData.contactPersons.map((person, index) => (
-                    <div key={index} className="border rounded-lg p-4 space-y-4">
+                    <div
+                      key={index}
+                      className="border rounded-lg p-4 space-y-4"
+                    >
                       <div className="flex justify-between items-center">
-                        <h4 className="text-md font-medium text-gray-900">Contact Person {index + 1}</h4>
+                        <h4 className="text-md font-medium text-gray-900">
+                          Contact Person {index + 1}
+                        </h4>
                         <button
                           type="button"
                           onClick={() => removeContactPerson(index)}
@@ -671,38 +805,70 @@ export default function NewCustomerForm() {
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Name</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Name
+                          </label>
                           <input
                             type="text"
                             value={person.name}
-                            onChange={(e) => handleContactPersonChange(index, 'name', e.target.value)}
+                            onChange={(e) =>
+                              handleContactPersonChange(
+                                index,
+                                "name",
+                                e.target.value
+                              )
+                            }
                             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Email</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Email
+                          </label>
                           <input
                             type="email"
                             value={person.email}
-                            onChange={(e) => handleContactPersonChange(index, 'email', e.target.value)}
+                            onChange={(e) =>
+                              handleContactPersonChange(
+                                index,
+                                "email",
+                                e.target.value
+                              )
+                            }
                             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Phone</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Phone
+                          </label>
                           <input
                             type="tel"
                             value={person.phone}
-                            onChange={(e) => handleContactPersonChange(index, 'phone', e.target.value)}
+                            onChange={(e) =>
+                              handleContactPersonChange(
+                                index,
+                                "phone",
+                                e.target.value
+                              )
+                            }
                             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-700 mb-2 block">Designation</label>
+                          <label className="text-sm font-medium text-gray-700 mb-2 block">
+                            Designation
+                          </label>
                           <input
                             type="text"
                             value={person.designation}
-                            onChange={(e) => handleContactPersonChange(index, 'designation', e.target.value)}
+                            onChange={(e) =>
+                              handleContactPersonChange(
+                                index,
+                                "designation",
+                                e.target.value
+                              )
+                            }
                             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                           />
                         </div>
@@ -711,26 +877,34 @@ export default function NewCustomerForm() {
                   ))}
 
                   {formData.contactPersons.length === 0 && (
-                    <p className="text-gray-500 text-center py-8">No contact persons added yet.</p>
+                    <p className="text-gray-500 text-center py-8">
+                      No contact persons added yet.
+                    </p>
                   )}
                 </div>
               )}
 
-              {activeTab === 'customFields' && (
+              {activeTab === "customFields" && (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Custom fields functionality coming soon.</p>
+                  <p className="text-gray-500">
+                    Custom fields functionality coming soon.
+                  </p>
                 </div>
               )}
 
-              {activeTab === 'reportingTags' && (
+              {activeTab === "reportingTags" && (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Reporting tags functionality coming soon.</p>
+                  <p className="text-gray-500">
+                    Reporting tags functionality coming soon.
+                  </p>
                 </div>
               )}
 
-              {activeTab === 'remarks' && (
+              {activeTab === "remarks" && (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Remarks functionality coming soon.</p>
+                  <p className="text-gray-500">
+                    Remarks functionality coming soon.
+                  </p>
                 </div>
               )}
             </div>
@@ -739,8 +913,12 @@ export default function NewCustomerForm() {
           {/* Customer Owner Information */}
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600">
-              Customer Owner: Assign a user as the customer owner to provide access only to the data of this customer.{' '}
-              <button type="button" className="text-blue-600 hover:text-blue-800 font-medium">
+              Customer Owner: Assign a user as the customer owner to provide
+              access only to the data of this customer.{" "}
+              <button
+                type="button"
+                className="text-blue-600 hover:text-blue-800 font-medium"
+              >
                 Learn More
               </button>
             </p>
@@ -767,11 +945,11 @@ export default function NewCustomerForm() {
               disabled={loading}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md text-sm font-medium"
             >
-              {loading ? 'Saving...' : 'Save'}
+              {loading ? "Saving..." : "Save"}
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-} 
+}
