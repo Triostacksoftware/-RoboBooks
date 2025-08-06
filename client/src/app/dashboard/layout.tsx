@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -28,7 +29,7 @@ export default function DashboardLayout({
       try {
         console.log("🔐 Checking authentication in layout...");
         // Check if user is authenticated by calling the /me endpoint
-        const response = await api<{ success: boolean; user?: any }>(
+        const response = await api<{ success: boolean; user?: never }>(
           "/api/auth/me"
         );
         console.log("✅ Layout authentication successful:", response);
@@ -40,9 +41,18 @@ export default function DashboardLayout({
           setAuthError("Authentication failed");
           router.push("/signin");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("❌ Layout authentication check failed:", error);
-        setAuthError(error.message || "Authentication failed");
+        let message = "Authentication failed";
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof (error as any).message === "string"
+        ) {
+          message = (error as any).message;
+        }
+        setAuthError(message);
         // If there's an error (like 401), redirect to signin
         router.push("/signin");
       } finally {

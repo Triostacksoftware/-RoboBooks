@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface ItemFormData {
-  type: 'Goods' | 'Service';
+  type: "Goods" | "Service";
   name: string;
   unit: string;
   hsnCode: string;
@@ -24,21 +24,21 @@ interface ItemFormData {
 export default function NewItemForm() {
   const router = useRouter();
   const [formData, setFormData] = useState<ItemFormData>({
-    type: 'Goods',
-    name: '',
-    unit: '',
-    hsnCode: '',
-    sacCode: '',
+    type: "Goods",
+    name: "",
+    unit: "",
+    hsnCode: "",
+    sacCode: "",
     salesEnabled: true,
     purchaseEnabled: true,
-    sellingPrice: '',
-    costPrice: '',
-    salesAccount: 'Sales',
-    purchaseAccount: 'Cost of Goods Sold',
-    salesDescription: '',
-    purchaseDescription: '',
-    preferredVendor: '',
-    description: '',
+    sellingPrice: "",
+    costPrice: "",
+    salesAccount: "Sales",
+    purchaseAccount: "Cost of Goods Sold",
+    salesDescription: "",
+    purchaseDescription: "",
+    preferredVendor: "",
+    description: "",
   });
 
   const [errors, setErrors] = useState<Partial<ItemFormData>>({});
@@ -51,11 +51,14 @@ export default function NewItemForm() {
     nameInputRef.current?.focus();
   }, []);
 
-  const handleInputChange = (field: keyof ItemFormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (
+    field: keyof ItemFormData,
+    value: string | boolean
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
@@ -63,47 +66,48 @@ export default function NewItemForm() {
     const newErrors: Partial<ItemFormData> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
 
     if (formData.salesEnabled && !formData.sellingPrice) {
-      newErrors.sellingPrice = 'Selling price is required when sales is enabled';
+      newErrors.sellingPrice =
+        "Selling price is required when sales is enabled";
     }
 
     if (formData.purchaseEnabled && !formData.costPrice) {
-      newErrors.costPrice = 'Cost price is required when purchase is enabled';
+      newErrors.costPrice = "Cost price is required when purchase is enabled";
     }
 
-    if (formData.type === 'Goods' && !formData.hsnCode.trim()) {
-      newErrors.hsnCode = 'HSN code is required for goods';
+    if (formData.type === "Goods" && !formData.hsnCode.trim()) {
+      newErrors.hsnCode = "HSN code is required for goods";
     }
 
-    if (formData.type === 'Service' && !formData.sacCode.trim()) {
-      newErrors.sacCode = 'SAC code is required for services';
+    if (formData.type === "Service" && !formData.sacCode.trim()) {
+      newErrors.sacCode = "SAC code is required for services";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const showToast = (message: string, type: 'success' | 'error') => {
+  const showToast = (message: string, type: "success" | "error") => {
     // Create toast element
-    const toast = document.createElement('div');
+    const toast = document.createElement("div");
     toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      type === "success" ? "bg-green-500" : "bg-red-500"
     }`;
     toast.textContent = message;
-    
+
     document.body.appendChild(toast);
-    
+
     // Animate in
     setTimeout(() => {
-      toast.classList.remove('translate-x-full');
+      toast.classList.remove("translate-x-full");
     }, 100);
-    
+
     // Remove after 3 seconds
     setTimeout(() => {
-      toast.classList.add('translate-x-full');
+      toast.classList.add("translate-x-full");
       setTimeout(() => {
         document.body.removeChild(toast);
       }, 300);
@@ -117,28 +121,31 @@ export default function NewItemForm() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://localhost:5000/api/items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/items",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
 
       const result = await response.json();
 
       if (response.ok) {
-        showToast('Item saved successfully!', 'success');
+        showToast("Item saved successfully!", "success");
         // Redirect to items page after a short delay
         setTimeout(() => {
-          router.push('/dashboard/items');
+          router.push("/dashboard/items");
         }, 1000);
       } else {
-        showToast(result.message || 'Error saving item', 'error');
+        showToast(result.message || "Error saving item", "error");
       }
     } catch (error) {
-      console.error('Error saving item:', error);
-      showToast('Error saving item. Please try again.', 'error');
+      console.error("Error saving item:", error);
+      showToast("Error saving item. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -146,18 +153,21 @@ export default function NewItemForm() {
 
   const handleCancel = () => {
     if (formData.name || formData.sellingPrice || formData.costPrice) {
-      if (confirm('Are you sure you want to cancel? All changes will be lost.')) {
-        router.push('/dashboard/items');
+      if (
+        confirm("Are you sure you want to cancel? All changes will be lost.")
+      ) {
+        router.push("/dashboard/items");
       }
     } else {
-      router.push('/dashboard/items');
+      router.push("/dashboard/items");
     }
   };
 
   const getInputClassName = (field: keyof ItemFormData) => {
-    const baseClass = "border rounded px-3 py-2 w-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
-    return errors[field] 
-      ? `${baseClass} border-red-500 bg-red-50` 
+    const baseClass =
+      "border rounded px-3 py-2 w-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+    return errors[field]
+      ? `${baseClass} border-red-500 bg-red-50`
       : `${baseClass} border-gray-300 hover:border-gray-400`;
   };
 
@@ -166,7 +176,7 @@ export default function NewItemForm() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">New Item</h2>
         <div className="text-sm text-gray-500">
-          {formData.type === 'Goods' ? 'Goods Item' : 'Service Item'}
+          {formData.type === "Goods" ? "Goods Item" : "Service Item"}
         </div>
       </div>
 
@@ -178,8 +188,8 @@ export default function NewItemForm() {
             <input
               type="radio"
               value="Goods"
-              checked={formData.type === 'Goods'}
-              onChange={() => handleInputChange('type', 'Goods')}
+              checked={formData.type === "Goods"}
+              onChange={() => handleInputChange("type", "Goods")}
               className="text-blue-600 focus:ring-blue-500"
             />
             <span className="text-gray-700">Goods</span>
@@ -188,8 +198,8 @@ export default function NewItemForm() {
             <input
               type="radio"
               value="Service"
-              checked={formData.type === 'Service'}
-              onChange={() => handleInputChange('type', 'Service')}
+              checked={formData.type === "Service"}
+              onChange={() => handleInputChange("type", "Service")}
               className="text-blue-600 focus:ring-blue-500"
             />
             <span className="text-gray-700">Service</span>
@@ -200,15 +210,13 @@ export default function NewItemForm() {
       {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="font-medium text-red-600 mb-2 block">
-            Name*
-          </label>
+          <label className="font-medium text-red-600 mb-2 block">Name*</label>
           <input
             type="text"
             ref={nameInputRef}
             value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            className={getInputClassName('name')}
+            onChange={(e) => handleInputChange("name", e.target.value)}
+            className={getInputClassName("name")}
             placeholder="Enter item name"
             required
           />
@@ -218,13 +226,11 @@ export default function NewItemForm() {
         </div>
 
         <div>
-          <label className="font-medium text-gray-700 mb-2 block">
-            Unit
-          </label>
+          <label className="font-medium text-gray-700 mb-2 block">Unit</label>
           <select
             value={formData.unit}
-            onChange={(e) => handleInputChange('unit', e.target.value)}
-            className={getInputClassName('unit')}
+            onChange={(e) => handleInputChange("unit", e.target.value)}
+            className={getInputClassName("unit")}
           >
             <option value="">Select or type to add</option>
             <option value="Piece">Piece</option>
@@ -242,24 +248,34 @@ export default function NewItemForm() {
       {/* HSN/SAC Code */}
       <div className="mb-6">
         <label className="font-medium text-gray-700 mb-2 block">
-          {formData.type === 'Goods' ? 'HSN Code*' : 'SAC Code*'}
+          {formData.type === "Goods" ? "HSN Code*" : "SAC Code*"}
         </label>
         <div className="flex gap-2">
           <input
             type="text"
-            value={formData.type === 'Goods' ? formData.hsnCode : formData.sacCode}
-            onChange={(e) => handleInputChange(
-              formData.type === 'Goods' ? 'hsnCode' : 'sacCode', 
-              e.target.value
-            )}
-            className={`${getInputClassName(formData.type === 'Goods' ? 'hsnCode' : 'sacCode')} flex-1`}
-            placeholder={formData.type === 'Goods' ? 'Enter HSN code (e.g., 9401)' : 'Enter SAC code (e.g., 998314)'}
-            maxLength={formData.type === 'Goods' ? 8 : 6}
+            value={
+              formData.type === "Goods" ? formData.hsnCode : formData.sacCode
+            }
+            onChange={(e) =>
+              handleInputChange(
+                formData.type === "Goods" ? "hsnCode" : "sacCode",
+                e.target.value
+              )
+            }
+            className={`${getInputClassName(
+              formData.type === "Goods" ? "hsnCode" : "sacCode"
+            )} flex-1`}
+            placeholder={
+              formData.type === "Goods"
+                ? "Enter HSN code (e.g., 9401)"
+                : "Enter SAC code (e.g., 998314)"
+            }
+            maxLength={formData.type === "Goods" ? 8 : 6}
           />
           <button
             type="button"
             className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-600"
-            title={`Search ${formData.type === 'Goods' ? 'HSN' : 'SAC'} codes`}
+            title={`Search ${formData.type === "Goods" ? "HSN" : "SAC"} codes`}
           >
             🔍
           </button>
@@ -271,10 +287,9 @@ export default function NewItemForm() {
           <p className="text-red-500 text-xs mt-1">{errors.sacCode}</p>
         )}
         <p className="text-xs text-gray-500 mt-1">
-          {formData.type === 'Goods' 
-            ? 'HSN (Harmonized System of Nomenclature) code is required for GST compliance'
-            : 'SAC (Services Accounting Code) is required for GST compliance'
-          }
+          {formData.type === "Goods"
+            ? "HSN (Harmonized System of Nomenclature) code is required for GST compliance"
+            : "SAC (Services Accounting Code) is required for GST compliance"}
         </p>
       </div>
 
@@ -286,7 +301,9 @@ export default function NewItemForm() {
             <input
               type="checkbox"
               checked={formData.salesEnabled}
-              onChange={() => handleInputChange('salesEnabled', !formData.salesEnabled)}
+              onChange={() =>
+                handleInputChange("salesEnabled", !formData.salesEnabled)
+              }
               className="text-blue-600 focus:ring-blue-500"
             />
             <h3 className="font-semibold text-gray-800">Sales Information</h3>
@@ -295,7 +312,9 @@ export default function NewItemForm() {
           {formData.salesEnabled && (
             <div className="space-y-4">
               <div>
-                <label className="block text-red-600 mb-2 font-medium">Selling Price*</label>
+                <label className="block text-red-600 mb-2 font-medium">
+                  Selling Price*
+                </label>
                 <div className="flex gap-1">
                   <span className="border border-gray-300 rounded-l px-3 py-2 bg-gray-100 text-gray-600 text-sm">
                     ₹
@@ -303,24 +322,32 @@ export default function NewItemForm() {
                   <input
                     type="number"
                     value={formData.sellingPrice}
-                    onChange={(e) => handleInputChange('sellingPrice', e.target.value)}
-                    className={`${getInputClassName('sellingPrice')} rounded-r`}
+                    onChange={(e) =>
+                      handleInputChange("sellingPrice", e.target.value)
+                    }
+                    className={`${getInputClassName("sellingPrice")} rounded-r`}
                     placeholder="0.00"
                     step="0.01"
                     min="0"
                   />
                 </div>
                 {errors.sellingPrice && (
-                  <p className="text-red-500 text-xs mt-1">{errors.sellingPrice}</p>
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.sellingPrice}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-red-600 mb-2 font-medium">Account*</label>
+                <label className="block text-red-600 mb-2 font-medium">
+                  Account*
+                </label>
                 <select
                   value={formData.salesAccount}
-                  onChange={(e) => handleInputChange('salesAccount', e.target.value)}
-                  className={getInputClassName('salesAccount')}
+                  onChange={(e) =>
+                    handleInputChange("salesAccount", e.target.value)
+                  }
+                  className={getInputClassName("salesAccount")}
                 >
                   <option value="Sales">Sales</option>
                   <option value="Services">Services</option>
@@ -332,8 +359,10 @@ export default function NewItemForm() {
                 <label className="block text-gray-700 mb-2">Description</label>
                 <textarea
                   value={formData.salesDescription}
-                  onChange={(e) => handleInputChange('salesDescription', e.target.value)}
-                  className={getInputClassName('salesDescription')}
+                  onChange={(e) =>
+                    handleInputChange("salesDescription", e.target.value)
+                  }
+                  className={getInputClassName("salesDescription")}
                   rows={3}
                   placeholder="Enter sales description..."
                 />
@@ -348,16 +377,22 @@ export default function NewItemForm() {
             <input
               type="checkbox"
               checked={formData.purchaseEnabled}
-              onChange={() => handleInputChange('purchaseEnabled', !formData.purchaseEnabled)}
+              onChange={() =>
+                handleInputChange("purchaseEnabled", !formData.purchaseEnabled)
+              }
               className="text-blue-600 focus:ring-blue-500"
             />
-            <h3 className="font-semibold text-gray-800">Purchase Information</h3>
+            <h3 className="font-semibold text-gray-800">
+              Purchase Information
+            </h3>
           </div>
 
           {formData.purchaseEnabled && (
             <div className="space-y-4">
               <div>
-                <label className="block text-red-600 mb-2 font-medium">Cost Price*</label>
+                <label className="block text-red-600 mb-2 font-medium">
+                  Cost Price*
+                </label>
                 <div className="flex gap-1">
                   <span className="border border-gray-300 rounded-l px-3 py-2 bg-gray-100 text-gray-600 text-sm">
                     ₹
@@ -365,24 +400,32 @@ export default function NewItemForm() {
                   <input
                     type="number"
                     value={formData.costPrice}
-                    onChange={(e) => handleInputChange('costPrice', e.target.value)}
-                    className={`${getInputClassName('costPrice')} rounded-r`}
+                    onChange={(e) =>
+                      handleInputChange("costPrice", e.target.value)
+                    }
+                    className={`${getInputClassName("costPrice")} rounded-r`}
                     placeholder="0.00"
                     step="0.01"
                     min="0"
                   />
                 </div>
                 {errors.costPrice && (
-                  <p className="text-red-500 text-xs mt-1">{errors.costPrice}</p>
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.costPrice}
+                  </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-red-600 mb-2 font-medium">Account*</label>
+                <label className="block text-red-600 mb-2 font-medium">
+                  Account*
+                </label>
                 <select
                   value={formData.purchaseAccount}
-                  onChange={(e) => handleInputChange('purchaseAccount', e.target.value)}
-                  className={getInputClassName('purchaseAccount')}
+                  onChange={(e) =>
+                    handleInputChange("purchaseAccount", e.target.value)
+                  }
+                  className={getInputClassName("purchaseAccount")}
                 >
                   <option value="Cost of Goods Sold">Cost of Goods Sold</option>
                   <option value="Purchase">Purchase</option>
@@ -394,8 +437,10 @@ export default function NewItemForm() {
                 <label className="block text-gray-700 mb-2">Description</label>
                 <textarea
                   value={formData.purchaseDescription}
-                  onChange={(e) => handleInputChange('purchaseDescription', e.target.value)}
-                  className={getInputClassName('purchaseDescription')}
+                  onChange={(e) =>
+                    handleInputChange("purchaseDescription", e.target.value)
+                  }
+                  className={getInputClassName("purchaseDescription")}
                   rows={3}
                   placeholder="Enter purchase description..."
                 />
@@ -408,22 +453,28 @@ export default function NewItemForm() {
       {/* Additional Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="block text-gray-700 mb-2 font-medium">Description</label>
+          <label className="block text-gray-700 mb-2 font-medium">
+            Description
+          </label>
           <textarea
             value={formData.description}
-            onChange={(e) => handleInputChange('description', e.target.value)}
-            className={getInputClassName('description')}
+            onChange={(e) => handleInputChange("description", e.target.value)}
+            className={getInputClassName("description")}
             rows={3}
             placeholder="Enter general description..."
           />
         </div>
         <div>
-          <label className="block text-gray-700 mb-2 font-medium">Preferred Vendor</label>
+          <label className="block text-gray-700 mb-2 font-medium">
+            Preferred Vendor
+          </label>
           <input
             type="text"
             value={formData.preferredVendor}
-            onChange={(e) => handleInputChange('preferredVendor', e.target.value)}
-            className={getInputClassName('preferredVendor')}
+            onChange={(e) =>
+              handleInputChange("preferredVendor", e.target.value)
+            }
+            className={getInputClassName("preferredVendor")}
             placeholder="Enter preferred vendor name"
           />
         </div>
@@ -436,15 +487,15 @@ export default function NewItemForm() {
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">Inventory Tracking</p>
             <p>
-              Do you want to keep track of this item?{' '}
+              Do you want to keep track of this item?{" "}
               <span className="font-semibold text-blue-900 cursor-pointer hover:underline">
                 Enable Inventory
-              </span>{' '}
-              to view its stock based on the sales and purchase transactions you record for it. 
-              Go to{' '}
+              </span>{" "}
+              to view its stock based on the sales and purchase transactions you
+              record for it. Go to{" "}
               <span className="italic font-medium text-blue-900 cursor-pointer hover:underline">
                 Settings &gt; Preferences &gt; Items
-              </span>{' '}
+              </span>{" "}
               and enable inventory.
             </p>
           </div>
@@ -464,7 +515,7 @@ export default function NewItemForm() {
               Saving...
             </>
           ) : (
-            'Save'
+            "Save"
           )}
         </button>
         <button
