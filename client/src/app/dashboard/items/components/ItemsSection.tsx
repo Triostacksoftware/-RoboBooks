@@ -1,7 +1,8 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   ChevronDownIcon,
   PlusIcon,
@@ -11,11 +12,11 @@ import {
   XMarkIcon,
   PencilIcon,
   MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 interface Item {
   _id: string;
-  type: 'Goods' | 'Service';
+  type: "Goods" | "Service";
   name: string;
   unit: string;
   hsnCode?: string;
@@ -43,13 +44,13 @@ interface Item {
 }
 
 const filters = [
-  'All',
-  'Active',
-  'Inactive',
-  'Sales',
-  'Purchases',
-  'Services',
-  'Zoho CRM',
+  "All",
+  "Active",
+  "Inactive",
+  "Sales",
+  "Purchases",
+  "Services",
+  "Zoho CRM",
 ];
 
 export default function ItemsSection() {
@@ -59,11 +60,13 @@ export default function ItemsSection() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [exportSubmenuOpen, setExportSubmenuOpen] = useState(false);
-  const [selectedView, setSelectedView] = useState('All Items');
+  const [selectedView, setSelectedView] = useState("All Items");
   const [activeHeader, setActiveHeader] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'history'>('overview');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "transactions" | "history"
+  >("overview");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const moreActionsRef = useRef<HTMLDivElement>(null);
@@ -73,18 +76,20 @@ export default function ItemsSection() {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch('http://localhost:5000/api/items');
+
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/items"
+      );
       const result = await response.json();
 
       if (response.ok) {
         setItems(result.data || []);
       } else {
-        setError(result.message || 'Failed to fetch items');
+        setError(result.message || "Failed to fetch items");
       }
     } catch (error) {
-      console.error('Error fetching items:', error);
-      setError('Failed to fetch items. Please try again.');
+      console.error("Error fetching items:", error);
+      setError("Failed to fetch items. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -113,17 +118,15 @@ export default function ItemsSection() {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const handleHeaderClick = (key: string) => {
     setActiveHeader((prev) => (prev === key ? null : key));
   };
-
-
 
   const handleActionClick = (action: string) => {
     console.log(`Action clicked: ${action}`);
@@ -140,26 +143,26 @@ export default function ItemsSection() {
   };
 
   const formatPrice = (price?: number) => {
-    if (!price) return '-';
-    return `₹${price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+    if (!price) return "-";
+    return `₹${price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
   };
 
   const getGstCode = (item: Item) => {
-    return item.type === 'Goods' ? item.hsnCode : item.sacCode;
+    return item.type === "Goods" ? item.hsnCode : item.sacCode;
   };
 
   const getItemType = (item: Item) => {
     if (item.salesEnabled && item.purchaseEnabled) {
-      return 'Sales and Purchase Items';
+      return "Sales and Purchase Items";
     } else if (item.salesEnabled) {
-      return 'Sales Items';
+      return "Sales Items";
     } else if (item.purchaseEnabled) {
-      return 'Purchase Items';
+      return "Purchase Items";
     }
-    return 'Non-Inventory Items';
+    return "Non-Inventory Items";
   };
 
-  const filteredItems = items.filter(item =>
+  const filteredItems = items.filter((item) =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -168,9 +171,9 @@ export default function ItemsSection() {
     <div
       key={item._id}
       className={`p-4 cursor-pointer transition-colors ${
-        selectedItem?._id === item._id 
-          ? 'bg-blue-50 border-r-2 border-blue-500' 
-          : 'hover:bg-gray-100'
+        selectedItem?._id === item._id
+          ? "bg-blue-50 border-r-2 border-blue-500"
+          : "hover:bg-gray-100"
       }`}
       onClick={() => handleItemClick(item)}
     >
@@ -199,10 +202,10 @@ export default function ItemsSection() {
   const renderTableRow = (item: Item) => {
     const isSelected = selectedItem && selectedItem._id === item._id;
     return (
-      <tr 
-        key={item._id} 
+      <tr
+        key={item._id}
         className={`border-t hover:bg-gray-50 cursor-pointer ${
-          isSelected ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+          isSelected ? "bg-blue-50 border-r-2 border-blue-500" : ""
         }`}
         onClick={() => handleItemClick(item)}
       >
@@ -216,21 +219,11 @@ export default function ItemsSection() {
             )}
           </div>
         </td>
-        <td className="px-4 py-3 text-sm">
-          {item.purchaseDescription || '-'}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {formatPrice(item.costPrice)}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {item.description || '-'}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {formatPrice(item.sellingPrice)}
-        </td>
-        <td className="px-4 py-3 text-sm">
-          {item.unit || '-'}
-        </td>
+        <td className="px-4 py-3 text-sm">{item.purchaseDescription || "-"}</td>
+        <td className="px-4 py-3 text-sm">{formatPrice(item.costPrice)}</td>
+        <td className="px-4 py-3 text-sm">{item.description || "-"}</td>
+        <td className="px-4 py-3 text-sm">{formatPrice(item.sellingPrice)}</td>
+        <td className="px-4 py-3 text-sm">{item.unit || "-"}</td>
       </tr>
     );
   };
@@ -272,11 +265,17 @@ export default function ItemsSection() {
       {/* Main Content Area */}
       <div className="flex h-full">
         {/* Left Panel - Items List/Table */}
-        <div className={`${selectedItem ? 'w-1/3' : 'w-full'} border-r border-gray-200`}>
+        <div
+          className={`${
+            selectedItem ? "w-1/3" : "w-full"
+          } border-r border-gray-200`}
+        >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900">Active Items</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Active Items
+              </h2>
               <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             </div>
             <div className="flex items-center gap-2">
@@ -287,7 +286,10 @@ export default function ItemsSection() {
               >
                 + New
               </Link>
-              <button className="p-2 hover:bg-gray-100 rounded-md" title="More Actions">
+              <button
+                className="p-2 hover:bg-gray-100 rounded-md"
+                title="More Actions"
+              >
                 <EllipsisVerticalIcon className="w-4 h-4 text-gray-600" />
               </button>
             </div>
@@ -329,9 +331,11 @@ export default function ItemsSection() {
                   <tr>
                     <th className="px-4 py-3 cursor-pointer">
                       <button
-                        onClick={() => handleHeaderClick('name')}
+                        onClick={() => handleHeaderClick("name")}
                         className={`flex items-center gap-2 ${
-                          activeHeader === 'name' ? 'text-blue-600 font-semibold' : ''
+                          activeHeader === "name"
+                            ? "text-blue-600 font-semibold"
+                            : ""
                         }`}
                       >
                         <FunnelIcon className="h-4 w-4" />
@@ -345,17 +349,22 @@ export default function ItemsSection() {
                       </button>
                     </th>
                     {[
-                      { key: 'purchaseDescription', label: 'PURCHASE DESCRIPTION' },
-                      { key: 'purchaseRate', label: 'PURCHASE RATE' },
-                      { key: 'description', label: 'DESCRIPTION' },
-                      { key: 'rate', label: 'RATE' },
-                      { key: 'unit', label: 'USAGE UNIT' },
+                      {
+                        key: "purchaseDescription",
+                        label: "PURCHASE DESCRIPTION",
+                      },
+                      { key: "purchaseRate", label: "PURCHASE RATE" },
+                      { key: "description", label: "DESCRIPTION" },
+                      { key: "rate", label: "RATE" },
+                      { key: "unit", label: "USAGE UNIT" },
                     ].map(({ key, label }) => (
                       <th key={key} className="px-4 py-3 cursor-pointer">
                         <button
                           onClick={() => handleHeaderClick(key)}
                           className={`uppercase ${
-                            activeHeader === key ? 'text-blue-600 font-semibold' : ''
+                            activeHeader === key
+                              ? "text-blue-600 font-semibold"
+                              : ""
                           }`}
                         >
                           {label}
@@ -388,17 +397,25 @@ export default function ItemsSection() {
           <div className="w-2/3 bg-white">
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h1 className="text-2xl font-bold text-gray-900">{selectedItem.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {selectedItem.name}
+              </h1>
               <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-gray-100 rounded-md" title="Edit">
+                <button
+                  className="p-2 hover:bg-gray-100 rounded-md"
+                  title="Edit"
+                >
                   <PencilIcon className="w-5 h-5 text-gray-600" />
                 </button>
-                <button className="p-2 hover:bg-gray-100 rounded-md" title="More">
+                <button
+                  className="p-2 hover:bg-gray-100 rounded-md"
+                  title="More"
+                >
                   <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
                 </button>
-                <button 
+                <button
                   onClick={closeItemDetails}
-                  className="p-2 hover:bg-gray-100 rounded-md" 
+                  className="p-2 hover:bg-gray-100 rounded-md"
                   title="Close"
                 >
                   <XMarkIcon className="w-5 h-5 text-gray-600" />
@@ -409,17 +426,17 @@ export default function ItemsSection() {
             {/* Tabs */}
             <div className="flex border-b border-gray-200">
               {[
-                { key: 'overview', label: 'Overview' },
-                { key: 'transactions', label: 'Transactions' },
-                { key: 'history', label: 'History' },
+                { key: "overview", label: "Overview" },
+                { key: "transactions", label: "Transactions" },
+                { key: "history", label: "History" },
               ].map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key as any)}
                   className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === key
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
                 >
                   {label}
@@ -429,33 +446,43 @@ export default function ItemsSection() {
 
             {/* Tab Content */}
             <div className="p-6">
-              {activeTab === 'overview' && (
+              {activeTab === "overview" && (
                 <div className="space-y-8">
                   {/* Basic Information */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-900">Basic Information</h3>
+                    <h3 className="text-sm font-medium text-gray-900">
+                      Basic Information
+                    </h3>
                     <div className="grid grid-cols-2 gap-6 text-sm">
                       <div>
                         <span className="text-gray-500">Item Type:</span>
-                        <p className="font-medium mt-1">{getItemType(selectedItem)}</p>
+                        <p className="font-medium mt-1">
+                          {getItemType(selectedItem)}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Unit:</span>
-                        <p className="font-medium mt-1">{selectedItem.unit || 'pcs'}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.unit || "pcs"}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">HSN Code:</span>
-                        <p className="font-medium mt-1">{getGstCode(selectedItem) || '-'}</p>
+                        <p className="font-medium mt-1">
+                          {getGstCode(selectedItem) || "-"}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Status:</span>
                         <p className="font-medium mt-1">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            selectedItem.isActive 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {selectedItem.isActive ? 'Active' : 'Inactive'}
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              selectedItem.isActive
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {selectedItem.isActive ? "Active" : "Inactive"}
                           </span>
                         </p>
                       </div>
@@ -465,19 +492,28 @@ export default function ItemsSection() {
                   {/* Sales Information */}
                   {selectedItem.salesEnabled && (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-gray-900">Sales Information</h3>
+                      <h3 className="text-sm font-medium text-gray-900">
+                        Sales Information
+                      </h3>
                       <div className="space-y-3 text-sm">
                         <div>
                           <span className="text-gray-500">Selling Price:</span>
-                          <p className="font-medium mt-1">{formatPrice(selectedItem.sellingPrice)}</p>
+                          <p className="font-medium mt-1">
+                            {formatPrice(selectedItem.sellingPrice)}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Sales Account:</span>
-                          <p className="font-medium mt-1">{selectedItem.salesAccount}</p>
+                          <p className="font-medium mt-1">
+                            {selectedItem.salesAccount}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Description:</span>
-                          <p className="font-medium mt-1">{selectedItem.salesDescription || 'Metal card with engraved design'}</p>
+                          <p className="font-medium mt-1">
+                            {selectedItem.salesDescription ||
+                              "Metal card with engraved design"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -486,19 +522,30 @@ export default function ItemsSection() {
                   {/* Purchase Information */}
                   {selectedItem.purchaseEnabled && (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-medium text-gray-900">Purchase Information</h3>
+                      <h3 className="text-sm font-medium text-gray-900">
+                        Purchase Information
+                      </h3>
                       <div className="space-y-3 text-sm">
                         <div>
                           <span className="text-gray-500">Cost Price:</span>
-                          <p className="font-medium mt-1">{formatPrice(selectedItem.costPrice)}</p>
+                          <p className="font-medium mt-1">
+                            {formatPrice(selectedItem.costPrice)}
+                          </p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Purchase Account:</span>
-                          <p className="font-medium mt-1">{selectedItem.purchaseAccount}</p>
+                          <span className="text-gray-500">
+                            Purchase Account:
+                          </span>
+                          <p className="font-medium mt-1">
+                            {selectedItem.purchaseAccount}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-500">Description:</span>
-                          <p className="font-medium mt-1">{selectedItem.purchaseDescription || 'Very eye appealing.'}</p>
+                          <p className="font-medium mt-1">
+                            {selectedItem.purchaseDescription ||
+                              "Very eye appealing."}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -506,46 +553,66 @@ export default function ItemsSection() {
 
                   {/* Additional Information */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-900">Additional Information</h3>
+                    <h3 className="text-sm font-medium text-gray-900">
+                      Additional Information
+                    </h3>
                     <div className="space-y-3 text-sm">
                       <div>
                         <span className="text-gray-500">Preferred Vendor:</span>
-                        <p className="font-medium mt-1">{selectedItem.preferredVendor || '-'}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.preferredVendor || "-"}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Current Stock:</span>
-                        <p className="font-medium mt-1">{selectedItem.currentStock || 0}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.currentStock || 0}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Reorder Point:</span>
-                        <p className="font-medium mt-1">{selectedItem.reorderPoint || 0}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.reorderPoint || 0}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">GST Rate:</span>
-                        <p className="font-medium mt-1">{selectedItem.gstRate || 18}%</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.gstRate || 18}%
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">SKU:</span>
-                        <p className="font-medium mt-1">{selectedItem.sku || '-'}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.sku || "-"}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Barcode:</span>
-                        <p className="font-medium mt-1">{selectedItem.barcode || '-'}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.barcode || "-"}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Category:</span>
-                        <p className="font-medium mt-1">{selectedItem.category || '-'}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.category || "-"}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Brand:</span>
-                        <p className="font-medium mt-1">{selectedItem.brand || '-'}</p>
+                        <p className="font-medium mt-1">
+                          {selectedItem.brand || "-"}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {/* System Information */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-gray-900">System Information</h3>
+                    <h3 className="text-sm font-medium text-gray-900">
+                      System Information
+                    </h3>
                     <div className="space-y-3 text-sm">
                       <div>
                         <span className="text-gray-500">Created By:</span>
@@ -553,11 +620,16 @@ export default function ItemsSection() {
                       </div>
                       <div>
                         <span className="text-gray-500">Created On:</span>
-                        <p className="font-medium mt-1">{new Date(selectedItem.createdAt).toLocaleDateString('en-GB', { 
-                          day: '2-digit', 
-                          month: 'short', 
-                          year: 'numeric' 
-                        })}</p>
+                        <p className="font-medium mt-1">
+                          {new Date(selectedItem.createdAt).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500">Last Modified By:</span>
@@ -565,23 +637,30 @@ export default function ItemsSection() {
                       </div>
                       <div>
                         <span className="text-gray-500">Last Modified On:</span>
-                        <p className="font-medium mt-1">{new Date(selectedItem.updatedAt).toLocaleDateString('en-GB', { 
-                          day: '2-digit', 
-                          month: 'short', 
-                          year: 'numeric' 
-                        })}</p>
+                        <p className="font-medium mt-1">
+                          {new Date(selectedItem.updatedAt).toLocaleDateString(
+                            "en-GB",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {activeTab === 'transactions' && (
+              {activeTab === "transactions" && (
                 <div className="space-y-4">
                   {/* Filters */}
                   <div className="flex gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Filter By:</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Filter By:
+                      </label>
                       <select className="border border-gray-300 rounded-md px-3 py-2 text-sm">
                         <option>Quotes</option>
                         <option>Invoices</option>
@@ -589,7 +668,9 @@ export default function ItemsSection() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status:</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Status:
+                      </label>
                       <select className="border border-gray-300 rounded-md px-3 py-2 text-sm">
                         <option>All</option>
                         <option>Draft</option>
@@ -598,7 +679,7 @@ export default function ItemsSection() {
                       </select>
                     </div>
                   </div>
-                  
+
                   {/* No Data Message */}
                   <div className="text-center py-12">
                     <p className="text-gray-500 text-lg">There are no quotes</p>
@@ -606,20 +687,28 @@ export default function ItemsSection() {
                 </div>
               )}
 
-              {activeTab === 'history' && (
+              {activeTab === "history" && (
                 <div className="space-y-4">
                   <div className="overflow-x-auto">
                     <table className="min-w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DATE</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DETAILS</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            DATE
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            DETAILS
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         <tr>
-                          <td className="px-4 py-3 text-sm text-gray-900">06/08/2025 12:13 PM</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">created by - Try</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            06/08/2025 12:13 PM
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            created by - Try
+                          </td>
                         </tr>
                       </tbody>
                     </table>
