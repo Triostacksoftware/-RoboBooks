@@ -18,14 +18,13 @@ import estimatesRoutes from "./routes/estimates.routes.js";
 import invoiceRoutes from "./routes/invoiceroutes.js";
 import projectRoutes from "./routes/projectroutes.js";
 import timesheetRoutes from "./routes/timesheetroutes.js";
+import itemRoutes from "./routes/itemRoutes.js";
 
 // server.js  (or index.js)
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
 import passport from "passport";
-import session from "express-session";
-
 import "./config/passport.js";
 
 // ─── Route imports ───────────────────────────────────────────────────────────────
@@ -58,17 +57,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// Passport session (for OAuth)
-app.use(
-  session({
-    secret: process.env.ACCESS_TOKEN_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false }, // set true behind HTTPS
-  })
-);
+// Passport initialization (for OAuth)
 app.use(passport.initialize());
-app.use(passport.session());
 // ────────────────────────────────────────────────────────────────────────────────
 
 // ─── API routes ────────────────────────────────────────────────────────────────
@@ -93,6 +83,7 @@ app.use("/api/bank-transactions", bankTransactionRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/timesheets", timesheetRoutes);
+app.use("/api/items", itemRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Welcome to the RoboBooks API");

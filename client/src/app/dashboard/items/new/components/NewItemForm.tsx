@@ -1,21 +1,48 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+interface ItemFormData {
+  type: 'Goods' | 'Service';
+  name: string;
+  unit: string;
+  hsnCode: string;
+  sacCode: string;
+  salesEnabled: boolean;
+  purchaseEnabled: boolean;
+  sellingPrice: string;
+  costPrice: string;
+  salesAccount: string;
+  purchaseAccount: string;
+  salesDescription: string;
+  purchaseDescription: string;
+  preferredVendor: string;
+  description: string;
+}
 
 export default function NewItemForm() {
-  const [type, setType] = useState<'Goods' | 'Service'>('Goods');
-  const [name, setName] = useState('');
-  const [unit, setUnit] = useState('');
-  const [salesEnabled, setSalesEnabled] = useState(true);
-  const [purchaseEnabled, setPurchaseEnabled] = useState(true);
-  const [sellingPrice, setSellingPrice] = useState('');
-  const [costPrice, setCostPrice] = useState('');
-  const [salesAccount, setSalesAccount] = useState('Sales');
-  const [purchaseAccount, setPurchaseAccount] = useState('Cost of Goods Sold');
-  const [salesDescription, setSalesDescription] = useState('');
-  const [purchaseDescription, setPurchaseDescription] = useState('');
-  const [preferredVendor, setPreferredVendor] = useState('');
-  const [description, setDescription] = useState('');
+  const router = useRouter();
+  const [formData, setFormData] = useState<ItemFormData>({
+    type: 'Goods',
+    name: '',
+    unit: '',
+    hsnCode: '',
+    sacCode: '',
+    salesEnabled: true,
+    purchaseEnabled: true,
+    sellingPrice: '',
+    costPrice: '',
+    salesAccount: 'Sales',
+    purchaseAccount: 'Cost of Goods Sold',
+    salesDescription: '',
+    purchaseDescription: '',
+    preferredVendor: '',
+    description: '',
+  });
+
+  const [errors, setErrors] = useState<Partial<ItemFormData>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,252 +51,426 @@ export default function NewItemForm() {
     nameInputRef.current?.focus();
   }, []);
 
-  const handleSave = () => {
-    const itemData = {
-      type,
-      name,
-      unit,
-      salesEnabled,
-      sellingPrice,
-      salesAccount,
-      salesDescription,
-      purchaseEnabled,
-      costPrice,
-      purchaseAccount,
-      purchaseDescription,
-      preferredVendor,
-      description,
-    };
-    console.log('Saving item:', itemData);
-    // TODO: Replace with API submission
+  const handleInputChange = (field: keyof ItemFormData, value: string | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<ItemFormData> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    if (formData.salesEnabled && !formData.sellingPrice) {
+      newErrors.sellingPrice = 'Selling price is required when sales is enabled';
+    }
+
+    if (formData.purchaseEnabled && !formData.costPrice) {
+      newErrors.costPrice = 'Cost price is required when purchase is enabled';
+    }
+
+    if (formData.type === 'Goods' && !formData.hsnCode.trim()) {
+      newErrors.hsnCode = 'HSN code is required for goods';
+    }
+
+    if (formData.type === 'Service' && !formData.sacCode.trim()) {
+      newErrors.sacCode = 'SAC code is required for services';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
+      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    }`;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+      toast.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      toast.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        showToast('Item saved successfully!', 'success');
+        // Redirect to items page after a short delay
+        setTimeout(() => {
+          router.push('/dashboard/items');
+        }, 1000);
+      } else {
+        showToast(result.message || 'Error saving item', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving item:', error);
+      showToast('Error saving item. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
-    console.log('Form canceled');
-    // TODO: Replace with modal close or routing logic
+    if (formData.name || formData.sellingPrice || formData.costPrice) {
+      if (confirm('Are you sure you want to cancel? All changes will be lost.')) {
+        router.push('/dashboard/items');
+      }
+    } else {
+      router.push('/dashboard/items');
+    }
+  };
+
+  const getInputClassName = (field: keyof ItemFormData) => {
+    const baseClass = "border rounded px-3 py-2 w-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+    return errors[field] 
+      ? `${baseClass} border-red-500 bg-red-50` 
+      : `${baseClass} border-gray-300 hover:border-gray-400`;
   };
 
   return (
-    <div className="max-w-5xl mx-auto bg-white p-6 md:p-10 text-sm">
-      <h2 className="text-2xl font-semibold mb-6">New Item</h2>
-
-      {/* Type, Name, Unit */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center mb-6">
-        <div className="flex flex-col">
-          <label className="font-medium mb-1">Type</label>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-1">
-              <input
-                type="radio"
-                value="Goods"
-                checked={type === 'Goods'}
-                onChange={() => setType('Goods')}
-              />
-              Goods
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="radio"
-                value="Service"
-                checked={type === 'Service'}
-                onChange={() => setType('Service')}
-              />
-              Service
-            </label>
-          </div>
+    <div className="max-w-7xl mx-auto bg-white p-6 md:p-8 text-sm shadow-sm border border-gray-200 rounded-lg">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-semibold text-gray-800">New Item</h2>
+        <div className="text-sm text-gray-500">
+          {formData.type === 'Goods' ? 'Goods Item' : 'Service Item'}
         </div>
+      </div>
 
-        <div className="flex flex-col">
-          <label className="font-medium text-red-600 mb-1">Name*</label>
+      {/* Type Selection */}
+      <div className="mb-6">
+        <label className="font-medium text-gray-700 mb-3 block">Type</label>
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              value="Goods"
+              checked={formData.type === 'Goods'}
+              onChange={() => handleInputChange('type', 'Goods')}
+              className="text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-gray-700">Goods</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              value="Service"
+              checked={formData.type === 'Service'}
+              onChange={() => handleInputChange('type', 'Service')}
+              className="text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-gray-700">Service</span>
+          </label>
+        </div>
+      </div>
+
+      {/* Basic Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label className="font-medium text-red-600 mb-2 block">
+            Name*
+          </label>
           <input
             type="text"
             ref={nameInputRef}
-            value={name}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setName(e.target.value)
-            }
-            className="border rounded px-3 py-2"
+            value={formData.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+            className={getInputClassName('name')}
+            placeholder="Enter item name"
             required
           />
+          {errors.name && (
+            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+          )}
         </div>
 
-        <div className="flex flex-col">
-          <label className="font-medium mb-1">Unit</label>
+        <div>
+          <label className="font-medium text-gray-700 mb-2 block">
+            Unit
+          </label>
           <select
-            value={unit}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              setUnit(e.target.value)
-            }
-            className="border rounded px-3 py-2"
+            value={formData.unit}
+            onChange={(e) => handleInputChange('unit', e.target.value)}
+            className={getInputClassName('unit')}
           >
             <option value="">Select or type to add</option>
             <option value="Piece">Piece</option>
             <option value="Kg">Kg</option>
             <option value="Liter">Liter</option>
+            <option value="Meter">Meter</option>
+            <option value="Hour">Hour</option>
+            <option value="Day">Day</option>
+            <option value="Month">Month</option>
+            <option value="Year">Year</option>
           </select>
         </div>
       </div>
 
-      {/* Sales & Purchase Info */}
+      {/* HSN/SAC Code */}
+      <div className="mb-6">
+        <label className="font-medium text-gray-700 mb-2 block">
+          {formData.type === 'Goods' ? 'HSN Code*' : 'SAC Code*'}
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={formData.type === 'Goods' ? formData.hsnCode : formData.sacCode}
+            onChange={(e) => handleInputChange(
+              formData.type === 'Goods' ? 'hsnCode' : 'sacCode', 
+              e.target.value
+            )}
+            className={`${getInputClassName(formData.type === 'Goods' ? 'hsnCode' : 'sacCode')} flex-1`}
+            placeholder={formData.type === 'Goods' ? 'Enter HSN code (e.g., 9401)' : 'Enter SAC code (e.g., 998314)'}
+            maxLength={formData.type === 'Goods' ? 8 : 6}
+          />
+          <button
+            type="button"
+            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-600"
+            title={`Search ${formData.type === 'Goods' ? 'HSN' : 'SAC'} codes`}
+          >
+            🔍
+          </button>
+        </div>
+        {errors.hsnCode && (
+          <p className="text-red-500 text-xs mt-1">{errors.hsnCode}</p>
+        )}
+        {errors.sacCode && (
+          <p className="text-red-500 text-xs mt-1">{errors.sacCode}</p>
+        )}
+        <p className="text-xs text-gray-500 mt-1">
+          {formData.type === 'Goods' 
+            ? 'HSN (Harmonized System of Nomenclature) code is required for GST compliance'
+            : 'SAC (Services Accounting Code) is required for GST compliance'
+          }
+        </p>
+      </div>
+
+      {/* Sales & Purchase Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Sales Information */}
-        <div className="border rounded p-4">
+        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
           <div className="flex items-center gap-2 mb-4">
             <input
               type="checkbox"
-              checked={salesEnabled}
-              onChange={() => setSalesEnabled(!salesEnabled)}
+              checked={formData.salesEnabled}
+              onChange={() => handleInputChange('salesEnabled', !formData.salesEnabled)}
+              className="text-blue-600 focus:ring-blue-500"
             />
-            <h3 className="font-semibold">Sales Information</h3>
+            <h3 className="font-semibold text-gray-800">Sales Information</h3>
           </div>
 
-          {salesEnabled && (
-            <>
-              <div className="mb-3">
-                <label className="block text-red-600 mb-1">Selling Price*</label>
+          {formData.salesEnabled && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-red-600 mb-2 font-medium">Selling Price*</label>
                 <div className="flex gap-1">
-                  <span className="border rounded-l px-3 py-2 bg-gray-100">INR</span>
+                  <span className="border border-gray-300 rounded-l px-3 py-2 bg-gray-100 text-gray-600 text-sm">
+                    ₹
+                  </span>
                   <input
                     type="number"
-                    value={sellingPrice}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setSellingPrice(e.target.value)
-                    }
-                    className="border rounded-r px-3 py-2 w-full"
+                    value={formData.sellingPrice}
+                    onChange={(e) => handleInputChange('sellingPrice', e.target.value)}
+                    className={`${getInputClassName('sellingPrice')} rounded-r`}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
                   />
                 </div>
+                {errors.sellingPrice && (
+                  <p className="text-red-500 text-xs mt-1">{errors.sellingPrice}</p>
+                )}
               </div>
 
-              <div className="mb-3">
-                <label className="block text-red-600 mb-1">Account*</label>
+              <div>
+                <label className="block text-red-600 mb-2 font-medium">Account*</label>
                 <select
-                  value={salesAccount}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setSalesAccount(e.target.value)
-                  }
-                  className="border rounded px-3 py-2 w-full"
+                  value={formData.salesAccount}
+                  onChange={(e) => handleInputChange('salesAccount', e.target.value)}
+                  className={getInputClassName('salesAccount')}
                 >
-                  <option>Sales</option>
-                  <option>Services</option>
+                  <option value="Sales">Sales</option>
+                  <option value="Services">Services</option>
+                  <option value="Other Income">Other Income</option>
                 </select>
               </div>
 
               <div>
-                <label className="block mb-1">Description</label>
+                <label className="block text-gray-700 mb-2">Description</label>
                 <textarea
-                  value={salesDescription}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setSalesDescription(e.target.value)
-                  }
-                  className="border rounded px-3 py-2 w-full"
+                  value={formData.salesDescription}
+                  onChange={(e) => handleInputChange('salesDescription', e.target.value)}
+                  className={getInputClassName('salesDescription')}
+                  rows={3}
+                  placeholder="Enter sales description..."
                 />
               </div>
-            </>
+            </div>
           )}
         </div>
 
         {/* Purchase Information */}
-        <div className="border rounded p-4">
+        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
           <div className="flex items-center gap-2 mb-4">
             <input
               type="checkbox"
-              checked={purchaseEnabled}
-              onChange={() => setPurchaseEnabled(!purchaseEnabled)}
+              checked={formData.purchaseEnabled}
+              onChange={() => handleInputChange('purchaseEnabled', !formData.purchaseEnabled)}
+              className="text-blue-600 focus:ring-blue-500"
             />
-            <h3 className="font-semibold">Purchase Information</h3>
+            <h3 className="font-semibold text-gray-800">Purchase Information</h3>
           </div>
 
-          {purchaseEnabled && (
-            <>
-              <div className="mb-3">
-                <label className="block text-red-600 mb-1">Cost Price*</label>
+          {formData.purchaseEnabled && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-red-600 mb-2 font-medium">Cost Price*</label>
                 <div className="flex gap-1">
-                  <span className="border rounded-l px-3 py-2 bg-gray-100">INR</span>
+                  <span className="border border-gray-300 rounded-l px-3 py-2 bg-gray-100 text-gray-600 text-sm">
+                    ₹
+                  </span>
                   <input
                     type="number"
-                    value={costPrice}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setCostPrice(e.target.value)
-                    }
-                    className="border rounded-r px-3 py-2 w-full"
+                    value={formData.costPrice}
+                    onChange={(e) => handleInputChange('costPrice', e.target.value)}
+                    className={`${getInputClassName('costPrice')} rounded-r`}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
                   />
                 </div>
+                {errors.costPrice && (
+                  <p className="text-red-500 text-xs mt-1">{errors.costPrice}</p>
+                )}
               </div>
 
-              <div className="mb-3">
-                <label className="block text-red-600 mb-1">Account*</label>
+              <div>
+                <label className="block text-red-600 mb-2 font-medium">Account*</label>
                 <select
-                  value={purchaseAccount}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setPurchaseAccount(e.target.value)
-                  }
-                  className="border rounded px-3 py-2 w-full"
+                  value={formData.purchaseAccount}
+                  onChange={(e) => handleInputChange('purchaseAccount', e.target.value)}
+                  className={getInputClassName('purchaseAccount')}
                 >
-                  <option>Cost of Goods Sold</option>
-                  <option>Purchase</option>
+                  <option value="Cost of Goods Sold">Cost of Goods Sold</option>
+                  <option value="Purchase">Purchase</option>
+                  <option value="Expenses">Expenses</option>
                 </select>
               </div>
 
               <div>
-                <label className="block mb-1">Description</label>
+                <label className="block text-gray-700 mb-2">Description</label>
                 <textarea
-                  value={purchaseDescription}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setPurchaseDescription(e.target.value)
-                  }
-                  className="border rounded px-3 py-2 w-full"
+                  value={formData.purchaseDescription}
+                  onChange={(e) => handleInputChange('purchaseDescription', e.target.value)}
+                  className={getInputClassName('purchaseDescription')}
+                  rows={3}
+                  placeholder="Enter purchase description..."
                 />
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Extra Fields */}
+      {/* Additional Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="block mb-1">Description</label>
+          <label className="block text-gray-700 mb-2 font-medium">Description</label>
           <textarea
-            value={description}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setDescription(e.target.value)
-            }
-            className="border rounded px-3 py-2 w-full"
+            value={formData.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
+            className={getInputClassName('description')}
+            rows={3}
+            placeholder="Enter general description..."
           />
         </div>
         <div>
-          <label className="block mb-1">Preferred Vendor</label>
+          <label className="block text-gray-700 mb-2 font-medium">Preferred Vendor</label>
           <input
             type="text"
-            value={preferredVendor}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setPreferredVendor(e.target.value)
-            }
-            className="border rounded px-3 py-2 w-full"
+            value={formData.preferredVendor}
+            onChange={(e) => handleInputChange('preferredVendor', e.target.value)}
+            className={getInputClassName('preferredVendor')}
+            placeholder="Enter preferred vendor name"
           />
         </div>
       </div>
 
       {/* Inventory Note */}
-      <div className="text-gray-600 text-sm mb-6">
-        Do you want to keep track of this item?{' '}
-        <span className="font-semibold">Enable Inventory</span> to view its stock based on the sales
-        and purchase transactions you record for it. Go to{' '}
-        <span className="italic font-medium">Settings &gt; Preferences &gt; Items</span> and enable
-        inventory.
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <div className="text-blue-600 text-lg">ℹ️</div>
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">Inventory Tracking</p>
+            <p>
+              Do you want to keep track of this item?{' '}
+              <span className="font-semibold text-blue-900 cursor-pointer hover:underline">
+                Enable Inventory
+              </span>{' '}
+              to view its stock based on the sales and purchase transactions you record for it. 
+              Go to{' '}
+              <span className="italic font-medium text-blue-900 cursor-pointer hover:underline">
+                Settings &gt; Preferences &gt; Items
+              </span>{' '}
+              and enable inventory.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-start gap-4">
+      <div className="flex justify-start gap-4 pt-4 border-t border-gray-200">
         <button
           onClick={handleSave}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded"
+          disabled={isSubmitting}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
         >
-          Save
+          {isSubmitting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Saving...
+            </>
+          ) : (
+            'Save'
+          )}
         </button>
         <button
           onClick={handleCancel}
-          className="border border-gray-300 text-gray-700 px-5 py-2 rounded hover:bg-gray-50"
+          disabled={isSubmitting}
+          className="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
           Cancel
         </button>
