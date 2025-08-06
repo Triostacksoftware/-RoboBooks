@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { api } from "@/lib/api";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { api } from "@/lib/api"; // ← the helper we built earlier
 
 export default function SignIn() {
   const router = useRouter();
@@ -70,7 +69,7 @@ export default function SignIn() {
         }
       },
     });
-    window.google.accounts.id.prompt();
+    window.google.accounts.id.prompt(); // show One-Tap / chooser
   };
 
   return (
@@ -134,7 +133,16 @@ export default function SignIn() {
           disabled={loading}
           className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "Signing in..." : "Sign in"}
+          Sign in
+        </button>
+
+        {/* Temporary bypass for development */}
+        <button
+          type="button"
+          onClick={() => router.push("/dashboard")}
+          className="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
+        >
+          Skip Login (Development)
         </button>
 
         <div className="flex items-center gap-3">

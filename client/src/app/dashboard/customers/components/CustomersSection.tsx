@@ -89,7 +89,12 @@ export default function CustomersSection() {
       setError(null);
 
       const response = await fetch(
-        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers"
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
       const result = await response.json();
 
