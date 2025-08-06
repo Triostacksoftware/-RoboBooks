@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/lib/api"; // ← the helper we built earlier
-
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 export default function SignIn() {
   const router = useRouter();
 
