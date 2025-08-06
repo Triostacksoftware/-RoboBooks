@@ -5,19 +5,40 @@ export async function api<T = unknown>(
 ): Promise<T> {
   const { json, ...rest } = init;
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
-    credentials: "include",          // <-- send/receive rb_session cookie
+  // Use hardcoded backend URL for now
+  const backendUrl =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+  console.log("🌐 Making request to:", `${backendUrl}${path}`);
+
+  const res = await fetch(`${backendUrl}${path}`, {
+    credentials: "include", // <-- send/receive rb_session cookie
     headers: {
       "Content-Type": "application/json",
-      ...(init.headers || {})
+      ...(init.headers || {}),
     },
     body: json ? JSON.stringify(json) : undefined,
-    ...rest
+    ...rest,
   });
 
   if (!res.ok) {
-    const { message } = (await res.json()) as { message: string };
-    throw new Error(message ?? "Request failed");
+    const errorData = await res
+      .json()
+      .catch(() => ({ message: "Request failed" }));
+    throw new Error(
+      errorData.message || `HTTP ${res.status}: ${res.statusText}`
+    );
   }
   return res.json() as Promise<T>;
+}
+
+// Logout utility function
+export async function logout(): Promise<void> {
+  try {
+    console.log("🚪 Logging out...");
+    await api("/api/auth/logout", { method: "POST" });
+    console.log("✅ Logout successful");
+  } catch (error) {
+    console.error("❌ Logout failed:", error);
+    // Even if logout fails, we still want to clear the session
+  }
 }

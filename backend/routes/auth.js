@@ -13,22 +13,124 @@ function issueCookie(res, token) {
     httpOnly: true,
     sameSite: isProd ? "strict" : "lax",
     secure: isProd,
-    maxAge: 1000 * 60 * 60 * 24 * 7
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    path: "/", // Ensure cookie is sent with all requests
+    domain: isProd ? undefined : "localhost", // For localhost development
   });
+}
+
+// Validation helper
+function validateEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function validatePhone(phone) {
+  const phoneRegex = /^\d{10,15}$/;
+  return phoneRegex.test(phone.replace(/\D/g, ""));
 }
 
 // REGISTER
 router.post("/register", async (req, res, next) => {
   try {
-    const { email, phone, password } = req.body;
-    if (!email && !phone) throw new Error("Email or phone is required");
-    const passwordHash = password ? await bcrypt.hash(password, 12) : undefined;
-    const user = await User.create({ email, phone, passwordHash });
+    const {
+      companyName,
+      email,
+      phoneNumber,
+      phoneDialCode,
+      phoneIso2,
+      password,
+      country,
+      state,
+    } = req.body;
+
+    // Validation
+    if (!companyName?.trim()) {
+      return res.status(400).json({ message: "Company name is required" });
+    }
+
+    if (!email?.trim()) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    if (!validateEmail(email)) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address" });
+    }
+
+    if (!phoneNumber?.trim()) {
+      return res.status(400).json({ message: "Mobile number is required" });
+    }
+
+    if (!validatePhone(phoneNumber)) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid mobile number" });
+    }
+
+    if (!password || password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { phone: phoneNumber }],
+    });
+
+    if (existingUser) {
+      if (existingUser.email === email.toLowerCase()) {
+        return res.status(409).json({ message: "Email already registered" });
+      } else {
+        return res
+          .status(409)
+          .json({ message: "Phone number already registered" });
+      }
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Create user
+    const user = await User.create({
+      companyName: companyName.trim(),
+      email: email.toLowerCase().trim(),
+      phone: phoneNumber.trim(),
+      phoneDialCode: phoneDialCode || "+91",
+      phoneIso2: phoneIso2 || "IN",
+      passwordHash,
+      country: country || "India",
+      state: state || "Uttar Pradesh",
+    });
+
+    // Generate token and set cookie
     const token = signToken({ uid: user._id });
     issueCookie(res, token);
-    res.status(201).json({ user: { id: user._id, email: user.email, phone: user.phone } });
+
+    // Return user data (without sensitive info)
+    res.status(201).json({
+      success: true,
+      user: {
+        id: user._id,
+        companyName: user.companyName,
+        email: user.email,
+        phone: user.phone,
+        country: user.country,
+        state: user.state,
+      },
+    });
   } catch (err) {
-    if (err.code === 11000) err.message = "User already exists";
+    console.error("Registration error:", err);
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      const message =
+        field === "email"
+          ? "Email already registered"
+          : "Phone number already registered";
+      return res.status(409).json({ message });
+    }
     next(err);
   }
 });
@@ -37,18 +139,61 @@ router.post("/register", async (req, res, next) => {
 router.post("/login", async (req, res, next) => {
   try {
     const { emailOrPhone, password } = req.body;
-    if (!emailOrPhone || !password) throw new Error("Missing credentials");
+
+    if (!emailOrPhone || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email/phone and password are required" });
+    }
+
+    // Find user by email or phone
     const query = emailOrPhone.includes("@")
       ? { email: emailOrPhone.toLowerCase() }
       : { phone: emailOrPhone };
+
     const user = await User.findOne(query);
-    if (!user || !user.passwordHash) throw new Error("Invalid credentials");
+
+    if (!user || !user.passwordHash) {
+      return res
+        .status(401)
+        .json({ message: "Invalid email/phone or password" });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({ message: "Account is deactivated" });
+    }
+
+    // Verify password
     const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) throw new Error("Invalid credentials");
+    if (!match) {
+      return res
+        .status(401)
+        .json({ message: "Invalid email/phone or password" });
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate token and set cookie
     const token = signToken({ uid: user._id });
     issueCookie(res, token);
-    res.json({ user: { id: user._id, email: user.email, phone: user.phone } });
+
+    // Return user data
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        companyName: user.companyName,
+        email: user.email,
+        phone: user.phone,
+        country: user.country,
+        state: user.state,
+      },
+    });
   } catch (err) {
+    console.error("Login error:", err);
     next(err);
   }
 });
@@ -57,41 +202,91 @@ router.post("/login", async (req, res, next) => {
 router.post("/login/google", async (req, res, next) => {
   const { idToken } = req.body;
   if (!idToken) return res.status(400).json({ message: "idToken required" });
+
   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
   try {
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID
+      audience: process.env.GOOGLE_CLIENT_ID,
     });
     const { sub: providerId, email, name } = ticket.getPayload();
+
     let user = await User.findOne({
       "providers.name": "google",
-      "providers.providerId": providerId
+      "providers.providerId": providerId,
     });
+
     if (!user) {
-      user = await User.create({
-        email,
-        providers: [{ name: "google", providerId }]
-      });
+      // Check if email already exists
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        // Link Google account to existing user
+        existingUser.providers.push({ name: "google", providerId });
+        await existingUser.save();
+        user = existingUser;
+      } else {
+        // Create new user
+        user = await User.create({
+          email: email.toLowerCase(),
+          companyName: name || "Google User",
+          providers: [{ name: "google", providerId }],
+        });
+      }
     }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
     const token = signToken({ uid: user._id });
     issueCookie(res, token);
-    res.json({ user: { id: user._id, email: user.email, name } });
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        companyName: user.companyName,
+        email: user.email,
+        phone: user.phone,
+        country: user.country,
+        state: user.state,
+      },
+    });
   } catch (err) {
+    console.error("Google OAuth error:", err);
     next(err);
   }
 });
 
 // SESSION PROBE
 router.get("/me", authGuard, async (req, res) => {
-  const user = await User.findById(req.user.uid).lean();
-  res.json({ user: { id: user._id, email: user.email, phone: user.phone } });
+  try {
+    const user = await User.findById(req.user.uid).lean();
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        companyName: user.companyName,
+        email: user.email,
+        phone: user.phone,
+        country: user.country,
+        state: user.state,
+      },
+    });
+  } catch (err) {
+    console.error("Session probe error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 // LOGOUT
 router.post("/logout", (_req, res) => {
   res.clearCookie("rb_session");
-  res.json({ message: "Logged out" });
+  res.json({ success: true, message: "Logged out successfully" });
 });
 
 export default router;

@@ -3,48 +3,74 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { api } from "@/lib/api";        // ← the helper we built earlier
+import { api } from "@/lib/api";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function SignIn() {
   const router = useRouter();
 
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
 
   /* ------------ classic JWT login ------------ */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErr("");
+    setLoading(true);
+
     try {
-      await api("/api/auth/login", {
+      const response = await api("/api/auth/login", {
         method: "POST",
         json: { emailOrPhone, password },
       });
-      router.push("/dashboard");
+
+      if (response.success) {
+        router.push("/dashboard");
+      } else {
+        setErr("Login failed. Please try again.");
+      }
     } catch (e) {
-      setErr(e.message);
+      setErr(e.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   /* ------------- Google OAuth login ----------- */
   const handleGoogle = () => {
-    if (!window.google) return alert("Google SDK not loaded");
+    if (!window.google) {
+      setErr("Google SDK not loaded. Please refresh the page.");
+      return;
+    }
+
+    setLoading(true);
+    setErr("");
+
     window.google.accounts.id.initialize({
       client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
       callback: async ({ credential }) => {
         try {
-          await api("/api/auth/login/google", {
+          const response = await api("/api/auth/login/google", {
             method: "POST",
             json: { idToken: credential },
           });
-          router.push("/dashboard");
+
+          if (response.success) {
+            router.push("/dashboard");
+          } else {
+            setErr("Google login failed. Please try again.");
+          }
         } catch (e) {
-          setErr(e.message);
+          setErr(e.message || "Google login failed. Please try again.");
+        } finally {
+          setLoading(false);
         }
       },
     });
-    window.google.accounts.id.prompt();       // show One-Tap / chooser
+    window.google.accounts.id.prompt();
   };
 
   return (
@@ -74,24 +100,41 @@ export default function SignIn() {
           onChange={(e) => setEmailOrPhone(e.target.value)}
           placeholder="Email or mobile"
           className="w-full rounded-xl border p-3"
+          disabled={loading}
         />
 
-        <input
-          required
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="w-full rounded-xl border p-3"
-        />
+        <div className="relative">
+          <input
+            required
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full rounded-xl border p-3 pr-10"
+            disabled={loading}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            disabled={loading}
+          >
+            {showPassword ? (
+              <EyeSlashIcon className="h-5 w-5 text-slate-500" />
+            ) : (
+              <EyeIcon className="h-5 w-5 text-slate-500" />
+            )}
+          </button>
+        </div>
 
         {err && <p className="text-red-600 text-sm">{err}</p>}
 
         <button
           type="submit"
-          className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700"
+          disabled={loading}
+          className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign in
+          {loading ? "Signing in..." : "Sign in"}
         </button>
 
         <div className="flex items-center gap-3">
@@ -103,9 +146,10 @@ export default function SignIn() {
         <button
           type="button"
           onClick={handleGoogle}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border p-2 hover:bg-slate-50"
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-3 rounded-xl border p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {/* Google “G” SVG inline */}
+          {/* Google "G" SVG inline */}
           <svg viewBox="0 0 48 48" className="h-5 w-5">
             <path
               fill="#EA4335"
@@ -128,6 +172,17 @@ export default function SignIn() {
             Continue with Google
           </span>
         </button>
+
+        {/* Sign up link */}
+        <p className="text-center text-sm text-slate-600">
+          Don't have an account?{" "}
+          <a
+            className="font-semibold text-blue-700 hover:underline"
+            href="/register"
+          >
+            Sign up
+          </a>
+        </p>
       </form>
 
       {/* Google Identity script */}

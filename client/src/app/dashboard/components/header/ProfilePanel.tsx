@@ -1,7 +1,9 @@
 // components/header/ProfilePanel.tsx
-'use client';
+"use client";
 
-import React from 'react';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 import {
   XMarkIcon,
   BookOpenIcon,
@@ -22,8 +24,8 @@ import {
   DevicePhoneMobileIcon,
   DeviceTabletIcon,
   ChevronRightIcon,
-} from '@heroicons/react/24/outline';
-import { createPortal } from 'react-dom';
+} from "@heroicons/react/24/outline";
+import { createPortal } from "react-dom";
 
 interface ProfilePanelProps {
   open: boolean;
@@ -31,24 +33,75 @@ interface ProfilePanelProps {
 }
 
 const GRID_ITEMS = [
-  { Icon: BookOpenIcon,         label: 'Help Documents', href: '/help-docs' },
-  { Icon: ChatBubbleLeftEllipsisIcon, label: 'FAQs',            href: '/faqs' },
-  { Icon: GlobeAltIcon,         label: 'Forum',             href: '/forum' },
-  { Icon: PlayCircleIcon,       label: 'Video Tutorials',   href: '/videos' },
-  { Icon: ArrowPathIcon,        label: 'Explore Features',  href: '/explore' },
-  { Icon: FolderIcon,           label: 'Migration Guide',   href: '/migration' },
+  { Icon: BookOpenIcon, label: "Help Documents", href: "/help-docs" },
+  { Icon: ChatBubbleLeftEllipsisIcon, label: "FAQs", href: "/faqs" },
+  { Icon: GlobeAltIcon, label: "Forum", href: "/forum" },
+  { Icon: PlayCircleIcon, label: "Video Tutorials", href: "/videos" },
+  { Icon: ArrowPathIcon, label: "Explore Features", href: "/explore" },
+  { Icon: FolderIcon, label: "Migration Guide", href: "/migration" },
 ];
 
 const ASSIST_LIST = [
-  { Icon: EnvelopeIcon,          label: 'Send an email',                         href: '/support/email' },
-  { Icon: CursorArrowRippleIcon, label: 'Record screen & share feedback',         href: '/support/feedback' },
-  { Icon: CalendarDaysIcon,      label: 'Register for webinars',                  href: '/support/webinars' },
-  { Icon: UserIcon,              label: 'Find an accountant',                     href: '/support/accountant' },
-  { Icon: StarIcon,              label: 'Early Access Features',                  href: '/support/early-access' },
-  { Icon: PhoneIcon,             label: 'Talk to us (Mon–Fri · 9am–7pm · Toll-Free)', href: 'tel:18003093036' },
+  { Icon: EnvelopeIcon, label: "Send an email", href: "/support/email" },
+  {
+    Icon: CursorArrowRippleIcon,
+    label: "Record screen & share feedback",
+    href: "/support/feedback",
+  },
+  {
+    Icon: CalendarDaysIcon,
+    label: "Register for webinars",
+    href: "/support/webinars",
+  },
+  { Icon: UserIcon, label: "Find an accountant", href: "/support/accountant" },
+  {
+    Icon: StarIcon,
+    label: "Early Access Features",
+    href: "/support/early-access",
+  },
+  {
+    Icon: PhoneIcon,
+    label: "Talk to us (Mon–Fri · 9am–7pm · Toll-Free)",
+    href: "tel:18003093036",
+  },
 ];
 
 export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const testClick = () => {
+    console.log("🔘 Test button clicked!");
+  };
+
+  const handleLogout = async () => {
+    console.log("🚪 Logout button clicked!");
+    try {
+      setIsLoggingOut(true);
+      console.log("🚪 Calling logout API...");
+
+      // Call the logout API directly
+      const response = await api("/api/auth/logout", { method: "POST" });
+      console.log("✅ Logout API response:", response);
+
+      // Close the panel
+      onClose();
+      console.log("✅ Panel closed");
+
+      // Redirect to signin page
+      console.log("🔄 Redirecting to signin page...");
+      router.push("/signin");
+    } catch (error) {
+      console.error("❌ Logout failed:", error);
+      // Even if logout fails, redirect to signin page
+      console.log("🔄 Redirecting to signin page despite error...");
+      router.push("/signin");
+    } finally {
+      setIsLoggingOut(false);
+      console.log("✅ Logout process completed");
+    }
+  };
+
   if (!open) return null;
 
   return createPortal(
@@ -66,7 +119,9 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
             </div>
             <div>
               <div className="text-lg font-semibold text-gray-900">Try</div>
-              <div className="text-sm text-gray-500">farziemailthisis@gmail.com</div>
+              <div className="text-sm text-gray-500">
+                farziemailthisis@gmail.com
+              </div>
             </div>
           </div>
           <button
@@ -86,19 +141,12 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           >
             My Account
           </a>
-          <a
-            href="/sign-out"
-            className="flex items-center gap-1 text-red-600 font-medium hover:underline"
-          >
-            <ArrowPathIcon className="w-4 h-4 rotate-90" />
-            Sign Out
-          </a>
         </div>
 
         {/* Trial info */}
         <div className="px-6 py-4 border-b text-sm text-gray-700 space-y-2">
           <p>
-            Your premium trial plan ends in{' '}
+            Your premium trial plan ends in{" "}
             <span className="font-semibold text-gray-900">12 days</span>.
           </p>
           <div className="flex gap-4">
@@ -171,9 +219,7 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           >
             <SparklesIcon className="w-7 h-7 text-yellow-500" />
             <div>
-              <div className="font-medium text-gray-900">
-                What’s New?
-              </div>
+              <div className="font-medium text-gray-900">What&#39;s New?</div>
               <div className="text-sm text-gray-700">
                 View the latest features and enhancements
               </div>
