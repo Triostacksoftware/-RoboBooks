@@ -6,7 +6,6 @@ export async function api<T = unknown>(
   const { json, ...rest } = init;
 
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
-    credentials: "include",          // <-- send/receive rb_session cookie
     headers: {
       "Content-Type": "application/json",
       ...(init.headers || {})
