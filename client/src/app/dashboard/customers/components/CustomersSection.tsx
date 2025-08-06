@@ -89,14 +89,26 @@ export default function CustomersSection() {
       setError(null);
 
       const response = await fetch(
-        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers"
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
+        {
+          credentials: "include", // Include cookies for authentication
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
       const result = await response.json();
 
       if (response.ok) {
         setCustomers(result.data || []);
       } else {
-        setError(result.message || "Failed to fetch customers");
+        if (response.status === 401) {
+          setError("Authentication required. Please log in again.");
+          // Redirect to login if unauthorized
+          router.push("/signin");
+        } else {
+          setError(result.message || "Failed to fetch customers");
+        }
       }
     } catch (error) {
       console.error("Error fetching customers:", error);
