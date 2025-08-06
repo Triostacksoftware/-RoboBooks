@@ -27,11 +27,14 @@ export default function RightSidebar() {
 
   // 1) Sync a body–level class so your main content can react in global CSS:
   useEffect(() => {
-    document.body.classList.toggle('rs-collapsed', collapsed);
-    document.body.classList.toggle('rs-expanded', !collapsed);
-    return () => {
-      document.body.classList.remove('rs-collapsed', 'rs-expanded');
-    };
+    // Check if we're on the client side
+    if (typeof document !== 'undefined') {
+      document.body.classList.toggle('rs-collapsed', collapsed);
+      document.body.classList.toggle('rs-expanded', !collapsed);
+      return () => {
+        document.body.classList.remove('rs-collapsed', 'rs-expanded');
+      };
+    }
   }, [collapsed]);
 
   // 2) Choose the correct arrow
@@ -39,7 +42,7 @@ export default function RightSidebar() {
   const ariaLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
 
   if (collapsed) {
-    // Collapsed view: single “expand” button at the bottom
+    // Collapsed view: single "expand" button at the bottom
     return (
       <aside className="fixed bottom-4 right-0">
         <button

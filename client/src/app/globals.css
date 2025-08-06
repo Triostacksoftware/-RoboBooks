@@ -1,34 +1,40 @@
-@import "tailwindcss";
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
-    
   }
 }
 
 /* page baseline */
-html, body, :root { height: 100%; }
+html,
+body,
+:root {
+  height: 100%;
+}
 
 /* Optional: smoother focus glow on interactive elements */
-:where(button, [type="button"], [type="submit"], a, input, textarea, select):focus-visible {
+:where(
+    button,
+    [type="button"],
+    [type="submit"],
+    a,
+    input,
+    textarea,
+    select
+  ):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(16,185,129,.18), 0 0 0 10px rgba(37,99,235,.10);
-  border-radius: .75rem;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18),
+    0 0 0 10px rgba(37, 99, 235, 0.1);
+  border-radius: 0.75rem;
 }
 
 /* --- search width animation -------------------------------------------- */
@@ -54,7 +60,7 @@ html, body, :root { height: 100%; }
   transition: margin 0.2s ease;
 }
 
-/* when sidebar is collapsed (only the toggle “peeking” out, ~3rem): push by 3rem */
+/* when sidebar is collapsed (only the toggle "peeking" out, ~3rem): push by 3rem */
 .rs-collapsed main {
   margin-right: 0rem;
   transition: margin 0.2s ease;

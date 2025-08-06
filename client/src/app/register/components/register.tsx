@@ -333,21 +333,21 @@ export default function Register() {
         "With Robo Books’ finance suite, we saved time and money while retaining customer satisfaction—posting over 20% YoY revenue growth.",
       author: "CA Sanjeev Archak",
       role: "Integrabooks · Proprietor",
-      avatar: "/images/testimonial-1.jpg",
+      avatar: "/images/testimonial1.jpg",
     },
     {
       quote:
         "Automations and GST-ready invoicing cut monthly close by days. The team loves how fast it is.",
       author: "Shruti Mehta",
       role: "CFO · Diginest",
-      avatar: "/images/testimonial-2.jpg",
+      avatar: "/images/testimonial2.jpg",
     },
     {
       quote:
         "From billing to reconciliation, it just flows. Support is fantastic and onboarding was seamless.",
       author: "Ankit Yadav",
       role: "Founder · Pixeldesk",
-      avatar: "/images/testimonial-3.jpg",
+      avatar: "/images/testimonial3.jpg",
     },
   ];
   const [index, setIndex] = useState(0);
@@ -452,7 +452,7 @@ export default function Register() {
 
                     <div className="mt-5 flex items-center gap-4">
                       <Image
-                        src={t.avatar ?? "/images/testimonial-1.jpg"}
+                        src={t.avatar ?? "/images/testimonial1.jpg"}
                         alt={t.author}
                         width={44}
                         height={44}
