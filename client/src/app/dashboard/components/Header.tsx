@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   Bars3Icon,
   ClockIcon,
@@ -12,17 +13,39 @@ import {
   Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 
-import SearchBox from "./header/SearchBox";
-import RecentActivities from "./header/RecentActivities";
-import SubscribeButton from "./header/PremiumTooltip";
-import OrgSwitcher from "./header/OrgSwitcher";
-import NotificationsPanel from "./header/NotificationsPanel";
-import AllZohoAppsPanel from "./header/AllZohoAppsPanel";
-import ProfilePanel from "./header/ProfilePanel";
-import NewMenu from "./header/NewMenu";
-import AdvancedSearchModal from "./header/search/AdvancedSearchModal";
-import ReferralPanel from "./header/ReferralPanel";
-import SettingsPanel from "./header/SettingsPanel";
+// Dynamic imports for components that use document references
+const SearchBox = dynamic(() => import("./header/SearchBox"), { ssr: false });
+const RecentActivities = dynamic(() => import("./header/RecentActivities"), {
+  ssr: false,
+});
+const SubscribeButton = dynamic(() => import("./header/PremiumTooltip"), {
+  ssr: false,
+});
+const OrgSwitcher = dynamic(() => import("./header/OrgSwitcher"), {
+  ssr: false,
+});
+const NotificationsPanel = dynamic(
+  () => import("./header/NotificationsPanel"),
+  { ssr: false }
+);
+const AllZohoAppsPanel = dynamic(() => import("./header/AllZohoAppsPanel"), {
+  ssr: false,
+});
+const ProfilePanel = dynamic(() => import("./header/ProfilePanel"), {
+  ssr: false,
+});
+const NewMenu = dynamic(() => import("./header/NewMenu"), { ssr: false });
+const AdvancedSearchModal = dynamic(
+  () => import("./header/search/AdvancedSearchModal"),
+  { ssr: false }
+);
+const ReferralPanel = dynamic(() => import("./header/ReferralPanel"), {
+  ssr: false,
+});
+const SettingsPanel = dynamic(() => import("./header/SettingsPanel"), {
+  ssr: false,
+});
+
 type Props = {
   onToggleSidebar?: () => void;
 };
