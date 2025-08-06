@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   ChevronDownIcon,
   PlusIcon,
@@ -64,7 +64,6 @@ export default function ItemsSection() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'history'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  const router = useRouter();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const moreActionsRef = useRef<HTMLDivElement>(null);
@@ -124,10 +123,7 @@ export default function ItemsSection() {
     setActiveHeader((prev) => (prev === key ? null : key));
   };
 
-  const handleNewItem = () => {
-    console.log('Navigating to create item...');
-    router.push('/dashboard/items/new');
-  };
+
 
   const handleActionClick = (action: string) => {
     console.log(`Action clicked: ${action}`);
@@ -284,13 +280,13 @@ export default function ItemsSection() {
               <ChevronDownIcon className="h-4 w-4 text-gray-500" />
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={handleNewItem}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+              <Link
+                href="/dashboard/items/new"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm inline-block no-underline"
                 title="Add New Item"
               >
                 + New
-              </button>
+              </Link>
               <button className="p-2 hover:bg-gray-100 rounded-md" title="More Actions">
                 <EllipsisVerticalIcon className="w-4 h-4 text-gray-600" />
               </button>

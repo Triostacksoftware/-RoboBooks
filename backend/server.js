@@ -19,6 +19,7 @@ import invoiceRoutes from "./routes/invoiceroutes.js";
 import projectRoutes from "./routes/projectroutes.js";
 import timesheetRoutes from "./routes/timesheetroutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
 
 // server.js  (or index.js)
 import dotenv from "dotenv";
@@ -84,6 +85,7 @@ app.use("/api/invoices", invoiceRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/timesheets", timesheetRoutes);
 app.use("/api/items", itemRoutes);
+app.use("/api/customers", customerRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Welcome to the RoboBooks API");

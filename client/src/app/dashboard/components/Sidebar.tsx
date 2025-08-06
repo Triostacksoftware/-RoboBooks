@@ -59,7 +59,7 @@ const NAV: Node[] = [
     label: 'Sales',
     icon: ShoppingCartIcon,
     children: [
-      { id: 'customers', label: 'Customers', href: '/dashboard/sales/customers', icon: UserGroupIcon },
+      { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: UserGroupIcon },
       { id: 'quotes', label: 'Quotes', href: '/dashboard/sales/quotes', icon: DocumentDuplicateIcon },
       { id: 'sales-orders', label: 'Sales Orders', href: '/dashboard/sales/sales-orders', icon: ClipboardDocumentListIcon },
       { id: 'delivery', label: 'Delivery Challans', href: '/dashboard/sales/delivery-challans', icon: TruckIcon },
@@ -129,6 +129,13 @@ export default function Sidebar() {
     accountant: false,
   })
 
+  // Auto-expand sales section when on customers page
+  useEffect(() => {
+    if (pathname?.startsWith('/dashboard/customers')) {
+      setOpen(prev => ({ ...prev, sales: true }))
+    }
+  }, [pathname])
+
   // Flyout state (collapsed)
   const [flyId, setFlyId] = useState<string | null>(null)
   const [flyPos, setFlyPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
@@ -159,6 +166,12 @@ export default function Sidebar() {
   const activeTopId = useMemo(() => {
     const seg = pathname?.split('/')[2]
     if (!seg) return 'home'
+    
+    // Special handling for customers route - it should highlight Sales section
+    if (pathname?.startsWith('/dashboard/customers')) {
+      return 'sales'
+    }
+    
     return NAV.find(n => n.id === seg)?.id ?? 'home'
   }, [pathname])
 
@@ -177,14 +190,10 @@ export default function Sidebar() {
     console.log('Create new:', label)
   }
 
-  // Handle navigation with refresh
+  // Handle navigation
   const handleNavigation = (href: string) => {
     // Navigate to the new route
     router.push(href)
-    // Refresh the page after a short delay to ensure navigation completes
-    setTimeout(() => {
-      window.location.reload()
-    }, 100)
   }
 
   return (
