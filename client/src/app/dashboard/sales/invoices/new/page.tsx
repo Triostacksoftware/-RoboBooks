@@ -261,25 +261,28 @@ const NewInvoiceForm = () => {
       const updatedItems = prev.items.map((item) => ({
         ...item,
         taxRate: prev.taxRate,
-        taxAmount: (item.amount * prev.taxRate) / 100,
+        taxAmount: ((item.amount || 0) * prev.taxRate) / 100,
       }));
 
-      const subTotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const subTotal = updatedItems.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
       const discountAmount =
         prev.discountType === "percentage"
           ? (subTotal * prev.discount) / 100
           : prev.discount;
       const totalTax = updatedItems.reduce(
-        (sum, item) => sum + item.taxAmount,
+        (sum, item) => sum + (item.taxAmount || 0),
         0
       );
       const total =
         subTotal -
         discountAmount +
         totalTax +
-        prev.shippingCharges +
-        prev.adjustment +
-        prev.roundOff;
+        (prev.shippingCharges || 0) +
+        (prev.adjustment || 0) +
+        (prev.roundOff || 0);
 
       return {
         ...prev,
@@ -309,12 +312,14 @@ const NewInvoiceForm = () => {
 
           // Auto-calculate amount when quantity or rate changes
           if (field === "quantity" || field === "rate") {
-            const qty = field === "quantity" ? Number(value) : item.quantity;
-            const rate = field === "rate" ? Number(value) : item.rate;
+            const qty =
+              field === "quantity" ? Number(value) || 0 : item.quantity || 0;
+            const rate = field === "rate" ? Number(value) || 0 : item.rate || 0;
             updatedItem.amount = qty * rate;
             // Use the current tax rate from the form
-            updatedItem.taxRate = prev.taxRate;
-            updatedItem.taxAmount = (updatedItem.amount * prev.taxRate) / 100;
+            updatedItem.taxRate = prev.taxRate || 0;
+            updatedItem.taxAmount =
+              (updatedItem.amount * (prev.taxRate || 0)) / 100;
           }
 
           return updatedItem;
@@ -323,22 +328,25 @@ const NewInvoiceForm = () => {
       });
 
       // Recalculate totals
-      const subTotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const subTotal = updatedItems.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
       const discountAmount =
         prev.discountType === "percentage"
           ? (subTotal * prev.discount) / 100
           : prev.discount;
       const totalTax = updatedItems.reduce(
-        (sum, item) => sum + item.taxAmount,
+        (sum, item) => sum + (item.taxAmount || 0),
         0
       );
       const total =
         subTotal -
         discountAmount +
         totalTax +
-        prev.shippingCharges +
-        prev.adjustment +
-        prev.roundOff;
+        (prev.shippingCharges || 0) +
+        (prev.adjustment || 0) +
+        (prev.roundOff || 0);
 
       return {
         ...prev,
@@ -1223,7 +1231,7 @@ const NewInvoiceForm = () => {
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Sub Total</span>
                         <span className="text-sm font-medium">
-                          ₹{formData.subTotal.toFixed(2)}
+                          ₹{(formData.subTotal || 0).toFixed(2)}
                         </span>
                       </div>
 
@@ -1272,7 +1280,7 @@ const NewInvoiceForm = () => {
                             <option value="amount">₹</option>
                           </select>
                           <span className="text-sm font-medium">
-                            ₹{formData.discountAmount.toFixed(2)}
+                            ₹{(formData.discountAmount || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -1328,7 +1336,7 @@ const NewInvoiceForm = () => {
                             Tax Amount
                           </span>
                           <span className="text-sm font-medium">
-                            ₹{formData.taxAmount.toFixed(2)}
+                            ₹{(formData.taxAmount || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -1359,7 +1367,7 @@ const NewInvoiceForm = () => {
                             Total (₹)
                           </span>
                           <span className="text-lg font-semibold">
-                            ₹{formData.total.toFixed(2)}
+                            ₹{(formData.total || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -1405,7 +1413,7 @@ const NewInvoiceForm = () => {
         </div>
 
         <div className="max-w-6xl mx-auto mt-2 text-sm text-gray-600">
-          <span>Total Amount: ₹{formData.total.toFixed(2)}</span>
+          <span>Total Amount: ₹{(formData.total || 0).toFixed(2)}</span>
           <span className="ml-4">Total Quantity: {formData.items.length}</span>
         </div>
       </div>
