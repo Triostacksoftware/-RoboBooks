@@ -30,9 +30,18 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await api("/api/admin/dashboard/stats");
+      const response = (await api("/api/admin/dashboard/stats")) as {
+        success: boolean;
+        stats: Record<string, number>;
+      };
       if (response.success) {
-        setStats(response.stats);
+        // Ensure only the expected keys are set, to match the state type
+        setStats({
+          totalUsers: response.stats.totalUsers ?? 0,
+          activeUsers: response.stats.activeUsers ?? 0,
+          totalRevenue: response.stats.totalRevenue ?? 0,
+          monthlyGrowth: response.stats.monthlyGrowth ?? 0,
+        });
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -41,29 +50,47 @@ export default function AdminDashboard() {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, change, changeType, color }) => (
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    change,
+    changeType,
+    color,
+  }: {
+    title: string;
+    value: string | number;
+    icon: React.ComponentType<{ className?: string }>;
+    change?: string;
+    changeType?: "increase" | "decrease";
+    color: string;
+  }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            {typeof value === 'number' && value >= 1000 
-              ? `${(value / 1000).toFixed(1)}k` 
+            {typeof value === "number" && value >= 1000
+              ? `${(value / 1000).toFixed(1)}k`
               : value}
           </p>
           {change && (
             <div className="flex items-center mt-2">
-              {changeType === 'increase' ? (
+              {changeType === "increase" ? (
                 <ArrowUpIcon className="h-4 w-4 text-green-500" />
               ) : (
                 <ArrowDownIcon className="h-4 w-4 text-red-500" />
               )}
-              <span className={`text-sm font-medium ml-1 ${
-                changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <span
+                className={`text-sm font-medium ml-1 ${
+                  changeType === "increase" ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 {change}%
               </span>
-              <span className="text-sm text-gray-500 ml-1">from last month</span>
+              <span className="text-sm text-gray-500 ml-1">
+                from last month
+              </span>
             </div>
           )}
         </div>
@@ -76,11 +103,21 @@ export default function AdminDashboard() {
 
   const RecentActivity = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Recent Activity
+      </h3>
       <div className="space-y-4">
         {[
-          { action: "New user registered", time: "2 minutes ago", type: "user" },
-          { action: "Invoice generated", time: "15 minutes ago", type: "invoice" },
+          {
+            action: "New user registered",
+            time: "2 minutes ago",
+            type: "user",
+          },
+          {
+            action: "Invoice generated",
+            time: "15 minutes ago",
+            type: "invoice",
+          },
           { action: "Payment received", time: "1 hour ago", type: "payment" },
           { action: "Report generated", time: "2 hours ago", type: "report" },
         ].map((activity, index) => (
@@ -89,7 +126,9 @@ export default function AdminDashboard() {
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {activity.action}
+              </p>
               <p className="text-sm text-gray-500">{activity.time}</p>
             </div>
           </div>
@@ -100,13 +139,35 @@ export default function AdminDashboard() {
 
   const QuickActions = () => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Quick Actions
+      </h3>
       <div className="grid grid-cols-2 gap-4">
         {[
-          { name: "View Users", icon: UsersIcon, href: "/admin/users", color: "bg-blue-500" },
-          { name: "Generate Report", icon: DocumentTextIcon, href: "/admin/reports", color: "bg-green-500" },
-          { name: "Manage Billing", icon: BanknotesIcon, href: "/admin/billing", color: "bg-purple-500" },
-          { name: "System Settings", icon: ChartBarIcon, href: "/admin/settings", color: "bg-orange-500" },
+          {
+            name: "View Users",
+            icon: UsersIcon,
+            href: "/admin/users",
+            color: "bg-blue-500",
+          },
+          {
+            name: "Generate Report",
+            icon: DocumentTextIcon,
+            href: "/admin/reports",
+            color: "bg-green-500",
+          },
+          {
+            name: "Manage Billing",
+            icon: BanknotesIcon,
+            href: "/admin/billing",
+            color: "bg-purple-500",
+          },
+          {
+            name: "System Settings",
+            icon: ChartBarIcon,
+            href: "/admin/settings",
+            color: "bg-orange-500",
+          },
         ].map((action) => (
           <a
             key={action.name}
@@ -116,7 +177,9 @@ export default function AdminDashboard() {
             <div className={`p-2 rounded-lg ${action.color} mr-3`}>
               <action.icon className="h-5 w-5 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-900">{action.name}</span>
+            <span className="text-sm font-medium text-gray-900">
+              {action.name}
+            </span>
           </a>
         ))}
       </div>
@@ -148,7 +211,7 @@ export default function AdminDashboard() {
           title="Total Users"
           value={stats.totalUsers}
           icon={UsersIcon}
-          change={12.5}
+          change="12.5"
           changeType="increase"
           color="bg-blue-500"
         />
@@ -156,15 +219,15 @@ export default function AdminDashboard() {
           title="Active Users"
           value={stats.activeUsers}
           icon={UserGroupIcon}
-          change={8.2}
+          change="8.2"
           changeType="increase"
           color="bg-green-500"
         />
         <StatCard
           title="Total Revenue"
-          value={`$${stats.totalRevenue.toLocaleString()}`}
+          value={stats.totalRevenue}
           icon={CurrencyDollarIcon}
-          change={15.3}
+          change="15.3"
           changeType="increase"
           color="bg-purple-500"
         />
@@ -172,7 +235,7 @@ export default function AdminDashboard() {
           title="Monthly Growth"
           value={`${stats.monthlyGrowth}%`}
           icon={ChartBarIcon}
-          change={-2.1}
+          change="-2.1"
           changeType="decrease"
           color="bg-orange-500"
         />
@@ -181,23 +244,31 @@ export default function AdminDashboard() {
       {/* Charts and Additional Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Revenue Overview
+          </h3>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
             <div className="text-center">
               <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">Chart placeholder</p>
-              <p className="text-sm text-gray-400">Revenue analytics will be displayed here</p>
+              <p className="text-sm text-gray-400">
+                Revenue analytics will be displayed here
+              </p>
             </div>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">User Activity</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            User Activity
+          </h3>
           <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
             <div className="text-center">
               <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-500">Chart placeholder</p>
-              <p className="text-sm text-gray-400">User activity analytics will be displayed here</p>
+              <p className="text-sm text-gray-400">
+                User activity analytics will be displayed here
+              </p>
             </div>
           </div>
         </div>
