@@ -126,9 +126,18 @@ export async function sendInvoiceEmail(req, res) {
     // Send email
     const result = await sendInvoiceEmail(invoice, recipientEmail);
 
-    // Update invoice status to "Sent" if email is sent successfully
+    // Try to update invoice status to "Sent" if email is sent successfully
     if (result.success) {
-      await InvoiceService.updateInvoiceStatus(id, "Sent");
+      try {
+        await InvoiceService.updateInvoiceStatus(id, "Sent");
+      } catch (statusError) {
+        // If status update fails, log it but don't fail the email sending
+        console.warn(
+          "Could not update invoice status to 'Sent':",
+          statusError.message
+        );
+        // The email was sent successfully, so we still return success
+      }
     }
 
     res.status(200).json({
