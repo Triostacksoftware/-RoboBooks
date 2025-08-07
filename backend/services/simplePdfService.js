@@ -10,7 +10,7 @@ export const generateSimplePDF = async (htmlContent) => {
     // Get the standard font
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    // Extract text content from HTML
+    // Extract text content from HTML and handle Unicode characters
     const textContent = extractTextFromHTML(htmlContent);
 
     // Split text into lines
@@ -49,7 +49,7 @@ export const generateSimplePDF = async (htmlContent) => {
   }
 };
 
-// Helper function to extract text from HTML
+// Helper function to extract text from HTML and handle Unicode characters
 function extractTextFromHTML(html) {
   // Remove HTML tags and decode entities
   let text = html
@@ -62,6 +62,20 @@ function extractTextFromHTML(html) {
     .replace(/&#39;/g, "'") // Replace &#39; with '
     .replace(/\s+/g, " ") // Replace multiple spaces with single space
     .trim();
+
+  // Replace Unicode characters that cause encoding issues
+  text = text
+    .replace(/₹/g, "Rs.") // Replace Rupee symbol with "Rs."
+    .replace(/[\u20B9]/g, "Rs.") // Replace Unicode Rupee symbol
+    .replace(/[\u00A0]/g, " ") // Replace non-breaking space
+    .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
+    .replace(/[\u2018\u2019]/g, "'") // Replace smart apostrophes
+    .replace(/[\u2013\u2014]/g, "-") // Replace em/en dashes
+    .replace(/[\u2022]/g, "*") // Replace bullet points
+    .replace(/[\u00B0]/g, " degrees") // Replace degree symbol
+    .replace(/[\u00A9]/g, "(c)") // Replace copyright symbol
+    .replace(/[\u00AE]/g, "(R)") // Replace registered trademark
+    .replace(/[\u2122]/g, "(TM)"); // Replace trademark symbol
 
   return text;
 }
