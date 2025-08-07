@@ -13,7 +13,7 @@ function issueCookie(res, token) {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("rb_session", token, {
     httpOnly: true,
-    sameSite: isProd ? "strict" : "lax",
+    sameSite: isProd ? "none" : "lax",
     secure: isProd,
     maxAge: 1000 * 60 * 60 * 24 * 7,
     path: "/", // Ensure cookie is sent with all requests
@@ -84,10 +84,7 @@ router.post("/register", async (req, res, next) => {
     console.log(cleanPhoneNumber);
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [
-        { email: email.toLowerCase() }, 
-        { phone: cleanPhoneNumber }
-      ],
+      $or: [{ email: email.toLowerCase() }, { phone: cleanPhoneNumber }],
     });
 
     if (existingUser) {

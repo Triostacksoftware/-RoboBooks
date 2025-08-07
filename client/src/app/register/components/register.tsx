@@ -899,23 +899,23 @@ export default function Register() {
               <span className="text-xs text-slate-500">or</span>
               <span className="h-px flex-1 bg-slate-300" />
             </div>
-            <button
-              type="button"
-              onClick={handleGoogleAuth}
-              disabled={loading}
-              className={[
-                "flex w-full items-center justify-center gap-3 overflow-hidden",
-                "rounded-2xl px-4 py-4 font-semibold text-slate-700 shadow-lg border-2 border-slate-200",
-                "bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-xl",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-                "transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]",
-              ].join(" ")}
-            >
-              <GoogleMark className="h-6 w-6 flex-shrink-0" />
-              <span className="text-base">
-                {loading ? "Signing up with Google..." : "Continue with Google"}
-              </span>
-            </button>
+            {/* <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className={[
+                  "flex w-full items-center justify-center gap-3 overflow-hidden",
+                  "rounded-2xl px-4 py-4 font-semibold text-slate-700 shadow-lg border-2 border-slate-200",
+                  "bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-xl",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]",
+                ].join(" ")}
+              >
+                <GoogleMark className="h-6 w-6 flex-shrink-0" />
+                <span className="text-base">
+                  {loading ? "Signing up with Google..." : "Continue with Google"}
+                </span>
+              </button> */}
           </div>
 
           {/* Login link */}
