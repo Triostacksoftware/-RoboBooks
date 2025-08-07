@@ -52,7 +52,7 @@ const filters = [
   "Sales",
   "Purchases",
   "Services",
-  "Zoho CRM",
+  "Robo CRM",
 ];
 
 export default function ItemsSection() {

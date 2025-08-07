@@ -257,11 +257,11 @@ export default function ZiaSearchOverlay({
                 </button>
                 <div className="mt-4">
                   <a
-                    href="https://search.zoho.in"
+                    href="https://search.robo.in"
                     target="_blank"
                     className="text-blue-600"
                   >
-                    Go to search.zoho.in
+                    Go to search.robo.in
                   </a>
                 </div>
               </div>
@@ -284,7 +284,7 @@ export default function ZiaSearchOverlay({
                   {/* Left nav */}
                   <nav className="w-48 bg-gray-50 border-r">
                     <div className="px-4 py-6 font-medium text-gray-800">
-                      Zoho Apps
+                      Robo Apps
                     </div>
                     <ul className="space-y-2 px-2">
                       {APPS.slice(1).map((a) => (
