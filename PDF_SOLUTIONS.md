@@ -8,7 +8,7 @@ The Puppeteer browser dependency issue has been completely resolved by switching
 
 ### **Server-Side PDF Generation (Email Attachments)**
 
-- **Library**: `jsPDF` (truly browser-less!)
+- **Library**: `pdf-lib` (truly server-side!)
 - **File**: `backend/services/simplePdfService.js`
 - **Usage**: Email attachments for invoice sending
 - **No browser dependencies**: ✅
@@ -34,7 +34,7 @@ The Puppeteer browser dependency issue has been completely resolved by switching
 // backend/services/emailService.js
 import { generateSimplePDF } from "./simplePdfService.js";
 
-// Generate PDF using jsPDF (no browser needed!)
+// Generate PDF using pdf-lib (no browser needed!)
 const pdfBuffer = await generateSimplePDF(htmlContent);
 ```
 
@@ -62,7 +62,7 @@ window.print();
 
 ### **Backend (Server)**
 
-- `jspdf` - Server-side PDF generation
+- `pdf-lib` - Server-side PDF generation
 - `nodemailer` - Email sending
 
 ### **Frontend (Client)**
