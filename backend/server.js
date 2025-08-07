@@ -24,6 +24,7 @@ import timesheetRoutes from "./routes/timesheetroutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import bankTransactionRoutes from "./routes/bankTransactionRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/timesheets", timesheetRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {

@@ -4,6 +4,14 @@ export function signToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
 }
 
+export function verifyToken(token) {
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    throw new Error("Invalid or expired token");
+  }
+}
+
 export function authGuard(req, res, next) {
   // Debug logging
   console.log("🔐 AuthGuard - All cookies:", req.cookies);
