@@ -51,9 +51,13 @@ export default function SignIn() {
           document.title,
           window.location.pathname
         );
-        console.log("🔄 About to push to /dashboard");
-        router.push("/dashboard");
-        console.log("✅ Router push completed");
+        console.log("🔄 About to redirect to dashboard");
+        // Use full URL for production redirect
+        const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
+          ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
+          : "/dashboard";
+        window.location.href = dashboardUrl;
+        console.log("✅ Redirect completed");
 
         // Fallback redirect after a short delay using NEXT_PUBLIC_MAIN_URL
         setTimeout(() => {
@@ -94,7 +98,11 @@ export default function SignIn() {
       });
 
       if (response.success) {
-        router.push("/dashboard");
+        // Use full URL for production redirect
+        const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
+          ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
+          : "/dashboard";
+        window.location.href = dashboardUrl;
       } else {
         setErr("Login failed. Please try again.");
       }
