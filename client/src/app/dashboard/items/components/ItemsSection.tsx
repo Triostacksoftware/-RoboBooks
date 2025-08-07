@@ -31,6 +31,8 @@ interface Item {
   purchaseDescription?: string;
   preferredVendor?: string;
   description?: string;
+  intraGST?: number;
+  interGST?: number;
   sku?: string;
   barcode?: string;
   category?: string;
@@ -67,6 +69,8 @@ export default function ItemsSection() {
     "overview" | "transactions" | "history"
   >("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<Item>>({});
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const moreActionsRef = useRef<HTMLDivElement>(null);
@@ -136,6 +140,8 @@ export default function ItemsSection() {
 
   const handleItemClick = (item: Item) => {
     setSelectedItem(item);
+    setEditFormData(item);
+    setIsEditing(false);
   };
 
   const closeItemDetails = () => {
@@ -160,6 +166,111 @@ export default function ItemsSection() {
       return "Purchase Items";
     }
     return "Non-Inventory Items";
+  };
+
+  const getGSTDisplay = (item: Item) => {
+    const intraRate = item.intraGST || 0;
+    const interRate = item.interGST || 0;
+
+    if (intraRate > 0 && interRate > 0) {
+      return `GST ${intraRate}% + IGST ${interRate}%`;
+    } else if (intraRate > 0) {
+      return `GST ${intraRate}%`;
+    } else if (interRate > 0) {
+      return `IGST ${interRate}%`;
+    }
+    return "No GST";
+  };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedItem) return;
+
+    // Validate GST equality before saving
+    if (editFormData.intraGST !== editFormData.interGST) {
+      showToast("IntraGST and InterGST must be equal", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/items/${selectedItem._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editFormData),
+        }
+      );
+
+      if (response.ok) {
+        const updatedItem = await response.json();
+        setSelectedItem(updatedItem.data);
+        setEditFormData(updatedItem.data);
+        setIsEditing(false);
+        showToast("Item updated successfully", "success");
+        // Refresh the items list
+        fetchItems();
+      } else {
+        console.error("Failed to update item");
+        showToast("Failed to update item", "error");
+      }
+    } catch (error) {
+      console.error("Error updating item:", error);
+      showToast("Error updating item", "error");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditFormData(selectedItem || {});
+  };
+
+  const handleEditInputChange = (field: keyof Item, value: any) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditInputChangeForGST = (
+    field: "intraGST" | "interGST",
+    value: number
+  ) => {
+    const newEditData = { ...editFormData, [field]: value };
+    setEditFormData(newEditData);
+
+    // Real-time validation for GST equality
+    if (field === "intraGST" && newEditData.interGST !== value) {
+      showToast("IntraGST and InterGST must be equal", "error");
+    } else if (field === "interGST" && newEditData.intraGST !== value) {
+      showToast("IntraGST and InterGST must be equal", "error");
+    }
+  };
+
+  const showToast = (message: string, type: "success" | "error") => {
+    // Create toast element
+    const toast = document.createElement("div");
+    toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
+      type === "success" ? "bg-green-500" : "bg-red-500"
+    }`;
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => {
+      toast.classList.remove("translate-x-full");
+    }, 100);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      toast.classList.add("translate-x-full");
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
   };
 
   const filteredItems = items.filter((item) =>
@@ -223,6 +334,17 @@ export default function ItemsSection() {
         <td className="px-4 py-3 text-sm">{formatPrice(item.costPrice)}</td>
         <td className="px-4 py-3 text-sm">{item.description || "-"}</td>
         <td className="px-4 py-3 text-sm">{formatPrice(item.sellingPrice)}</td>
+        <td className="px-4 py-3 text-sm">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              getGSTDisplay(item) === "No GST"
+                ? "bg-gray-100 text-gray-600"
+                : "bg-blue-100 text-blue-800"
+            }`}
+          >
+            {getGSTDisplay(item)}
+          </span>
+        </td>
         <td className="px-4 py-3 text-sm">{item.unit || "-"}</td>
       </tr>
     );
@@ -356,6 +478,7 @@ export default function ItemsSection() {
                       { key: "purchaseRate", label: "PURCHASE RATE" },
                       { key: "description", label: "DESCRIPTION" },
                       { key: "rate", label: "RATE" },
+                      { key: "gst", label: "GST/IGST" },
                       { key: "unit", label: "USAGE UNIT" },
                     ].map(({ key, label }) => (
                       <th key={key} className="px-4 py-3 cursor-pointer">
@@ -377,7 +500,7 @@ export default function ItemsSection() {
                   {filteredItems.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="text-center py-16 text-gray-500 text-base font-medium"
                       >
                         No items found. Create your first item to get started.
@@ -401,12 +524,32 @@ export default function ItemsSection() {
                 {selectedItem.name}
               </h1>
               <div className="flex items-center gap-2">
-                <button
-                  className="p-2 hover:bg-gray-100 rounded-md"
-                  title="Edit"
-                >
-                  <PencilIcon className="w-5 h-5 text-gray-600" />
-                </button>
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={handleSaveEdit}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                      title="Save"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="border border-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-50"
+                      title="Cancel"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleEditClick}
+                    className="p-2 hover:bg-gray-100 rounded-md"
+                    title="Edit"
+                  >
+                    <PencilIcon className="w-5 h-5 text-gray-600" />
+                  </button>
+                )}
                 <button
                   className="p-2 hover:bg-gray-100 rounded-md"
                   title="More"
@@ -454,23 +597,99 @@ export default function ItemsSection() {
                       Basic Information
                     </h3>
                     <div className="grid grid-cols-2 gap-6 text-sm">
+                      <div className="col-span-2">
+                        <span className="text-gray-500">Item Name:</span>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editFormData.name || selectedItem.name || ""}
+                            onChange={(e) =>
+                              handleEditInputChange("name", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter item name"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.name}
+                          </p>
+                        )}
+                      </div>
                       <div>
                         <span className="text-gray-500">Item Type:</span>
-                        <p className="font-medium mt-1">
-                          {getItemType(selectedItem)}
-                        </p>
+                        {isEditing ? (
+                          <select
+                            value={editFormData.type || selectedItem.type}
+                            onChange={(e) =>
+                              handleEditInputChange("type", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="Goods">Goods</option>
+                            <option value="Service">Service</option>
+                          </select>
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {getItemType(selectedItem)}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">Unit:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.unit || "pcs"}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editFormData.unit || selectedItem.unit || ""}
+                            onChange={(e) =>
+                              handleEditInputChange("unit", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.unit || "pcs"}
+                          </p>
+                        )}
                       </div>
                       <div>
-                        <span className="text-gray-500">HSN Code:</span>
-                        <p className="font-medium mt-1">
-                          {getGstCode(selectedItem) || "-"}
-                        </p>
+                        <span className="text-gray-500">
+                          {selectedItem.type === "Goods"
+                            ? "HSN Code:"
+                            : "SAC Code:"}
+                        </span>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={
+                              selectedItem.type === "Goods"
+                                ? editFormData.hsnCode ||
+                                  selectedItem.hsnCode ||
+                                  ""
+                                : editFormData.sacCode ||
+                                  selectedItem.sacCode ||
+                                  ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange(
+                                selectedItem.type === "Goods"
+                                  ? "hsnCode"
+                                  : "sacCode",
+                                e.target.value
+                              )
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            maxLength={selectedItem.type === "Goods" ? 8 : 6}
+                            placeholder={
+                              selectedItem.type === "Goods"
+                                ? "Enter HSN code (e.g., 9401)"
+                                : "Enter SAC code (e.g., 998314)"
+                            }
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {getGstCode(selectedItem) || "-"}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">Status:</span>
@@ -486,70 +705,259 @@ export default function ItemsSection() {
                           </span>
                         </p>
                       </div>
+                      <div className="col-span-2">
+                        <span className="text-gray-500">Description:</span>
+                        {isEditing ? (
+                          <textarea
+                            value={
+                              editFormData.description ||
+                              selectedItem.description ||
+                              ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange(
+                                "description",
+                                e.target.value
+                              )
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            rows={3}
+                            placeholder="Enter general description..."
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.description || "-"}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Sales Information */}
-                  {selectedItem.salesEnabled && (
-                    <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      {isEditing ? (
+                        <input
+                          type="checkbox"
+                          checked={
+                            editFormData.salesEnabled !== undefined
+                              ? editFormData.salesEnabled
+                              : selectedItem.salesEnabled
+                          }
+                          onChange={(e) =>
+                            handleEditInputChange(
+                              "salesEnabled",
+                              e.target.checked
+                            )
+                          }
+                          className="text-blue-600 focus:ring-blue-500 h-4 w-4"
+                        />
+                      ) : null}
                       <h3 className="text-sm font-medium text-gray-900">
                         Sales Information
                       </h3>
+                    </div>
+                    {(isEditing
+                      ? editFormData.salesEnabled !== undefined
+                        ? editFormData.salesEnabled
+                        : selectedItem.salesEnabled
+                      : selectedItem.salesEnabled) && (
                       <div className="space-y-3 text-sm">
                         <div>
                           <span className="text-gray-500">Selling Price:</span>
-                          <p className="font-medium mt-1">
-                            {formatPrice(selectedItem.sellingPrice)}
-                          </p>
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              value={
+                                editFormData.sellingPrice ||
+                                selectedItem.sellingPrice ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                handleEditInputChange(
+                                  "sellingPrice",
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              step="0.01"
+                              min="0"
+                            />
+                          ) : (
+                            <p className="font-medium mt-1">
+                              {formatPrice(selectedItem.sellingPrice)}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <span className="text-gray-500">Sales Account:</span>
-                          <p className="font-medium mt-1">
-                            {selectedItem.salesAccount}
-                          </p>
+                          {isEditing ? (
+                            <select
+                              value={
+                                editFormData.salesAccount ||
+                                selectedItem.salesAccount
+                              }
+                              onChange={(e) =>
+                                handleEditInputChange(
+                                  "salesAccount",
+                                  e.target.value
+                                )
+                              }
+                              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="Sales">Sales</option>
+                              <option value="Services">Services</option>
+                              <option value="Other Income">Other Income</option>
+                            </select>
+                          ) : (
+                            <p className="font-medium mt-1">
+                              {selectedItem.salesAccount}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <span className="text-gray-500">Description:</span>
-                          <p className="font-medium mt-1">
-                            {selectedItem.salesDescription ||
-                              "Metal card with engraved design"}
-                          </p>
+                          {isEditing ? (
+                            <textarea
+                              value={
+                                editFormData.salesDescription ||
+                                selectedItem.salesDescription ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                handleEditInputChange(
+                                  "salesDescription",
+                                  e.target.value
+                                )
+                              }
+                              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              rows={3}
+                            />
+                          ) : (
+                            <p className="font-medium mt-1">
+                              {selectedItem.salesDescription ||
+                                "Metal card with engraved design"}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Purchase Information */}
-                  {selectedItem.purchaseEnabled && (
-                    <div className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      {isEditing ? (
+                        <input
+                          type="checkbox"
+                          checked={
+                            editFormData.purchaseEnabled !== undefined
+                              ? editFormData.purchaseEnabled
+                              : selectedItem.purchaseEnabled
+                          }
+                          onChange={(e) =>
+                            handleEditInputChange(
+                              "purchaseEnabled",
+                              e.target.checked
+                            )
+                          }
+                          className="text-blue-600 focus:ring-blue-500 h-4 w-4"
+                        />
+                      ) : null}
                       <h3 className="text-sm font-medium text-gray-900">
                         Purchase Information
                       </h3>
+                    </div>
+                    {(isEditing
+                      ? editFormData.purchaseEnabled !== undefined
+                        ? editFormData.purchaseEnabled
+                        : selectedItem.purchaseEnabled
+                      : selectedItem.purchaseEnabled) && (
                       <div className="space-y-3 text-sm">
                         <div>
                           <span className="text-gray-500">Cost Price:</span>
-                          <p className="font-medium mt-1">
-                            {formatPrice(selectedItem.costPrice)}
-                          </p>
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              value={
+                                editFormData.costPrice ||
+                                selectedItem.costPrice ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                handleEditInputChange(
+                                  "costPrice",
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              step="0.01"
+                              min="0"
+                            />
+                          ) : (
+                            <p className="font-medium mt-1">
+                              {formatPrice(selectedItem.costPrice)}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <span className="text-gray-500">
                             Purchase Account:
                           </span>
-                          <p className="font-medium mt-1">
-                            {selectedItem.purchaseAccount}
-                          </p>
+                          {isEditing ? (
+                            <select
+                              value={
+                                editFormData.purchaseAccount ||
+                                selectedItem.purchaseAccount
+                              }
+                              onChange={(e) =>
+                                handleEditInputChange(
+                                  "purchaseAccount",
+                                  e.target.value
+                                )
+                              }
+                              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="Cost of Goods Sold">
+                                Cost of Goods Sold
+                              </option>
+                              <option value="Purchase">Purchase</option>
+                              <option value="Expenses">Expenses</option>
+                            </select>
+                          ) : (
+                            <p className="font-medium mt-1">
+                              {selectedItem.purchaseAccount}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <span className="text-gray-500">Description:</span>
-                          <p className="font-medium mt-1">
-                            {selectedItem.purchaseDescription ||
-                              "Very eye appealing."}
-                          </p>
+                          {isEditing ? (
+                            <textarea
+                              value={
+                                editFormData.purchaseDescription ||
+                                selectedItem.purchaseDescription ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                handleEditInputChange(
+                                  "purchaseDescription",
+                                  e.target.value
+                                )
+                              }
+                              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              rows={3}
+                            />
+                          ) : (
+                            <p className="font-medium mt-1">
+                              {selectedItem.purchaseDescription ||
+                                "Very eye appealing."}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Additional Information */}
                   <div className="space-y-4">
@@ -559,51 +967,237 @@ export default function ItemsSection() {
                     <div className="space-y-3 text-sm">
                       <div>
                         <span className="text-gray-500">Preferred Vendor:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.preferredVendor || "-"}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={
+                              editFormData.preferredVendor ||
+                              selectedItem.preferredVendor ||
+                              ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange(
+                                "preferredVendor",
+                                e.target.value
+                              )
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.preferredVendor || "-"}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">Current Stock:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.currentStock || 0}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={
+                              editFormData.currentStock ||
+                              selectedItem.currentStock ||
+                              0
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange(
+                                "currentStock",
+                                parseInt(e.target.value)
+                              )
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="0"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.currentStock || 0}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">Reorder Point:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.reorderPoint || 0}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={
+                              editFormData.reorderPoint ||
+                              selectedItem.reorderPoint ||
+                              0
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange(
+                                "reorderPoint",
+                                parseInt(e.target.value)
+                              )
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="0"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.reorderPoint || 0}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">GST Rate:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.gstRate || 18}%
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={
+                              editFormData.gstRate || selectedItem.gstRate || 18
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange(
+                                "gstRate",
+                                parseFloat(e.target.value)
+                              )
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.gstRate || 18}%
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-gray-500">GST Type:</span>
+                        {isEditing ? (
+                          <div className="mt-2 space-y-2">
+                            <label className="flex items-center gap-2 text-sm">
+                              <span>IntraGST (%)</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={
+                                  editFormData.intraGST !== undefined
+                                    ? editFormData.intraGST
+                                    : selectedItem.intraGST || 0
+                                }
+                                onChange={(e) =>
+                                  handleEditInputChangeForGST(
+                                    "intraGST",
+                                    Number(e.target.value)
+                                  )
+                                }
+                                className="w-24 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </label>
+                            <label className="flex items-center gap-2 text-sm">
+                              <span>InterGST (%)</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={
+                                  editFormData.interGST !== undefined
+                                    ? editFormData.interGST
+                                    : selectedItem.interGST || 0
+                                }
+                                onChange={(e) =>
+                                  handleEditInputChangeForGST(
+                                    "interGST",
+                                    Number(e.target.value)
+                                  )
+                                }
+                                className="w-24 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <p className="font-medium mt-1">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                getGSTDisplay(selectedItem) === "No GST"
+                                  ? "bg-gray-100 text-gray-600"
+                                  : "bg-blue-100 text-blue-800"
+                              }`}
+                            >
+                              {getGSTDisplay(selectedItem)}
+                            </span>
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">SKU:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.sku || "-"}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editFormData.sku || selectedItem.sku || ""}
+                            onChange={(e) =>
+                              handleEditInputChange("sku", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.sku || "-"}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">Barcode:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.barcode || "-"}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={
+                              editFormData.barcode || selectedItem.barcode || ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange("barcode", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.barcode || "-"}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">Category:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.category || "-"}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={
+                              editFormData.category ||
+                              selectedItem.category ||
+                              ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange("category", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.category || "-"}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <span className="text-gray-500">Brand:</span>
-                        <p className="font-medium mt-1">
-                          {selectedItem.brand || "-"}
-                        </p>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={
+                              editFormData.brand || selectedItem.brand || ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange("brand", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.brand || "-"}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

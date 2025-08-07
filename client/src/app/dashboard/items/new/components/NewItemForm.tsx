@@ -19,6 +19,18 @@ interface ItemFormData {
   purchaseDescription: string;
   preferredVendor: string;
   description: string;
+  intraGST: number;
+  interGST: number;
+}
+
+interface FormErrors {
+  name?: string;
+  sellingPrice?: string;
+  costPrice?: string;
+  hsnCode?: string;
+  sacCode?: string;
+  intraGST?: string;
+  interGST?: string;
 }
 
 export default function NewItemForm() {
@@ -39,9 +51,11 @@ export default function NewItemForm() {
     purchaseDescription: "",
     preferredVendor: "",
     description: "",
+    intraGST: 0,
+    interGST: 0,
   });
 
-  const [errors, setErrors] = useState<Partial<ItemFormData>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -53,17 +67,37 @@ export default function NewItemForm() {
 
   const handleInputChange = (
     field: keyof ItemFormData,
-    value: string | boolean
+    value: string | boolean | number
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
 
+  const handleGSTInputChange = (
+    field: "intraGST" | "interGST",
+    value: number
+  ) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+
+    // Clear error when user starts typing
+    if (errors[field as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+
+    // Real-time validation for GST equality
+    if (field === "intraGST" && newFormData.interGST !== value) {
+      showToast("IntraGST and InterGST must be equal", "error");
+    } else if (field === "interGST" && newFormData.intraGST !== value) {
+      showToast("IntraGST and InterGST must be equal", "error");
+    }
+  };
+
   const validateForm = (): boolean => {
-    const newErrors: Partial<ItemFormData> = {};
+    const newErrors: FormErrors = {};
 
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
@@ -84,6 +118,21 @@ export default function NewItemForm() {
 
     if (formData.type === "Service" && !formData.sacCode.trim()) {
       newErrors.sacCode = "SAC code is required for services";
+    }
+
+    // Validate GST rates
+    if (formData.intraGST < 0 || formData.intraGST > 100) {
+      newErrors.intraGST = "IntraGST rate must be between 0 and 100";
+    }
+
+    if (formData.interGST < 0 || formData.interGST > 100) {
+      newErrors.interGST = "InterGST rate must be between 0 and 100";
+    }
+
+    // Validate that IntraGST and InterGST are equal
+    if (formData.intraGST !== formData.interGST) {
+      newErrors.intraGST = "IntraGST and InterGST must be equal";
+      newErrors.interGST = "IntraGST and InterGST must be equal";
     }
 
     setErrors(newErrors);
@@ -116,6 +165,17 @@ export default function NewItemForm() {
 
   const handleSave = async () => {
     if (!validateForm()) {
+      // Show toast for GST validation error
+      if (formData.intraGST !== formData.interGST) {
+        showToast("IntraGST and InterGST must be equal", "error");
+      } else if (
+        formData.intraGST < 0 ||
+        formData.intraGST > 100 ||
+        formData.interGST < 0 ||
+        formData.interGST > 100
+      ) {
+        showToast("GST rates must be between 0 and 100", "error");
+      }
       return;
     }
 
@@ -166,7 +226,7 @@ export default function NewItemForm() {
   const getInputClassName = (field: keyof ItemFormData) => {
     const baseClass =
       "border rounded px-3 py-2 w-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
-    return errors[field]
+    return errors[field as keyof FormErrors]
       ? `${baseClass} border-red-500 bg-red-50`
       : `${baseClass} border-gray-300 hover:border-gray-400`;
   };
@@ -290,6 +350,92 @@ export default function NewItemForm() {
           {formData.type === "Goods"
             ? "HSN (Harmonized System of Nomenclature) code is required for GST compliance"
             : "SAC (Services Accounting Code) is required for GST compliance"}
+        </p>
+      </div>
+
+      {/* GST Options */}
+      <div className="mb-6">
+        <label className="font-medium text-gray-700 mb-3 block">
+          GST Rates
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            className={`border rounded-lg p-4 ${
+              errors.intraGST
+                ? "border-red-500 bg-red-50"
+                : "border-gray-200 bg-gray-50"
+            }`}
+          >
+            <label className="block">
+              <span className="font-medium text-gray-800 mb-2 block">
+                IntraGST (%)
+              </span>
+              <p className="text-xs text-gray-600 mb-3">
+                Within state transactions
+              </p>
+              <div className="flex gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={formData.intraGST}
+                  onChange={(e) =>
+                    handleGSTInputChange("intraGST", Number(e.target.value))
+                  }
+                  className={`${getInputClassName("intraGST")} flex-1`}
+                  placeholder="0.00"
+                />
+                <span className="border border-gray-300 rounded-r px-3 py-2 bg-gray-100 text-gray-600 text-sm">
+                  %
+                </span>
+              </div>
+            </label>
+            {errors.intraGST && (
+              <p className="text-red-500 text-xs mt-2">{errors.intraGST}</p>
+            )}
+          </div>
+
+          <div
+            className={`border rounded-lg p-4 ${
+              errors.interGST
+                ? "border-red-500 bg-red-50"
+                : "border-gray-200 bg-gray-50"
+            }`}
+          >
+            <label className="block">
+              <span className="font-medium text-gray-800 mb-2 block">
+                InterGST (%)
+              </span>
+              <p className="text-xs text-gray-600 mb-3">
+                Inter-state transactions
+              </p>
+              <div className="flex gap-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={formData.interGST}
+                  onChange={(e) =>
+                    handleGSTInputChange("interGST", Number(e.target.value))
+                  }
+                  className={`${getInputClassName("interGST")} flex-1`}
+                  placeholder="0.00"
+                />
+                <span className="border border-gray-300 rounded-r px-3 py-2 bg-gray-100 text-gray-600 text-sm">
+                  %
+                </span>
+              </div>
+            </label>
+            {errors.interGST && (
+              <p className="text-red-500 text-xs mt-2">{errors.interGST}</p>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Enter GST rates as percentages (0-100). Both IntraGST and InterGST
+          must be equal for consistency.
         </p>
       </div>
 

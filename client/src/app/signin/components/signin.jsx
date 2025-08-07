@@ -137,13 +137,6 @@ export default function SignIn() {
         </button>
 
         {/* Temporary bypass for development */}
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard")}
-          className="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
-        >
-          Skip Login (Development)
-        </button>
 
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-slate-300" />
