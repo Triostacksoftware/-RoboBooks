@@ -67,14 +67,14 @@ export default function ReferralPanel({
               <div className="text-center space-y-4">
                 <UserGroupIcon className="mx-auto w-12 h-12 text-sky-600" />
                 <h4 className="text-lg font-medium">
-                  Know someone who would love Zoho Books?
+                  Know someone who would love Robo Books?
                 </h4>
                 <p>
                   Refer them today and earn{" "}
                   <span className="text-red-600">$3</span> for every qualified
                   signup — you also get{" "}
                   <span className="text-red-600">20%</span> of their
-                  subscription payment as Zoho Wallet credits.
+                  subscription payment as Robo Wallet credits.
                 </p>
                 <button
                   onClick={() => {
@@ -106,7 +106,7 @@ export default function ReferralPanel({
                   </li>
                   <li>
                     Your contact will also receive{" "}
-                    <span className="font-semibold">$100</span> in Zoho Wallet
+                    <span className="font-semibold">$100</span> in Robo Wallet
                     credits as a welcome gift for signing up through your
                     referral.
                   </li>

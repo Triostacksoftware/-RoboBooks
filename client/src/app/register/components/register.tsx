@@ -3,11 +3,16 @@
 import { useMemo, useState, useEffect, useRef, FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import {
   ALL_PHONE_OPTIONS,
   shortLabel,
   flagEmoji,
 } from "../../../lib/phone-codes";
+
+// Google OAuth types (for reference)
 
 /* ----------------- Small UI icons ----------------- */
 function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -104,63 +109,6 @@ function GoogleMark(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-function MicrosoftMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 23 23" aria-hidden="true" {...props}>
-      <rect x="1" y="1" width="10" height="10" fill="#F25022" rx="1" />
-      <rect x="13" y="1" width="9" height="9" fill="#7FBA00" rx="1" />
-      <rect x="1" y="13" width="9" height="9" fill="#00A4EF" rx="1" />
-      <rect x="13" y="13" width="9" height="9" fill="#FFB900" rx="1" />
-    </svg>
-  );
-}
-function LinkedInMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        fill="currentColor"
-        d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8.5h4.9V24H.5zM9 8.5h4.7v2.1h.1c.7-1.2 2.5-2.5 5.1-2.5 5.5 0 6.5 3.6 6.5 8.3V24h-4.9v-7.4c0-1.8 0-4.2-2.6-4.2s-3 2-3 4V24H9z"
-      />
-    </svg>
-  );
-}
-function GitHubMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        fill="currentColor"
-        d="M12 2C6.48 2 2 6.58 2 12.26c0 4.52 2.87 8.35 6.84 9.7.5.09.68-.22.68-.49 0-.24-.01-.87-.01-1.7-2.78.62-3.37-1.36-3.37-1.36-.45-1.18-1.1-1.49-1.1-1.49-.9-.63.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.9.85.09-.67.35-1.12.63-1.38-2.22-.26-4.55-1.14-4.55-5.08 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.7 0 0 .84-.27 2.75 1.05.8-.23 1.65-.35 2.5-.35s1.7.12 2.5.35c1.9-1.32 2.74-1.05 2.74-1.05.55 1.4.2 2.44.1 2.7.64.72 1.02 1.63 1.02 2.75 0 3.95-2.34 4.81-4.57 5.07.36.32.68.95.68 1.92 0 1.39-.01 2.5-.01 2.84 0 .27.18.59.69.49A10.01 10.01 0 0 0 22 12.26C22 6.58 17.52 2 12 2z"
-      />
-    </svg>
-  );
-}
-
-/* ----------------- Reusable provider button ----------------- */
-type ProviderBtnProps = {
-  label: "Google" | "Microsoft" | "Apple" | "LinkedIn" | "GitHub";
-  children: React.ReactNode;
-  onClick?: () => void;
-};
-function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
-  return (
-    <button
-      type="button"
-      aria-label={`Sign in with ${label}`}
-      title={label}
-      onClick={onClick}
-      className={[
-        "grid h-10 w-12 place-items-center rounded-2xl",
-        "bg-white border border-slate-200/80 shadow-sm",
-        "transition duration-200 ease-out will-change-transform",
-        "hover:shadow-md hover:scale-[1.02] active:scale-95",
-        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20",
-      ].join(" ")}
-    >
-      {children}
-      <span className="sr-only">{label}</span>
-    </button>
-  );
-}
 
 /* ----------------- Types ----------------- */
 type FormData = {
@@ -170,6 +118,7 @@ type FormData = {
   phoneIso2: string;
   phoneNumber: string;
   password: string;
+  passwordVisible: boolean;
   country: string;
   state: string;
   agree: boolean;
@@ -261,12 +210,79 @@ function RatingsRow() {
 
 /* ----------------- Page ----------------- */
 export default function Register() {
+  const router = useRouter();
   const defaultIN = useMemo(
     () => ALL_PHONE_OPTIONS.find((o) => o.iso2 === "IN" && o.dial === "+91"),
     []
   );
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const handleGoogleCallback = async (code: string) => {
+      setLoading(true);
+      setError("");
+
+      try {
+        // Send the authorization code to your backend
+        const response = await api<{
+          success: boolean;
+          user?: { id: string; email: string; companyName: string };
+        }>("/api/auth/google/callback", {
+          method: "POST",
+          json: {
+            code,
+            redirectUri: `${window.location.origin}/register`,
+            type: "register",
+          },
+        });
+
+        if (response.success) {
+          console.log("✅ Google registration successful");
+          // Clear URL parameters
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+          router.push("/dashboard");
+        } else {
+          setError("Google registration failed. Please try again.");
+          // Clear URL parameters
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+        }
+      } catch (err: unknown) {
+        console.error("❌ Google OAuth callback error:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Google registration failed. Please try again.";
+        setError(errorMessage);
+        // Clear URL parameters
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    const state = urlParams.get("state");
+
+    if (code && state === "register") {
+      console.log("🔄 Processing Google OAuth callback...");
+      handleGoogleCallback(code);
+    }
+  }, [router]);
+
   const [form, setForm] = useState<FormData>({
     companyName: "",
     email: "",
@@ -274,6 +290,7 @@ export default function Register() {
     phoneIso2: defaultIN?.iso2 ?? "IN",
     phoneNumber: "",
     password: "",
+    passwordVisible: false,
     country: "India",
     state: "Uttar Pradesh",
     agree: false,
@@ -296,35 +313,105 @@ export default function Register() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.companyName.trim())
-      return alert("Please enter your company name.");
-    if (!/^\S+@\S+\.\S+$/.test(form.email))
-      return alert("Please enter a valid email.");
-    if (!form.phoneNumber.trim())
-      return alert("Please enter your mobile number.");
-    if (form.password.length < 6)
-      return alert("Password must be at least 6 characters.");
-    if (!form.agree)
-      return alert(
-        "You must agree to the Terms of Service and Privacy Policy."
-      );
+    setError("");
+
+    // Client-side validation
+    if (!form.companyName.trim()) {
+      setError("Please enter your company name.");
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (!form.phoneNumber.trim()) {
+      setError("Please enter your mobile number.");
+      return;
+    }
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (!form.agree) {
+      setError("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log("Submitting form:", form);
-      alert("Account created (demo). Wire this up to your API/server action.");
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong. Please try again.");
+
+      const response = await api<{
+        success: boolean;
+        user?: { id: string; email: string; companyName: string };
+      }>("/api/auth/register", {
+        method: "POST",
+        json: {
+          companyName: form.companyName.trim(),
+          email: form.email.trim(),
+          phoneNumber: form.phoneNumber.trim(),
+          phoneDialCode: form.phoneDialCode,
+          phoneIso2: form.phoneIso2,
+          password: form.password,
+          country: form.country,
+          state: form.state,
+        },
+      });
+
+      if (response.success) {
+        // Registration successful, redirect to dashboard
+        router.push("/dashboard");
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+    } catch (err: unknown) {
+      console.error("Registration error:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  /* social OAuth — this was missing */
-  const handleSocial = (
-    provider: "google" | "azure-ad" | "linkedin" | "apple" | "github"
-  ) => {
-    window.location.href = `/api/auth/signin/${provider}`;
+  /* Google OAuth using Google Identity Services */
+  const handleGoogleAuth = () => {
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      setError("Google Client ID not configured.");
+      return;
+    }
+
+    // Debug logging
+    console.log("🔍 Debug info:");
+    console.log("window.location.origin:", window.location.origin);
+    console.log("window.location.href:", window.location.href);
+    console.log(
+      "NEXT_PUBLIC_GOOGLE_CLIENT_ID:",
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    );
+
+    // Hardcode the redirect URI to fix truncation issue
+    const redirectUri = "http://localhost:3000/register";
+    console.log("🎯 Using hardcoded redirect URI:", redirectUri);
+
+    // Use the correct Google OAuth v2 endpoint
+    const googleAuthUrl = new URL(
+      "https://accounts.google.com/o/oauth2/v2/auth"
+    );
+    googleAuthUrl.searchParams.set(
+      "client_id",
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    );
+    googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
+    googleAuthUrl.searchParams.set("response_type", "code");
+    googleAuthUrl.searchParams.set("scope", "openid email profile");
+    googleAuthUrl.searchParams.set("state", "register");
+
+    const finalUrl = googleAuthUrl.toString();
+    console.log("🎯 Final Google OAuth URL:", finalUrl);
+
+    window.location.href = finalUrl;
   };
 
   const testimonials: Testimonial[] = [
@@ -333,21 +420,21 @@ export default function Register() {
         "With Robo Books’ finance suite, we saved time and money while retaining customer satisfaction—posting over 20% YoY revenue growth.",
       author: "CA Sanjeev Archak",
       role: "Integrabooks · Proprietor",
-      avatar: "/images/testimonial-1.jpg",
+      avatar: "/images/testimonial1.jpg",
     },
     {
       quote:
         "Automations and GST-ready invoicing cut monthly close by days. The team loves how fast it is.",
       author: "Shruti Mehta",
       role: "CFO · Diginest",
-      avatar: "/images/testimonial-2.jpg",
+      avatar: "/images/testimonial2.jpg",
     },
     {
       quote:
         "From billing to reconciliation, it just flows. Support is fantastic and onboarding was seamless.",
       author: "Ankit Yadav",
       role: "Founder · Pixeldesk",
-      avatar: "/images/testimonial-3.jpg",
+      avatar: "/images/testimonial3.jpg",
     },
   ];
   const [index, setIndex] = useState(0);
@@ -452,7 +539,7 @@ export default function Register() {
 
                     <div className="mt-5 flex items-center gap-4">
                       <Image
-                        src={t.avatar ?? "/images/testimonial-1.jpg"}
+                        src={t.avatar ?? "/images/testimonial1.jpg"}
                         alt={t.author}
                         width={44}
                         height={44}
@@ -534,6 +621,7 @@ export default function Register() {
                   onChange={onChange("companyName")}
                   placeholder="e.g., Robo Innovations Pvt Ltd"
                   className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
@@ -552,6 +640,7 @@ export default function Register() {
                   onChange={onChange("email")}
                   placeholder="you@company.com"
                   className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
@@ -577,6 +666,7 @@ export default function Register() {
                         "text-slate-900 outline-none",
                         "border-0 focus:ring-0 appearance-none cursor-pointer",
                       ].join(" ")}
+                      disabled={loading}
                     >
                       <optgroup label="Popular">
                         {["IN|+91", "US|+1", "GB|+44", "AU|+61", "AE|+971"].map(
@@ -617,6 +707,7 @@ export default function Register() {
                     onChange={onChange("phoneNumber")}
                     placeholder="98765 43210"
                     className="flex-1 rounded-r-2xl bg-transparent px-4 py-3 text-slate-900 outline-none border-0 focus:ring-0"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -634,13 +725,31 @@ export default function Register() {
               <div className="relative">
                 <input
                   id="password"
-                  type="password"
+                  type={form.passwordVisible ? "text" : "password"}
                   value={form.password}
                   onChange={onChange("password")}
                   placeholder="At least 6 characters"
                   className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
+                <button
+                  type="button"
+                  aria-label="Toggle password visibility"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      passwordVisible: !prev.passwordVisible,
+                    }))
+                  }
+                >
+                  {form.passwordVisible ? (
+                    <EyeSlashIcon className="h-5 w-5 text-slate-500" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-slate-500" />
+                  )}
+                </button>
               </div>
             </label>
 
@@ -655,6 +764,7 @@ export default function Register() {
                   value={form.country}
                   onChange={onChange("country")}
                   className="w-full rounded-2xl border border-slate-300/80 bg-white/70 px-3 py-3 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 >
                   <option>India</option>
                   <option>United States</option>
@@ -673,6 +783,7 @@ export default function Register() {
                   value={form.state}
                   onChange={onChange("state")}
                   className="w-full rounded-2xl border border-slate-300/80 bg-white/70 px-3 py-3 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 >
                   {[
                     "Andhra Pradesh",
@@ -715,6 +826,13 @@ export default function Register() {
               </label>
             </div>
 
+            {/* Error message */}
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-200 p-3">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
             {/* Consent */}
             <label className="flex items-start gap-3 text-sm text-slate-700">
               <input
@@ -722,6 +840,7 @@ export default function Register() {
                 checked={form.agree}
                 onChange={onChange("agree")}
                 className="mt-0.5 size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                disabled={loading}
               />
               <span>
                 I agree to the{" "}
@@ -750,6 +869,7 @@ export default function Register() {
                 "group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden",
                 "rounded-2xl px-4 py-3 font-semibold text-white shadow-lg",
                 "bg-gradient-to-tr from-blue-600 to-emerald-500",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
               ].join(" ")}
             >
               <span
@@ -772,52 +892,30 @@ export default function Register() {
             </p>
           </form>
 
-          {/* Social sign up — now visible because components exist */}
+          {/* Social sign up — Google only */}
           <div className="mt-5 sm:mt-6">
-            <p className="text-sm text-slate-500">Sign in using</p>
-            <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-              <ProviderButton
-                label="Apple"
-                onClick={() => handleSocial("apple")}
-              >
-                <Image
-                  src="/images/apple.png"
-                  alt="Apple"
-                  width={24}
-                  height={24}
-                  className="h-5 w-5 sm:h-6 sm:w-6 select-none object-contain"
-                  priority
-                />
-              </ProviderButton>
-
-              <ProviderButton
-                label="Google"
-                onClick={() => handleSocial("google")}
-              >
-                <GoogleMark className="h-5 w-5" />
-              </ProviderButton>
-
-              <ProviderButton
-                label="LinkedIn"
-                onClick={() => handleSocial("linkedin")}
-              >
-                <LinkedInMark className="h-6 w-6 overflow-visible shrink-0 text-[#0A66C2]" />
-              </ProviderButton>
-
-              <ProviderButton
-                label="GitHub"
-                onClick={() => handleSocial("github")}
-              >
-                <GitHubMark className="h-5 w-5 text-black" />
-              </ProviderButton>
-
-              <ProviderButton
-                label="Microsoft"
-                onClick={() => handleSocial("azure-ad")}
-              >
-                <MicrosoftMark className="h-5 w-5" />
-              </ProviderButton>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="h-px flex-1 bg-slate-300" />
+              <span className="text-xs text-slate-500">or</span>
+              <span className="h-px flex-1 bg-slate-300" />
             </div>
+            {/* <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className={[
+                  "flex w-full items-center justify-center gap-3 overflow-hidden",
+                  "rounded-2xl px-4 py-4 font-semibold text-slate-700 shadow-lg border-2 border-slate-200",
+                  "bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-xl",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]",
+                ].join(" ")}
+              >
+                <GoogleMark className="h-6 w-6 flex-shrink-0" />
+                <span className="text-base">
+                  {loading ? "Signing up with Google..." : "Continue with Google"}
+                </span>
+              </button> */}
           </div>
 
           {/* Login link */}
@@ -832,6 +930,8 @@ export default function Register() {
           </p>
         </div>
       </section>
+
+      {/* Google OAuth script removed - using simple redirect flow */}
 
       <style jsx>{`
         @keyframes shine {

@@ -2,6 +2,9 @@
 
 import React, { useState, useRef } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 import {
   Bars3Icon,
   ClockIcon,
@@ -14,19 +17,42 @@ import {
   RocketLaunchIcon,
   ChartBarIcon,
   UserCircleIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
-import SearchBox from "./header/SearchBox";
-import RecentActivities from "./header/RecentActivities";
-import SubscribeButton from "./header/PremiumTooltip";
-import OrgSwitcher from "./header/OrgSwitcher";
-import NotificationsPanel from "./header/NotificationPanel";
-import AllZohoAppsPanel from "./header/AllZohoAppsPanel";
-import ProfilePanel from "./header/ProfilePanel";
-import NewMenu from "./header/NewMenu";
-import AdvancedSearchModal from "./header/search/AdvancedSearchModal";
-import ReferralPanel from "./header/ReferralPanel";
-import SettingsPanel from "./header/SettingsPanel";
+// Dynamic imports for components that use document references
+const SearchBox = dynamic(() => import("./header/SearchBox"), { ssr: false });
+const RecentActivities = dynamic(() => import("./header/RecentActivities"), {
+  ssr: false,
+});
+const SubscribeButton = dynamic(() => import("./header/PremiumTooltip"), {
+  ssr: false,
+});
+const OrgSwitcher = dynamic(() => import("./header/OrgSwitcher"), {
+  ssr: false,
+});
+const NotificationsPanel = dynamic(
+  () => import("./header/NotificationPanel"),
+  { ssr: false }
+);
+const AllZohoAppsPanel = dynamic(() => import("./header/AllZohoAppsPanel"), {
+  ssr: false,
+});
+const ProfilePanel = dynamic(() => import("./header/ProfilePanel"), {
+  ssr: false,
+});
+const NewMenu = dynamic(() => import("./header/NewMenu"), { ssr: false });
+const AdvancedSearchModal = dynamic(
+  () => import("./header/search/AdvancedSearchModal"),
+  { ssr: false }
+);
+const ReferralPanel = dynamic(() => import("./header/ReferralPanel"), {
+  ssr: false,
+});
+const SettingsPanel = dynamic(() => import("./header/SettingsPanel"), {
+  ssr: false,
+});
+
 
 type Props = {
   onToggleSidebar?: () => void;
@@ -47,6 +73,7 @@ export default function Header({ onToggleSidebar }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const recentButtonRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const router = useRouter();
 
   const openPanel = (panel: Exclude<Panel, null>) => {
     console.log('Opening panel:', panel);
@@ -58,6 +85,19 @@ export default function Header({ onToggleSidebar }: Props) {
     });
   };
   const closeAll = () => setActivePanel(null);
+
+  const handleLogout = async () => {
+    console.log("🚪 Header logout button clicked!");
+    try {
+      console.log("🚪 Calling logout API from header...");
+      await api("/api/auth/logout", { method: "POST" });
+      console.log("✅ Header logout successful");
+      router.push("/signin");
+    } catch (error) {
+      console.error("❌ Header logout failed:", error);
+      router.push("/signin");
+    }
+  };
 
   return (
     <>
@@ -208,6 +248,17 @@ export default function Header({ onToggleSidebar }: Props) {
                 onClose={closeAll}
               />
             </ActionWrap>
+
+            {/* Logout button */}
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-full hover:scale-110 transition-all duration-200 ease-in-out"
+              aria-label="Logout"
+            >
+              <ArrowRightOnRectangleIcon className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Test button */}
           </div>
         </div>
       </header>
