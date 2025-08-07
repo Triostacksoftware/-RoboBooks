@@ -19,6 +19,7 @@ export default function DashboardHome() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [companyName, setCompanyName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -32,6 +33,7 @@ export default function DashboardHome() {
         if (response.success) {
           setIsAuthenticated(true);
           setAuthError("");
+          setCompanyName(response.user?.companyName);
         } else {
           console.log("❌ Authentication failed - no success");
           setAuthError("Authentication failed");
@@ -88,7 +90,7 @@ export default function DashboardHome() {
   return (
     <div className="mx-auto max-w-[1440px] px-4 md:px-8 lg:px-12 pb-10">
       {/* Header Tabs */}
-      <HomeTabs />
+      <HomeTabs companyName={companyName} />
 
       {/* Row 1: Receivables & Payables */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
