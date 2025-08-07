@@ -10,22 +10,28 @@ import {
   BellIcon,
   Cog6ToothIcon,
   Squares2X2Icon,
+  SparklesIcon,
+  RocketLaunchIcon,
+  ChartBarIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 
 import SearchBox from "./header/SearchBox";
 import RecentActivities from "./header/RecentActivities";
 import SubscribeButton from "./header/PremiumTooltip";
 import OrgSwitcher from "./header/OrgSwitcher";
-import NotificationsPanel from "./header/NotificationsPanel";
+import NotificationsPanel from "./header/NotificationPanel";
 import AllZohoAppsPanel from "./header/AllZohoAppsPanel";
 import ProfilePanel from "./header/ProfilePanel";
 import NewMenu from "./header/NewMenu";
 import AdvancedSearchModal from "./header/search/AdvancedSearchModal";
 import ReferralPanel from "./header/ReferralPanel";
 import SettingsPanel from "./header/SettingsPanel";
+
 type Props = {
   onToggleSidebar?: () => void;
 };
+
 type Panel =
   | null
   | "recent"
@@ -42,21 +48,28 @@ export default function Header({ onToggleSidebar }: Props) {
   const recentButtonRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const openPanel = (panel: Exclude<Panel, null>) =>
-    setActivePanel((cur) => (cur === panel ? null : panel));
+  const openPanel = (panel: Exclude<Panel, null>) => {
+    console.log('Opening panel:', panel);
+    console.log('Current activePanel:', activePanel);
+    setActivePanel((cur) => {
+      const newState = cur === panel ? null : panel;
+      console.log('Setting activePanel to:', newState);
+      return newState;
+    });
+  };
   const closeAll = () => setActivePanel(null);
 
   return (
     <>
       <header
         data-settings-header
-        className="sticky top-0 z-30 bg-[#121a2a] text-white"
+        className="sticky top-0 z-20 bg-slate-800 text-white shadow-md"
       >
-        <div className="mx-auto flex h-14 items-center gap-2 px-3 sm:px-4">
+        <div className="mx-auto flex h-14 items-center gap-3 px-4 sm:px-6">
           {/* Mobile sidebar toggle */}
           <button
             onClick={() => onToggleSidebar?.()}
-            className="lg:hidden rounded-md p-2 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="lg:hidden rounded-md p-2 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200"
             aria-label="Toggle sidebar"
           >
             <Bars3Icon className="h-5 w-5" />
@@ -64,63 +77,93 @@ export default function Header({ onToggleSidebar }: Props) {
 
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-600 font-bold text-white">
-              B
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white">
+              <RocketLaunchIcon className="h-5 w-5" />
             </div>
+            <span className="hidden sm:block text-base font-medium text-blue-200">
+              RoboBooks
+            </span>
           </Link>
 
-          {/* Recent activities */}
-          <div className="relative">
+          {/* Left icons */}
+          <div className="flex items-center gap-2">
+            {/* Settings */}
             <button
-              ref={recentButtonRef}
-              onClick={() => openPanel("recent")}
-              className="ml-2 grid h-9 w-9 place-items-center rounded-md hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-              aria-label="Recent activities"
+              onClick={() => setSettingsOpen(true)}
+              className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200"
             >
-              <ClockIcon className="h-5 w-5" />
+              <Cog6ToothIcon className="w-4 h-4 text-gray-300" />
             </button>
-            <RecentActivities
-              open={activePanel === "recent"}
-              onClose={closeAll}
-              anchorRef={recentButtonRef}
+
+            <SettingsPanel
+              open={settingsOpen}
+              onClose={() => setSettingsOpen(false)}
             />
+
+            {/* Recent activities */}
+            <div className="relative">
+              <button
+                ref={recentButtonRef}
+                onClick={() => openPanel("recent")}
+                className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200"
+                aria-label="Recent activities"
+              >
+                <ClockIcon className="h-4 w-4 text-white" />
+              </button>
+              <RecentActivities
+                open={activePanel === "recent"}
+                onClose={closeAll}
+                anchorRef={recentButtonRef}
+              />
+            </div>
           </div>
 
-          {/* Search box */}
-          <div className="ml-2 flex-1 min-w-0">
+          {/* Search box - centered */}
+          <div className="flex-1 max-w-2xl mx-8">
             <SearchBox onAdvancedRequest={() => setShowAdvanced(true)} />
           </div>
 
-          {/* Premium tooltip */}
-          <div className="flex items-center space-x-6">
-            {/* your existing trial text */}
-            <span className="text-sm text-gray-200">
-              Your premium trial plan…
-            </span>
+          {/* Right icons */}
+          <div className="flex items-center gap-2">
+            {/* Premium status */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-200 text-xs font-medium border border-amber-400/30">
+                <SparklesIcon className="h-3 w-3" />
+                <span>Pro Trial</span>
+              </div>
+              <SubscribeButton />
+            </div>
 
-            {/* ← add this: */}
-            <SubscribeButton />
+            {/* Notifications */}
+            <ActionWrap
+              open={activePanel === "noti"}
+              onOpen={() => openPanel("noti")}
+              onClose={closeAll}
+              label="Notifications"
+              className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200 relative"
+            >
+              <BellIcon className="h-4 w-4 text-white" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+              <NotificationsPanel
+                open={activePanel === "noti"}
+                onClose={closeAll}
+              />
+            </ActionWrap>
 
-            {/* other icons */}
-            {/* ProfileMenu component is missing, replace or define it */}
-            {/* Example: <ProfilePanel open={activePanel === "profile"} onClose={closeAll} /> */}
-          </div>
+            {/* Org switcher */}
+            <div className="hidden sm:block">
+              <OrgSwitcher />
+            </div>
 
-          {/* Org switcher */}
-          <div className="hidden sm:block">
-            <OrgSwitcher />
-          </div>
-
-          {/* Right‐hand icons */}
-          <div className="ml-1 flex items-center gap-1">
             {/* Create new */}
             <ActionWrap
               open={activePanel === "new"}
               onOpen={() => openPanel("new")}
               onClose={closeAll}
               label="Create new"
+              className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200"
             >
-              <PlusIcon className="h-5 w-5 text-white" />
+              <PlusIcon className="h-4 w-4 text-white" />
               <NewMenu open={activePanel === "new"} onClose={closeAll} />
             </ActionWrap>
 
@@ -130,37 +173,11 @@ export default function Header({ onToggleSidebar }: Props) {
               onOpen={() => openPanel("ref")}
               onClose={closeAll}
               label="Refer and Earn"
+              className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200"
             >
-              <UsersIcon className="h-5 w-5 text-white" />
+              <UsersIcon className="h-4 w-4 text-white" />
               <ReferralPanel open={activePanel === "ref"} onClose={closeAll} />
             </ActionWrap>
-
-            {/* Notifications */}
-            <ActionWrap
-              open={activePanel === "noti"}
-              onOpen={() => openPanel("noti")}
-              onClose={closeAll}
-              label="Notifications"
-            >
-              <BellIcon className="h-5 w-5 text-white" />
-              <NotificationsPanel
-                open={activePanel === "noti"}
-                onClose={closeAll}
-              />
-            </ActionWrap>
-
-            {/* Settings link */}
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="p-2 rounded-full  hover:scale-110 transition-all duration-200 ease-in-out"
-            >
-              <Cog6ToothIcon className="w-6 h-6 text-white" />
-            </button>
-
-            <SettingsPanel
-              open={settingsOpen}
-              onClose={() => setSettingsOpen(false)}
-            />
 
             {/* Profile */}
             <ActionWrap
@@ -168,9 +185,9 @@ export default function Header({ onToggleSidebar }: Props) {
               onOpen={() => openPanel("profile")}
               onClose={closeAll}
               label="Profile"
-              className="grid h-9 w-9 place-items-center rounded-full bg-indigo-500/40 ring-1 ring-white/20 hover:ring-white/40"
+              className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200 bg-blue-600/20"
             >
-              <span className="font-medium text-white">T</span>
+              <UserCircleIcon className="h-5 w-5 text-white" />
               <ProfilePanel
                 open={activePanel === "profile"}
                 onClose={closeAll}
@@ -183,8 +200,9 @@ export default function Header({ onToggleSidebar }: Props) {
               onOpen={() => openPanel("apps")}
               onClose={closeAll}
               label="All apps"
+              className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200"
             >
-              <Squares2X2Icon className="h-5 w-5 text-white" />
+              <Squares2X2Icon className="h-4 w-4 text-white" />
               <AllZohoAppsPanel
                 open={activePanel === "apps"}
                 onClose={closeAll}
