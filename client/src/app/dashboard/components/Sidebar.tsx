@@ -275,17 +275,17 @@ export default function Sidebar() {
                                 <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0" />
                                 {leaf.label}
                               </span>
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  onPlus(leaf.label)
-                                }}
-                                className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white"
-                                aria-label={`Create new ${leaf.label}`}
-                              >
-                                <PlusIcon className="h-3 w-3" />
-                              </button>
+                                                          <div
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                onPlus(leaf.label)
+                              }}
+                              className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
+                              aria-label={`Create new ${leaf.label}`}
+                            >
+                              <PlusIcon className="h-3 w-3" />
+                            </div>
                             </button>
                           </li>
                         )
@@ -353,17 +353,17 @@ export default function Sidebar() {
                               <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0" />
                               {leaf.label}
                             </span>
-                            <button
+                            <div
                               onClick={(e) => {
                                 e.preventDefault()
                                 e.stopPropagation()
                                 onPlus(leaf.label)
                               }}
-                              className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-white"
+                              className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
                               aria-label={`Create new ${leaf.label}`}
                             >
                               <PlusIcon className="h-4 w-4" />
-                            </button>
+                            </div>
                           </button>
                         </li>
                       )
