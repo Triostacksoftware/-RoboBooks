@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Clock, Pause, Play, Stop } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Clock, Pause, Play, Square } from "lucide-react";
 
 interface TimerWidgetProps {
   entryId: string;
@@ -32,11 +32,13 @@ export default function TimerWidget({ entryId, onStop }: TimerWidgetProps) {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
-    
+
     const displaySeconds = seconds % 60;
     const displayMinutes = minutes % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${displayMinutes.toString().padStart(2, '0')}:${displaySeconds.toString().padStart(2, '0')}`;
+
+    return `${hours.toString().padStart(2, "0")}:${displayMinutes
+      .toString()
+      .padStart(2, "0")}:${displaySeconds.toString().padStart(2, "0")}`;
   };
 
   const handlePauseResume = () => {
@@ -70,11 +72,11 @@ export default function TimerWidget({ entryId, onStop }: TimerWidgetProps) {
           <button
             onClick={handlePauseResume}
             className={`p-1.5 rounded-md transition-colors ${
-              isPaused 
-                ? 'text-blue-600 hover:bg-blue-50' 
-                : 'text-gray-600 hover:bg-gray-100'
+              isPaused
+                ? "text-blue-600 hover:bg-blue-50"
+                : "text-gray-600 hover:bg-gray-100"
             }`}
-            title={isPaused ? 'Resume' : 'Pause'}
+            title={isPaused ? "Resume" : "Pause"}
           >
             {isPaused ? (
               <Play className="h-3.5 w-3.5" />
@@ -82,13 +84,13 @@ export default function TimerWidget({ entryId, onStop }: TimerWidgetProps) {
               <Pause className="h-3.5 w-3.5" />
             )}
           </button>
-          
+
           <button
             onClick={handleStop}
             className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
             title="Stop Timer"
           >
-            <Stop className="h-3.5 w-3.5" />
+            <Square className="h-3.5 w-3.5" />
           </button>
         </div>
 

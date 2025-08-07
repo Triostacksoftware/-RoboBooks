@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
   Cog6ToothIcon,
@@ -16,7 +17,6 @@ import {
   QuestionMarkCircleIcon,
   BellIcon,
   ChatBubbleLeftRightIcon,
-  UserCircleIcon,
   CalendarIcon,
   ListBulletIcon,
 } from "@heroicons/react/24/outline";
@@ -28,54 +28,99 @@ interface Customer {
   email: string;
   phone?: string;
   lastName: string;
-}
-
-interface InvoiceItem {
-  id: number;
-  details: string;
-  quantity: string;
-  rate: string;
-  amount: string;
+  mobile?: string;
+  workPhone?: string;
+  billingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
 }
 
 const NewInvoiceForm = () => {
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showCustomerPreSelected, setShowCustomerPreSelected] = useState(false);
 
   const [formData, setFormData] = useState({
     invoiceNumber: "INV-000001",
     orderNumber: "",
-    invoiceDate: "06/08/2025",
+    invoiceDate: new Date().toISOString().split("T")[0],
     terms: "Due on Receipt",
-    dueDate: "06/08/2025",
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
     salesperson: "",
     subject: "",
+    project: "",
     items: [
       {
         id: 1,
+        itemId: "",
         details: "",
-        quantity: "1.00",
-        rate: "0.00",
-        amount: "0.00",
+        description: "",
+        quantity: 1.0,
+        unit: "pcs",
+        rate: 0.0,
+        amount: 0.0,
+        taxRate: 0,
+        taxAmount: 0,
       },
     ],
-    subTotal: "0.00",
-    discount: "0",
-    discountAmount: "0.00",
-    taxType: "TDS",
-    taxAmount: "-0.00",
-    adjustment: "0.00",
-    total: "0.00",
+    subTotal: 0.0,
+    discount: 0,
+    discountType: "percentage",
+    discountAmount: 0.0,
+    taxType: "GST",
+    taxRate: 18,
+    taxAmount: 0.0,
+    shippingCharges: 0.0,
+    adjustment: 0.0,
+    roundOff: 0.0,
+    total: 0.0,
+    paymentTerms: "",
+    paymentMethod: "",
     customerNotes: "Thanks for your business.",
     termsConditions: "",
+    internalNotes: "",
     files: [],
+    currency: "INR",
+    exchangeRate: 1,
+    // Buyer Details
+    buyerName: "",
+    buyerEmail: "",
+    buyerPhone: "",
+    buyerGstin: "",
+    buyerAddress: "",
+    // Seller Details
+    sellerName: "",
+    sellerEmail: "",
+    sellerPhone: "",
+    sellerGstin: "",
+    sellerAddress: "",
   });
 
-  // Fetch customers from backend
+  // Company settings state
+  const [companySettings, setCompanySettings] = useState({
+    companyName: "ROBOBOOKS SOLUTIONS",
+    address: "123 Business Street, Tech Park, Bangalore",
+    phone: "+91 98765 43210",
+    email: "info@robobooks.com",
+    gstin: "29ABCDE1234F1Z5",
+    state: "29-Karnataka",
+    website: "www.robobooks.com",
+  });
+
+  const [showCompanySettings, setShowCompanySettings] = useState(false);
+
+  // Fetch customers from backend and check for pre-selected customer
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -100,6 +145,60 @@ const NewInvoiceForm = () => {
             : [];
           console.log("Valid customers:", validCustomers);
           setCustomers(validCustomers);
+
+          // Check if there's a pre-selected customer from sessionStorage
+          const storedCustomerData = sessionStorage.getItem(
+            "selectedCustomerForInvoice"
+          );
+          if (storedCustomerData) {
+            try {
+              const customerData = JSON.parse(storedCustomerData);
+              console.log("Pre-selected customer data:", customerData);
+
+              // Find the customer in the fetched customers list
+              const foundCustomer = validCustomers.find(
+                (customer) => customer._id === customerData._id
+              );
+
+              if (foundCustomer) {
+                // Pre-select the customer
+                setSelectedCustomer(foundCustomer);
+                setSearchTerm(
+                  foundCustomer.firstName + " " + foundCustomer.lastName
+                );
+                setShowCustomerPreSelected(true);
+
+                // Update form data with customer details
+                setFormData((prev) => ({
+                  ...prev,
+                  buyerName:
+                    foundCustomer.firstName + " " + foundCustomer.lastName,
+                  buyerEmail: foundCustomer.email,
+                  buyerPhone:
+                    foundCustomer.phone ||
+                    foundCustomer.mobile ||
+                    foundCustomer.workPhone ||
+                    "",
+                  buyerAddress: foundCustomer.billingAddress
+                    ? `${foundCustomer.billingAddress.street || ""}, ${
+                        foundCustomer.billingAddress.city || ""
+                      }, ${foundCustomer.billingAddress.state || ""}`.trim()
+                    : "",
+                }));
+
+                // Hide notification after 3 seconds
+                setTimeout(() => {
+                  setShowCustomerPreSelected(false);
+                }, 3000);
+              }
+
+              // Clear the stored data after using it
+              sessionStorage.removeItem("selectedCustomerForInvoice");
+            } catch (error) {
+              console.error("Error parsing stored customer data:", error);
+              sessionStorage.removeItem("selectedCustomerForInvoice");
+            }
+          }
         } else {
           console.error("Error fetching customers:", response.status);
           setCustomers([]);
@@ -110,7 +209,29 @@ const NewInvoiceForm = () => {
       }
     };
 
+    const fetchNextInvoiceNumber = async () => {
+      try {
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number"
+        );
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data.invoiceNumber) {
+            setFormData((prev) => ({
+              ...prev,
+              invoiceNumber: result.data.invoiceNumber,
+            }));
+          }
+        } else {
+          console.error("Error fetching next invoice number:", response.status);
+        }
+      } catch (error) {
+        console.error("Error fetching next invoice number:", error);
+      }
+    };
+
     fetchCustomers();
+    fetchNextInvoiceNumber();
   }, []);
 
   const addItem = () => {
@@ -120,13 +241,55 @@ const NewInvoiceForm = () => {
         ...prev.items,
         {
           id: prev.items.length + 1,
+          itemId: "",
           details: "",
-          quantity: "1.00",
-          rate: "0.00",
-          amount: "0.00",
+          description: "",
+          quantity: 1.0,
+          unit: "pcs",
+          rate: 0.0,
+          amount: 0.0,
+          taxRate: prev.taxRate || 18,
+          taxAmount: 0,
         },
       ],
     }));
+  };
+
+  // Function to recalculate all totals when tax rate changes
+  const recalculateAllTotals = () => {
+    setFormData((prev) => {
+      const updatedItems = prev.items.map((item) => ({
+        ...item,
+        taxRate: prev.taxRate,
+        taxAmount: (item.amount * prev.taxRate) / 100,
+      }));
+
+      const subTotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
+      const totalTax = updatedItems.reduce(
+        (sum, item) => sum + item.taxAmount,
+        0
+      );
+      const total =
+        subTotal -
+        discountAmount +
+        totalTax +
+        prev.shippingCharges +
+        prev.adjustment +
+        prev.roundOff;
+
+      return {
+        ...prev,
+        items: updatedItems,
+        subTotal,
+        discountAmount,
+        taxAmount: totalTax,
+        total,
+      };
+    });
   };
 
   const removeItem = (id: number) => {
@@ -138,13 +301,54 @@ const NewInvoiceForm = () => {
     }
   };
 
-  const updateItem = (id: number, field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      ),
-    }));
+  const updateItem = (id: number, field: string, value: string | number) => {
+    setFormData((prev) => {
+      const updatedItems = prev.items.map((item) => {
+        if (item.id === id) {
+          const updatedItem = { ...item, [field]: value };
+
+          // Auto-calculate amount when quantity or rate changes
+          if (field === "quantity" || field === "rate") {
+            const qty = field === "quantity" ? Number(value) : item.quantity;
+            const rate = field === "rate" ? Number(value) : item.rate;
+            updatedItem.amount = qty * rate;
+            // Use the current tax rate from the form
+            updatedItem.taxRate = prev.taxRate;
+            updatedItem.taxAmount = (updatedItem.amount * prev.taxRate) / 100;
+          }
+
+          return updatedItem;
+        }
+        return item;
+      });
+
+      // Recalculate totals
+      const subTotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
+      const totalTax = updatedItems.reduce(
+        (sum, item) => sum + item.taxAmount,
+        0
+      );
+      const total =
+        subTotal -
+        discountAmount +
+        totalTax +
+        prev.shippingCharges +
+        prev.adjustment +
+        prev.roundOff;
+
+      return {
+        ...prev,
+        items: updatedItems,
+        subTotal,
+        discountAmount,
+        taxAmount: totalTax,
+        total,
+      };
+    });
   };
 
   const filteredCustomers = (customers || []).filter(
@@ -162,30 +366,62 @@ const NewInvoiceForm = () => {
     setSearchTerm(customer.firstName + " " + customer.lastName);
   };
 
-  const handleSaveInvoice = async () => {
+  const handleSaveInvoice = async (asDraft = false) => {
     try {
+      if (!selectedCustomer) {
+        alert("Please select a customer");
+        return;
+      }
+
+      // Remove undefined fields and ensure proper data types
+      const { project, ...formDataWithoutProject } = formData;
+
       const invoiceData = {
-        ...formData,
-        customerId: selectedCustomer?._id,
-        customerName: selectedCustomer?.name,
+        ...formDataWithoutProject,
+        customerId: selectedCustomer._id,
+        customerName:
+          selectedCustomer.firstName + " " + selectedCustomer.lastName,
+        customerEmail: selectedCustomer.email,
+        customerPhone: selectedCustomer.phone,
+        status: asDraft ? "Draft" : "Sent",
+        invoiceDate: new Date(formData.invoiceDate),
+        dueDate: new Date(formData.dueDate),
+        // Clean up items - remove empty itemId fields
+        items: formData.items.map((item) => ({
+          ...item,
+          itemId: item.itemId || undefined,
+        })),
       };
 
-      const response = await fetch("http://localhost:5000/api/invoices", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(invoiceData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(invoiceData),
+        }
+      );
+
+      const result = await response.json();
 
       if (response.ok) {
-        console.log("Invoice saved successfully");
-        // Redirect to invoices list or show success message
+        console.log("Invoice saved successfully", result);
+        alert(
+          `Invoice ${
+            asDraft ? "saved as draft" : "created and sent"
+          } successfully!`
+        );
+        // Redirect to invoices list
+        window.location.href = "/dashboard/sales/invoices";
       } else {
-        console.error("Error saving invoice");
+        console.error("Error saving invoice:", result.error);
+        alert(`Error: ${result.error}`);
       }
     } catch (error) {
       console.error("Error saving invoice:", error);
+      alert("Error saving invoice. Please try again.");
     }
   };
 
@@ -196,15 +432,192 @@ const NewInvoiceForm = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">New Invoice</h1>
           <div className="flex items-center space-x-2">
-            <button className="p-2 text-gray-400 hover:text-gray-600">
+            <button
+              className="p-2 text-gray-400 hover:text-gray-600"
+              onClick={() => setShowCompanySettings(!showCompanySettings)}
+            >
               <Cog6ToothIcon className="h-5 w-5" />
             </button>
-            <button className="p-2 text-gray-400 hover:text-gray-600">
+            <button
+              className="p-2 text-gray-400 hover:text-gray-600"
+              onClick={() => router.push("/dashboard/sales/invoices")}
+            >
               <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
         </div>
       </div>
+
+      {/* Customer Pre-selected Notification */}
+      {showCustomerPreSelected && (
+        <div className="bg-green-50 border border-green-200 px-6 py-3">
+          <div className="flex items-center">
+            <CheckIcon className="h-5 w-5 text-green-600 mr-2" />
+            <p className="text-green-800 text-sm">
+              Customer has been pre-selected from the customer details page.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Company Settings Modal */}
+      {showCompanySettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Company Settings
+              </h2>
+              <button
+                onClick={() => setShowCompanySettings(false)}
+                className="p-2 text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  value={companySettings.companyName}
+                  onChange={(e) =>
+                    setCompanySettings((prev) => ({
+                      ...prev,
+                      companyName: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Address
+                </label>
+                <textarea
+                  rows={3}
+                  value={companySettings.address}
+                  onChange={(e) =>
+                    setCompanySettings((prev) => ({
+                      ...prev,
+                      address: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={companySettings.phone}
+                    onChange={(e) =>
+                      setCompanySettings((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={companySettings.email}
+                    onChange={(e) =>
+                      setCompanySettings((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    GSTIN
+                  </label>
+                  <input
+                    type="text"
+                    value={companySettings.gstin}
+                    onChange={(e) =>
+                      setCompanySettings((prev) => ({
+                        ...prev,
+                        gstin: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={companySettings.state}
+                    onChange={(e) =>
+                      setCompanySettings((prev) => ({
+                        ...prev,
+                        state: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Website
+                </label>
+                <input
+                  type="text"
+                  value={companySettings.website}
+                  onChange={(e) =>
+                    setCompanySettings((prev) => ({
+                      ...prev,
+                      website: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowCompanySettings(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => setShowCompanySettings(false)}
+                className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              >
+                Save Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Form */}
       <div className="p-6">
@@ -260,6 +673,194 @@ const NewInvoiceForm = () => {
                 </div>
               </div>
 
+              {/* Buyer Details Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Buyer Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Buyer Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.buyerName}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          buyerName: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter buyer name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Buyer Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.buyerEmail}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          buyerEmail: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter buyer email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Buyer Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.buyerPhone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          buyerPhone: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter buyer phone"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Buyer GSTIN
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.buyerGstin}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          buyerGstin: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter buyer GSTIN"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Buyer Address
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.buyerAddress}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          buyerAddress: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter buyer address"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Seller Details Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Seller Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Seller Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sellerName || companySettings.companyName}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          sellerName: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter seller name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Seller Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.sellerEmail || companySettings.email}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          sellerEmail: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter seller email"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Seller Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sellerPhone || companySettings.phone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          sellerPhone: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter seller phone"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Seller GSTIN
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.sellerGstin || companySettings.gstin}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          sellerGstin: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter seller GSTIN"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Seller Address
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.sellerAddress || companySettings.address}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          sellerAddress: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter seller address"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Invoice Details Section */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div>
@@ -302,7 +903,7 @@ const NewInvoiceForm = () => {
                     Invoice Date*
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     value={formData.invoiceDate}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -345,7 +946,7 @@ const NewInvoiceForm = () => {
                     Due Date
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     value={formData.dueDate}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -622,7 +1223,7 @@ const NewInvoiceForm = () => {
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Sub Total</span>
                         <span className="text-sm font-medium">
-                          ₹{formData.subTotal}
+                          ₹{formData.subTotal.toFixed(2)}
                         </span>
                       </div>
 
@@ -630,70 +1231,104 @@ const NewInvoiceForm = () => {
                         <span className="text-sm text-gray-600">Discount</span>
                         <div className="flex items-center space-x-2">
                           <input
-                            type="text"
+                            type="number"
+                            step="0.01"
                             className="w-16 px-2 py-1 text-sm border border-gray-300 rounded"
                             value={formData.discount}
+                            onChange={(e) => {
+                              const discount = parseFloat(e.target.value) || 0;
+                              const discountAmount =
+                                formData.discountType === "percentage"
+                                  ? (formData.subTotal * discount) / 100
+                                  : discount;
+                              const total =
+                                formData.subTotal -
+                                discountAmount +
+                                formData.taxAmount +
+                                formData.shippingCharges +
+                                formData.adjustment +
+                                formData.roundOff;
+                              setFormData((prev) => ({
+                                ...prev,
+                                discount: discount,
+                                discountAmount: discountAmount,
+                                total: total,
+                              }));
+                            }}
+                          />
+                          <select
+                            className="text-sm border border-gray-300 rounded px-1"
+                            value={formData.discountType}
                             onChange={(e) =>
                               setFormData((prev) => ({
                                 ...prev,
-                                discount: e.target.value,
+                                discountType: e.target.value as
+                                  | "percentage"
+                                  | "amount",
                               }))
                             }
-                          />
-                          <span className="text-sm">%</span>
+                          >
+                            <option value="percentage">%</option>
+                            <option value="amount">₹</option>
+                          </select>
                           <span className="text-sm font-medium">
-                            ₹{formData.discountAmount}
+                            ₹{formData.discountAmount.toFixed(2)}
                           </span>
                         </div>
                       </div>
 
                       <div className="border-t pt-3">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <input
-                            type="radio"
-                            id="tds"
-                            name="taxType"
-                            value="TDS"
-                            checked={formData.taxType === "TDS"}
-                            onChange={(e) =>
+                        <div className="mb-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tax Type
+                          </label>
+                          <select
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+                            value={formData.taxType}
+                            onChange={(e) => {
                               setFormData((prev) => ({
                                 ...prev,
                                 taxType: e.target.value,
-                              }))
-                            }
-                          />
-                          <label
-                            htmlFor="tds"
-                            className="text-sm text-gray-600"
+                              }));
+                              setTimeout(recalculateAllTotals, 0);
+                            }}
                           >
-                            TDS
-                          </label>
-                          <input
-                            type="radio"
-                            id="tcs"
-                            name="taxType"
-                            value="TCS"
-                            checked={formData.taxType === "TCS"}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                taxType: e.target.value,
-                              }))
-                            }
-                          />
-                          <label
-                            htmlFor="tcs"
-                            className="text-sm text-gray-600"
-                          >
-                            TCS
-                          </label>
-                        </div>
-                        <div className="relative">
-                          <select className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md">
-                            <option>Select a Tax</option>
+                            <option value="GST">GST</option>
+                            <option value="IGST">IGST</option>
+                            <option value="CGST">CGST</option>
+                            <option value="SGST">SGST</option>
+                            <option value="TDS">TDS</option>
+                            <option value="TCS">TCS</option>
                           </select>
-                          <span className="absolute right-3 top-2 text-sm text-gray-500">
-                            {formData.taxAmount}
+                        </div>
+                        <div className="mb-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tax Rate (%)
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="number"
+                              step="0.01"
+                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
+                              value={formData.taxRate}
+                              onChange={(e) => {
+                                const taxRate = parseFloat(e.target.value) || 0;
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  taxRate,
+                                }));
+                                setTimeout(recalculateAllTotals, 0);
+                              }}
+                            />
+                            <span className="text-sm text-gray-500">%</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">
+                            Tax Amount
+                          </span>
+                          <span className="text-sm font-medium">
+                            ₹{formData.taxAmount.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -710,7 +1345,7 @@ const NewInvoiceForm = () => {
                             onChange={(e) =>
                               setFormData((prev) => ({
                                 ...prev,
-                                adjustment: e.target.value,
+                                adjustment: parseFloat(e.target.value) || 0,
                               }))
                             }
                           />
@@ -724,7 +1359,7 @@ const NewInvoiceForm = () => {
                             Total (₹)
                           </span>
                           <span className="text-lg font-semibold">
-                            ₹{formData.total}
+                            ₹{formData.total.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -741,16 +1376,22 @@ const NewInvoiceForm = () => {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+            <button
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={() => handleSaveInvoice(true)}
+            >
               Save as Draft
             </button>
             <button
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              onClick={handleSaveInvoice}
+              onClick={() => handleSaveInvoice(false)}
             >
               Save and Send
             </button>
-            <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+            <button
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={() => router.push("/dashboard/sales/invoices")}
+            >
               Cancel
             </button>
           </div>
@@ -764,34 +1405,9 @@ const NewInvoiceForm = () => {
         </div>
 
         <div className="max-w-6xl mx-auto mt-2 text-sm text-gray-600">
-          <span>Total Amount: ₹{formData.total}</span>
+          <span>Total Amount: ₹{formData.total.toFixed(2)}</span>
           <span className="ml-4">Total Quantity: {formData.items.length}</span>
         </div>
-      </div>
-
-      {/* Right Sidebar Icons */}
-      <div className="fixed right-0 top-1/2 transform -translate-y-1/2 bg-white border-l border-gray-200 p-2 space-y-2">
-        <button className="relative p-2 text-gray-400 hover:text-gray-600">
-          <BellIcon className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            1
-          </span>
-        </button>
-        <button className="p-2 text-gray-400 hover:text-gray-600">
-          <ChatBubbleLeftRightIcon className="h-5 w-5" />
-        </button>
-        <button className="p-2 text-gray-400 hover:text-gray-600">
-          <ListBulletIcon className="h-5 w-5" />
-        </button>
-        <button className="p-2 text-gray-400 hover:text-gray-600">
-          <CalendarIcon className="h-5 w-5" />
-        </button>
-        <button className="p-2 text-gray-400 hover:text-gray-600">
-          <Cog6ToothIcon className="h-5 w-5" />
-        </button>
-        <button className="p-2 text-gray-400 hover:text-gray-600">
-          <ChevronDownIcon className="h-5 w-5" />
-        </button>
       </div>
     </div>
   );

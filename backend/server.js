@@ -18,7 +18,7 @@ import vendorsRoutes from "./routes/vendors.routes.js";
 import billsRoutes from "./routes/bills.routes.js";
 import expensesRoutes from "./routes/expenses.routes.js";
 import estimatesRoutes from "./routes/estimates.routes.js";
-import invoiceRoutes from "./routes/invoiceroutes.js";
+import invoiceRoutes from "./routes/invoice.routes.js";
 import projectRoutes from "./routes/projectroutes.js";
 import timesheetRoutes from "./routes/timesheetroutes.js";
 import itemRoutes from "./routes/itemRoutes.js";

@@ -1,64 +1,97 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { PlusIcon } from '@heroicons/react/24/outline'
+import React, { useState } from "react";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import {
+  DevicePhoneMobileIcon,
+  LifebuoyIcon,
+  LinkIcon,
+} from "@heroicons/react/24/outline";
 
 export default function Footer() {
-  const [slide, setSlide] = useState(0)
+  const [slide, setSlide] = useState(0);
 
   return (
-    <div className="bg-white rounded-xl border shadow-sm">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-        {/* Left: Carousel */}
-        <div className="relative">
-          <h3 className="text-xl font-semibold text-center mb-3">Account on the go!</h3>
-          <p className="text-gray-600 text-center mb-6 max-w-md mx-auto">
-            Download the Robo Books app for Android and iOS to manage your finances from anywhere, anytime!
-          </p>
-          <div className="flex items-center justify-center gap-8">
-            <img src="/mobile-app.png" alt="Mobile App" className="h-48 w-auto object-contain" />
-            <div className="h-40 w-40 bg-gray-200 rounded-lg" />
-          </div>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            {[0, 1, 2].map(i => (
-              <button key={i} onClick={() => setSlide(i)} className={`h-1.5 w-4 rounded-full ${slide === i ? 'bg-blue-600' : 'bg-gray-300'}`} />
-            ))}
-          </div>
-        </div>
-
-        {/* Right: Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { title: 'OTHER ROBO APPS', items: ['Ecommerce Software','Expense Reporting','Subscription Billing','100% Free Invoicing Solution','Inventory Management','CRM & Other Apps'] },
-            { title: 'HELP & SUPPORT', items: ['Contact Support','Knowledge Base','Help Documentation','Webinar'] },
-            { title: 'QUICK LINKS', items: ['Getting Started','Mobile apps','Add-ons','What\'s New?','Developers API'] },
-          ].map(section => (
-            <div key={section.title}>
-              <h4 className="font-semibold mb-3">{section.title}</h4>
-              <ul className="space-y-2 text-blue-600">
-                {section.items.map(li => <li key={li}>{li}</li>)}
-              </ul>
+    <footer className="bg-white rounded-2xl border shadow-md overflow-hidden mt-8">
+      <div className="p-6 lg:p-10">
+        {/* Links & Contact */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {/* Section: Other Robo Apps */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <LinkIcon className="h-5 w-5 text-blue-600" />
+              <h4 className="font-semibold text-gray-800">Other Robo Apps</h4>
             </div>
-          ))}
-
-          {/* Contact block */}
-          <div className="col-span-2 md:col-span-1 p-4 rounded-lg border bg-gray-50">
-            <p className="font-medium">
-              You can directly talk to us every <b>Monday to Friday 9:00 AM to 7:00 PM</b>
+            <ul className="space-y-1 text-blue-600 text-sm">
+              {[
+                "Ecommerce Software",
+                "Expense Reporting",
+                "Subscription Billing",
+                "100% Free Invoicing Solution",
+                "Inventory Management",
+                "CRM & Other Apps",
+              ].map((li) => (
+                <li key={li}>{li}</li>
+              ))}
+            </ul>
+          </div>
+          {/* Section: Help & Support */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <LifebuoyIcon className="h-5 w-5 text-blue-600" />
+              <h4 className="font-semibold text-gray-800">Help & Support</h4>
+            </div>
+            <ul className="space-y-1 text-blue-600 text-sm">
+              {[
+                "Contact Support",
+                "Knowledge Base",
+                "Help Documentation",
+                "Webinar",
+              ].map((li) => (
+                <li key={li}>{li}</li>
+              ))}
+            </ul>
+          </div>
+          {/* Section: Quick Links */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <PlusIcon className="h-5 w-5 text-blue-600" />
+              <h4 className="font-semibold text-gray-800">Quick Links</h4>
+            </div>
+            <ul className="space-y-1 text-blue-600 text-sm">
+              {[
+                "Getting Started",
+                "Add-ons",
+                "What's New?",
+                "Developers API",
+              ].map((li) => (
+                <li key={li}>{li}</li>
+              ))}
+            </ul>
+          </div>
+          {/* Contact block - spans all columns on mobile */}
+          <div className="sm:col-span-2 md:col-span-3 mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col gap-2">
+            <p className="font-medium text-gray-800">
+              You can directly talk to us every{" "}
+              <span className="font-bold">
+                Monday to Friday 9:00 AM to 7:00 PM
+              </span>
             </p>
-            <p className="mt-2">
-              Robo Books India Helpline: <b>18003093036</b> (Toll Free)
+            <p className="text-blue-700 font-semibold">
+              Robo Books India Helpline:{" "}
+              <span className="font-bold">18003093036</span>{" "}
+              <span className="text-xs font-normal">(Toll Free)</span>
             </p>
-            <p className="mt-2 text-xs text-gray-500">
-              Supported Languages: English, हिन्दी, தமிழ், తెలుగు, മലയാളം, ಕನ್ನಡ, मराठी, ગુજરાતી, বাংলা
+            <p className="text-xs text-gray-500">
+              Supported Languages: English, हिन्दी, தமிழ், తెలుగు, മലയാളം,
+              ಕನ್ನಡ, मराठी, ગુજરાતી, বাংলা
             </p>
           </div>
         </div>
       </div>
-
-      <div className="px-6 py-4 border-t text-xs text-gray-500 text-center">
+      <div className="px-4 py-3 border-t text-xs text-gray-500 text-center bg-gray-50">
         © 2025, Robo Corporation Pvt. Ltd. All Rights Reserved.
       </div>
-    </div>
-  )
+    </footer>
+  );
 }

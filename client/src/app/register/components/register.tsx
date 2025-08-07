@@ -12,6 +12,8 @@ import {
   flagEmoji,
 } from "../../../lib/phone-codes";
 
+// Google OAuth types (for reference)
+
 /* ----------------- Small UI icons ----------------- */
 function ArrowRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -105,63 +107,6 @@ function GoogleMark(props: React.SVGProps<SVGSVGElement>) {
         d="M24 47c6.5 0 12-2.1 16-5.9l-7.8-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.7-4.2-13.6-9.9l-7.7 6C6.4 42.1 14.5 47 24 47z"
       />
     </svg>
-  );
-}
-function MicrosoftMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 23 23" aria-hidden="true" {...props}>
-      <rect x="1" y="1" width="10" height="10" fill="#F25022" rx="1" />
-      <rect x="13" y="1" width="9" height="9" fill="#7FBA00" rx="1" />
-      <rect x="1" y="13" width="9" height="9" fill="#00A4EF" rx="1" />
-      <rect x="13" y="13" width="9" height="9" fill="#FFB900" rx="1" />
-    </svg>
-  );
-}
-function LinkedInMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        fill="currentColor"
-        d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8.5h4.9V24H.5zM9 8.5h4.7v2.1h.1c.7-1.2 2.5-2.5 5.1-2.5 5.5 0 6.5 3.6 6.5 8.3V24h-4.9v-7.4c0-1.8 0-4.2-2.6-4.2s-3 2-3 4V24H9z"
-      />
-    </svg>
-  );
-}
-function GitHubMark(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        fill="currentColor"
-        d="M12 2C6.48 2 2 6.58 2 12.26c0 4.52 2.87 8.35 6.84 9.7.5.09.68-.22.68-.49 0-.24-.01-.87-.01-1.7-2.78.62-3.37-1.36-3.37-1.36-.45-1.18-1.1-1.49-1.1-1.49-.9-.63.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.9.85.09-.67.35-1.12.63-1.38-2.22-.26-4.55-1.14-4.55-5.08 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.7 0 0 .84-.27 2.75 1.05.8-.23 1.65-.35 2.5-.35s1.7.12 2.5.35c1.9-1.32 2.74-1.05 2.74-1.05.55 1.4.2 2.44.1 2.7.64.72 1.02 1.63 1.02 2.75 0 3.95-2.34 4.81-4.57 5.07.36.32.68.95.68 1.92 0 1.39-.01 2.5-.01 2.84 0 .27.18.59.69.49A10.01 10.01 0 0 0 22 12.26C22 6.58 17.52 2 12 2z"
-      />
-    </svg>
-  );
-}
-
-/* ----------------- Reusable provider button ----------------- */
-type ProviderBtnProps = {
-  label: "Google" | "Microsoft" | "Apple" | "LinkedIn" | "GitHub";
-  children: React.ReactNode;
-  onClick?: () => void;
-};
-function ProviderButton({ label, children, onClick }: ProviderBtnProps) {
-  return (
-    <button
-      type="button"
-      aria-label={`Sign in with ${label}`}
-      title={label}
-      onClick={onClick}
-      className={[
-        "grid h-10 w-12 place-items-center rounded-2xl",
-        "bg-white border border-slate-200/80 shadow-sm",
-        "transition duration-200 ease-out will-change-transform",
-        "hover:shadow-md hover:scale-[1.02] active:scale-95",
-        "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20",
-      ].join(" ")}
-    >
-      {children}
-      <span className="sr-only">{label}</span>
-    </button>
   );
 }
 
@@ -273,6 +218,71 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const handleGoogleCallback = async (code: string) => {
+      setLoading(true);
+      setError("");
+
+      try {
+        // Send the authorization code to your backend
+        const response = await api<{
+          success: boolean;
+          user?: { id: string; email: string; companyName: string };
+        }>("/api/auth/google/callback", {
+          method: "POST",
+          json: {
+            code,
+            redirectUri: `${window.location.origin}/register`,
+            type: "register",
+          },
+        });
+
+        if (response.success) {
+          console.log("✅ Google registration successful");
+          // Clear URL parameters
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+          router.push("/dashboard");
+        } else {
+          setError("Google registration failed. Please try again.");
+          // Clear URL parameters
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+        }
+      } catch (err: unknown) {
+        console.error("❌ Google OAuth callback error:", err);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Google registration failed. Please try again.";
+        setError(errorMessage);
+        // Clear URL parameters
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    const state = urlParams.get("state");
+
+    if (code && state === "register") {
+      console.log("🔄 Processing Google OAuth callback...");
+      handleGoogleCallback(code);
+    }
+  }, [router]);
+
   const [form, setForm] = useState<FormData>({
     companyName: "",
     email: "",
@@ -365,11 +375,43 @@ export default function Register() {
     }
   };
 
-  /* social OAuth — this was missing */
-  const handleSocial = (
-    provider: "google" | "azure-ad" | "linkedin" | "apple" | "github"
-  ) => {
-    window.location.href = `/api/auth/signin/${provider}`;
+  /* Google OAuth using Google Identity Services */
+  const handleGoogleAuth = () => {
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      setError("Google Client ID not configured.");
+      return;
+    }
+
+    // Debug logging
+    console.log("🔍 Debug info:");
+    console.log("window.location.origin:", window.location.origin);
+    console.log("window.location.href:", window.location.href);
+    console.log(
+      "NEXT_PUBLIC_GOOGLE_CLIENT_ID:",
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    );
+
+    // Hardcode the redirect URI to fix truncation issue
+    const redirectUri = "http://localhost:3000/register";
+    console.log("🎯 Using hardcoded redirect URI:", redirectUri);
+
+    // Use the correct Google OAuth v2 endpoint
+    const googleAuthUrl = new URL(
+      "https://accounts.google.com/o/oauth2/v2/auth"
+    );
+    googleAuthUrl.searchParams.set(
+      "client_id",
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    );
+    googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
+    googleAuthUrl.searchParams.set("response_type", "code");
+    googleAuthUrl.searchParams.set("scope", "openid email profile");
+    googleAuthUrl.searchParams.set("state", "register");
+
+    const finalUrl = googleAuthUrl.toString();
+    console.log("🎯 Final Google OAuth URL:", finalUrl);
+
+    window.location.href = finalUrl;
   };
 
   const testimonials: Testimonial[] = [
@@ -850,52 +892,30 @@ export default function Register() {
             </p>
           </form>
 
-          {/* Social sign up — now visible because components exist */}
+          {/* Social sign up — Google only */}
           <div className="mt-5 sm:mt-6">
-            <p className="text-sm text-slate-500">Sign in using</p>
-            <div className="mt-2.5 sm:mt-3 flex flex-wrap items-center gap-2.5 sm:gap-3">
-              <ProviderButton
-                label="Apple"
-                onClick={() => handleSocial("apple")}
-              >
-                <Image
-                  src="/images/apple.png"
-                  alt="Apple"
-                  width={24}
-                  height={24}
-                  className="h-5 w-5 sm:h-6 sm:w-6 select-none object-contain"
-                  priority
-                />
-              </ProviderButton>
-
-              <ProviderButton
-                label="Google"
-                onClick={() => handleSocial("google")}
-              >
-                <GoogleMark className="h-5 w-5" />
-              </ProviderButton>
-
-              <ProviderButton
-                label="LinkedIn"
-                onClick={() => handleSocial("linkedin")}
-              >
-                <LinkedInMark className="h-6 w-6 overflow-visible shrink-0 text-[#0A66C2]" />
-              </ProviderButton>
-
-              <ProviderButton
-                label="GitHub"
-                onClick={() => handleSocial("github")}
-              >
-                <GitHubMark className="h-5 w-5 text-black" />
-              </ProviderButton>
-
-              <ProviderButton
-                label="Microsoft"
-                onClick={() => handleSocial("azure-ad")}
-              >
-                <MicrosoftMark className="h-5 w-5" />
-              </ProviderButton>
+            <div className="flex items-center gap-3 mb-3">
+              <span className="h-px flex-1 bg-slate-300" />
+              <span className="text-xs text-slate-500">or</span>
+              <span className="h-px flex-1 bg-slate-300" />
             </div>
+            {/* <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className={[
+                  "flex w-full items-center justify-center gap-3 overflow-hidden",
+                  "rounded-2xl px-4 py-4 font-semibold text-slate-700 shadow-lg border-2 border-slate-200",
+                  "bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-xl",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]",
+                ].join(" ")}
+              >
+                <GoogleMark className="h-6 w-6 flex-shrink-0" />
+                <span className="text-base">
+                  {loading ? "Signing up with Google..." : "Continue with Google"}
+                </span>
+              </button> */}
           </div>
 
           {/* Login link */}
@@ -910,6 +930,8 @@ export default function Register() {
           </p>
         </div>
       </section>
+
+      {/* Google OAuth script removed - using simple redirect flow */}
 
       <style jsx>{`
         @keyframes shine {

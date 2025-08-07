@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
 import { signToken, authGuard } from "../utils/jwt.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const router = express.Router();
 
@@ -11,7 +13,7 @@ function issueCookie(res, token) {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("rb_session", token, {
     httpOnly: true,
-    sameSite: isProd ? "strict" : "lax",
+    sameSite: isProd ? "none" : "lax",
     secure: isProd,
     maxAge: 1000 * 60 * 60 * 24 * 7,
     path: "/", // Ensure cookie is sent with all requests
@@ -82,10 +84,7 @@ router.post("/register", async (req, res, next) => {
     console.log(cleanPhoneNumber);
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [
-        { email: email.toLowerCase() }, 
-        { phone: cleanPhoneNumber }
-      ],
+      $or: [{ email: email.toLowerCase() }, { phone: cleanPhoneNumber }],
     });
 
     if (existingUser) {
@@ -206,12 +205,15 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-// GOOGLE OAuth Login
+// GOOGLE OAuth Login (legacy - keeping for backward compatibility)
 router.post("/login/google", async (req, res, next) => {
   const { idToken } = req.body;
   if (!idToken) return res.status(400).json({ message: "idToken required" });
 
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  const client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
   try {
     const ticket = await client.verifyIdToken({
       idToken,
@@ -263,6 +265,133 @@ router.post("/login/google", async (req, res, next) => {
   } catch (err) {
     console.error("Google OAuth error:", err);
     next(err);
+  }
+});
+
+// GOOGLE OAuth Callback (new redirect-based flow)
+router.post("/google/callback", async (req, res, next) => {
+  const { code, redirectUri, type } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ message: "Authorization code required" });
+  }
+
+  // Check required environment variables
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    console.error("❌ Missing GOOGLE_CLIENT_ID environment variable");
+    return res.status(500).json({
+      success: false,
+      message: "Google Client ID not configured on server",
+    });
+  }
+
+  if (!process.env.GOOGLE_CLIENT_SECRET) {
+    console.error("❌ Missing GOOGLE_CLIENT_SECRET environment variable");
+    return res.status(500).json({
+      success: false,
+      message: "Google Client Secret not configured on server",
+    });
+  }
+
+  console.log("🔍 Debug info:");
+  console.log("Code received:", code ? "✅" : "❌");
+  console.log("Redirect URI:", redirectUri);
+  console.log("Type:", type);
+  console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "✅" : "❌");
+  console.log(
+    "GOOGLE_CLIENT_SECRET:",
+    process.env.GOOGLE_CLIENT_SECRET ? "✅" : "❌"
+  );
+
+  const client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+
+  try {
+    console.log("🔄 Exchanging authorization code for tokens...");
+
+    // Exchange authorization code for tokens
+    const { tokens } = await client.getToken({
+      code,
+      redirect_uri: redirectUri,
+    });
+
+    console.log("✅ Token exchange successful:", {
+      access_token: tokens.access_token ? "✅" : "❌",
+      id_token: tokens.id_token ? "✅" : "❌",
+    });
+
+    // Verify the ID token
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: providerId, email, name, picture } = payload;
+
+    console.log("✅ Google user info:", { email, name, providerId });
+
+    let user = await User.findOne({
+      "providers.name": "google",
+      "providers.providerId": providerId,
+    });
+
+    if (!user) {
+      // Check if email already exists
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        // Link Google account to existing user
+        existingUser.providers.push({ name: "google", providerId });
+        await existingUser.save();
+        user = existingUser;
+        console.log("✅ Linked Google account to existing user");
+      } else {
+        // Create new user
+        user = await User.create({
+          email: email.toLowerCase(),
+          companyName: name || "Google User",
+          providers: [{ name: "google", providerId }],
+          profilePicture: picture,
+        });
+        console.log("✅ Created new user with Google account");
+      }
+    } else {
+      console.log("✅ Found existing user with Google account");
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    const token = signToken({ uid: user._id });
+    issueCookie(res, token);
+
+    console.log("✅ Authentication successful for user:", user.email);
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        companyName: user.companyName,
+        email: user.email,
+        phone: user.phone,
+        country: user.country,
+        state: user.state,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Google OAuth callback error:", err);
+    console.error("❌ Error details:", {
+      message: err.message,
+      code: err.code,
+      stack: err.stack,
+    });
+    res.status(500).json({
+      success: false,
+      message: "Google authentication failed",
+    });
   }
 });
 
