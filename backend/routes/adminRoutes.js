@@ -10,6 +10,13 @@ import {
   updateAdmin,
   deleteAdmin
 } from "../controllers/adminController.js";
+import {
+  getAllUsers,
+  getUserById,
+  updateUserStatus,
+  deleteUser,
+  getUserStats
+} from "../controllers/userController.js";
 import { adminAuthGuard, superAdminGuard, adminRoleGuard, requirePermission } from "../middleware/adminAuth.js";
 
 const router = express.Router();
@@ -43,13 +50,12 @@ router.get("/dashboard/stats", adminAuthGuard, requirePermission('view_analytics
   });
 });
 
-router.get("/users", adminAuthGuard, requirePermission('manage_users'), (req, res) => {
-  // Placeholder for user management
-  res.json({
-    success: true,
-    users: []
-  });
-});
+// User management routes
+router.get("/users", adminAuthGuard, requirePermission('manage_users'), getAllUsers);
+router.get("/users/:id", adminAuthGuard, requirePermission('manage_users'), getUserById);
+router.put("/users/:id/status", adminAuthGuard, requirePermission('manage_users'), updateUserStatus);
+router.delete("/users/:id", adminAuthGuard, requirePermission('manage_users'), deleteUser);
+router.get("/users/stats", adminAuthGuard, requirePermission('view_analytics'), getUserStats);
 
 router.get("/reports", adminAuthGuard, requirePermission('view_reports'), (req, res) => {
   // Placeholder for reports
