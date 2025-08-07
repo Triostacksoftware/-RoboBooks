@@ -28,10 +28,30 @@ import bankTransactionRoutes from "./routes/bankTransactionRoutes.js";
 
 const app = express();
 
-// Global middleware
-app.use(helmet());
+// Connect to database
+connectDB();
+
+// Global middleware - order is important!
 app.use(express.json());
 app.use(cookieParser());
+
+// CORS configuration - must be before other middleware
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// Security middleware
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+
 app.use(morgan("dev"));
 
 // CORS configuration
@@ -44,9 +64,6 @@ app.use(
 
 // Passport initialization (for OAuth)
 app.use(passport.initialize());
-
-// Connect to Database
-connectDB();
 
 // API routes
 app.use("/api/auth", authRoutes);
@@ -63,6 +80,7 @@ app.use("/api/timesheets", timesheetRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/customers", customerRoutes);
 
+// Health check and welcome routes
 app.get("/", (_req, res) => {
   res.send("Welcome to the RoboBooks API");
 });

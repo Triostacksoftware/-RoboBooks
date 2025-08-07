@@ -1,4 +1,4 @@
-import Item from '../models/Item.js';
+import Item from "../models/Item.js";
 
 // Create a new item
 export const createItem = async (req, res) => {
@@ -19,40 +19,42 @@ export const createItem = async (req, res) => {
       purchaseDescription,
       preferredVendor,
       description,
+      intraGST,
+      interGST,
       category,
       brand,
       currentStock,
       reorderPoint,
       gstRate,
       sku,
-      barcode
+      barcode,
     } = req.body;
 
     // Validate required fields based on type
-    if (type === 'Goods' && !hsnCode) {
+    if (type === "Goods" && !hsnCode) {
       return res.status(400).json({
         success: false,
-        message: 'HSN code is required for goods'
+        message: "HSN code is required for goods",
       });
     }
 
-    if (type === 'Service' && !sacCode) {
+    if (type === "Service" && !sacCode) {
       return res.status(400).json({
         success: false,
-        message: 'SAC code is required for services'
+        message: "SAC code is required for services",
       });
     }
 
     // Check if item with same name already exists
-    const existingItem = await Item.findOne({ 
-      name: { $regex: new RegExp(`^${name}$`, 'i') },
-      isActive: true 
+    const existingItem = await Item.findOne({
+      name: { $regex: new RegExp(`^${name}$`, "i") },
+      isActive: true,
     });
 
     if (existingItem) {
       return res.status(400).json({
         success: false,
-        message: 'An item with this name already exists'
+        message: "An item with this name already exists",
       });
     }
 
@@ -62,7 +64,7 @@ export const createItem = async (req, res) => {
       if (existingSku) {
         return res.status(400).json({
           success: false,
-          message: 'An item with this SKU already exists'
+          message: "An item with this SKU already exists",
         });
       }
     }
@@ -73,7 +75,7 @@ export const createItem = async (req, res) => {
       if (existingBarcode) {
         return res.status(400).json({
           success: false,
-          message: 'An item with this barcode already exists'
+          message: "An item with this barcode already exists",
         });
       }
     }
@@ -94,6 +96,8 @@ export const createItem = async (req, res) => {
       purchaseDescription,
       preferredVendor,
       description,
+      intraGST,
+      interGST,
       category,
       brand,
       currentStock: currentStock ? parseInt(currentStock) : 0,
@@ -101,7 +105,7 @@ export const createItem = async (req, res) => {
       gstRate: gstRate ? parseFloat(gstRate) : 18,
       sku,
       barcode,
-      createdBy: req.user?.id || null
+      createdBy: req.user?.id || null,
     };
 
     const newItem = new Item(itemData);
@@ -109,26 +113,27 @@ export const createItem = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Item created successfully',
-      data: savedItem
+      message: "Item created successfully",
+      data: savedItem,
     });
-
   } catch (error) {
-    console.error('Error creating item:', error);
-    
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(err => err.message);
+    console.error("Error creating item:", error);
+
+    if (error.name === "ValidationError") {
+      const validationErrors = Object.values(error.errors).map(
+        (err) => err.message
+      );
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: validationErrors
+        message: "Validation failed",
+        errors: validationErrors,
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Error creating item',
-      error: error.message
+      message: "Error creating item",
+      error: error.message,
     });
   }
 };
@@ -143,8 +148,8 @@ export const getAllItems = async (req, res) => {
       type,
       category,
       isActive,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortBy = "createdAt",
+      sortOrder = "desc",
     } = req.query;
 
     const pageNum = parseInt(page);
@@ -153,28 +158,28 @@ export const getAllItems = async (req, res) => {
 
     // Build filter object
     const filter = { isActive: true };
-    
+
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { sku: { $regex: search, $options: 'i' } },
-        { barcode: { $regex: search, $options: 'i' } },
-        { category: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } }
+        { name: { $regex: search, $options: "i" } },
+        { sku: { $regex: search, $options: "i" } },
+        { barcode: { $regex: search, $options: "i" } },
+        { category: { $regex: search, $options: "i" } },
+        { brand: { $regex: search, $options: "i" } },
       ];
     }
 
     if (type) filter.type = type;
     if (category) filter.category = category;
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (isActive !== undefined) filter.isActive = isActive === "true";
 
     // Build sort object
     const sort = {};
-    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     const items = await Item.find(filter)
-      .populate('createdBy', 'name email')
-      .populate('updatedBy', 'name email')
+      .populate("createdBy", "name email")
+      .populate("updatedBy", "name email")
       .sort(sort)
       .skip(skip)
       .limit(limitNum);
@@ -191,16 +196,15 @@ export const getAllItems = async (req, res) => {
         totalItems,
         itemsPerPage: limitNum,
         hasNextPage: pageNum < totalPages,
-        hasPrevPage: pageNum > 1
-      }
+        hasPrevPage: pageNum > 1,
+      },
     });
-
   } catch (error) {
-    console.error('Error fetching items:', error);
+    console.error("Error fetching items:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching items',
-      error: error.message
+      message: "Error fetching items",
+      error: error.message,
     });
   }
 };
@@ -211,35 +215,34 @@ export const getItemById = async (req, res) => {
     const { id } = req.params;
 
     const item = await Item.findById(id)
-      .populate('createdBy', 'name email')
-      .populate('updatedBy', 'name email');
+      .populate("createdBy", "name email")
+      .populate("updatedBy", "name email");
 
     if (!item) {
       return res.status(404).json({
         success: false,
-        message: 'Item not found'
+        message: "Item not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      data: item
+      data: item,
     });
-
   } catch (error) {
-    console.error('Error fetching item:', error);
-    
-    if (error.name === 'CastError') {
+    console.error("Error fetching item:", error);
+
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid item ID format'
+        message: "Invalid item ID format",
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Error fetching item',
-      error: error.message
+      message: "Error fetching item",
+      error: error.message,
     });
   }
 };
@@ -255,22 +258,22 @@ export const updateItem = async (req, res) => {
     if (!existingItem) {
       return res.status(404).json({
         success: false,
-        message: 'Item not found'
+        message: "Item not found",
       });
     }
 
     // Check for name uniqueness if name is being updated
     if (updateData.name && updateData.name !== existingItem.name) {
       const nameExists = await Item.findOne({
-        name: { $regex: new RegExp(`^${updateData.name}$`, 'i') },
+        name: { $regex: new RegExp(`^${updateData.name}$`, "i") },
         isActive: true,
-        _id: { $ne: id }
+        _id: { $ne: id },
       });
 
       if (nameExists) {
         return res.status(400).json({
           success: false,
-          message: 'An item with this name already exists'
+          message: "An item with this name already exists",
         });
       }
     }
@@ -280,13 +283,13 @@ export const updateItem = async (req, res) => {
       const skuExists = await Item.findOne({
         sku: updateData.sku,
         isActive: true,
-        _id: { $ne: id }
+        _id: { $ne: id },
       });
 
       if (skuExists) {
         return res.status(400).json({
           success: false,
-          message: 'An item with this SKU already exists'
+          message: "An item with this SKU already exists",
         });
       }
     }
@@ -296,63 +299,68 @@ export const updateItem = async (req, res) => {
       const barcodeExists = await Item.findOne({
         barcode: updateData.barcode,
         isActive: true,
-        _id: { $ne: id }
+        _id: { $ne: id },
       });
 
       if (barcodeExists) {
         return res.status(400).json({
           success: false,
-          message: 'An item with this barcode already exists'
+          message: "An item with this barcode already exists",
         });
       }
     }
 
     // Convert string numbers to actual numbers
-    if (updateData.sellingPrice) updateData.sellingPrice = parseFloat(updateData.sellingPrice);
-    if (updateData.costPrice) updateData.costPrice = parseFloat(updateData.costPrice);
-    if (updateData.currentStock) updateData.currentStock = parseInt(updateData.currentStock);
-    if (updateData.reorderPoint) updateData.reorderPoint = parseInt(updateData.reorderPoint);
+    if (updateData.sellingPrice)
+      updateData.sellingPrice = parseFloat(updateData.sellingPrice);
+    if (updateData.costPrice)
+      updateData.costPrice = parseFloat(updateData.costPrice);
+    if (updateData.currentStock)
+      updateData.currentStock = parseInt(updateData.currentStock);
+    if (updateData.reorderPoint)
+      updateData.reorderPoint = parseInt(updateData.reorderPoint);
     if (updateData.gstRate) updateData.gstRate = parseFloat(updateData.gstRate);
 
     // Add updatedBy field
     updateData.updatedBy = req.user?.id || null;
 
-    const updatedItem = await Item.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true }
-    ).populate('createdBy', 'name email')
-     .populate('updatedBy', 'name email');
+    const updatedItem = await Item.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    })
+      .populate("createdBy", "name email")
+      .populate("updatedBy", "name email");
 
     res.status(200).json({
       success: true,
-      message: 'Item updated successfully',
-      data: updatedItem
+      message: "Item updated successfully",
+      data: updatedItem,
     });
-
   } catch (error) {
-    console.error('Error updating item:', error);
-    
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map(err => err.message);
+    console.error("Error updating item:", error);
+
+    if (error.name === "ValidationError") {
+      const validationErrors = Object.values(error.errors).map(
+        (err) => err.message
+      );
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
-        errors: validationErrors
+        message: "Validation failed",
+        errors: validationErrors,
       });
     }
 
-    if (error.name === 'CastError') {
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid item ID format'
+        message: "Invalid item ID format",
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Error updating item',
-      error: error.message
+      message: "Error updating item",
+      error: error.message,
     });
   }
 };
@@ -366,7 +374,7 @@ export const deleteItem = async (req, res) => {
     if (!item) {
       return res.status(404).json({
         success: false,
-        message: 'Item not found'
+        message: "Item not found",
       });
     }
 
@@ -377,23 +385,22 @@ export const deleteItem = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Item deleted successfully'
+      message: "Item deleted successfully",
     });
-
   } catch (error) {
-    console.error('Error deleting item:', error);
-    
-    if (error.name === 'CastError') {
+    console.error("Error deleting item:", error);
+
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid item ID format'
+        message: "Invalid item ID format",
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Error deleting item',
-      error: error.message
+      message: "Error deleting item",
+      error: error.message,
     });
   }
 };
@@ -407,29 +414,28 @@ export const hardDeleteItem = async (req, res) => {
     if (!item) {
       return res.status(404).json({
         success: false,
-        message: 'Item not found'
+        message: "Item not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Item permanently deleted'
+      message: "Item permanently deleted",
     });
-
   } catch (error) {
-    console.error('Error hard deleting item:', error);
-    
-    if (error.name === 'CastError') {
+    console.error("Error hard deleting item:", error);
+
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid item ID format'
+        message: "Invalid item ID format",
       });
     }
 
     res.status(500).json({
       success: false,
-      message: 'Error deleting item',
-      error: error.message
+      message: "Error deleting item",
+      error: error.message,
     });
   }
 };
@@ -445,7 +451,7 @@ export const getItemsByType = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     const items = await Item.findByType(type)
-      .populate('createdBy', 'name email')
+      .populate("createdBy", "name email")
       .skip(skip)
       .limit(limitNum)
       .sort({ createdAt: -1 });
@@ -459,16 +465,15 @@ export const getItemsByType = async (req, res) => {
         currentPage: pageNum,
         totalPages: Math.ceil(totalItems / limitNum),
         totalItems,
-        itemsPerPage: limitNum
-      }
+        itemsPerPage: limitNum,
+      },
     });
-
   } catch (error) {
-    console.error('Error fetching items by type:', error);
+    console.error("Error fetching items by type:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching items by type',
-      error: error.message
+      message: "Error fetching items by type",
+      error: error.message,
     });
   }
 };
@@ -483,14 +488,14 @@ export const getLowStockItems = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     const items = await Item.findLowStock()
-      .populate('createdBy', 'name email')
+      .populate("createdBy", "name email")
       .skip(skip)
       .limit(limitNum)
       .sort({ currentStock: 1 });
 
     const totalItems = await Item.countDocuments({
-      $expr: { $lte: ['$currentStock', '$reorderPoint'] },
-      isActive: true
+      $expr: { $lte: ["$currentStock", "$reorderPoint"] },
+      isActive: true,
     });
 
     res.status(200).json({
@@ -500,16 +505,15 @@ export const getLowStockItems = async (req, res) => {
         currentPage: pageNum,
         totalPages: Math.ceil(totalItems / limitNum),
         totalItems,
-        itemsPerPage: limitNum
-      }
+        itemsPerPage: limitNum,
+      },
     });
-
   } catch (error) {
-    console.error('Error fetching low stock items:', error);
+    console.error("Error fetching low stock items:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching low stock items',
-      error: error.message
+      message: "Error fetching low stock items",
+      error: error.message,
     });
   }
 };
@@ -528,12 +532,12 @@ export const searchItems = async (req, res) => {
 
     if (q) {
       filter.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { sku: { $regex: q, $options: 'i' } },
-        { barcode: { $regex: q, $options: 'i' } },
-        { category: { $regex: q, $options: 'i' } },
-        { brand: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } }
+        { name: { $regex: q, $options: "i" } },
+        { sku: { $regex: q, $options: "i" } },
+        { barcode: { $regex: q, $options: "i" } },
+        { category: { $regex: q, $options: "i" } },
+        { brand: { $regex: q, $options: "i" } },
+        { description: { $regex: q, $options: "i" } },
       ];
     }
 
@@ -541,7 +545,7 @@ export const searchItems = async (req, res) => {
     if (category) filter.category = category;
 
     const items = await Item.find(filter)
-      .populate('createdBy', 'name email')
+      .populate("createdBy", "name email")
       .skip(skip)
       .limit(limitNum)
       .sort({ createdAt: -1 });
@@ -555,16 +559,15 @@ export const searchItems = async (req, res) => {
         currentPage: pageNum,
         totalPages: Math.ceil(totalItems / limitNum),
         totalItems,
-        itemsPerPage: limitNum
-      }
+        itemsPerPage: limitNum,
+      },
     });
-
   } catch (error) {
-    console.error('Error searching items:', error);
+    console.error("Error searching items:", error);
     res.status(500).json({
       success: false,
-      message: 'Error searching items',
-      error: error.message
+      message: "Error searching items",
+      error: error.message,
     });
   }
 };
@@ -573,19 +576,25 @@ export const searchItems = async (req, res) => {
 export const getItemStats = async (req, res) => {
   try {
     const totalItems = await Item.countDocuments({ isActive: true });
-    const goodsCount = await Item.countDocuments({ type: 'Goods', isActive: true });
-    const servicesCount = await Item.countDocuments({ type: 'Service', isActive: true });
+    const goodsCount = await Item.countDocuments({
+      type: "Goods",
+      isActive: true,
+    });
+    const servicesCount = await Item.countDocuments({
+      type: "Service",
+      isActive: true,
+    });
     const lowStockCount = await Item.countDocuments({
-      $expr: { $lte: ['$currentStock', '$reorderPoint'] },
-      isActive: true
+      $expr: { $lte: ["$currentStock", "$reorderPoint"] },
+      isActive: true,
     });
 
     // Get category distribution
     const categoryStats = await Item.aggregate([
       { $match: { isActive: true } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $group: { _id: "$category", count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 10 }
+      { $limit: 10 },
     ]);
 
     res.status(200).json({
@@ -595,16 +604,15 @@ export const getItemStats = async (req, res) => {
         goodsCount,
         servicesCount,
         lowStockCount,
-        categoryStats
-      }
+        categoryStats,
+      },
     });
-
   } catch (error) {
-    console.error('Error fetching item statistics:', error);
+    console.error("Error fetching item statistics:", error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching item statistics',
-      error: error.message
+      message: "Error fetching item statistics",
+      error: error.message,
     });
   }
-}; 
+};

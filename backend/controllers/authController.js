@@ -1,18 +1,16 @@
 // backend/controllers/authController.js
-import RefreshToken from '../models/RefreshToken.js';
+import RefreshToken from "../models/RefreshToken.js";
 import {
   generateAccessToken,
-  generateRefreshToken,
   verifyRefreshToken,
   rotateRefreshToken,
-} from '../utils/token.js';
+} from "../utils/token.js";
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure:   process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
-  path:     '/api/auth/refresh-token',
-  maxAge:   7 * 24 * 60 * 60 * 1e3,   // 7 days
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "lax" : "none",
+  maxAge: 7 * 24 * 60 * 60 * 1e3, // 7 days
 };
 
 /* ─── LOGIN / SIGNUP already issue tokens ───────────────── */
@@ -23,14 +21,21 @@ const COOKIE_OPTS = {
  */
 export const handleRefreshToken = async (req, res) => {
   const oldToken = req.cookies.jid;
-  if (!oldToken) return res.status(401).json({ message: 'No refresh token' });
+  if (!oldToken) return res.status(401).json({ message: "No refresh token" });
 
   const record = await verifyRefreshToken(oldToken);
-  if (!record) return res.status(401).json({ message: 'Invalid or expired refresh token' });
+  if (!record)
+    return res
+      .status(401)
+      .json({ message: "Invalid or expired refresh token" });
 
   // Rotate (optional but recommended)
-  const newRefresh = await rotateRefreshToken(oldToken, record.user, req.headers['user-agent']);
-  res.cookie('jid', newRefresh, COOKIE_OPTS);
+  const newRefresh = await rotateRefreshToken(
+    oldToken,
+    record.user,
+    req.headers["user-agent"]
+  );
+  res.cookie("jid", newRefresh, COOKIE_OPTS);
 
   // Issue new access JWT
   const accessToken = generateAccessToken(record.user);
@@ -44,6 +49,6 @@ export const handleRefreshToken = async (req, res) => {
 export const logout = async (req, res) => {
   const token = req.cookies.jid;
   if (token) await RefreshToken.deleteOne({ token });
-  res.clearCookie('jid', COOKIE_OPTS);
-  res.json({ message: 'Logged out' });
+  res.clearCookie("jid", COOKIE_OPTS);
+  res.json({ message: "Logged out" });
 };

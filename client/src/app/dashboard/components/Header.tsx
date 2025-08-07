@@ -3,6 +3,8 @@
 import React, { useState, useRef } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 import {
   Bars3Icon,
   ClockIcon,
@@ -11,6 +13,7 @@ import {
   BellIcon,
   Cog6ToothIcon,
   Squares2X2Icon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 
 // Dynamic imports for components that use document references
@@ -64,10 +67,24 @@ export default function Header({ onToggleSidebar }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const recentButtonRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const router = useRouter();
 
   const openPanel = (panel: Exclude<Panel, null>) =>
     setActivePanel((cur) => (cur === panel ? null : panel));
   const closeAll = () => setActivePanel(null);
+
+  const handleLogout = async () => {
+    console.log("🚪 Header logout button clicked!");
+    try {
+      console.log("🚪 Calling logout API from header...");
+      await api("/api/auth/logout", { method: "POST" });
+      console.log("✅ Header logout successful");
+      router.push("/signin");
+    } catch (error) {
+      console.error("❌ Header logout failed:", error);
+      router.push("/signin");
+    }
+  };
 
   return (
     <>
@@ -213,6 +230,17 @@ export default function Header({ onToggleSidebar }: Props) {
                 onClose={closeAll}
               />
             </ActionWrap>
+
+            {/* Logout button */}
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-full hover:scale-110 transition-all duration-200 ease-in-out"
+              aria-label="Logout"
+            >
+              <ArrowRightOnRectangleIcon className="w-6 h-6 text-white" />
+            </button>
+
+            {/* Test button */}
           </div>
         </div>
       </header>

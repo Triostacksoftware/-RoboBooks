@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 import {
   createCustomer,
   getAllCustomers,
@@ -8,39 +8,39 @@ import {
   hardDeleteCustomer,
   getCustomersByType,
   searchCustomers,
-  getCustomerStats
-} from '../controllers/customerController.js';
+  getCustomerStats,
+} from "../controllers/customerController.js";
 
 const router = express.Router();
 
 // Create a new customer
-router.post('/', createCustomer);
+router.post("/", createCustomer);
 
 // Get all customers with pagination and filtering
-router.get('/', getAllCustomers);
+router.get("/", getAllCustomers);
 
 // Get customer statistics
-router.get('/stats', getCustomerStats);
+router.get("/stats", getCustomerStats);
 
 // Search customers
-router.get('/search', searchCustomers);
+router.get("/search", searchCustomers);
 
 // Get customers by type (business or individual)
-router.get('/type/:type', getCustomersByType);
+router.get("/type/:type", getCustomersByType);
 
 // Get customer by ID
-router.get('/:id', getCustomerById);
+router.get("/:id", getCustomerById);
 
 // Update customer by ID
-router.put('/:id', updateCustomer);
+router.put("/:id", updateCustomer);
 
 // Patch customer by ID (partial update)
-router.patch('/:id', updateCustomer);
+router.patch("/:id", updateCustomer);
 
 // Soft delete customer by ID
-router.delete('/:id', deleteCustomer);
+router.delete("/:id", deleteCustomer);
 
 // Hard delete customer by ID (admin only)
-router.delete('/:id/permanent', hardDeleteCustomer);
+router.delete("/:id/permanent", hardDeleteCustomer);
 
-export default router; 
+export default router;

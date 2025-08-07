@@ -1,10 +1,12 @@
 import express from "express";
+import { authGuard } from "../utils/jwt.js";
 import * as ctrl from "../controllers/invoicecontroller.js";
+
 const router = express.Router();
 
-// CRUD operations
-router.get("/", ctrl.getAll);
-router.get("/:id", ctrl.getById);
+// Apply authentication to all invoice routes
+router.use(authGuard);
+
 router.post("/", ctrl.create);
 router.put("/:id", ctrl.update);
 router.delete("/:id", ctrl.remove);

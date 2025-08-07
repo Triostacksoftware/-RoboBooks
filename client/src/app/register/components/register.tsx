@@ -3,6 +3,9 @@
 import { useMemo, useState, useEffect, useRef, FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import {
   ALL_PHONE_OPTIONS,
   shortLabel,
@@ -170,6 +173,7 @@ type FormData = {
   phoneIso2: string;
   phoneNumber: string;
   password: string;
+  passwordVisible: boolean;
   country: string;
   state: string;
   agree: boolean;
@@ -261,12 +265,14 @@ function RatingsRow() {
 
 /* ----------------- Page ----------------- */
 export default function Register() {
+  const router = useRouter();
   const defaultIN = useMemo(
     () => ALL_PHONE_OPTIONS.find((o) => o.iso2 === "IN" && o.dial === "+91"),
     []
   );
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState<FormData>({
     companyName: "",
     email: "",
@@ -274,6 +280,7 @@ export default function Register() {
     phoneIso2: defaultIN?.iso2 ?? "IN",
     phoneNumber: "",
     password: "",
+    passwordVisible: false,
     country: "India",
     state: "Uttar Pradesh",
     agree: false,
@@ -296,25 +303,63 @@ export default function Register() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.companyName.trim())
-      return alert("Please enter your company name.");
-    if (!/^\S+@\S+\.\S+$/.test(form.email))
-      return alert("Please enter a valid email.");
-    if (!form.phoneNumber.trim())
-      return alert("Please enter your mobile number.");
-    if (form.password.length < 6)
-      return alert("Password must be at least 6 characters.");
-    if (!form.agree)
-      return alert(
-        "You must agree to the Terms of Service and Privacy Policy."
-      );
+    setError("");
+
+    // Client-side validation
+    if (!form.companyName.trim()) {
+      setError("Please enter your company name.");
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (!form.phoneNumber.trim()) {
+      setError("Please enter your mobile number.");
+      return;
+    }
+    if (form.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (!form.agree) {
+      setError("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log("Submitting form:", form);
-      alert("Account created (demo). Wire this up to your API/server action.");
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong. Please try again.");
+
+      const response = await api<{
+        success: boolean;
+        user?: { id: string; email: string; companyName: string };
+      }>("/api/auth/register", {
+        method: "POST",
+        json: {
+          companyName: form.companyName.trim(),
+          email: form.email.trim(),
+          phoneNumber: form.phoneNumber.trim(),
+          phoneDialCode: form.phoneDialCode,
+          phoneIso2: form.phoneIso2,
+          password: form.password,
+          country: form.country,
+          state: form.state,
+        },
+      });
+
+      if (response.success) {
+        // Registration successful, redirect to dashboard
+        router.push("/dashboard");
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+    } catch (err: unknown) {
+      console.error("Registration error:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -534,6 +579,7 @@ export default function Register() {
                   onChange={onChange("companyName")}
                   placeholder="e.g., Robo Innovations Pvt Ltd"
                   className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
@@ -552,6 +598,7 @@ export default function Register() {
                   onChange={onChange("email")}
                   placeholder="you@company.com"
                   className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
               </div>
@@ -577,6 +624,7 @@ export default function Register() {
                         "text-slate-900 outline-none",
                         "border-0 focus:ring-0 appearance-none cursor-pointer",
                       ].join(" ")}
+                      disabled={loading}
                     >
                       <optgroup label="Popular">
                         {["IN|+91", "US|+1", "GB|+44", "AU|+61", "AE|+971"].map(
@@ -617,6 +665,7 @@ export default function Register() {
                     onChange={onChange("phoneNumber")}
                     placeholder="98765 43210"
                     className="flex-1 rounded-r-2xl bg-transparent px-4 py-3 text-slate-900 outline-none border-0 focus:ring-0"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -634,13 +683,31 @@ export default function Register() {
               <div className="relative">
                 <input
                   id="password"
-                  type="password"
+                  type={form.passwordVisible ? "text" : "password"}
                   value={form.password}
                   onChange={onChange("password")}
                   placeholder="At least 6 characters"
                   className="peer w-full rounded-2xl border border-slate-300/80 bg-white/70 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 />
                 <div className="pointer-events-none absolute inset-0 rounded-2xl [box-shadow:inset_0_1px_0_0_rgba(255,255,255,.6)]" />
+                <button
+                  type="button"
+                  aria-label="Toggle password visibility"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      passwordVisible: !prev.passwordVisible,
+                    }))
+                  }
+                >
+                  {form.passwordVisible ? (
+                    <EyeSlashIcon className="h-5 w-5 text-slate-500" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-slate-500" />
+                  )}
+                </button>
               </div>
             </label>
 
@@ -655,6 +722,7 @@ export default function Register() {
                   value={form.country}
                   onChange={onChange("country")}
                   className="w-full rounded-2xl border border-slate-300/80 bg-white/70 px-3 py-3 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 >
                   <option>India</option>
                   <option>United States</option>
@@ -673,6 +741,7 @@ export default function Register() {
                   value={form.state}
                   onChange={onChange("state")}
                   className="w-full rounded-2xl border border-slate-300/80 bg-white/70 px-3 py-3 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/20"
+                  disabled={loading}
                 >
                   {[
                     "Andhra Pradesh",
@@ -715,6 +784,13 @@ export default function Register() {
               </label>
             </div>
 
+            {/* Error message */}
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-200 p-3">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
             {/* Consent */}
             <label className="flex items-start gap-3 text-sm text-slate-700">
               <input
@@ -722,6 +798,7 @@ export default function Register() {
                 checked={form.agree}
                 onChange={onChange("agree")}
                 className="mt-0.5 size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                disabled={loading}
               />
               <span>
                 I agree to the{" "}
@@ -750,6 +827,7 @@ export default function Register() {
                 "group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden",
                 "rounded-2xl px-4 py-3 font-semibold text-white shadow-lg",
                 "bg-gradient-to-tr from-blue-600 to-emerald-500",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
               ].join(" ")}
             >
               <span
