@@ -19,6 +19,7 @@ export default function DashboardHome() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -88,48 +89,57 @@ export default function DashboardHome() {
   return (
     <div className="mx-auto max-w-[1440px] px-4 md:px-8 lg:px-12 pb-10">
       {/* Header Tabs */}
-      <HomeTabs />
+      <HomeTabs onTabChange={setActiveTab} />
 
-      {/* Row 1: Receivables & Payables */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <MetricCard
-          title="Total Receivables"
-          subtitle="Total Unpaid Invoices ₹0.00"
-          current="₹0.00"
-          overdue="₹0.00"
-        />
-        <MetricCard
-          title="Total Payables"
-          subtitle="Total Unpaid Bills ₹0.00"
-          current="₹0.00"
-          overdue="₹0.00"
-        />
-      </div>
+      {/* Dashboard Content - Only show when dashboard tab is active */}
+      {activeTab === 'dashboard' && (
+        <>
+          {/* Row 1: Receivables & Payables */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <MetricCard
+              title="Total Receivables"
+              subtitle="Total unpaid bills: ₹0.00"
+              current="₹0.00"
+              overdue="₹0.00"
+            />
+            <MetricCard
+              title="Total Payables"
+              subtitle="Total unpaid bills: ₹0.00"
+              current="₹0.00"
+              overdue="₹0.00"
+            />
+          </div>
 
-      {/* Row 2: Cash Flow, Income/Expense, Top Expenses */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="col-span-1">
-          <CashFlow />
-        </div>
-        <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <IncomeExpense />
-          <TopExpenses />
-        </div>
-      </div>
+          {/* Row 2: Cash Flow */}
+          <div className="mb-6">
+            <CashFlow />
+          </div>
 
-      {/* Row 3: Projects & Bank and Credit Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Projects />
-        <BankAndCards />
-      </div>
+          {/* Row 3: Income and Expense */}
+          <div className="mb-6">
+            <IncomeExpense />
+          </div>
 
-      {/* Row 4: Account Watchlist */}
-      <div className="mb-8">
-        <Watchlist />
-      </div>
+          {/* Row 4: Top Expenses */}
+          <div className="mb-6">
+            <TopExpenses />
+          </div>
 
-      {/* Footer with info, links, QR, etc. */}
-      <Footer />
+          {/* Row 5: Projects & Bank and Credit Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <Projects />
+            <BankAndCards />
+          </div>
+
+          {/* Row 6: Account Watchlist */}
+          <div className="mb-8">
+            <Watchlist />
+          </div>
+
+          {/* Footer with info, links, QR, etc. */}
+          <Footer />
+        </>
+      )}
     </div>
   );
 }

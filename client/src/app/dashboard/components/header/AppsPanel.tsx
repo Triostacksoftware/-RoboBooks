@@ -28,7 +28,7 @@ export default function AppsPanel({ open, onClose }: AppsPanelProps) {
       {/* slide-over panel */}
       <div className="absolute right-4 top-14 z-[90] w-[660px] max-w-[95vw] rounded-xl border bg-white shadow-2xl overflow-auto">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="text-lg font-semibold">All Zoho Apps</div>
+          <div className="text-lg font-semibold">All Robo Apps</div>
           <button
             onClick={onClose}
             className="p-2 rounded hover:bg-gray-100"
