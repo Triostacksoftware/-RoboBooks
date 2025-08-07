@@ -1,25 +1,26 @@
 "use client";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
-import React from "react";
-
-export default function HomeTabs({ companyName }: { companyName?: string }) {
-import { PlusIcon } from '@heroicons/react/24/outline'
-import React, { useState } from 'react'
-import GettingStarted from './GettingStarted'
-import RecentUpdates from './RecentUpdates'
+import React, { useState } from "react";
+import GettingStarted from "./GettingStarted";
+import RecentUpdates from "./RecentUpdates";
 
 interface HomeTabsProps {
-  onTabChange?: (tab: string) => void
+  companyName?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export default function HomeTabs({ onTabChange }: HomeTabsProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'getting-started' | 'recent-updates'>('dashboard')
+export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "getting-started" | "recent-updates"
+  >("dashboard");
 
-  const handleTabChange = (tab: 'dashboard' | 'getting-started' | 'recent-updates') => {
-    setActiveTab(tab)
-    onTabChange?.(tab)
-  }
+  const handleTabChange = (
+    tab: "dashboard" | "getting-started" | "recent-updates"
+  ) => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
 
   return (
     <div className="mb-6">
@@ -33,14 +34,14 @@ export default function HomeTabs({ onTabChange }: HomeTabsProps) {
             <h1 className="text-xl font-semibold">
               Hi, {companyName || "User"}
             </h1>
-          
           </div>
         </div>
 
         {/* Helpline (desktop only) */}
         <div className="hidden md:block text-right text-xs text-gray-600 space-y-1 pt-8">
           <div>
-            Robo Books India Helpline: <span className="font-semibold">1800-103-0066</span>
+            Robo Books India Helpline:{" "}
+            <span className="font-semibold">1800-103-0066</span>
           </div>
           <div>Mon–Fri • 9:00 AM–7:00 PM • Toll Free</div>
           <div className="text-gray-400">
@@ -52,32 +53,32 @@ export default function HomeTabs({ onTabChange }: HomeTabsProps) {
       {/* Tabs + New Dashboard */}
       <div className="mt-6 flex items-center justify-between border-b">
         <div className="flex gap-8 text-sm">
-          <button 
-            onClick={() => handleTabChange('dashboard')}
+          <button
+            onClick={() => handleTabChange("dashboard")}
             className={`pb-3 border-b-2 transition-colors ${
-              activeTab === 'dashboard' 
-                ? 'border-blue-600 text-blue-600' 
-                : 'border-transparent hover:text-gray-800 text-gray-500'
+              activeTab === "dashboard"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent hover:text-gray-800 text-gray-500"
             }`}
           >
             Dashboard
           </button>
-          <button 
-            onClick={() => handleTabChange('getting-started')}
+          <button
+            onClick={() => handleTabChange("getting-started")}
             className={`pb-3 border-b-2 transition-colors ${
-              activeTab === 'getting-started' 
-                ? 'border-blue-600 text-blue-600' 
-                : 'border-transparent hover:text-gray-800 text-gray-500'
+              activeTab === "getting-started"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent hover:text-gray-800 text-gray-500"
             }`}
           >
             Getting Started
           </button>
-          <button 
-            onClick={() => handleTabChange('recent-updates')}
+          <button
+            onClick={() => handleTabChange("recent-updates")}
             className={`pb-3 border-b-2 transition-colors ${
-              activeTab === 'recent-updates' 
-                ? 'border-blue-600 text-blue-600' 
-                : 'border-transparent hover:text-gray-800 text-gray-500'
+              activeTab === "recent-updates"
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent hover:text-gray-800 text-gray-500"
             }`}
           >
             Recent Updates
@@ -90,8 +91,8 @@ export default function HomeTabs({ onTabChange }: HomeTabsProps) {
 
       {/* Tab Content */}
       <div className="mt-6">
-        {activeTab === 'getting-started' && <GettingStarted />}
-        {activeTab === 'recent-updates' && <RecentUpdates />}
+        {activeTab === "getting-started" && <GettingStarted />}
+        {activeTab === "recent-updates" && <RecentUpdates />}
       </div>
     </div>
   );

@@ -30,16 +30,16 @@ export default function DashboardHome() {
   const [authError, setAuthError] = useState("");
   const [companyName, setCompanyName] = useState<string | undefined>(undefined);
   // LIFT activeTab state up
-  const [activeTab, setActiveTab] = useState<"dashboard" | "getting-started" | "recent-updates">("dashboard");
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "getting-started" | "recent-updates"
+  >("dashboard");
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         console.log("🔐 Checking authentication...");
         // Check if user is authenticated by calling the /me endpoint
-        const response = await api<AuthMeResponse>(
-          "/api/auth/me"
-        );
+        const response = await api<AuthMeResponse>("/api/auth/me");
         console.log("✅ Authentication successful:", response);
         if (response.success) {
           setIsAuthenticated(true);
@@ -101,7 +101,14 @@ export default function DashboardHome() {
   return (
     <div className="mx-auto max-w-[1440px] px-4 md:px-8 lg:px-12 pb-10">
       {/* Header Tabs */}
-      <HomeTabs companyName={companyName} onTabChange={(tab) => setActiveTab(tab as "dashboard" | "getting-started" | "recent-updates")} />
+      <HomeTabs
+        companyName={companyName}
+        onTabChange={(tab) =>
+          setActiveTab(
+            tab as "dashboard" | "getting-started" | "recent-updates"
+          )
+        }
+      />
 
       {/* Dashboard Content - Only show when dashboard tab is active */}
       {activeTab === "dashboard" && (
