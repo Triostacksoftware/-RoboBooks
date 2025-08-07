@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Clock, 
-  Plus, 
-  Calendar, 
-  List, 
-  Filter, 
+import React, { useState, useEffect } from "react";
+import {
+  Clock,
+  Plus,
+  Calendar,
+  List,
+  Filter,
   Search,
   Play,
   Pause,
-  Stop,
+  Square,
   Edit,
   Trash2,
   Download,
@@ -22,26 +22,26 @@ import {
   DollarSign,
   CheckCircle,
   AlertCircle,
-  Timer
-} from 'lucide-react';
-import TimesheetHeader from './components/TimesheetHeader';
-import TimesheetFilters from './components/TimesheetFilters';
-import TimesheetTable from './components/TimesheetTable';
-import NewTimeEntryModal from './components/NewTimeEntryModal';
-import TimerWidget from './components/TimerWidget';
-import TimesheetStats from './components/TimesheetStats';
-import { useTimesheet } from './hooks/useTimesheet';
+  Timer,
+} from "lucide-react";
+import TimesheetHeader from "./components/TimesheetHeader";
+import TimesheetFilters from "./components/TimesheetFilters";
+import TimesheetTable from "./components/TimesheetTable";
+import NewTimeEntryModal from "./components/NewTimeEntryModal";
+import TimerWidget from "./components/TimerWidget";
+import TimesheetStats from "./components/TimesheetStats";
+import { useTimesheet } from "./hooks/useTimesheet";
 
 export default function TimesheetPage() {
   const [isNewEntryModalOpen, setIsNewEntryModalOpen] = useState(false);
-  const [activeTimer, setActiveTimer] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [activeTimer, setActiveTimer] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState("list"); // 'list' or 'calendar'
   const [filters, setFilters] = useState({
-    period: 'all',
-    customer: '',
-    project: '',
-    user: '',
-    status: 'all'
+    period: "all",
+    customer: "",
+    project: "",
+    user: "",
+    status: "all",
   });
 
   const {
@@ -53,11 +53,11 @@ export default function TimesheetPage() {
     deleteTimeEntry,
     startTimer,
     stopTimer,
-    refreshTimesheets
+    refreshTimesheets,
   } = useTimesheet();
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleStartTimer = (entryId: string) => {
@@ -75,7 +75,7 @@ export default function TimesheetPage() {
       await createTimeEntry(entryData);
       setIsNewEntryModalOpen(false);
     } catch (error) {
-      console.error('Error creating entry:', error);
+      console.error("Error creating entry:", error);
       // Error is already handled in the hook
     }
   };
@@ -83,7 +83,7 @@ export default function TimesheetPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <TimesheetHeader 
+      <TimesheetHeader
         onCreateEntry={() => setIsNewEntryModalOpen(true)}
         onViewModeChange={setViewMode}
         viewMode={viewMode}
@@ -93,17 +93,11 @@ export default function TimesheetPage() {
       />
 
       {/* Filters */}
-      <TimesheetFilters 
-        filters={filters}
-        onFilterChange={handleFilterChange}
-      />
+      <TimesheetFilters filters={filters} onFilterChange={handleFilterChange} />
 
       {/* Timer Widget */}
       {activeTimer && (
-        <TimerWidget 
-          entryId={activeTimer}
-          onStop={handleStopTimer}
-        />
+        <TimerWidget entryId={activeTimer} onStop={handleStopTimer} />
       )}
 
       {/* Stats */}
@@ -119,7 +113,9 @@ export default function TimesheetPage() {
           <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
             <div className="flex items-center">
               <AlertCircle className="h-4 w-4 text-red-400 mr-2" />
-              <span className="text-xs text-red-800">Error loading timesheets: {error}</span>
+              <span className="text-xs text-red-800">
+                Error loading timesheets: {error}
+              </span>
             </div>
           </div>
         ) : timesheets.length === 0 ? (
@@ -133,7 +129,8 @@ export default function TimesheetPage() {
                   Create your first time entry
                 </h3>
                 <p className="text-xs text-gray-600 mb-4">
-                  Log the time spent on project tasks and charge your customers accordingly.
+                  Log the time spent on project tasks and charge your customers
+                  accordingly.
                 </p>
                 <button
                   onClick={() => setIsNewEntryModalOpen(true)}
@@ -145,7 +142,7 @@ export default function TimesheetPage() {
             </div>
           </div>
         ) : (
-          <TimesheetTable 
+          <TimesheetTable
             timesheets={timesheets || []}
             onEdit={updateTimeEntry}
             onDelete={deleteTimeEntry}
@@ -158,7 +155,7 @@ export default function TimesheetPage() {
       </div>
 
       {/* New Entry Modal */}
-      <NewTimeEntryModal 
+      <NewTimeEntryModal
         isOpen={isNewEntryModalOpen}
         onClose={() => setIsNewEntryModalOpen(false)}
         onSubmit={handleCreateEntry}

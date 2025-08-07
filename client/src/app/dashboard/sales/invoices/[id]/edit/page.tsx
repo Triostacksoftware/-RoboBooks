@@ -38,6 +38,7 @@ interface Invoice {
   subTotal: number;
   discount: number;
   discountType: string;
+  discountAmount: number;
   taxAmount: number;
   taxRate: number;
   shippingCharges: number;
@@ -130,8 +131,8 @@ const EditInvoicePage = () => {
 
     // Recalculate item amount and tax
     const item = updatedItems[index];
-    item.amount = parseFloat(item.quantity || 0) * parseFloat(item.rate || 0);
-    item.taxAmount = (item.amount * parseFloat(item.taxRate || 0)) / 100;
+    item.amount = (item.quantity || 0) * (item.rate || 0);
+    item.taxAmount = (item.amount * (item.taxRate || 0)) / 100;
 
     setInvoice((prev) => ({ ...prev!, items: updatedItems }));
     recalculateAllTotals(updatedItems);
@@ -163,27 +164,27 @@ const EditInvoicePage = () => {
     if (!invoice) return;
 
     const subTotal = items.reduce((sum, item) => {
-      return sum + parseFloat(item.quantity || 0) * parseFloat(item.rate || 0);
+      return sum + (item.quantity || 0) * (item.rate || 0);
     }, 0);
 
     const discountAmount =
       invoice.discountType === "percentage"
-        ? (subTotal * parseFloat(invoice.discount || 0)) / 100
-        : parseFloat(invoice.discount || 0);
+        ? (subTotal * (invoice.discount || 0)) / 100
+        : invoice.discount || 0;
 
     const taxAmount = items.reduce((sum, item) => {
-      return sum + parseFloat(item.taxAmount || 0);
+      return sum + (item.taxAmount || 0);
     }, 0);
 
     const total =
       subTotal -
       discountAmount +
       taxAmount +
-      parseFloat(invoice.shippingCharges || 0) +
-      parseFloat(invoice.adjustment || 0) +
-      parseFloat(invoice.roundOff || 0);
+      (invoice.shippingCharges || 0) +
+      (invoice.adjustment || 0) +
+      (invoice.roundOff || 0);
 
-    const balanceDue = total - parseFloat(invoice.amountPaid || 0);
+    const balanceDue = total - (invoice.amountPaid || 0);
 
     setInvoice((prev) => ({
       ...prev!,

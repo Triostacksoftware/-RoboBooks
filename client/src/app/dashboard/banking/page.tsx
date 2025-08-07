@@ -37,6 +37,40 @@ interface BankAccount {
   swiftCode?: string;
 }
 
+// Define the Transaction interface
+interface Transaction {
+  id: number;
+  description: string;
+  amount: number;
+  type: "income" | "expense";
+  category: string;
+  date: string;
+  account: string;
+  status: "reconciled" | "pending" | "unreconciled";
+  reference?: string;
+}
+
+// Define the ReconciliationItem interface
+interface ReconciliationItem {
+  id: number;
+  bankTransaction: {
+    id: string;
+    description: string;
+    amount: number;
+    date: string;
+    reference?: string;
+  };
+  bookTransaction?: {
+    id: string;
+    description: string;
+    amount: number;
+    date: string;
+    type: "invoice" | "expense" | "payment" | "manual";
+  };
+  status: "matched" | "unmatched" | "reconciled";
+  difference?: number;
+}
+
 export default function BankingPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showConnectModal, setShowConnectModal] = useState(false);
@@ -87,7 +121,7 @@ export default function BankingPage() {
     },
   ];
 
-  const recentTransactions = [
+  const recentTransactions: Transaction[] = [
     {
       id: 1,
       description: "Office Supplies - Staples",
@@ -156,7 +190,13 @@ export default function BankingPage() {
     },
   ];
 
-  const reconciliationData = {
+  const reconciliationData: {
+    accountName: string;
+    bankBalance: number;
+    bookBalance: number;
+    difference: number;
+    items: ReconciliationItem[];
+  } = {
     accountName: "Business Checking Account",
     bankBalance: 45230.5,
     bookBalance: 44979.75,

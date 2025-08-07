@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { 
-  Clock, 
-  Play, 
-  Stop, 
-  Edit, 
-  Trash2, 
+import React, { useState } from "react";
+import {
+  Clock,
+  Play,
+  Square,
+  Edit,
+  Trash2,
   MoreVertical,
   CheckCircle,
   AlertCircle,
   DollarSign,
   Calendar,
   User,
-  Briefcase
-} from 'lucide-react';
+  Briefcase,
+} from "lucide-react";
 
 interface TimesheetTableProps {
   timesheets: any[];
@@ -33,7 +33,7 @@ export default function TimesheetTable({
   onStartTimer,
   onStopTimer,
   activeTimer,
-  viewMode
+  viewMode,
 }: TimesheetTableProps) {
   const [selectedEntries, setSelectedEntries] = useState<string[]>([]);
 
@@ -44,37 +44,37 @@ export default function TimesheetTable({
     if (selectedEntries.length === timesheetsArray.length) {
       setSelectedEntries([]);
     } else {
-      setSelectedEntries(timesheetsArray.map(entry => entry._id));
+      setSelectedEntries(timesheetsArray.map((entry) => entry._id));
     }
   };
 
   const handleSelectEntry = (entryId: string) => {
-    setSelectedEntries(prev => 
-      prev.includes(entryId) 
-        ? prev.filter(id => id !== entryId)
+    setSelectedEntries((prev) =>
+      prev.includes(entryId)
+        ? prev.filter((id) => id !== entryId)
         : [...prev, entryId]
     );
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const formatHours = (hours: number) => {
     const wholeHours = Math.floor(hours);
     const minutes = Math.round((hours - wholeHours) * 60);
-    return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
+    return `${wholeHours}:${minutes.toString().padStart(2, "0")}`;
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircle className="h-3.5 w-3.5 text-green-600" />;
-      case 'active':
+      case "active":
         return <AlertCircle className="h-3.5 w-3.5 text-blue-600" />;
       default:
         return <Clock className="h-3.5 w-3.5 text-gray-400" />;
@@ -83,16 +83,16 @@ export default function TimesheetTable({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'text-green-700 bg-green-50';
-      case 'active':
-        return 'text-blue-700 bg-blue-50';
+      case "completed":
+        return "text-green-700 bg-green-50";
+      case "active":
+        return "text-blue-700 bg-blue-50";
       default:
-        return 'text-gray-700 bg-gray-50';
+        return "text-gray-700 bg-gray-50";
     }
   };
 
-  if (viewMode === 'calendar') {
+  if (viewMode === "calendar") {
     return <CalendarView timesheets={timesheetsArray} />;
   }
 
@@ -104,7 +104,10 @@ export default function TimesheetTable({
           <div className="flex items-center space-x-3">
             <input
               type="checkbox"
-              checked={selectedEntries.length === timesheetsArray.length && timesheetsArray.length > 0}
+              checked={
+                selectedEntries.length === timesheetsArray.length &&
+                timesheetsArray.length > 0
+              }
               onChange={handleSelectAll}
               className="h-3.5 w-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
             />
@@ -112,7 +115,7 @@ export default function TimesheetTable({
               {selectedEntries.length} of {timesheetsArray.length} selected
             </span>
           </div>
-          
+
           {selectedEntries.length > 0 && (
             <div className="flex items-center space-x-2">
               <button className="text-xs text-gray-600 hover:text-gray-700 px-2 py-1 rounded-md hover:bg-gray-100">
@@ -134,19 +137,38 @@ export default function TimesheetTable({
               <th className="px-4 py-2 text-left">
                 <input
                   type="checkbox"
-                  checked={selectedEntries.length === timesheetsArray.length && timesheetsArray.length > 0}
+                  checked={
+                    selectedEntries.length === timesheetsArray.length &&
+                    timesheetsArray.length > 0
+                  }
                   onChange={handleSelectAll}
                   className="h-3.5 w-3.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                 />
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Task</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Project</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">User</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Date</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Hours</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Status</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Billable</th>
-              <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">Actions</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">
+                Task
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">
+                Project
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">
+                User
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">
+                Date
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">
+                Hours
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">
+                Status
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">
+                Billable
+              </th>
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-700">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -162,16 +184,22 @@ export default function TimesheetTable({
                 </td>
                 <td className="px-4 py-2">
                   <div className="max-w-xs">
-                    <p className="text-xs font-medium text-gray-900 truncate">{entry.task}</p>
+                    <p className="text-xs font-medium text-gray-900 truncate">
+                      {entry.task}
+                    </p>
                     {entry.description && (
-                      <p className="text-xs text-gray-500 truncate">{entry.description}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {entry.description}
+                      </p>
                     )}
                   </div>
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex items-center space-x-1">
                     <Briefcase className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-xs text-gray-700">{entry.project_name || 'Unknown Project'}</span>
+                    <span className="text-xs text-gray-700">
+                      {entry.project_name || "Unknown Project"}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-2">
@@ -183,28 +211,40 @@ export default function TimesheetTable({
                 <td className="px-4 py-2">
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-xs text-gray-700">{formatDate(entry.date)}</span>
+                    <span className="text-xs text-gray-700">
+                      {formatDate(entry.date)}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex items-center space-x-1">
                     <Clock className="h-3.5 w-3.5 text-gray-400" />
-                    <span className="text-xs font-medium text-gray-900">{formatHours(entry.hours)}</span>
+                    <span className="text-xs font-medium text-gray-900">
+                      {formatHours(entry.hours)}
+                    </span>
                   </div>
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex items-center space-x-1">
                     {getStatusIcon(entry.status)}
-                    <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(entry.status)}`}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                        entry.status
+                      )}`}
+                    >
                       {entry.status}
                     </span>
                   </div>
                 </td>
                 <td className="px-4 py-2">
                   <div className="flex items-center space-x-1">
-                    <DollarSign className={`h-3.5 w-3.5 ${entry.billable ? 'text-green-600' : 'text-gray-400'}`} />
+                    <DollarSign
+                      className={`h-3.5 w-3.5 ${
+                        entry.billable ? "text-green-600" : "text-gray-400"
+                      }`}
+                    />
                     <span className="text-xs text-gray-700">
-                      {entry.billable ? 'Yes' : 'No'}
+                      {entry.billable ? "Yes" : "No"}
                     </span>
                   </div>
                 </td>
@@ -216,7 +256,7 @@ export default function TimesheetTable({
                         className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
                         title="Stop Timer"
                       >
-                        <Stop className="h-3.5 w-3.5" />
+                        <Square className="h-3.5 w-3.5" />
                       </button>
                     ) : (
                       <button
