@@ -17,10 +17,20 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+interface Admin {
+  fullName?: string;
+  role?: string;
+  email?: string;
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const [admin, setAdmin] = useState(null);
+  const [admin, setAdmin] = useState<Admin | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const checkAuth = async () => {
     try {
-      const response = await api("/api/admin/profile");
+      const response = (await api("/api/admin/profile")) as any;
       if (response.success) {
         setAdmin(response.admin);
       } else {
@@ -67,9 +77,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return pathname.startsWith(href);
   };
 
-  const NavItem = ({ item }: { item: typeof navigation[0] }) => {
+  const NavItem = ({ item }: { item: (typeof navigation)[0] }) => {
     const isActive = isActiveTab(item.href);
-    
+
     return (
       <Link
         href={item.href}
@@ -79,9 +89,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         }`}
       >
-        <item.icon className={`mr-3 h-5 w-5 ${
-          isActive ? "text-purple-600" : "text-gray-400 group-hover:text-gray-500"
-        }`} />
+        <item.icon
+          className={`mr-3 h-5 w-5 ${
+            isActive
+              ? "text-purple-600"
+              : "text-gray-400 group-hover:text-gray-500"
+          }`}
+        />
         {item.name}
       </Link>
     );
@@ -101,8 +115,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+      <div
+        className={`fixed inset-0 z-50 lg:hidden ${
+          sidebarOpen ? "block" : "hidden"
+        }`}
+      >
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={() => setSidebarOpen(false)}
+        />
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
           <div className="flex h-16 items-center justify-between px-4 border-b">
             <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
@@ -163,7 +184,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <p className="text-sm font-medium text-gray-900">
                         {admin?.fullName || "Admin"}
                       </p>
-                      <p className="text-xs text-gray-500">{admin?.role || "Admin"}</p>
+                      <p className="text-xs text-gray-500">
+                        {admin?.role || "Admin"}
+                      </p>
                     </div>
                   </div>
                   <button

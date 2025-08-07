@@ -5,18 +5,50 @@ import { api } from "@/lib/api";
 import {
   CurrencyDollarIcon,
   CreditCardIcon,
-  ReceiptIcon,
+  DocumentTextIcon,
   BanknotesIcon,
   CalendarIcon,
   CheckCircleIcon,
   XCircleIcon,
 } from "@heroicons/react/24/outline";
 
+interface Subscription {
+  id: number;
+  companyName: string;
+  plan: string;
+  amount: number;
+  status: string;
+  nextBilling: string;
+}
+
+interface Invoice {
+  id: string;
+  companyName: string;
+  amount: number;
+  status: string;
+  dueDate: string;
+  paidDate: string | null;
+}
+
+interface Payment {
+  id: string;
+  companyName: string;
+  amount: number;
+  method: string;
+  date: string;
+}
+
+interface BillingData {
+  subscriptions: Subscription[];
+  invoices: Invoice[];
+  payments: Payment[];
+}
+
 export default function AdminBilling() {
-  const [billingData, setBillingData] = useState({
+  const [billingData, setBillingData] = useState<BillingData>({
     subscriptions: [],
     invoices: [],
-    payments: []
+    payments: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +67,7 @@ export default function AdminBilling() {
             plan: "Premium",
             amount: 299,
             status: "active",
-            nextBilling: "2024-02-15"
+            nextBilling: "2024-02-15",
           },
           {
             id: 2,
@@ -43,7 +75,7 @@ export default function AdminBilling() {
             plan: "Basic",
             amount: 99,
             status: "active",
-            nextBilling: "2024-02-20"
+            nextBilling: "2024-02-20",
           },
           {
             id: 3,
@@ -51,8 +83,8 @@ export default function AdminBilling() {
             plan: "Enterprise",
             amount: 599,
             status: "cancelled",
-            nextBilling: "2024-02-10"
-          }
+            nextBilling: "2024-02-10",
+          },
         ],
         invoices: [
           {
@@ -61,7 +93,7 @@ export default function AdminBilling() {
             amount: 299,
             status: "paid",
             dueDate: "2024-01-15",
-            paidDate: "2024-01-14"
+            paidDate: "2024-01-14",
           },
           {
             id: "INV-002",
@@ -69,7 +101,7 @@ export default function AdminBilling() {
             amount: 99,
             status: "paid",
             dueDate: "2024-01-20",
-            paidDate: "2024-01-19"
+            paidDate: "2024-01-19",
           },
           {
             id: "INV-003",
@@ -77,8 +109,8 @@ export default function AdminBilling() {
             amount: 599,
             status: "overdue",
             dueDate: "2024-01-10",
-            paidDate: null
-          }
+            paidDate: null,
+          },
         ],
         payments: [
           {
@@ -86,16 +118,16 @@ export default function AdminBilling() {
             companyName: "TechCorp Inc",
             amount: 299,
             method: "Credit Card",
-            date: "2024-01-14"
+            date: "2024-01-14",
           },
           {
             id: "PAY-002",
             companyName: "StartupXYZ",
             amount: 99,
             method: "Bank Transfer",
-            date: "2024-01-19"
-          }
-        ]
+            date: "2024-01-19",
+          },
+        ],
       };
       setBillingData(mockData);
     } catch (error) {
@@ -105,21 +137,33 @@ export default function AdminBilling() {
     }
   };
 
-  const SubscriptionCard = ({ subscription }) => (
+  const SubscriptionCard = ({
+    subscription,
+  }: {
+    subscription: Subscription;
+  }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{subscription.companyName}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {subscription.companyName}
+          </h3>
           <p className="text-sm text-gray-600">{subscription.plan} Plan</p>
-          <p className="text-xs text-gray-500">Next billing: {subscription.nextBilling}</p>
+          <p className="text-xs text-gray-500">
+            Next billing: {subscription.nextBilling}
+          </p>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-gray-900">${subscription.amount}</p>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            subscription.status === 'active' 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
-          }`}>
+          <p className="text-2xl font-bold text-gray-900">
+            ${subscription.amount}
+          </p>
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              subscription.status === "active"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
             {subscription.status}
           </span>
         </div>
@@ -127,23 +171,27 @@ export default function AdminBilling() {
     </div>
   );
 
-  const InvoiceCard = ({ invoice }) => (
+  const InvoiceCard = ({ invoice }: { invoice: Invoice }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{invoice.companyName}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {invoice.companyName}
+          </h3>
           <p className="text-sm text-gray-600">Invoice #{invoice.id}</p>
           <p className="text-xs text-gray-500">Due: {invoice.dueDate}</p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-gray-900">${invoice.amount}</p>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            invoice.status === 'paid' 
-              ? 'bg-green-100 text-green-800' 
-              : invoice.status === 'overdue'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}>
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              invoice.status === "paid"
+                ? "bg-green-100 text-green-800"
+                : invoice.status === "overdue"
+                ? "bg-red-100 text-red-800"
+                : "bg-yellow-100 text-yellow-800"
+            }`}
+          >
             {invoice.status}
           </span>
         </div>
@@ -163,18 +211,24 @@ export default function AdminBilling() {
   }
 
   const totalRevenue = billingData.subscriptions
-    .filter(s => s.status === 'active')
+    .filter((s) => s.status === "active")
     .reduce((sum, s) => sum + s.amount, 0);
 
-  const activeSubscriptions = billingData.subscriptions.filter(s => s.status === 'active').length;
-  const paidInvoices = billingData.invoices.filter(i => i.status === 'paid').length;
+  const activeSubscriptions = billingData.subscriptions.filter(
+    (s) => s.status === "active"
+  ).length;
+  const paidInvoices = billingData.invoices.filter(
+    (i) => i.status === "paid"
+  ).length;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Billing Management</h1>
-        <p className="text-gray-600 mt-1">Manage subscriptions, invoices, and payments</p>
+        <p className="text-gray-600 mt-1">
+          Manage subscriptions, invoices, and payments
+        </p>
       </div>
 
       {/* Stats */}
@@ -185,8 +239,12 @@ export default function AdminBilling() {
               <CurrencyDollarIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">${totalRevenue}</p>
+              <p className="text-sm font-medium text-gray-600">
+                Monthly Revenue
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${totalRevenue}
+              </p>
             </div>
           </div>
         </div>
@@ -196,15 +254,19 @@ export default function AdminBilling() {
               <CreditCardIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Subscriptions</p>
-              <p className="text-2xl font-bold text-gray-900">{activeSubscriptions}</p>
+              <p className="text-sm font-medium text-gray-600">
+                Active Subscriptions
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {activeSubscriptions}
+              </p>
             </div>
           </div>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-3 bg-purple-500 rounded-lg">
-              <ReceiptIcon className="h-6 w-6 text-white" />
+              <DocumentTextIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Paid Invoices</p>
@@ -218,9 +280,14 @@ export default function AdminBilling() {
               <BanknotesIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Pending Payments</p>
+              <p className="text-sm font-medium text-gray-600">
+                Pending Payments
+              </p>
               <p className="text-2xl font-bold text-gray-900">
-                {billingData.invoices.filter(i => i.status === 'overdue').length}
+                {
+                  billingData.invoices.filter((i) => i.status === "overdue")
+                    .length
+                }
               </p>
             </div>
           </div>
@@ -229,17 +296,24 @@ export default function AdminBilling() {
 
       {/* Subscriptions */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Active Subscriptions</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Active Subscriptions
+        </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {billingData.subscriptions.map((subscription) => (
-            <SubscriptionCard key={subscription.id} subscription={subscription} />
+            <SubscriptionCard
+              key={subscription.id}
+              subscription={subscription}
+            />
           ))}
         </div>
       </div>
 
       {/* Recent Invoices */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Invoices</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Recent Invoices
+        </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {billingData.invoices.map((invoice) => (
             <InvoiceCard key={invoice.id} invoice={invoice} />
@@ -249,22 +323,29 @@ export default function AdminBilling() {
 
       {/* Payment Methods */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Payment Methods
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             { name: "Credit Card", icon: CreditCardIcon, status: "active" },
             { name: "Bank Transfer", icon: BanknotesIcon, status: "active" },
             { name: "PayPal", icon: CurrencyDollarIcon, status: "inactive" },
           ].map((method, index) => (
-            <div key={index} className="flex items-center p-4 border border-gray-200 rounded-lg">
+            <div
+              key={index}
+              className="flex items-center p-4 border border-gray-200 rounded-lg"
+            >
               <method.icon className="h-6 w-6 text-gray-400 mr-3" />
               <div className="flex-1">
                 <h4 className="font-medium text-gray-900">{method.name}</h4>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  method.status === 'active' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    method.status === "active"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
                   {method.status}
                 </span>
               </div>

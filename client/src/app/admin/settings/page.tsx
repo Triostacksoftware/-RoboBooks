@@ -9,7 +9,7 @@ import {
   UserIcon,
   KeyIcon,
   GlobeAltIcon,
-  DatabaseIcon,
+  ServerIcon,
   CloudIcon,
 } from "@heroicons/react/24/outline";
 
@@ -19,26 +19,26 @@ export default function AdminSettings() {
       siteName: "RoboBooks Admin",
       siteDescription: "Business management platform",
       timezone: "UTC",
-      language: "English"
+      language: "English",
     },
     security: {
       twoFactorAuth: true,
       sessionTimeout: 30,
       passwordPolicy: "strong",
-      ipWhitelist: []
+      ipWhitelist: [],
     },
     notifications: {
       emailNotifications: true,
       smsNotifications: false,
       pushNotifications: true,
-      reportFrequency: "weekly"
+      reportFrequency: "weekly",
     },
     system: {
       maintenanceMode: false,
       debugMode: false,
       backupFrequency: "daily",
-      logRetention: 30
-    }
+      logRetention: 30,
+    },
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("general");
@@ -59,12 +59,12 @@ export default function AdminSettings() {
   };
 
   const handleSettingChange = (category, key, value) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
       [category]: {
         ...prev[category],
-        [key]: value
-      }
+        [key]: value,
+      },
     }));
   };
 
@@ -72,7 +72,7 @@ export default function AdminSettings() {
     { id: "general", name: "General", icon: CogIcon },
     { id: "security", name: "Security", icon: ShieldCheckIcon },
     { id: "notifications", name: "Notifications", icon: BellIcon },
-    { id: "system", name: "System", icon: DatabaseIcon },
+    { id: "system", name: "System", icon: ServerIcon },
   ];
 
   const SettingSection = ({ title, description, children }) => (
@@ -91,9 +91,7 @@ export default function AdminSettings() {
         <p className="text-sm font-medium text-gray-900">{label}</p>
         <p className="text-xs text-gray-500">{description}</p>
       </div>
-      <div className="ml-4">
-        {children}
-      </div>
+      <div className="ml-4">{children}</div>
     </div>
   );
 
@@ -113,7 +111,9 @@ export default function AdminSettings() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage system configuration and preferences</p>
+        <p className="text-gray-600 mt-1">
+          Manage system configuration and preferences
+        </p>
       </div>
 
       {/* Tabs */}
@@ -152,7 +152,13 @@ export default function AdminSettings() {
                     <input
                       type="text"
                       value={settings.general.siteName}
-                      onChange={(e) => handleSettingChange("general", "siteName", e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "general",
+                          "siteName",
+                          e.target.value
+                        )
+                      }
                       className="w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </SettingItem>
@@ -163,7 +169,13 @@ export default function AdminSettings() {
                     <input
                       type="text"
                       value={settings.general.siteDescription}
-                      onChange={(e) => handleSettingChange("general", "siteDescription", e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "general",
+                          "siteDescription",
+                          e.target.value
+                        )
+                      }
                       className="w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </SettingItem>
@@ -173,7 +185,13 @@ export default function AdminSettings() {
                   >
                     <select
                       value={settings.general.timezone}
-                      onChange={(e) => handleSettingChange("general", "timezone", e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "general",
+                          "timezone",
+                          e.target.value
+                        )
+                      }
                       className="w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="UTC">UTC</option>
@@ -189,7 +207,13 @@ export default function AdminSettings() {
                   >
                     <select
                       value={settings.general.language}
-                      onChange={(e) => handleSettingChange("general", "language", e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "general",
+                          "language",
+                          e.target.value
+                        )
+                      }
                       className="w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="English">English</option>
@@ -218,7 +242,13 @@ export default function AdminSettings() {
                       <input
                         type="checkbox"
                         checked={settings.security.twoFactorAuth}
-                        onChange={(e) => handleSettingChange("security", "twoFactorAuth", e.target.checked)}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "security",
+                            "twoFactorAuth",
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -230,7 +260,13 @@ export default function AdminSettings() {
                   >
                     <select
                       value={settings.security.sessionTimeout}
-                      onChange={(e) => handleSettingChange("security", "sessionTimeout", parseInt(e.target.value))}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "security",
+                          "sessionTimeout",
+                          parseInt(e.target.value)
+                        )
+                      }
                       className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value={15}>15 minutes</option>
@@ -245,7 +281,13 @@ export default function AdminSettings() {
                   >
                     <select
                       value={settings.security.passwordPolicy}
-                      onChange={(e) => handleSettingChange("security", "passwordPolicy", e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "security",
+                          "passwordPolicy",
+                          e.target.value
+                        )
+                      }
                       className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="basic">Basic</option>
@@ -273,7 +315,13 @@ export default function AdminSettings() {
                       <input
                         type="checkbox"
                         checked={settings.notifications.emailNotifications}
-                        onChange={(e) => handleSettingChange("notifications", "emailNotifications", e.target.checked)}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "notifications",
+                            "emailNotifications",
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -287,7 +335,13 @@ export default function AdminSettings() {
                       <input
                         type="checkbox"
                         checked={settings.notifications.smsNotifications}
-                        onChange={(e) => handleSettingChange("notifications", "smsNotifications", e.target.checked)}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "notifications",
+                            "smsNotifications",
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -301,7 +355,13 @@ export default function AdminSettings() {
                       <input
                         type="checkbox"
                         checked={settings.notifications.pushNotifications}
-                        onChange={(e) => handleSettingChange("notifications", "pushNotifications", e.target.checked)}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "notifications",
+                            "pushNotifications",
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -313,7 +373,13 @@ export default function AdminSettings() {
                   >
                     <select
                       value={settings.notifications.reportFrequency}
-                      onChange={(e) => handleSettingChange("notifications", "reportFrequency", e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "notifications",
+                          "reportFrequency",
+                          e.target.value
+                        )
+                      }
                       className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="daily">Daily</option>
@@ -341,7 +407,13 @@ export default function AdminSettings() {
                       <input
                         type="checkbox"
                         checked={settings.system.maintenanceMode}
-                        onChange={(e) => handleSettingChange("system", "maintenanceMode", e.target.checked)}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "system",
+                            "maintenanceMode",
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -355,7 +427,13 @@ export default function AdminSettings() {
                       <input
                         type="checkbox"
                         checked={settings.system.debugMode}
-                        onChange={(e) => handleSettingChange("system", "debugMode", e.target.checked)}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "system",
+                            "debugMode",
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -367,7 +445,13 @@ export default function AdminSettings() {
                   >
                     <select
                       value={settings.system.backupFrequency}
-                      onChange={(e) => handleSettingChange("system", "backupFrequency", e.target.value)}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "system",
+                          "backupFrequency",
+                          e.target.value
+                        )
+                      }
                       className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value="daily">Daily</option>
@@ -381,7 +465,13 @@ export default function AdminSettings() {
                   >
                     <select
                       value={settings.system.logRetention}
-                      onChange={(e) => handleSettingChange("system", "logRetention", parseInt(e.target.value))}
+                      onChange={(e) =>
+                        handleSettingChange(
+                          "system",
+                          "logRetention",
+                          parseInt(e.target.value)
+                        )
+                      }
                       className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     >
                       <option value={7}>7 days</option>
