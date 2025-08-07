@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 // components/RightSidebar.tsx
 "use client";
 
@@ -128,6 +127,54 @@ export default function RightSidebar() {
     }
   }, [collapsed]);
 
+  // Handle click outside to close (only if not pinned)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (helpPanelOpen && !isPinned) {
+        if (!target.closest("[data-help-panel]")) {
+          setHelpPanelOpen(false);
+        }
+      }
+      if (announcementsOpen && !isAnnouncementsPinned) {
+        if (!target.closest("[data-announcements-panel]")) {
+          setAnnouncementsOpen(false);
+        }
+      }
+      if (webinarsOpen && !isWebinarsPinned) {
+        if (!target.closest("[data-webinars-panel]")) {
+          setWebinarsOpen(false);
+        }
+      }
+      if (roboNotebookOpen && !isRoboNotebookPinned) {
+        if (!target.closest("[data-robo-notebook-panel]")) {
+          setRoboNotebookOpen(false);
+        }
+      }
+      if (extensionsOpen && !isExtensionsPinned) {
+        if (!target.closest("[data-extensions-panel]")) {
+          setExtensionsOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [
+    helpPanelOpen,
+    isPinned,
+    announcementsOpen,
+    isAnnouncementsPinned,
+    webinarsOpen,
+    isWebinarsPinned,
+    roboNotebookOpen,
+    isRoboNotebookPinned,
+    extensionsOpen,
+    isExtensionsPinned,
+  ]);
+
   // 2) Choose the correct arrow
   const ToggleIcon = collapsed ? ChevronLeftIcon : ChevronRightIcon;
   const ariaLabel = collapsed ? "Expand sidebar" : "Collapse sidebar";
@@ -227,58 +274,6 @@ export default function RightSidebar() {
         setExtensionsOpen(false);
       }
     };
-
-    // Handle click outside to close (only if not pinned)
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        const target = event.target as Element;
-        if (helpPanelOpen && !isPinned) {
-          if (!target.closest("[data-help-panel]")) {
-            setHelpPanelOpen(false);
-          }
-        }
-        if (announcementsOpen && !isAnnouncementsPinned) {
-          const target = event.target as Element;
-          if (!target.closest("[data-announcements-panel]")) {
-            setAnnouncementsOpen(false);
-          }
-        }
-        if (webinarsOpen && !isWebinarsPinned) {
-          const target = event.target as Element;
-          if (!target.closest("[data-webinars-panel]")) {
-            setWebinarsOpen(false);
-          }
-        }
-        if (roboNotebookOpen && !isRoboNotebookPinned) {
-          const target = event.target as Element;
-          if (!target.closest("[data-robo-notebook-panel]")) {
-            setRoboNotebookOpen(false);
-          }
-        }
-        if (extensionsOpen && !isExtensionsPinned) {
-          const target = event.target as Element;
-          if (!target.closest("[data-extensions-panel]")) {
-            setExtensionsOpen(false);
-          }
-        }
-      };
-
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, [
-      helpPanelOpen,
-      isPinned,
-      announcementsOpen,
-      isAnnouncementsPinned,
-      webinarsOpen,
-      isWebinarsPinned,
-      roboNotebookOpen,
-      isRoboNotebookPinned,
-      extensionsOpen,
-      isExtensionsPinned,
-    ]);
 
     const handleModuleSelect = (module: string) => {
       setSelectedModule(module);
