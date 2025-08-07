@@ -55,10 +55,13 @@ export default function SignIn() {
         router.push("/dashboard");
         console.log("✅ Router push completed");
 
-        // Fallback redirect after a short delay
+        // Fallback redirect after a short delay using NEXT_PUBLIC_MAIN_URL
         setTimeout(() => {
-          console.log("🔄 Fallback redirect to /dashboard");
-          window.location.href = "/dashboard";
+          console.log(
+            "🔄 Fallback redirect to dashboard using NEXT_PUBLIC_MAIN_URL"
+          );
+          window.location.href =
+            process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard";
         }, 1000);
       } else {
         console.log("❌ Backend returned success: false");
@@ -119,7 +122,7 @@ export default function SignIn() {
     );
 
     // Hardcode the redirect URI to fix truncation issue
-    const redirectUri = "http://localhost:3000/signin";
+    const redirectUri = process.env.NEXT_PUBLIC_MAIN_URL + "/signin";
     console.log("🎯 Using hardcoded redirect URI:", redirectUri);
 
     // Use the correct Google OAuth v2 endpoint
