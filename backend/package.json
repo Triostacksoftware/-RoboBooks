@@ -16,18 +16,14 @@
     "google-auth-library": "^10.2.0",
     "helmet": "^8.1.0",
     "html-pdf-node": "^1.0.8",
-    "html2canvas": "^1.4.1",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "jspdf": "^3.0.1",
     "mongoose": "^8.17.0",
     "morgan": "^1.10.1",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.5",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "playwright": "^1.54.2",
-    "puppeteer": "^24.16.0",
     "uid-safe": "^2.1.5"
   },
   "devDependencies": {
