@@ -15,6 +15,7 @@ import {
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -24,14 +25,119 @@ export default function AdminUsers() {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await api("/api/admin/users");
+      
       if (response.success) {
         setUsers(response.users || []);
+      } else {
+        setError("Failed to fetch users");
       }
     } catch (error) {
       console.error("Error fetching users:", error);
+      setError("Failed to load users. Please try again.");
+      
+      // For development/testing, add some mock data if API fails
+      if (process.env.NODE_ENV === 'development') {
+        const mockUsers = [
+          {
+            id: "1",
+            companyName: "TechCorp Inc",
+            email: "admin@techcorp.com",
+            phone: "+91 9876543210",
+            country: "India",
+            state: "Maharashtra",
+            isActive: true,
+            createdAt: new Date("2024-01-15"),
+            lastLogin: new Date("2024-01-20")
+          },
+          {
+            id: "2",
+            companyName: "StartupXYZ",
+            email: "contact@startupxyz.com",
+            phone: "+91 8765432109",
+            country: "India",
+            state: "Karnataka",
+            isActive: true,
+            createdAt: new Date("2024-01-10"),
+            lastLogin: new Date("2024-01-19")
+          },
+          {
+            id: "3",
+            companyName: "Enterprise Ltd",
+            email: "info@enterprise.com",
+            phone: "+91 7654321098",
+            country: "India",
+            state: "Delhi",
+            isActive: false,
+            createdAt: new Date("2024-01-05"),
+            lastLogin: new Date("2024-01-15")
+          },
+          {
+            id: "4",
+            companyName: "Digital Solutions",
+            email: "hello@digitalsolutions.com",
+            phone: "+91 6543210987",
+            country: "India",
+            state: "Tamil Nadu",
+            isActive: true,
+            createdAt: new Date("2024-01-20"),
+            lastLogin: new Date("2024-01-21")
+          },
+          {
+            id: "5",
+            companyName: "Innovation Hub",
+            email: "team@innovationhub.com",
+            phone: "+91 5432109876",
+            country: "India",
+            state: "Telangana",
+            isActive: true,
+            createdAt: new Date("2024-01-12"),
+            lastLogin: new Date("2024-01-18")
+          }
+        ];
+        setUsers(mockUsers);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusToggle = async (userId, currentStatus) => {
+    try {
+      const response = await api(`/api/admin/users/${userId}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+      
+      if (response.success) {
+        setUsers(users.map(user => 
+          user.id === userId 
+            ? { ...user, isActive: !currentStatus }
+            : user
+        ));
+      }
+    } catch (error) {
+      console.error("Error updating user status:", error);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!confirm("Are you sure you want to delete this user?")) {
+      return;
+    }
+    
+    try {
+      const response = await api(`/api/admin/users/${userId}`, {
+        method: "DELETE"
+      });
+      
+      if (response.success) {
+        setUsers(users.filter(user => user.id !== userId));
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
     }
   };
 
@@ -95,7 +201,20 @@ export default function AdminUsers() {
           <PencilIcon className="h-4 w-4" />
           <span>Edit</span>
         </button>
-        <button className="flex items-center space-x-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+        <button 
+          onClick={() => handleStatusToggle(user.id, user.isActive)}
+          className={`flex items-center space-x-1 px-3 py-1 text-sm rounded-lg ${
+            user.isActive 
+              ? 'text-orange-600 hover:bg-orange-50' 
+              : 'text-green-600 hover:bg-green-50'
+          }`}
+        >
+          <span>{user.isActive ? 'Deactivate' : 'Activate'}</span>
+        </button>
+        <button 
+          onClick={() => handleDeleteUser(user.id)}
+          className="flex items-center space-x-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+        >
           <TrashIcon className="h-4 w-4" />
           <span>Delete</span>
         </button>
@@ -109,6 +228,22 @@ export default function AdminUsers() {
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchUsers}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
