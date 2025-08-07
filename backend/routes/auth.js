@@ -15,7 +15,7 @@ function issueCookie(res, token) {
     secure: isProd,
     maxAge: 1000 * 60 * 60 * 24 * 7,
     path: "/", // Ensure cookie is sent with all requests
-    domain: isProd ? undefined : "localhost", // For localhost development
+    domain: isProd ? undefined : undefined, // Remove domain restriction for localhost
   });
 }
 
@@ -26,8 +26,9 @@ function validateEmail(email) {
 }
 
 function validatePhone(phone) {
-  const phoneRegex = /^\d{10,15}$/;
-  return phoneRegex.test(phone.replace(/\D/g, ""));
+  // Remove all non-digit characters and check length
+  const cleanPhone = phone.replace(/\D/g, "");
+  return cleanPhone.length >= 10 && cleanPhone.length <= 15;
 }
 
 // REGISTER
@@ -43,6 +44,7 @@ router.post("/register", async (req, res, next) => {
       country,
       state,
     } = req.body;
+    console.log(phoneNumber);
 
     // Validation
     if (!companyName?.trim()) {
@@ -75,9 +77,15 @@ router.post("/register", async (req, res, next) => {
         .json({ message: "Password must be at least 6 characters" });
     }
 
+    // Clean phone number for consistent comparison
+    const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
+    console.log(cleanPhoneNumber);
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email: email.toLowerCase() }, { phone: phoneNumber }],
+      $or: [
+        { email: email.toLowerCase() }, 
+        { phone: cleanPhoneNumber }
+      ],
     });
 
     if (existingUser) {
@@ -97,10 +105,10 @@ router.post("/register", async (req, res, next) => {
     const user = await User.create({
       companyName: companyName.trim(),
       email: email.toLowerCase().trim(),
-      phone: phoneNumber.trim(),
+      phone: cleanPhoneNumber,
       phoneDialCode: phoneDialCode || "+91",
       phoneIso2: phoneIso2 || "IN",
-      passwordHash,
+      passwordHash: passwordHash,
       country: country || "India",
       state: state || "Uttar Pradesh",
     });
