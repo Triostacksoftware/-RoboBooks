@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { api } from "@/lib/api"; // ← the helper we built earlier
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { api } from "@/lib/api";
+
 export default function SignIn() {
   const router = useRouter();
 
@@ -13,6 +13,70 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    const state = urlParams.get("state");
+
+    if (code && state === "signin") {
+      console.log("🔄 Processing Google OAuth callback...");
+      handleGoogleCallback(code);
+    }
+  }, []);
+
+  const handleGoogleCallback = async (code) => {
+    setLoading(true);
+    setErr("");
+    try {
+      console.log("🔄 Making request to backend with code:", code);
+      const response = await api("/api/auth/google/callback", {
+        method: "POST",
+        json: {
+          code,
+          redirectUri: `${window.location.origin}/signin`,
+          type: "signin",
+        },
+      });
+
+      console.log("📡 Backend response:", response);
+
+      if (response.success) {
+        console.log(
+          "✅ Google sign-in successful, redirecting to dashboard..."
+        );
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+        console.log("🔄 About to push to /dashboard");
+        router.push("/dashboard");
+        console.log("✅ Router push completed");
+
+        // Fallback redirect after a short delay
+        setTimeout(() => {
+          console.log("🔄 Fallback redirect to /dashboard");
+          window.location.href = "/dashboard";
+        }, 1000);
+      } else {
+        console.log("❌ Backend returned success: false");
+        setErr("Google sign-in failed. Please try again.");
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+      }
+    } catch (error) {
+      console.error("❌ Google OAuth callback error:", error);
+      setErr(error.message || "Google sign-in failed. Please try again.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ------------ classic JWT login ------------ */
   const handleSubmit = async (e) => {
@@ -40,36 +104,41 @@ export default function SignIn() {
 
   /* ------------- Google OAuth login ----------- */
   const handleGoogle = () => {
-    if (!window.google) {
-      setErr("Google SDK not loaded. Please refresh the page.");
+    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      setErr("Google Client ID not configured.");
       return;
     }
 
-    setLoading(true);
-    setErr("");
+    // Debug logging
+    console.log("🔍 Debug info:");
+    console.log("window.location.origin:", window.location.origin);
+    console.log("window.location.href:", window.location.href);
+    console.log(
+      "NEXT_PUBLIC_GOOGLE_CLIENT_ID:",
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    );
 
-    window.google.accounts.id.initialize({
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
-      callback: async ({ credential }) => {
-        try {
-          const response = await api("/api/auth/login/google", {
-            method: "POST",
-            json: { idToken: credential },
-          });
+    // Hardcode the redirect URI to fix truncation issue
+    const redirectUri = "http://localhost:3000/signin";
+    console.log("🎯 Using hardcoded redirect URI:", redirectUri);
 
-          if (response.success) {
-            router.push("/dashboard");
-          } else {
-            setErr("Google login failed. Please try again.");
-          }
-        } catch (e) {
-          setErr(e.message || "Google login failed. Please try again.");
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
-    window.google.accounts.id.prompt(); // show One-Tap / chooser
+    // Use the correct Google OAuth v2 endpoint
+    const googleAuthUrl = new URL(
+      "https://accounts.google.com/o/oauth2/v2/auth"
+    );
+    googleAuthUrl.searchParams.set(
+      "client_id",
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    );
+    googleAuthUrl.searchParams.set("redirect_uri", redirectUri);
+    googleAuthUrl.searchParams.set("response_type", "code");
+    googleAuthUrl.searchParams.set("scope", "openid email profile");
+    googleAuthUrl.searchParams.set("state", "signin");
+
+    const finalUrl = googleAuthUrl.toString();
+    console.log("🎯 Final Google OAuth URL:", finalUrl);
+
+    window.location.href = finalUrl;
   };
 
   return (
@@ -119,9 +188,39 @@ export default function SignIn() {
             disabled={loading}
           >
             {showPassword ? (
-              <EyeSlashIcon className="h-5 w-5 text-slate-500" />
+              <svg
+                className="h-5 w-5 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                />
+              </svg>
             ) : (
-              <EyeIcon className="h-5 w-5 text-slate-500" />
+              <svg
+                className="h-5 w-5 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
             )}
           </button>
         </div>
@@ -136,7 +235,17 @@ export default function SignIn() {
           Sign in
         </button>
 
-        {/* Temporary bypass for development */}
+        {/* Test button for debugging */}
+        <button
+          type="button"
+          onClick={() => {
+            console.log("🧪 Test button clicked, pushing to /dashboard");
+            router.push("/dashboard");
+          }}
+          className="w-full rounded-xl bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        >
+          Test Dashboard Redirect
+        </button>
 
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-slate-300" />
@@ -148,10 +257,10 @@ export default function SignIn() {
           type="button"
           onClick={handleGoogle}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border p-2 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-3 rounded-xl border-2 border-slate-200 p-4 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
         >
           {/* Google "G" SVG inline */}
-          <svg viewBox="0 0 48 48" className="h-5 w-5">
+          <svg viewBox="0 0 48 48" className="h-6 w-6">
             <path
               fill="#EA4335"
               d="M24 9.5c3.3 0 6.2 1.1 8.5 3.2l6-6C34.9 3.1 29.8 1 24 1 14.8 1 6.9 6.3 3.2 14.1l7.7 6c1.8-5.8 7.2-10.6 13.1-10.6z"
@@ -169,8 +278,8 @@ export default function SignIn() {
               d="M24 47c6.5 0 12-2.1 16-5.9l-7.8-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.3 0-11.7-4.2-13.6-9.9l-7.7 6C6.4 42.1 14.5 47 24 47z"
             />
           </svg>
-          <span className="font-medium text-slate-700">
-            Continue with Google
+          <span className="font-semibold text-slate-700">
+            {loading ? "Signing in..." : "Continue with Google"}
           </span>
         </button>
 
@@ -185,9 +294,6 @@ export default function SignIn() {
           </a>
         </p>
       </form>
-
-      {/* Google Identity script */}
-      <script src="https://accounts.google.com/gsi/client" async defer />
     </main>
   );
 }

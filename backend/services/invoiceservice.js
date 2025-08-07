@@ -15,25 +15,42 @@ export async function createInvoice(data) {
     // Generate invoice number if not provided
     if (!data.invoiceNumber) {
       const lastInvoice = await Invoice.findOne().sort({ invoiceNumber: -1 });
-      const lastNumber = lastInvoice ? parseInt(lastInvoice.invoiceNumber.split('-')[1]) : 0;
-      data.invoiceNumber = `INV-${String(lastNumber + 1).padStart(6, '0')}`;
+      const lastNumber = lastInvoice
+        ? parseInt(lastInvoice.invoiceNumber.split("-")[1])
+        : 0;
+      data.invoiceNumber = `INV-${String(lastNumber + 1).padStart(6, "0")}`;
     }
 
     // Calculate totals
     const subTotal = data.items.reduce((sum, item) => {
-      return sum + (parseFloat(item.quantity) * parseFloat(item.rate));
+      return sum + parseFloat(item.quantity || 0) * parseFloat(item.rate || 0);
     }, 0);
 
-    const discountAmount = (subTotal * parseFloat(data.discount || 0)) / 100;
-    const total = subTotal - discountAmount + parseFloat(data.adjustment || 0);
+    const discountAmount =
+      data.discountType === "percentage"
+        ? (subTotal * parseFloat(data.discount || 0)) / 100
+        : parseFloat(data.discount || 0);
+
+    const taxAmount = data.items.reduce((sum, item) => {
+      return sum + parseFloat(item.taxAmount || 0);
+    }, 0);
+
+    const total =
+      subTotal -
+      discountAmount +
+      taxAmount +
+      parseFloat(data.shippingCharges || 0) +
+      parseFloat(data.adjustment || 0) +
+      parseFloat(data.roundOff || 0);
 
     // Create invoice with calculated values
     const invoiceData = {
       ...data,
-      subTotal: subTotal.toFixed(2),
-      discountAmount: discountAmount.toFixed(2),
-      total: total.toFixed(2),
-      status: 'Draft'
+      subTotal: parseFloat(subTotal.toFixed(2)),
+      discountAmount: parseFloat(discountAmount.toFixed(2)),
+      taxAmount: parseFloat(taxAmount.toFixed(2)),
+      total: parseFloat(total.toFixed(2)),
+      status: data.status || "Draft",
     };
 
     const invoice = await Invoice.create(invoiceData);
@@ -57,14 +74,14 @@ export async function updateInvoiceStatus(id, status) {
   try {
     const invoice = await Invoice.findById(id);
     if (!invoice) throw new Error("Invoice not found");
-    
+
     if (!canTransition(invoice.status, status)) {
       throw new Error("Invalid status transition");
     }
-    
+
     invoice.status = status;
     await invoice.save();
-    
+
     logAction({
       user: "system",
       type: "UPDATE",
@@ -72,7 +89,7 @@ export async function updateInvoiceStatus(id, status) {
       entityId: id,
       message: `Status updated to ${status}`,
     });
-    
+
     return invoice;
   } catch (error) {
     throw new Error(`Failed to update invoice status: ${error.message}`);
@@ -82,7 +99,7 @@ export async function updateInvoiceStatus(id, status) {
 export async function getAllInvoices() {
   try {
     const invoices = await Invoice.find()
-      .populate('customerId', 'name email')
+      .populate("customerId", "name email")
       .sort({ created_at: -1 });
     return invoices;
   } catch (error) {
@@ -92,8 +109,10 @@ export async function getAllInvoices() {
 
 export async function getInvoiceById(id) {
   try {
-    const invoice = await Invoice.findById(id)
-      .populate('customerId', 'name email phone');
+    const invoice = await Invoice.findById(id).populate(
+      "customerId",
+      "name email phone"
+    );
     if (!invoice) throw new Error("Invoice not found");
     return invoice;
   } catch (error) {
@@ -109,15 +128,32 @@ export async function updateInvoice(id, data) {
     // Recalculate totals if items changed
     if (data.items) {
       const subTotal = data.items.reduce((sum, item) => {
-        return sum + (parseFloat(item.quantity) * parseFloat(item.rate));
+        return (
+          sum + parseFloat(item.quantity || 0) * parseFloat(item.rate || 0)
+        );
       }, 0);
 
-      const discountAmount = (subTotal * parseFloat(data.discount || 0)) / 100;
-      const total = subTotal - discountAmount + parseFloat(data.adjustment || 0);
+      const discountAmount =
+        data.discountType === "percentage"
+          ? (subTotal * parseFloat(data.discount || 0)) / 100
+          : parseFloat(data.discount || 0);
 
-      data.subTotal = subTotal.toFixed(2);
-      data.discountAmount = discountAmount.toFixed(2);
-      data.total = total.toFixed(2);
+      const taxAmount = data.items.reduce((sum, item) => {
+        return sum + parseFloat(item.taxAmount || 0);
+      }, 0);
+
+      const total =
+        subTotal -
+        discountAmount +
+        taxAmount +
+        parseFloat(data.shippingCharges || 0) +
+        parseFloat(data.adjustment || 0) +
+        parseFloat(data.roundOff || 0);
+
+      data.subTotal = parseFloat(subTotal.toFixed(2));
+      data.discountAmount = parseFloat(discountAmount.toFixed(2));
+      data.taxAmount = parseFloat(taxAmount.toFixed(2));
+      data.total = parseFloat(total.toFixed(2));
     }
 
     Object.assign(invoice, data);
@@ -155,5 +191,18 @@ export async function deleteInvoice(id) {
     return { message: "Invoice deleted successfully" };
   } catch (error) {
     throw new Error(`Failed to delete invoice: ${error.message}`);
+  }
+}
+
+export async function getNextInvoiceNumber() {
+  try {
+    const lastInvoice = await Invoice.findOne().sort({ invoiceNumber: -1 });
+    const lastNumber = lastInvoice
+      ? parseInt(lastInvoice.invoiceNumber.split("-")[1])
+      : 0;
+    const nextNumber = lastNumber + 1;
+    return `INV-${String(nextNumber).padStart(6, "0")}`;
+  } catch (error) {
+    throw new Error(`Failed to get next invoice number: ${error.message}`);
   }
 }

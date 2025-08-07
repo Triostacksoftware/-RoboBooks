@@ -711,10 +711,58 @@ export default function CustomersSection() {
                       Create an invoice or a quote and send it to your customer.
                     </p>
                     <div className="flex gap-3">
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          // Navigate to new invoice page with customer details
+                          const customerData = {
+                            _id: selectedCustomer._id,
+                            firstName: selectedCustomer.firstName,
+                            lastName: selectedCustomer.lastName,
+                            email: selectedCustomer.email,
+                            phone:
+                              selectedCustomer.mobile ||
+                              selectedCustomer.workPhone,
+                            name: getCustomerName(selectedCustomer),
+                          };
+
+                          // Store customer data in sessionStorage for the new invoice page
+                          sessionStorage.setItem(
+                            "selectedCustomerForInvoice",
+                            JSON.stringify(customerData)
+                          );
+
+                          // Navigate to new invoice page
+                          router.push("/dashboard/sales/invoices/new");
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                      >
                         New Invoice
                       </button>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          // Navigate to new quote page with customer details
+                          const customerData = {
+                            _id: selectedCustomer._id,
+                            firstName: selectedCustomer.firstName,
+                            lastName: selectedCustomer.lastName,
+                            email: selectedCustomer.email,
+                            phone:
+                              selectedCustomer.mobile ||
+                              selectedCustomer.workPhone,
+                            name: getCustomerName(selectedCustomer),
+                          };
+
+                          // Store customer data in sessionStorage for the new quote page
+                          sessionStorage.setItem(
+                            "selectedCustomerForQuote",
+                            JSON.stringify(customerData)
+                          );
+
+                          // Navigate to new quote page
+                          router.push("/dashboard/sales/quotes/new");
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                      >
                         New Quote
                       </button>
                     </div>
