@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/lib/api";
@@ -15,24 +15,26 @@ export default function AdminLogin() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErr("");
     setLoading(true);
 
     try {
-      const response = await api("/api/admin/login", {
+      const response = await api<{ success: boolean }>("/api/admin/login", {
         method: "POST",
         json: { email, password },
       });
 
       if (response.success) {
-        router.push("/admin/dashboard");
+        // Force a page reload to ensure the layout re-renders with authentication
+        window.location.href = "/admin/dashboard";
       } else {
         setErr("Login failed. Please try again.");
       }
-    } catch (e) {
-      setErr(e.message || "Login failed. Please try again.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Login failed. Please try again.";
+      setErr(message);
     } finally {
       setLoading(false);
     }

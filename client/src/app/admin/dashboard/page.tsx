@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { api } from "@/lib/api";
 import {
   UsersIcon,
@@ -13,6 +13,8 @@ import {
   UserGroupIcon,
   BanknotesIcon,
   ClockIcon,
+  FolderIcon,
+  CalendarIcon,
 } from "@heroicons/react/24/outline";
 
 export default function AdminDashboard() {
@@ -21,11 +23,25 @@ export default function AdminDashboard() {
     activeUsers: 0,
     totalRevenue: 0,
     monthlyGrowth: 0,
+    totalProjects: 0,
+    activeProjects: 0,
+    totalHours: 0,
   });
   const [loading, setLoading] = useState(true);
+  interface ActivityItem {
+    id: number;
+    action: string;
+    user: string;
+    time: string;
+    type: string;
+    icon: ComponentType<{ className?: string }>;
+    color: string;
+  }
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
     fetchStats();
+    fetchRecentActivity();
   }, []);
 
   const fetchStats = async () => {
@@ -35,12 +51,14 @@ export default function AdminDashboard() {
         stats: Record<string, number>;
       };
       if (response.success) {
-        // Ensure only the expected keys are set, to match the state type
         setStats({
           totalUsers: response.stats.totalUsers ?? 0,
           activeUsers: response.stats.activeUsers ?? 0,
           totalRevenue: response.stats.totalRevenue ?? 0,
           monthlyGrowth: response.stats.monthlyGrowth ?? 0,
+          totalProjects: response.stats.totalProjects ?? 0,
+          activeProjects: response.stats.activeProjects ?? 0,
+          totalHours: response.stats.totalHours ?? 0,
         });
       }
     } catch (error) {
@@ -50,6 +68,58 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchRecentActivity = async () => {
+    // Mock recent activity data
+    const mockActivity: ActivityItem[] = [
+      {
+        id: 1,
+        action: "New user registered",
+        user: "TechCorp Inc",
+        time: "2 minutes ago",
+        type: "user",
+        icon: UsersIcon,
+        color: "text-blue-500",
+      },
+      {
+        id: 2,
+        action: "Invoice generated",
+        user: "StartupXYZ",
+        time: "15 minutes ago",
+        type: "invoice",
+        icon: DocumentTextIcon,
+        color: "text-green-500",
+      },
+      {
+        id: 3,
+        action: "Payment received",
+        user: "Enterprise Ltd",
+        time: "1 hour ago",
+        type: "payment",
+        icon: BanknotesIcon,
+        color: "text-purple-500",
+      },
+      {
+        id: 4,
+        action: "Project created",
+        user: "Digital Solutions",
+        time: "2 hours ago",
+        type: "project",
+        icon: FolderIcon,
+        color: "text-orange-500",
+      },
+      {
+        id: 5,
+        action: "Timesheet submitted",
+        user: "Innovation Hub",
+        time: "3 hours ago",
+        type: "timesheet",
+        icon: ClockIcon,
+        color: "text-indigo-500",
+      },
+    ];
+    setRecentActivity(mockActivity);
+  };
+
   const StatCard = ({
     title,
     value,
@@ -57,13 +127,15 @@ export default function AdminDashboard() {
     change,
     changeType,
     color,
+    subtitle,
   }: {
     title: string;
     value: string | number;
-    icon: React.ComponentType<{ className?: string }>;
+    icon: ComponentType<{ className?: string }>;
     change?: string;
     changeType?: "increase" | "decrease";
     color: string;
+    subtitle?: string;
   }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between">
@@ -72,8 +144,15 @@ export default function AdminDashboard() {
           <p className="text-2xl font-bold text-gray-900 mt-1">
             {typeof value === "number" && value >= 1000
               ? `${(value / 1000).toFixed(1)}k`
+              : typeof value === "number" && value >= 1000000
+              ? `$${(value / 1000000).toFixed(1)}M`
+              : typeof value === "number" && title.toLowerCase().includes("revenue")
+              ? `$${value.toLocaleString()}`
               : value}
           </p>
+          {subtitle && (
+            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+          )}
           {change && (
             <div className="flex items-center mt-2">
               {changeType === "increase" ? (
@@ -107,30 +186,20 @@ export default function AdminDashboard() {
         Recent Activity
       </h3>
       <div className="space-y-4">
-        {[
-          {
-            action: "New user registered",
-            time: "2 minutes ago",
-            type: "user",
-          },
-          {
-            action: "Invoice generated",
-            time: "15 minutes ago",
-            type: "invoice",
-          },
-          { action: "Payment received", time: "1 hour ago", type: "payment" },
-          { action: "Report generated", time: "2 hours ago", type: "report" },
-        ].map((activity, index) => (
-          <div key={index} className="flex items-center space-x-3">
+        {recentActivity.map((activity) => (
+          <div key={activity.id} className="flex items-center space-x-3">
             <div className="flex-shrink-0">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <div className={`w-2 h-2 ${activity.color} rounded-full`}></div>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900">
                 {activity.action}
               </p>
-              <p className="text-sm text-gray-500">{activity.time}</p>
+              <p className="text-sm text-gray-500">
+                {activity.user} • {activity.time}
+              </p>
             </div>
+            <activity.icon className={`h-4 w-4 ${activity.color}`} />
           </div>
         ))}
       </div>
@@ -149,38 +218,70 @@ export default function AdminDashboard() {
             icon: UsersIcon,
             href: "/admin/users",
             color: "bg-blue-500",
+            description: "Manage user accounts",
           },
           {
             name: "Generate Report",
             icon: DocumentTextIcon,
             href: "/admin/reports",
             color: "bg-green-500",
+            description: "Create system reports",
           },
           {
             name: "Manage Billing",
             icon: BanknotesIcon,
             href: "/admin/billing",
             color: "bg-purple-500",
+            description: "Handle subscriptions",
           },
           {
             name: "System Settings",
             icon: ChartBarIcon,
             href: "/admin/settings",
             color: "bg-orange-500",
+            description: "Configure system",
           },
         ].map((action) => (
           <a
             key={action.name}
             href={action.href}
-            className="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors group"
           >
-            <div className={`p-2 rounded-lg ${action.color} mr-3`}>
+            <div className={`p-2 rounded-lg ${action.color} mr-3 group-hover:scale-110 transition-transform`}>
               <action.icon className="h-5 w-5 text-white" />
             </div>
-            <span className="text-sm font-medium text-gray-900">
-              {action.name}
-            </span>
+            <div>
+              <span className="text-sm font-medium text-gray-900 block">
+                {action.name}
+              </span>
+              <span className="text-xs text-gray-500">
+                {action.description}
+              </span>
+            </div>
           </a>
+        ))}
+      </div>
+    </div>
+  );
+
+  const SystemHealth = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        System Health
+      </h3>
+      <div className="space-y-4">
+        {[
+          { name: "Server Status", status: "Online", color: "text-green-600" },
+          { name: "Database", status: "Connected", color: "text-green-600" },
+          { name: "API Response", status: "Normal", color: "text-green-600" },
+          { name: "Storage", status: "85% Used", color: "text-yellow-600" },
+        ].map((item, index) => (
+          <div key={index} className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">{item.name}</span>
+            <span className={`text-sm font-medium ${item.color}`}>
+              {item.status}
+            </span>
+          </div>
         ))}
       </div>
     </div>
@@ -214,6 +315,7 @@ export default function AdminDashboard() {
           change="12.5"
           changeType="increase"
           color="bg-blue-500"
+          subtitle="Registered accounts"
         />
         <StatCard
           title="Active Users"
@@ -222,6 +324,7 @@ export default function AdminDashboard() {
           change="8.2"
           changeType="increase"
           color="bg-green-500"
+          subtitle="Currently active"
         />
         <StatCard
           title="Total Revenue"
@@ -230,6 +333,7 @@ export default function AdminDashboard() {
           change="15.3"
           changeType="increase"
           color="bg-purple-500"
+          subtitle="From paid invoices"
         />
         <StatCard
           title="Monthly Growth"
@@ -238,6 +342,32 @@ export default function AdminDashboard() {
           change="-2.1"
           changeType="decrease"
           color="bg-orange-500"
+          subtitle="User growth rate"
+        />
+      </div>
+
+      {/* Additional Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Projects"
+          value={stats.totalProjects}
+          icon={FolderIcon}
+          color="bg-indigo-500"
+          subtitle="Created projects"
+        />
+        <StatCard
+          title="Active Projects"
+          value={stats.activeProjects}
+          icon={CalendarIcon}
+          color="bg-teal-500"
+          subtitle="Currently running"
+        />
+        <StatCard
+          title="Total Hours"
+          value={stats.totalHours}
+          icon={ClockIcon}
+          color="bg-pink-500"
+          subtitle="Logged time"
         />
       </div>
 
@@ -275,9 +405,10 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <RecentActivity />
         <QuickActions />
+        <SystemHealth />
       </div>
     </div>
   );

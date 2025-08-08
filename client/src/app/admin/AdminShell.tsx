@@ -21,11 +21,7 @@ interface Admin {
   email?: string;
 }
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [admin, setAdmin] = useState<Admin | null>(null);
@@ -33,14 +29,9 @@ export default function AdminLayout({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/admin/login") {
-      setIsAuthenticated(false);
-      setAdmin(null);
-      setLoading(false);
-      return;
-    }
     checkAuth();
-  }, [pathname]); // Re-check auth when pathname changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const checkAuth = async () => {
     try {
@@ -54,15 +45,13 @@ export default function AdminLayout({
       } else {
         setIsAuthenticated(false);
         setAdmin(null);
-        // Only redirect if not already on login page
         if (pathname !== "/admin/login") {
           router.push("/admin/login");
         }
       }
-    } catch (error) {
+    } catch (_err) {
       setIsAuthenticated(false);
       setAdmin(null);
-      // Only redirect if not already on login page
       if (pathname !== "/admin/login") {
         router.push("/admin/login");
       }
@@ -91,15 +80,13 @@ export default function AdminLayout({
   ];
 
   const isActiveTab = (href: string) => {
-    if (href === "/admin/dashboard") {
-      return pathname === "/admin/dashboard";
-    }
+    if (href === "/admin/dashboard") return pathname === "/admin/dashboard";
     return pathname.startsWith(href);
   };
 
   const NavItem = ({ item }: { item: (typeof navigation)[0] }) => {
     const isActive = isActiveTab(item.href);
-
+    const Icon = item.icon;
     return (
       <Link
         href={item.href}
@@ -109,22 +96,15 @@ export default function AdminLayout({
             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
         }`}
       >
-        <item.icon
+        <Icon
           className={`mr-3 h-5 w-5 ${
-            isActive
-              ? "text-purple-600"
-              : "text-gray-400 group-hover:text-gray-500"
+            isActive ? "text-purple-600" : "text-gray-400 group-hover:text-gray-500"
           }`}
         />
         {item.name}
       </Link>
     );
   };
-
-  // If on login page, just render children without sidebar or loading gate
-  if (pathname === "/admin/login") {
-    return <>{children}</>;
-  }
 
   if (loading) {
     return (
@@ -137,7 +117,10 @@ export default function AdminLayout({
     );
   }
 
-  // If not authenticated, redirect to login
+  if (pathname === "/admin/login") {
+    return <>{children}</>;
+  }
+
   if (!isAuthenticated) {
     router.push("/admin/login");
     return (
@@ -150,10 +133,9 @@ export default function AdminLayout({
     );
   }
 
-  // If authenticated, show full layout with sidebar
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Fixed Sidebar - Only visible when authenticated */}
+      {/* Fixed Sidebar */}
       <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col z-50">
         <div className="flex h-16 items-center px-4 border-b">
           <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
@@ -168,9 +150,7 @@ export default function AdminLayout({
           <div className="flex items-center space-x-3 mb-3">
             <UserCircleIcon className="h-8 w-8 text-gray-400" />
             <div>
-              <p className="text-sm font-medium text-gray-900">
-                {admin?.fullName || "Admin"}
-              </p>
+              <p className="text-sm font-medium text-gray-900">{admin?.fullName || "Admin"}</p>
               <p className="text-xs text-gray-500">{admin?.role || "Admin"}</p>
             </div>
           </div>
@@ -200,9 +180,7 @@ export default function AdminLayout({
 
         {/* Page content */}
         <main className="py-6">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {children}
-          </div>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>
