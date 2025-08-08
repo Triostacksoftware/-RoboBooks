@@ -13,9 +13,20 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState([]);
+  interface AdminUser {
+    id: string;
+    companyName: string;
+    email: string;
+    phone?: string;
+    country?: string;
+    state?: string;
+    isActive: boolean;
+    createdAt: string | Date;
+    lastLogin?: string | Date;
+  }
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -29,8 +40,12 @@ export default function AdminUsers() {
       setError(null);
       const response = await api("/api/admin/users");
 
-      if (response.success) {
-        setUsers(response.users || []);
+      if (typeof response === "object" && response !== null && "success" in response) {
+        if ((response as any).success) {
+          setUsers((response as any).users || []);
+        } else {
+          setError("Failed to fetch users");
+        }
       } else {
         setError("Failed to fetch users");
       }
@@ -104,14 +119,15 @@ export default function AdminUsers() {
     }
   };
 
-  const handleStatusToggle = async (userId, currentStatus) => {
+  const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
     try {
       const response = await api(`/api/admin/users/${userId}/status`, {
         method: "PUT",
         body: JSON.stringify({ isActive: !currentStatus }),
       });
 
-      if (response.success) {
+      // Fix: response is of type unknown, so we need to check its shape
+      if (typeof response === "object" && response !== null && "success" in response && (response as any).success) {
         setUsers(
           users.map((user) =>
             user.id === userId ? { ...user, isActive: !currentStatus } : user
@@ -123,7 +139,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  const handleDeleteUser = async (userId: string) => {
     if (!confirm("Are you sure you want to delete this user?")) {
       return;
     }
@@ -133,7 +149,12 @@ export default function AdminUsers() {
         method: "DELETE",
       });
 
-      if (response.success) {
+      if (
+        typeof response === "object" &&
+        response !== null &&
+        "success" in response &&
+        (response as any).success
+      ) {
         setUsers(users.filter((user) => user.id !== userId));
       }
     } catch (error) {
@@ -150,7 +171,7 @@ export default function AdminUsers() {
     return matchesSearch && matchesFilter;
   });
 
-  const UserCard = ({ user }) => (
+  const UserCard = ({ user }: { user: AdminUser }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

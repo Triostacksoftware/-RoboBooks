@@ -233,7 +233,7 @@ export default function NewItemForm() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto bg-white p-6 md:p-8 text-sm shadow-sm border border-gray-200 rounded-lg">
+    <div className="max-w-full bg-white p-6 md:p-8 text-sm shadow-sm border border-gray-200 rounded-lg">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">New Item</h2>
         <div className="text-sm text-gray-500">

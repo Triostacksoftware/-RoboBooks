@@ -273,7 +273,7 @@ const AllInvoicesPage = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-full">
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>

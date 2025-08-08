@@ -1,32 +1,7 @@
-"use client";
-
-import React, { useState, useEffect } from 'react';
-import DocumentsOverview from './components/DocumentsOverview';
-import DocumentTypes from './components/DocumentTypes';
-import DocumentFeatures from './components/DocumentFeatures';
-import DocumentsList from './components/DocumentsList';
-import { useToast } from '../../../contexts/ToastContext';
-
-interface Document {
-  _id: string;
-  title: string;
-  description?: string;
-  fileName: string;
-  originalName: string;
-  fileSize: number;
-  mimeType: string;
-  documentType: string;
-  category: string;
-  tags: string[];
-  uploadedBy: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  isPublic: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import React from "react";
+import DocumentsOverview from "./components/DocumentsOverview";
+import DocumentTypes from "./components/DocumentTypes";
+import DocumentFeatures from "./components/DocumentFeatures";
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -118,47 +93,10 @@ export default function DocumentsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <DocumentsOverview onDocumentUploaded={fetchDocuments} />
-        
-        {/* Documents List Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Your Documents</h2>
-            <button
-              onClick={fetchDocuments}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              Refresh
-            </button>
-          </div>
-          
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-600">Loading documents...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-sm text-red-600">{error}</p>
-              <button
-                onClick={fetchDocuments}
-                className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                Try again
-              </button>
-            </div>
-          ) : (
-            <DocumentsList
-              documents={documents}
-              onDelete={handleDelete}
-              onDownload={handleDownload}
-            />
-          )}
-        </div>
-
+        <DocumentsOverview />
         <DocumentTypes />
         <DocumentFeatures />
       </div>
     </div>
   );
-} 
+}

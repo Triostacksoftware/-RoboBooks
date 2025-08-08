@@ -11,13 +11,14 @@ const router = express.Router();
 // helper – issue http-only cookie
 function issueCookie(res, token) {
   const isProd = process.env.NODE_ENV === "production";
+  // Use SameSite=None for cross-origin XHR (client:3000/3001 → api:5000)
+  // Chrome requires Secure for SameSite=None, but allows it on localhost without TLS.
   res.cookie("rb_session", token, {
     httpOnly: true,
-    sameSite: isProd ? "none" : "lax",
-    secure: isProd,
+    sameSite: "none",
+    secure: isProd ? true : false,
     maxAge: 1000 * 60 * 60 * 24 * 7,
-    path: "/", // Ensure cookie is sent with all requests
-    domain: isProd ? undefined : undefined, // Remove domain restriction for localhost
+    path: "/",
   });
 }
 

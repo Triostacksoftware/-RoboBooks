@@ -13,7 +13,7 @@ export async function api<T = unknown>(
   console.log("🌐 Request body:", json);
 
   const res = await fetch(`${backendUrl}${path}`, {
-    credentials: "include", // <-- send/receive rb_session cookie
+    credentials: "include", // include cookies for cross-origin
     headers: {
       "Content-Type": "application/json",
       ...(init.headers || {}),
