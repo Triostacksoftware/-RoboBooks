@@ -340,8 +340,12 @@ export default function BankingPage() {
         </div>
         <button
           onClick={() => {
-            const ev = new Event('open-add-bank-account');
-            window.dispatchEvent(ev);
+            // Ensure the Accounts tab (with the modal listener) is mounted
+            setActiveTab('accounts');
+            // Dispatch after mount to reliably open the modal
+            setTimeout(() => {
+              window.dispatchEvent(new Event('open-add-bank-account'));
+            }, 0);
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >

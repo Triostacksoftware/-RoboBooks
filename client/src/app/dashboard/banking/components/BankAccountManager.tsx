@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BanknotesIcon,
   CreditCardIcon,
@@ -43,6 +43,9 @@ export default function BankAccountManager() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [syncingAccount, setSyncingAccount] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const bankInputRef = useRef<HTMLInputElement | null>(null);
+  const numberInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -149,8 +152,9 @@ export default function BankAccountManager() {
   // Listen for a global event to open the Add Account modal (triggered from parent page)
   useEffect(() => {
     const handler = () => setShowAddAccount(true);
-    window.addEventListener('open-add-bank-account', handler as EventListener);
-    return () => window.removeEventListener('open-add-bank-account', handler as EventListener);
+    // Use capture=false to avoid interfering with input events; also mark passive
+    window.addEventListener('open-add-bank-account', handler as EventListener, false);
+    return () => window.removeEventListener('open-add-bank-account', handler as EventListener, false);
   }, []);
 
   const getStatusIcon = (status: string) => {
@@ -214,92 +218,126 @@ export default function BankAccountManager() {
   };
 
   const AddAccountModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Add Bank Account</h3>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onMouseDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl" onMouseDown={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Add Bank Account</h3>
+            <p className="text-sm text-gray-500">Create a manual account to start tracking balances and transactions.</p>
+          </div>
           <button
             onClick={() => setShowAddAccount(false)}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Business Checking Account"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-            <input
-              type="text"
-              value={form.bank}
-              onChange={(e) => setForm(prev => ({ ...prev, bank: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Chase Bank"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
-            <select 
-              value={form.type}
-              onChange={(e) => setForm(prev => ({ ...prev, type: e.target.value as any }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              {accountTypes.map(type => (
-                <option key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-            <input
-              type="text"
-              value={form.accountNumber}
-              onChange={(e) => setForm(prev => ({ ...prev, accountNumber: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Last 4 digits"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-            <select 
-              value={form.currency}
-              onChange={(e) => setForm(prev => ({ ...prev, currency: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <option value="USD">USD - US Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-              <option value="GBP">GBP - British Pound</option>
-              <option value="CAD">CAD - Canadian Dollar</option>
-            </select>
+
+        {/* Body */}
+        <div className="px-6 py-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setForm((prev) => ({ ...prev, name: v }));
+                  requestAnimationFrame(() => nameInputRef.current?.focus());
+                }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Business Checking"
+                autoComplete="off"
+                ref={nameInputRef}
+                autoFocus
+              />
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+              <input
+                type="text"
+                value={form.bank}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setForm((prev) => ({ ...prev, bank: v }));
+                  requestAnimationFrame(() => bankInputRef.current?.focus());
+                }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Chase Bank"
+                autoComplete="off"
+                ref={bankInputRef}
+              />
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+              <select
+                value={form.type}
+                onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as any }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {accountTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+              <input
+                type="text"
+                value={form.accountNumber}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+                  setForm((prev) => ({ ...prev, accountNumber: v }));
+                  requestAnimationFrame(() => numberInputRef.current?.focus());
+                }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Last 4 digits"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                autoComplete="off"
+                ref={numberInputRef}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+              <select
+                value={form.currency}
+                onChange={(e) => setForm((prev) => ({ ...prev, currency: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="USD">USD - US Dollar</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="GBP">GBP - British Pound</option>
+                <option value="CAD">CAD - Canadian Dollar</option>
+              </select>
+            </div>
           </div>
         </div>
-        
-        <div className="mt-6 flex gap-3">
-          <button 
-            onClick={handleAddAccount}
-            disabled={submitting}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
-            {submitting ? 'Adding...' : 'Add Account'}
-          </button>
-          <button 
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+          <button
             onClick={() => setShowAddAccount(false)}
-            className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+            className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancel
+          </button>
+          <button
+            onClick={handleAddAccount}
+            disabled={submitting}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {submitting ? 'Adding...' : 'Add Account'}
           </button>
         </div>
       </div>

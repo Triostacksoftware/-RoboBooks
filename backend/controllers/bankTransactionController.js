@@ -26,7 +26,7 @@ export const listTransactions = async (req, res) => {
       search 
     } = req.query;
     
-    const filter = { userId: req.user.id };
+    const filter = { userId: req.user.uid };
     
     if (reconciled !== undefined) filter.reconciled = reconciled === 'true';
     if (status && status !== 'all') filter.status = status;
@@ -90,7 +90,7 @@ export const getTransaction = async (req, res) => {
   try {
     const transaction = await BankTransaction.findOne({ 
       _id: req.params.id, 
-      userId: req.user.id 
+      userId: req.user.uid 
     }).populate('account', 'name').populate('bankAccount', 'name bank');
     
     if (!transaction) {
@@ -113,7 +113,7 @@ export const createTransaction = async (req, res) => {
   try {
     const transactionData = {
       ...req.body,
-      userId: req.user.id
+      userId: req.user.uid
     };
     
     const [txn] = await BankTransaction.create([transactionData], { session });
@@ -140,7 +140,7 @@ export const createTransaction = async (req, res) => {
 export const updateTransaction = async (req, res) => {
   try {
     const transaction = await BankTransaction.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.user.uid },
       req.body,
       { new: true, runValidators: true }
     ).populate('account', 'name').populate('bankAccount', 'name bank');
@@ -223,7 +223,7 @@ export const deleteTransaction = async (req, res) => {
  */
 export const getTransactionCategories = async (req, res) => {
   try {
-    const categories = await BankTransaction.distinct('category', { userId: req.user.id });
+    const categories = await BankTransaction.distinct('category', { userId: req.user.uid });
     res.json(categories.filter(cat => cat && cat !== 'Uncategorized'));
   } catch (error) {
     res.status(500).json({ message: 'Error fetching categories', error: error.message });
@@ -238,7 +238,7 @@ export const getTransactionSummary = async (req, res) => {
   try {
     const { startDate, endDate, accountId } = req.query;
     
-    const filter = { userId: req.user.id };
+    const filter = { userId: req.user.uid };
     if (startDate && endDate) {
       filter.txn_date = {
         $gte: new Date(startDate),

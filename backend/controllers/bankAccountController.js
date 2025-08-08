@@ -7,7 +7,7 @@ import BankTransaction from '../models/BankTransaction.js';
  */
 export const getBankAccounts = async (req, res) => {
   try {
-    const accounts = await BankAccount.find({ userId: req.user.id })
+    const accounts = await BankAccount.find({ userId: req.user.uid })
       .sort({ createdAt: -1 });
     
     res.json(accounts);
@@ -24,7 +24,7 @@ export const getBankAccount = async (req, res) => {
   try {
     const account = await BankAccount.findOne({ 
       _id: req.params.id, 
-      userId: req.user.id 
+      userId: req.user.uid 
     });
     
     if (!account) {
@@ -45,7 +45,7 @@ export const createBankAccount = async (req, res) => {
   try {
     const accountData = {
       ...req.body,
-      userId: req.user.id
+      userId: req.user.uid
     };
     
     const account = new BankAccount(accountData);
@@ -64,7 +64,7 @@ export const createBankAccount = async (req, res) => {
 export const updateBankAccount = async (req, res) => {
   try {
     const account = await BankAccount.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.user.uid },
       req.body,
       { new: true, runValidators: true }
     );
@@ -87,7 +87,7 @@ export const deleteBankAccount = async (req, res) => {
   try {
     const account = await BankAccount.findOneAndDelete({ 
       _id: req.params.id, 
-      userId: req.user.id 
+      userId: req.user.uid 
     });
     
     if (!account) {
@@ -111,7 +111,7 @@ export const syncBankAccount = async (req, res) => {
   try {
     const account = await BankAccount.findOne({ 
       _id: req.params.id, 
-      userId: req.user.id 
+      userId: req.user.uid 
     });
     
     if (!account) {
@@ -185,7 +185,7 @@ export const getAccountTransactions = async (req, res) => {
  */
 export const getBankAccountsSummary = async (req, res) => {
   try {
-    const accounts = await BankAccount.find({ userId: req.user.id });
+    const accounts = await BankAccount.find({ userId: req.user.uid });
     
     const summary = {
       totalAccounts: accounts.length,
