@@ -49,8 +49,6 @@ export default function AdminLayout({
       const response = await api<{ success: boolean; admin?: Admin }>(
         "/api/admin/profile"
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = (await api("/api/admin/profile")) as any;
       if (response.success) {
         setAdmin(response.admin || null);
         setIsAuthenticated(true);

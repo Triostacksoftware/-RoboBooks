@@ -126,7 +126,8 @@ export default function AdminUsers() {
         body: JSON.stringify({ isActive: !currentStatus }),
       });
 
-      if (response.success) {
+      // Fix: response is of type unknown, so we need to check its shape
+      if (typeof response === "object" && response !== null && "success" in response && (response as any).success) {
         setUsers(
           users.map((user) =>
             user.id === userId ? { ...user, isActive: !currentStatus } : user
@@ -148,7 +149,12 @@ export default function AdminUsers() {
         method: "DELETE",
       });
 
-      if (response.success) {
+      if (
+        typeof response === "object" &&
+        response !== null &&
+        "success" in response &&
+        (response as any).success
+      ) {
         setUsers(users.filter((user) => user.id !== userId));
       }
     } catch (error) {
