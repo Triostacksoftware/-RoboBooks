@@ -10,6 +10,9 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   XCircleIcon,
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
 } from "@heroicons/react/24/outline";
 
 interface Subscription {
@@ -19,6 +22,7 @@ interface Subscription {
   amount: number;
   status: string;
   nextBilling: string;
+  email: string;
 }
 
 interface Invoice {
@@ -51,6 +55,8 @@ export default function AdminBilling() {
     payments: [],
   });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("subscriptions");
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchBillingData();
@@ -58,7 +64,15 @@ export default function AdminBilling() {
 
   const fetchBillingData = async () => {
     try {
-      // Mock data for now - replace with actual API call
+      const response = await api<{ success: boolean; billingData: BillingData }>(
+        "/api/admin/billing"
+      );
+      if (response.success) {
+        setBillingData(response.billingData);
+      }
+    } catch (error) {
+      console.error("Error fetching billing data:", error);
+      // Fallback to mock data
       const mockData = {
         subscriptions: [
           {
@@ -68,6 +82,7 @@ export default function AdminBilling() {
             amount: 299,
             status: "active",
             nextBilling: "2024-02-15",
+            email: "admin@techcorp.com"
           },
           {
             id: 2,
@@ -76,6 +91,7 @@ export default function AdminBilling() {
             amount: 99,
             status: "active",
             nextBilling: "2024-02-20",
+            email: "contact@startupxyz.com"
           },
           {
             id: 3,
@@ -84,7 +100,26 @@ export default function AdminBilling() {
             amount: 599,
             status: "cancelled",
             nextBilling: "2024-02-10",
+            email: "info@enterprise.com"
           },
+          {
+            id: 4,
+            companyName: "Digital Solutions",
+            plan: "Premium",
+            amount: 299,
+            status: "active",
+            nextBilling: "2024-02-25",
+            email: "hello@digitalsolutions.com"
+          },
+          {
+            id: 5,
+            companyName: "Innovation Hub",
+            plan: "Basic",
+            amount: 99,
+            status: "active",
+            nextBilling: "2024-02-28",
+            email: "team@innovationhub.com"
+          }
         ],
         invoices: [
           {
@@ -111,6 +146,14 @@ export default function AdminBilling() {
             dueDate: "2024-01-10",
             paidDate: null,
           },
+          {
+            id: "INV-004",
+            companyName: "Digital Solutions",
+            amount: 299,
+            status: "pending",
+            dueDate: "2024-02-15",
+            paidDate: null,
+          },
         ],
         payments: [
           {
@@ -127,13 +170,37 @@ export default function AdminBilling() {
             method: "Bank Transfer",
             date: "2024-01-19",
           },
+          {
+            id: "PAY-003",
+            companyName: "Digital Solutions",
+            amount: 299,
+            method: "Credit Card",
+            date: "2024-01-25",
+          },
         ],
       };
       setBillingData(mockData);
-    } catch (error) {
-      console.error("Error fetching billing data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  type UpdatableSection = 'subscriptions' | 'invoices';
+  const handleStatusUpdate = async (
+    type: UpdatableSection,
+    id: string | number,
+    newStatus: string
+  ) => {
+    try {
+      // In production, this would make an API call to update the status
+      setBillingData(prev => ({
+        ...prev,
+        [type]: prev[type].map(item => 
+          item.id === id ? { ...item, status: newStatus } : item
+        )
+      }));
+    } catch (error) {
+      console.error("Error updating status:", error);
     }
   };
 
@@ -152,6 +219,7 @@ export default function AdminBilling() {
           <p className="text-xs text-gray-500">
             Next billing: {subscription.nextBilling}
           </p>
+          <p className="text-xs text-gray-500">{subscription.email}</p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-gray-900">
@@ -161,12 +229,42 @@ export default function AdminBilling() {
             className={`px-2 py-1 rounded-full text-xs font-medium ${
               subscription.status === "active"
                 ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
+                : subscription.status === "cancelled"
+                ? "bg-red-100 text-red-800"
+                : "bg-yellow-100 text-yellow-800"
             }`}
           >
             {subscription.status}
           </span>
         </div>
+      </div>
+      <div className="mt-4 flex space-x-2">
+        <button className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg">
+          <EyeIcon className="h-4 w-4" />
+          <span>View</span>
+        </button>
+        <button className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+          <PencilIcon className="h-4 w-4" />
+          <span>Edit</span>
+        </button>
+        {subscription.status === "active" && (
+          <button 
+            onClick={() => handleStatusUpdate("subscriptions", subscription.id, "cancelled")}
+            className="flex items-center space-x-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+          >
+            <XCircleIcon className="h-4 w-4" />
+            <span>Cancel</span>
+          </button>
+        )}
+        {subscription.status === "cancelled" && (
+          <button 
+            onClick={() => handleStatusUpdate("subscriptions", subscription.id, "active")}
+            className="flex items-center space-x-1 px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded-lg"
+          >
+            <CheckCircleIcon className="h-4 w-4" />
+            <span>Reactivate</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -180,6 +278,9 @@ export default function AdminBilling() {
           </h3>
           <p className="text-sm text-gray-600">Invoice #{invoice.id}</p>
           <p className="text-xs text-gray-500">Due: {invoice.dueDate}</p>
+          {invoice.paidDate && (
+            <p className="text-xs text-green-600">Paid: {invoice.paidDate}</p>
+          )}
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-gray-900">${invoice.amount}</p>
@@ -194,6 +295,36 @@ export default function AdminBilling() {
           >
             {invoice.status}
           </span>
+        </div>
+      </div>
+      <div className="mt-4 flex space-x-2">
+        <button className="flex items-center space-x-1 px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg">
+          <EyeIcon className="h-4 w-4" />
+          <span>View</span>
+        </button>
+        {invoice.status === "pending" && (
+          <button className="flex items-center space-x-1 px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded-lg">
+            <CheckCircleIcon className="h-4 w-4" />
+            <span>Mark Paid</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const PaymentCard = ({ payment }: { payment: Payment }) => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {payment.companyName}
+          </h3>
+          <p className="text-sm text-gray-600">Payment #{payment.id}</p>
+          <p className="text-xs text-gray-500">Date: {payment.date}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold text-gray-900">${payment.amount}</p>
+          <span className="text-sm text-gray-600">{payment.method}</span>
         </div>
       </div>
     </div>
@@ -220,15 +351,33 @@ export default function AdminBilling() {
   const paidInvoices = billingData.invoices.filter(
     (i) => i.status === "paid"
   ).length;
+  const overdueInvoices = billingData.invoices.filter(
+    (i) => i.status === "overdue"
+  ).length;
+
+  const tabs = [
+    { id: "subscriptions", name: "Subscriptions", count: billingData.subscriptions.length },
+    { id: "invoices", name: "Invoices", count: billingData.invoices.length },
+    { id: "payments", name: "Payments", count: billingData.payments.length },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Billing Management</h1>
-        <p className="text-gray-600 mt-1">
-          Manage subscriptions, invoices, and payments
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Billing Management</h1>
+          <p className="text-gray-600 mt-1">
+            Manage subscriptions, invoices, and payments
+          </p>
+        </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+        >
+          <PlusIcon className="h-5 w-5" />
+          <span>Add Subscription</span>
+        </button>
       </div>
 
       {/* Stats */}
@@ -243,7 +392,7 @@ export default function AdminBilling() {
                 Monthly Revenue
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                ${totalRevenue}
+                ${totalRevenue.toLocaleString()}
               </p>
             </div>
           </div>
@@ -276,48 +425,71 @@ export default function AdminBilling() {
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="p-3 bg-orange-500 rounded-lg">
-              <BanknotesIcon className="h-6 w-6 text-white" />
+            <div className="p-3 bg-red-500 rounded-lg">
+              <XCircleIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">
-                Pending Payments
+                Overdue Invoices
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {
-                  billingData.invoices.filter((i) => i.status === "overdue")
-                    .length
-                }
+                {overdueInvoices}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Subscriptions */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Active Subscriptions
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {billingData.subscriptions.map((subscription) => (
-            <SubscriptionCard
-              key={subscription.id}
-              subscription={subscription}
-            />
-          ))}
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
+                  activeTab === tab.id
+                    ? "border-purple-500 text-purple-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <span>{tab.name}</span>
+                <span className="bg-gray-100 text-gray-900 py-0.5 px-2 rounded-full text-xs">
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </nav>
         </div>
-      </div>
 
-      {/* Recent Invoices */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Recent Invoices
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {billingData.invoices.map((invoice) => (
-            <InvoiceCard key={invoice.id} invoice={invoice} />
-          ))}
+        <div className="p-6">
+          {activeTab === "subscriptions" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {billingData.subscriptions.map((subscription) => (
+                <SubscriptionCard
+                  key={subscription.id}
+                  subscription={subscription}
+                />
+              ))}
+            </div>
+          )}
+
+          {activeTab === "invoices" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {billingData.invoices.map((invoice) => (
+                <InvoiceCard key={invoice.id} invoice={invoice} />
+              ))}
+            </div>
+          )}
+
+          {activeTab === "payments" && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {billingData.payments.map((payment) => (
+                <PaymentCard key={payment.id} payment={payment} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

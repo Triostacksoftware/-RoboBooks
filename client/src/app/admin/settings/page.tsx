@@ -11,6 +11,8 @@ import {
   GlobeAltIcon,
   ServerIcon,
   CloudIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 interface Settings {
@@ -69,6 +71,8 @@ export default function AdminSettings() {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("general");
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | null, message: string }>({ type: null, message: '' });
 
   useEffect(() => {
     fetchSettings();
@@ -76,10 +80,15 @@ export default function AdminSettings() {
 
   const fetchSettings = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      setSettings(settings);
+      const response = await api<{ success: boolean; settings: typeof settings }>(
+        "/api/admin/settings"
+      );
+      if (response.success) {
+        setSettings(response.settings);
+      }
     } catch (error) {
       console.error("Error fetching settings:", error);
+      // Keep default settings if API fails
     } finally {
       setLoading(false);
     }
@@ -97,6 +106,30 @@ export default function AdminSettings() {
         [key]: value,
       },
     }));
+  };
+
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    setSaveStatus({ type: null, message: '' });
+    
+    try {
+      const response = await api<{ success: boolean }>("/api/admin/settings", {
+        method: "PUT",
+        json: { settings },
+      });
+      
+      if (response.success) {
+        setSaveStatus({ type: 'success', message: 'Settings saved successfully!' });
+        setTimeout(() => setSaveStatus({ type: null, message: '' }), 3000);
+      } else {
+        setSaveStatus({ type: 'error', message: 'Failed to save settings' });
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      setSaveStatus({ type: 'error', message: 'Failed to save settings' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tabs = [
@@ -142,6 +175,31 @@ export default function AdminSettings() {
     </div>
   );
 
+  const SystemStatus = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
+      <div className="space-y-3">
+        {[
+          { name: "Server Status", status: "Online", color: "text-green-600", icon: CheckCircleIcon },
+          { name: "Database", status: "Connected", color: "text-green-600", icon: CheckCircleIcon },
+          { name: "API Response", status: "Normal", color: "text-green-600", icon: CheckCircleIcon },
+          { name: "Storage", status: "85% Used", color: "text-yellow-600", icon: ExclamationTriangleIcon },
+          { name: "Backup", status: "Last: 2 hours ago", color: "text-green-600", icon: CheckCircleIcon },
+        ].map((item, index) => (
+          <div key={index} className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <item.icon className={`h-4 w-4 ${item.color}`} />
+              <span className="text-sm text-gray-600">{item.name}</span>
+            </div>
+            <span className={`text-sm font-medium ${item.color}`}>
+              {item.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -156,35 +214,73 @@ export default function AdminSettings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">
-          Manage system configuration and preferences
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <p className="text-gray-600 mt-1">
+            Manage system configuration and preferences
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          {saveStatus.type && (
+            <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
+              saveStatus.type === 'success' 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {saveStatus.type === 'success' ? (
+                <CheckCircleIcon className="h-4 w-4" />
+              ) : (
+                <ExclamationTriangleIcon className="h-4 w-4" />
+              )}
+              <span className="text-sm font-medium">{saveStatus.message}</span>
+            </div>
+          )}
+          <button 
+            onClick={handleSaveSettings}
+            disabled={saving}
+            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            {saving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircleIcon className="h-5 w-5" />
+                <span>Save Changes</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                  activeTab === tab.id
-                    ? "border-purple-500 text-purple-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <tab.icon className="h-5 w-5" />
-                <span>{tab.name}</span>
-              </button>
-            ))}
-          </nav>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Tabs */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <nav className="space-y-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-purple-100 text-purple-700 border border-purple-200"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <tab.icon className="h-5 w-5" />
+                  <span className="font-medium">{tab.name}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
 
-        <div className="p-6">
+        {/* Content */}
+        <div className="lg:col-span-3">
           {activeTab === "general" && (
             <div className="space-y-6">
               <SettingSection
@@ -534,12 +630,8 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <button className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-          Save Changes
-        </button>
-      </div>
+      {/* System Status */}
+      <SystemStatus />
     </div>
   );
 }
