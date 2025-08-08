@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { generateClientPDF } from "../../../../../utils/pdfGenerator";
 import {
   ArrowLeftIcon,
   PrinterIcon,
@@ -16,6 +17,7 @@ import {
   ExclamationTriangleIcon,
   CurrencyDollarIcon,
   ChevronDownIcon,
+  DocumentArrowDownIcon,
 } from "@heroicons/react/24/outline";
 
 interface InvoiceItem {
@@ -334,6 +336,17 @@ const InvoiceDetailPage = () => {
       showToastMessage("Failed to update status. Please try again.", "error");
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!invoice) return;
+    try {
+      generateClientPDF(invoice);
+      showToastMessage("PDF downloaded successfully!", "success");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showToastMessage("Failed to generate PDF", "error");
     }
   };
 
@@ -789,6 +802,46 @@ const InvoiceDetailPage = () => {
                   <p>www.robobooks.com</p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={handleDownloadPDF}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                Download PDF
+              </button>
+
+              <button
+                onClick={handleSendInvoice}
+                disabled={sending}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <EnvelopeIcon className="h-4 w-4 mr-2" />
+                {sending ? "Sending..." : "Send Invoice"}
+              </button>
+
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print
+              </button>
+
+              <button
+                onClick={() =>
+                  router.push(`/dashboard/sales/invoices/${params.id}/edit`)
+                }
+                className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              >
+                <PencilIcon className="h-4 w-4 mr-2" />
+                Edit
+              </button>
             </div>
           </div>
         </div>

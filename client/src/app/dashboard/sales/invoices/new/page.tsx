@@ -15,10 +15,6 @@ import {
   PaperClipIcon,
   ArrowPathIcon,
   QuestionMarkCircleIcon,
-  BellIcon,
-  ChatBubbleLeftRightIcon,
-  CalendarIcon,
-  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 
 interface Customer {
@@ -37,6 +33,32 @@ interface Customer {
     country?: string;
     zipCode?: string;
   };
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+}
+
+type TaxMode = "GST" | "NON_TAXABLE" | "NO_GST";
+interface InvoiceItem {
+  id: number;
+  itemId: string;
+  details: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  amount: number;
+  taxMode: TaxMode;
+  taxRate: number;
+  taxAmount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  taxRemark: string;
 }
 
 const NewInvoiceForm = () => {
@@ -70,9 +92,14 @@ const NewInvoiceForm = () => {
         unit: "pcs",
         rate: 0.0,
         amount: 0.0,
+        taxMode: "GST" as TaxMode,
         taxRate: 0,
         taxAmount: 0,
-      },
+        cgst: 0,
+        sgst: 0,
+        igst: 0,
+        taxRemark: "",
+      } as InvoiceItem,
     ],
     subTotal: 0.0,
     discount: 0,
@@ -81,6 +108,9 @@ const NewInvoiceForm = () => {
     taxType: "GST",
     taxRate: 18,
     taxAmount: 0.0,
+    cgstTotal: 0.0,
+    sgstTotal: 0.0,
+    igstTotal: 0.0,
     shippingCharges: 0.0,
     adjustment: 0.0,
     roundOff: 0.0,
@@ -99,6 +129,22 @@ const NewInvoiceForm = () => {
     buyerPhone: "",
     buyerGstin: "",
     buyerAddress: "",
+    // Address blocks
+    billingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      country: "India",
+      zipCode: "",
+    },
+    shippingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      country: "India",
+      zipCode: "",
+    },
+    placeOfSupplyState: "",
     // Seller Details
     sellerName: "",
     sellerEmail: "",
@@ -119,6 +165,26 @@ const NewInvoiceForm = () => {
   });
 
   const [showCompanySettings, setShowCompanySettings] = useState(false);
+  // Local toast notifications
+  const [toasts, setToasts] = useState<
+    { id: number; message: string; type: "success" | "error" | "info" }[]
+  >([]);
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3200);
+  };
+
+  const extractStateName = (value: string) => {
+    if (!value) return "";
+    const parts = value.split("-");
+    return (parts[1] || parts[0]).trim();
+  };
 
   // Fetch customers from backend and check for pre-selected customer
   useEffect(() => {
@@ -184,6 +250,24 @@ const NewInvoiceForm = () => {
                         foundCustomer.billingAddress.city || ""
                       }, ${foundCustomer.billingAddress.state || ""}`.trim()
                     : "",
+                  billingAddress: {
+                    street: foundCustomer.billingAddress?.street || "",
+                    city: foundCustomer.billingAddress?.city || "",
+                    state: foundCustomer.billingAddress?.state || "",
+                    country: foundCustomer.billingAddress?.country || "India",
+                    zipCode: foundCustomer.billingAddress?.zipCode || "",
+                  },
+                  shippingAddress: {
+                    street: foundCustomer.shippingAddress?.street || "",
+                    city: foundCustomer.shippingAddress?.city || "",
+                    state: foundCustomer.shippingAddress?.state || "",
+                    country: foundCustomer.shippingAddress?.country || "India",
+                    zipCode: foundCustomer.shippingAddress?.zipCode || "",
+                  },
+                  placeOfSupplyState:
+                    foundCustomer.shippingAddress?.state ||
+                    foundCustomer.billingAddress?.state ||
+                    extractStateName(companySettings.state),
                 }));
 
                 // Hide notification after 3 seconds
@@ -232,7 +316,7 @@ const NewInvoiceForm = () => {
 
     fetchCustomers();
     fetchNextInvoiceNumber();
-  }, []);
+  }, [companySettings.state]);
 
   const addItem = () => {
     setFormData((prev) => ({
@@ -248,38 +332,78 @@ const NewInvoiceForm = () => {
           unit: "pcs",
           rate: 0.0,
           amount: 0.0,
+          taxMode: "GST" as TaxMode,
           taxRate: prev.taxRate || 18,
           taxAmount: 0,
-        },
+          cgst: 0,
+          sgst: 0,
+          igst: 0,
+          taxRemark: "",
+        } as InvoiceItem,
       ],
     }));
   };
 
-  // Function to recalculate all totals when tax rate changes
+  // Determine intra vs inter-state
+  const isIntraState = () => {
+    const sellerState = (
+      companySettings.state?.split("-")[1] ||
+      companySettings.state ||
+      ""
+    ).trim();
+    const pos = (formData.placeOfSupplyState || "").trim();
+    if (!sellerState || !pos) return true;
+    return sellerState.toLowerCase() === pos.toLowerCase();
+  };
+
+  const calculateItemTax = (
+    amount: number,
+    taxMode: TaxMode,
+    taxRate: number
+  ) => {
+    if (!amount || amount <= 0 || taxMode !== "GST" || !taxRate) {
+      return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+    }
+    if (isIntraState()) {
+      const half = (amount * taxRate) / 100 / 2;
+      return { cgst: half, sgst: half, igst: 0, taxAmount: half * 2 };
+    }
+    const igst = (amount * taxRate) / 100;
+    return { cgst: 0, sgst: 0, igst, taxAmount: igst };
+  };
+
+  // Function to recalculate all totals when tax rate/place changes
   const recalculateAllTotals = () => {
     setFormData((prev) => {
-      const updatedItems = prev.items.map((item) => ({
-        ...item,
-        taxRate: prev.taxRate,
-        taxAmount: (item.amount * prev.taxRate) / 100,
-      }));
+      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
+        const rate = item.taxMode === "GST" ? item.taxRate ?? prev.taxRate : 0;
+        const taxes = calculateItemTax(
+          item.amount || 0,
+          item.taxMode as TaxMode,
+          rate
+        );
+        return { ...(item as InvoiceItem), taxRate: rate, ...taxes };
+      });
 
-      const subTotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const subTotal = updatedItems.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
       const discountAmount =
         prev.discountType === "percentage"
           ? (subTotal * prev.discount) / 100
           : prev.discount;
-      const totalTax = updatedItems.reduce(
-        (sum, item) => sum + item.taxAmount,
-        0
-      );
+      const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
+      const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
+      const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+      const totalTax = cgstTotal + sgstTotal + igstTotal;
       const total =
         subTotal -
         discountAmount +
         totalTax +
-        prev.shippingCharges +
-        prev.adjustment +
-        prev.roundOff;
+        (prev.shippingCharges || 0) +
+        (prev.adjustment || 0) +
+        (prev.roundOff || 0);
 
       return {
         ...prev,
@@ -287,6 +411,9 @@ const NewInvoiceForm = () => {
         subTotal,
         discountAmount,
         taxAmount: totalTax,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
         total,
       };
     });
@@ -303,42 +430,69 @@ const NewInvoiceForm = () => {
 
   const updateItem = (id: number, field: string, value: string | number) => {
     setFormData((prev) => {
-      const updatedItems = prev.items.map((item) => {
-        if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
+      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
+        if (item.id !== id) return item;
+        const updatedItem: InvoiceItem = {
+          ...(item as InvoiceItem),
+          [field]: value,
+        } as InvoiceItem;
 
-          // Auto-calculate amount when quantity or rate changes
-          if (field === "quantity" || field === "rate") {
-            const qty = field === "quantity" ? Number(value) : item.quantity;
-            const rate = field === "rate" ? Number(value) : item.rate;
-            updatedItem.amount = qty * rate;
-            // Use the current tax rate from the form
-            updatedItem.taxRate = prev.taxRate;
-            updatedItem.taxAmount = (updatedItem.amount * prev.taxRate) / 100;
-          }
-
-          return updatedItem;
+        // Normalize numeric fields
+        if (field === "quantity" || field === "rate" || field === "amount") {
+          const qty =
+            Number(field === "quantity" ? value : updatedItem.quantity) || 0;
+          const rate = Number(field === "rate" ? value : updatedItem.rate) || 0;
+          updatedItem.amount =
+            field === "amount" ? Number(value) || 0 : qty * rate;
         }
-        return item;
+
+        // Determine tax
+        const mode = (updatedItem.taxMode || "GST") as TaxMode;
+        const rateToUse =
+          mode === "GST" ? Number(updatedItem.taxRate ?? prev.taxRate) || 0 : 0;
+        const taxes = calculateItemTax(
+          updatedItem.amount || 0,
+          mode as TaxMode,
+          rateToUse
+        );
+        updatedItem.cgst = taxes.cgst;
+        updatedItem.sgst = taxes.sgst;
+        updatedItem.igst = taxes.igst;
+        updatedItem.taxAmount = taxes.taxAmount;
+        updatedItem.taxMode = mode;
+        updatedItem.taxRate = rateToUse;
+        return updatedItem;
       });
 
       // Recalculate totals
-      const subTotal = updatedItems.reduce((sum, item) => sum + item.amount, 0);
+      const subTotal = updatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.amount || 0),
+        0
+      );
       const discountAmount =
         prev.discountType === "percentage"
           ? (subTotal * prev.discount) / 100
           : prev.discount;
-      const totalTax = updatedItems.reduce(
-        (sum, item) => sum + item.taxAmount,
+      const cgstTotal = updatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.cgst || 0),
         0
       );
+      const sgstTotal = updatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.sgst || 0),
+        0
+      );
+      const igstTotal = updatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.igst || 0),
+        0
+      );
+      const totalTax = cgstTotal + sgstTotal + igstTotal;
       const total =
         subTotal -
         discountAmount +
         totalTax +
-        prev.shippingCharges +
-        prev.adjustment +
-        prev.roundOff;
+        (prev.shippingCharges || 0) +
+        (prev.adjustment || 0) +
+        (prev.roundOff || 0);
 
       return {
         ...prev,
@@ -346,6 +500,9 @@ const NewInvoiceForm = () => {
         subTotal,
         discountAmount,
         taxAmount: totalTax,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
         total,
       };
     });
@@ -364,17 +521,50 @@ const NewInvoiceForm = () => {
     setSelectedCustomer(customer);
     setShowCustomerDropdown(false);
     setSearchTerm(customer.firstName + " " + customer.lastName);
+    setFormData((prev) => ({
+      ...prev,
+      buyerName: customer.firstName + " " + customer.lastName,
+      buyerEmail: customer.email,
+      buyerPhone: customer.phone || customer.mobile || customer.workPhone || "",
+      buyerAddress: customer.billingAddress
+        ? `${customer.billingAddress.street || ""}, ${
+            customer.billingAddress.city || ""
+          }, ${customer.billingAddress.state || ""}`.trim()
+        : "",
+      billingAddress: {
+        street: customer.billingAddress?.street || "",
+        city: customer.billingAddress?.city || "",
+        state: customer.billingAddress?.state || "",
+        country: customer.billingAddress?.country || "India",
+        zipCode: customer.billingAddress?.zipCode || "",
+      },
+      shippingAddress: {
+        street: customer.shippingAddress?.street || "",
+        city: customer.shippingAddress?.city || "",
+        state: customer.shippingAddress?.state || "",
+        country: customer.shippingAddress?.country || "India",
+        zipCode: customer.shippingAddress?.zipCode || "",
+      },
+      placeOfSupplyState:
+        customer.shippingAddress?.state ||
+        customer.billingAddress?.state ||
+        companySettings.state?.split("-")[1] ||
+        companySettings.state ||
+        "",
+    }));
+    setTimeout(recalculateAllTotals, 0);
   };
 
   const handleSaveInvoice = async (asDraft = false) => {
     try {
       if (!selectedCustomer) {
-        alert("Please select a customer");
+        showToast("Please select a customer", "error");
         return;
       }
 
       // Remove undefined fields and ensure proper data types
-      const { project, ...formDataWithoutProject } = formData;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { project: _unusedProject, ...formDataWithoutProject } = formData;
 
       const invoiceData = {
         ...formDataWithoutProject,
@@ -408,20 +598,20 @@ const NewInvoiceForm = () => {
 
       if (response.ok) {
         console.log("Invoice saved successfully", result);
-        alert(
+        showToast(
           `Invoice ${
             asDraft ? "saved as draft" : "created and sent"
-          } successfully!`
+          } successfully!`,
+          "success"
         );
-        // Redirect to invoices list
-        window.location.href = "/dashboard/sales/invoices";
+        setTimeout(() => router.push("/dashboard/sales/invoices"), 800);
       } else {
         console.error("Error saving invoice:", result.error);
-        alert(`Error: ${result.error}`);
+        showToast(`Error: ${result.error}`, "error");
       }
     } catch (error) {
       console.error("Error saving invoice:", error);
-      alert("Error saving invoice. Please try again.");
+      showToast("Error saving invoice. Please try again.", "error");
     }
   };
 
@@ -492,6 +682,237 @@ const NewInvoiceForm = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+
+              {/* Billing & Shipping Address + Place of Supply */}
+              <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-1 border rounded-md p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-900">
+                      Billing Address
+                    </h3>
+                    <button
+                      className="text-xs text-blue-600"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          billingAddress: { ...prev.shippingAddress },
+                        }))
+                      }
+                    >
+                      Use Shipping
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      className="w-full px-3 py-2 border rounded"
+                      placeholder="Street"
+                      value={formData.billingAddress.street}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          billingAddress: {
+                            ...p.billingAddress,
+                            street: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="City"
+                        value={formData.billingAddress.city}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            billingAddress: {
+                              ...p.billingAddress,
+                              city: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="State"
+                        value={formData.billingAddress.state}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            billingAddress: {
+                              ...p.billingAddress,
+                              state: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="ZIP"
+                        value={formData.billingAddress.zipCode}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            billingAddress: {
+                              ...p.billingAddress,
+                              zipCode: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="Country"
+                        value={formData.billingAddress.country}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            billingAddress: {
+                              ...p.billingAddress,
+                              country: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:col-span-1 border rounded-md p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-gray-900">
+                      Shipping Address
+                    </h3>
+                    <button
+                      className="text-xs text-blue-600"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          shippingAddress: { ...prev.billingAddress },
+                          placeOfSupplyState: prev.billingAddress.state,
+                        }))
+                      }
+                    >
+                      Use Billing
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      className="w-full px-3 py-2 border rounded"
+                      placeholder="Street"
+                      value={formData.shippingAddress.street}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          shippingAddress: {
+                            ...p.shippingAddress,
+                            street: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="City"
+                        value={formData.shippingAddress.city}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            shippingAddress: {
+                              ...p.shippingAddress,
+                              city: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="State"
+                        value={formData.shippingAddress.state}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            shippingAddress: {
+                              ...p.shippingAddress,
+                              state: e.target.value,
+                            },
+                            placeOfSupplyState: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="ZIP"
+                        value={formData.shippingAddress.zipCode}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            shippingAddress: {
+                              ...p.shippingAddress,
+                              zipCode: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                      <input
+                        className="px-3 py-2 border rounded"
+                        placeholder="Country"
+                        value={formData.shippingAddress.country}
+                        onChange={(e) =>
+                          setFormData((p) => ({
+                            ...p,
+                            shippingAddress: {
+                              ...p.shippingAddress,
+                              country: e.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:col-span-1 border rounded-md p-4">
+                  <h3 className="font-medium text-gray-900 mb-3">
+                    Place of Supply
+                  </h3>
+                  <div className="space-y-2">
+                    <select
+                      className="w-full px-3 py-2 border rounded"
+                      value={formData.placeOfSupplyState}
+                      onChange={(e) => {
+                        setFormData((p) => ({
+                          ...p,
+                          placeOfSupplyState: e.target.value,
+                        }));
+                        setTimeout(recalculateAllTotals, 0);
+                      }}
+                    >
+                      <option value="">Select State</option>
+                      {[
+                        formData.shippingAddress.state,
+                        formData.billingAddress.state,
+                        companySettings.state?.split("-")[1] ||
+                          companySettings.state ||
+                          "",
+                      ]
+                        .filter(Boolean)
+                        .filter((v, i, a) => a.indexOf(v as string) === i)
+                        .map((st) => (
+                          <option key={st as string} value={st as string}>
+                            {st}
+                          </option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-gray-500">
+                      Intra-state: CGST + SGST. Inter-state: IGST only.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -1043,6 +1464,9 @@ const NewInvoiceForm = () => {
                           AMOUNT
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          TAX
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           <span className="sr-only">Actions</span>
                         </th>
                       </tr>
@@ -1063,7 +1487,7 @@ const NewInvoiceForm = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
-                              type="text"
+                              type="number"
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               value={item.quantity}
                               onChange={(e) =>
@@ -1073,7 +1497,7 @@ const NewInvoiceForm = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
-                              type="text"
+                              type="number"
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               value={item.rate}
                               onChange={(e) =>
@@ -1083,13 +1507,73 @@ const NewInvoiceForm = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
-                              type="text"
+                              type="number"
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               value={item.amount}
                               onChange={(e) =>
                                 updateItem(item.id, "amount", e.target.value)
                               }
                             />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                              <select
+                                className="px-2 py-1 border rounded"
+                                value={item.taxMode}
+                                onChange={(e) =>
+                                  updateItem(item.id, "taxMode", e.target.value)
+                                }
+                              >
+                                <option value="GST">GST</option>
+                                <option value="NON_TAXABLE">Non-Taxable</option>
+                                <option value="NO_GST">No GST</option>
+                              </select>
+                              <select
+                                className="px-2 py-1 border rounded"
+                                value={item.taxRate}
+                                onChange={(e) =>
+                                  updateItem(
+                                    item.id,
+                                    "taxRate",
+                                    Number(e.target.value)
+                                  )
+                                }
+                                disabled={item.taxMode !== "GST"}
+                              >
+                                {[0, 5, 10, 18, 28].map((r) => (
+                                  <option key={r} value={r}>
+                                    {r}%
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="text-xs text-gray-600">
+                                {isIntraState() && item.taxMode === "GST" ? (
+                                  <span>
+                                    CGST ₹{item.cgst?.toFixed(2)} + SGST ₹
+                                    {item.sgst?.toFixed(2)}
+                                  </span>
+                                ) : item.taxMode === "GST" ? (
+                                  <span>IGST ₹{item.igst?.toFixed(2)}</span>
+                                ) : (
+                                  <span className="text-amber-600">No Tax</span>
+                                )}
+                              </div>
+                              {(item.taxMode === "NON_TAXABLE" ||
+                                item.taxMode === "NO_GST") && (
+                                <input
+                                  className="md:col-span-3 px-2 py-1 border rounded text-sm"
+                                  placeholder="Remark (reason for non-tax / no GST)"
+                                  value={item.taxRemark || ""}
+                                  onChange={(e) =>
+                                    updateItem(
+                                      item.id,
+                                      "taxRemark",
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right">
                             <button
@@ -1223,7 +1707,7 @@ const NewInvoiceForm = () => {
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-600">Sub Total</span>
                         <span className="text-sm font-medium">
-                          ₹{formData.subTotal.toFixed(2)}
+                          ₹{(formData.subTotal || 0).toFixed(2)}
                         </span>
                       </div>
 
@@ -1272,7 +1756,7 @@ const NewInvoiceForm = () => {
                             <option value="amount">₹</option>
                           </select>
                           <span className="text-sm font-medium">
-                            ₹{formData.discountAmount.toFixed(2)}
+                            ₹{(formData.discountAmount || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -1295,8 +1779,6 @@ const NewInvoiceForm = () => {
                           >
                             <option value="GST">GST</option>
                             <option value="IGST">IGST</option>
-                            <option value="CGST">CGST</option>
-                            <option value="SGST">SGST</option>
                             <option value="TDS">TDS</option>
                             <option value="TCS">TCS</option>
                           </select>
@@ -1306,21 +1788,42 @@ const NewInvoiceForm = () => {
                             Tax Rate (%)
                           </label>
                           <div className="flex items-center space-x-2">
-                            <input
-                              type="number"
-                              step="0.01"
+                            <select
                               className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
                               value={formData.taxRate}
                               onChange={(e) => {
                                 const taxRate = parseFloat(e.target.value) || 0;
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  taxRate,
-                                }));
+                                setFormData((prev) => ({ ...prev, taxRate }));
                                 setTimeout(recalculateAllTotals, 0);
                               }}
-                            />
+                            >
+                              {[0, 5, 10, 18, 28].map((r) => (
+                                <option key={r} value={r}>
+                                  {r}
+                                </option>
+                              ))}
+                            </select>
                             <span className="text-sm text-gray-500">%</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">CGST</span>
+                            <span className="font-medium">
+                              ₹{(formData.cgstTotal || 0).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">SGST</span>
+                            <span className="font-medium">
+                              ₹{(formData.sgstTotal || 0).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">IGST</span>
+                            <span className="font-medium">
+                              ₹{(formData.igstTotal || 0).toFixed(2)}
+                            </span>
                           </div>
                         </div>
                         <div className="flex justify-between">
@@ -1328,7 +1831,7 @@ const NewInvoiceForm = () => {
                             Tax Amount
                           </span>
                           <span className="text-sm font-medium">
-                            ₹{formData.taxAmount.toFixed(2)}
+                            ₹{(formData.taxAmount || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -1359,7 +1862,7 @@ const NewInvoiceForm = () => {
                             Total (₹)
                           </span>
                           <span className="text-lg font-semibold">
-                            ₹{formData.total.toFixed(2)}
+                            ₹{(formData.total || 0).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -1405,9 +1908,27 @@ const NewInvoiceForm = () => {
         </div>
 
         <div className="max-w-6xl mx-auto mt-2 text-sm text-gray-600">
-          <span>Total Amount: ₹{formData.total.toFixed(2)}</span>
+          <span>Total Amount: ₹{(formData.total || 0).toFixed(2)}</span>
           <span className="ml-4">Total Quantity: {formData.items.length}</span>
         </div>
+      </div>
+
+      {/* Toasts */}
+      <div className="fixed bottom-6 right-6 space-y-2 z-50">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`px-4 py-2 rounded shadow text-white text-sm ${
+              t.type === "success"
+                ? "bg-emerald-600"
+                : t.type === "error"
+                ? "bg-red-600"
+                : "bg-gray-800"
+            }`}
+          >
+            {t.message}
+          </div>
+        ))}
       </div>
     </div>
   );

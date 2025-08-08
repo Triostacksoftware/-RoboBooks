@@ -13,20 +13,9 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function AdminUsers() {
-  interface AdminUser {
-    id: string;
-    companyName: string;
-    email: string;
-    phone?: string;
-    country?: string;
-    state?: string;
-    isActive: boolean;
-    createdAt: string | Date;
-    lastLogin?: string | Date;
-  }
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -40,12 +29,8 @@ export default function AdminUsers() {
       setError(null);
       const response = await api("/api/admin/users");
 
-      if (typeof response === "object" && response !== null && "success" in response) {
-        if ((response as any).success) {
-          setUsers((response as any).users || []);
-        } else {
-          setError("Failed to fetch users");
-        }
+      if (response.success) {
+        setUsers(response.users || []);
       } else {
         setError("Failed to fetch users");
       }
@@ -119,7 +104,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
+  const handleStatusToggle = async (userId, currentStatus) => {
     try {
       const response = await api(`/api/admin/users/${userId}/status`, {
         method: "PUT",
@@ -138,7 +123,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (userId) => {
     if (!confirm("Are you sure you want to delete this user?")) {
       return;
     }
@@ -165,7 +150,7 @@ export default function AdminUsers() {
     return matchesSearch && matchesFilter;
   });
 
-  const UserCard = ({ user }: { user: AdminUser }) => (
+  const UserCard = ({ user }) => (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

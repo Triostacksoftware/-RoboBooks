@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
-import puppeteer from "puppeteer";
 import dotenv from "dotenv";
+import { generateSimplePDF } from "./simplePdfService.js";
 
 dotenv.config();
 
@@ -13,30 +13,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Generate PDF from HTML
-const generatePDF = async (htmlContent) => {
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
-  const page = await browser.newPage();
-  await page.setContent(htmlContent, { waitUntil: "networkidle0" });
-
-  const pdf = await page.pdf({
-    format: "A4",
-    margin: {
-      top: "0.5in",
-      right: "0.5in",
-      bottom: "0.5in",
-      left: "0.5in",
-    },
-    printBackground: true,
-  });
-
-  await browser.close();
-  return pdf;
-};
+// PDF generation is now handled by pdfService.js
 
 // Generate invoice HTML
 const generateInvoiceHTML = (invoice) => {
@@ -463,8 +440,8 @@ export const sendInvoiceEmail = async (invoice, recipientEmail) => {
     // Generate HTML content
     const htmlContent = generateInvoiceHTML(invoice);
 
-    // Generate PDF
-    const pdfBuffer = await generatePDF(htmlContent);
+    // Generate PDF using simple method (no browser needed!)
+    const pdfBuffer = await generateSimplePDF(htmlContent);
 
     // Email options
     const mailOptions = {

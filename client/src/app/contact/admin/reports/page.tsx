@@ -8,10 +8,6 @@ import {
   CalendarIcon,
   ArrowDownTrayIcon,
   EyeIcon,
-  PlusIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 interface Report {
@@ -26,9 +22,6 @@ interface Report {
 export default function AdminReports() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState("");
-  const [dateRange, setDateRange] = useState("last_30_days");
 
   useEffect(() => {
     fetchReports();
@@ -36,15 +29,7 @@ export default function AdminReports() {
 
   const fetchReports = async () => {
     try {
-      const response = await api<{ success: boolean; reports: Report[] }>(
-        "/api/admin/reports"
-      );
-      if (response.success) {
-        setReports(response.reports || []);
-      }
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-      // Fallback to mock data
+      // Mock data for now - replace with actual API call
       const mockReports = [
         {
           id: 1,
@@ -72,6 +57,8 @@ export default function AdminReports() {
         },
       ];
       setReports(mockReports);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
     } finally {
       setLoading(false);
     }
@@ -112,84 +99,10 @@ export default function AdminReports() {
           <EyeIcon className="h-4 w-4" />
           <span>View</span>
         </button>
-        {report.status === "completed" && (
-          <button className="flex items-center space-x-1 px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded-lg">
-            <ArrowDownTrayIcon className="h-4 w-4" />
-            <span>Download</span>
-          </button>
-        )}
-        {report.status === "failed" && (
-          <button className="flex items-center space-x-1 px-3 py-1 text-sm text-orange-600 hover:bg-orange-50 rounded-lg">
-            <ExclamationTriangleIcon className="h-4 w-4" />
-            <span>Retry</span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
-  const GenerateReportModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate New Report</h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Report Type
-            </label>
-            <select
-              value={selectedReportType}
-              onChange={(e) => setSelectedReportType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="">Select report type</option>
-              <option value="Analytics">Analytics Report</option>
-              <option value="Financial">Financial Report</option>
-              <option value="Technical">Technical Report</option>
-              <option value="Security">Security Report</option>
-              <option value="Custom">Custom Report</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date Range
-            </label>
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="last_7_days">Last 7 days</option>
-              <option value="last_30_days">Last 30 days</option>
-              <option value="last_90_days">Last 90 days</option>
-              <option value="last_year">Last year</option>
-              <option value="custom">Custom range</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="flex space-x-3 mt-6">
-          <button
-            onClick={() => setShowGenerateModal(false)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              // You should define the logic for generating the report here.
-              // For now, just close the modal as a placeholder.
-              // Replace this with your actual report generation logic.
-              setShowGenerateModal(false);
-            }}
-            disabled={!selectedReportType}
-            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Generate Report
-          </button>
-        </div>
+        <button className="flex items-center space-x-1 px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded-lg">
+          <ArrowDownTrayIcon className="h-4 w-4" />
+          <span>Download</span>
+        </button>
       </div>
     </div>
   );
@@ -205,10 +118,6 @@ export default function AdminReports() {
     );
   }
 
-  const completedReports = reports.filter(r => r.status === 'completed').length;
-  const processingReports = reports.filter(r => r.status === 'processing').length;
-  const failedReports = reports.filter(r => r.status === 'failed').length;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -219,17 +128,13 @@ export default function AdminReports() {
             Generate and manage system reports
           </p>
         </div>
-        <button 
-          onClick={() => setShowGenerateModal(true)}
-          className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
-        >
-          <PlusIcon className="h-5 w-5" />
-          <span>Generate New Report</span>
+        <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+          Generate New Report
         </button>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-3 bg-blue-500 rounded-lg">
@@ -246,7 +151,7 @@ export default function AdminReports() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-3 bg-green-500 rounded-lg">
-              <CheckCircleIcon className="h-6 w-6 text-white" />
+              <ChartBarIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Completed</p>
@@ -259,7 +164,7 @@ export default function AdminReports() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-3 bg-yellow-500 rounded-lg">
-              <ClockIcon className="h-6 w-6 text-white" />
+              <CalendarIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Processing</p>
@@ -322,8 +227,6 @@ export default function AdminReports() {
           ))}
         </div>
       </div>
-
-      {showGenerateModal && <GenerateReportModal />}
     </div>
   );
 }

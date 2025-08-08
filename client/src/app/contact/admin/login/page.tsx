@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/lib/api";
@@ -26,7 +26,7 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const response = await api<{ success: boolean }>("/api/admin/login", {
+      const response = await api("/api/admin/login", {
         method: "POST",
         json: { email, password },
       });

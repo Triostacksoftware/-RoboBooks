@@ -67,23 +67,24 @@ export default function SearchBox({ onAdvancedRequest }: SearchBoxProps) {
   };
 
   return (
-    <div ref={containerRef} className="w-3/5 px-4 relative">
+    <div ref={containerRef} className="w-full relative">
       <div
         className={`
           flex items-center bg-[#2D2F3A] rounded-2xl
-          h-6 px-2
-          md:h-8 md:px-3
-          lg:h-8 lg:px-4
+          h-8 px-3
+          md:h-9 md:px-4
+          lg:h-10 lg:px-4
+          w-full
         `}
       >
-        <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+        <MagnifyingGlassIcon className="w-4 h-4 md:w-5 md:h-5 text-gray-400 flex-shrink-0" />
 
         {/* Section dropdown */}
         <button
           onClick={() => setIsOpen((o) => !o)}
-          className="flex items-center text-white text-sm md:text-base ml-2 focus:outline-none"
+          className="flex items-center text-white text-sm md:text-base ml-2 focus:outline-none hover:text-gray-200 transition-colors"
         >
-          <span>{selected}</span>
+          <span className="truncate">{selected}</span>
            {isOpen ? (
            <ChevronUpIcon className="w-4 h-4 text-gray-400 ml-1 transition-transform" />
          ) : (
@@ -92,16 +93,17 @@ export default function SearchBox({ onAdvancedRequest }: SearchBoxProps) {
         </button>
 
         {/* Gray separator line */}
-        <div className="w-px h-4 md:h-5 bg-gray-300 mx-2 md:mx-3" />
+        <div className="w-px h-4 md:h-5 bg-gray-300 mx-2 md:mx-3 flex-shrink-0" />
 
         {/* Search input */}
         <input
           type="text"
           placeholder={`Search in ${selected} ( / )`}
           className="
-           flex-grow bg-transparent placeholder-gray-500 text-white
-           text-sm md:text-base lg:text-lg ml-4 rounded-lg
+           flex-1 bg-transparent placeholder-gray-500 text-white
+           text-sm md:text-base lg:text-lg
            focus:outline-none focus:ring-0 focus:shadow-none focus:border-gray-400
+           min-w-0
          "
         />
       </div>

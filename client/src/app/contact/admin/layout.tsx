@@ -30,45 +30,24 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [admin, setAdmin] = useState<Admin | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/admin/login") {
-      setIsAuthenticated(false);
-      setAdmin(null);
-      setLoading(false);
-      return;
-    }
     checkAuth();
-  }, [pathname]); // Re-check auth when pathname changes
+  }, []);
 
   const checkAuth = async () => {
     try {
-      setLoading(true);
-      const response = await api<{ success: boolean; admin?: Admin }>(
-        "/api/admin/profile"
-      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = (await api("/api/admin/profile")) as any;
       if (response.success) {
-        setAdmin(response.admin || null);
-        setIsAuthenticated(true);
+        setAdmin(response.admin);
       } else {
-        setIsAuthenticated(false);
-        setAdmin(null);
-        // Only redirect if not already on login page
-        if (pathname !== "/admin/login") {
-          router.push("/admin/login");
-        }
-      }
-    } catch (error) {
-      setIsAuthenticated(false);
-      setAdmin(null);
-      // Only redirect if not already on login page
-      if (pathname !== "/admin/login") {
         router.push("/admin/login");
       }
+    } catch (error) {
+      router.push("/admin/login");
     } finally {
       setLoading(false);
     }
@@ -76,9 +55,7 @@ export default function AdminLayout({
 
   const handleLogout = async () => {
     try {
-      await api<unknown>("/api/admin/logout", { method: "POST" });
-      setIsAuthenticated(false);
-      setAdmin(null);
+      await api("/api/admin/logout", { method: "POST" });
       router.push("/admin/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -124,11 +101,6 @@ export default function AdminLayout({
     );
   };
 
-  // If on login page, just render children without sidebar or loading gate
-  if (pathname === "/admin/login") {
-    return <>{children}</>;
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -140,26 +112,33 @@ export default function AdminLayout({
     );
   }
 
-  // If not authenticated, redirect to login
-  if (!isAuthenticated) {
-    router.push("/admin/login");
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If authenticated, show full layout with sidebar
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Fixed Sidebar - Only visible when authenticated */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col z-50">
-        <div className="flex h-16 items-center px-4 border-b">
-          <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile sidebar */}
+      <div
+        className={`fixed inset-0 z-50 lg:hidden ${
+          sidebarOpen ? "block" : "hidden"
+        }`}
+      >
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-75"
+          onClick={() => setSidebarOpen(false)}
+        />
+        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
+          <div className="flex h-16 items-center justify-between px-4 border-b">
+            <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+          <nav className="flex-1 space-y-1 px-2 py-4">
+            {navigation.map((item) => (
+              <NavItem key={item.name} item={item} />
+            ))}
+          </nav>
         </div>
         <nav className="flex-1 space-y-1 px-2 py-4">
           {navigation.map((item) => (
@@ -197,6 +176,30 @@ export default function AdminLayout({
               <button className="-m-2.5 p-2.5 text-gray-400 hover:text-gray-500">
                 <BellIcon className="h-6 w-6" />
               </button>
+
+              {/* Profile dropdown */}
+              <div className="relative">
+                <div className="flex items-center gap-x-3">
+                  <div className="flex items-center gap-x-3">
+                    <UserCircleIcon className="h-8 w-8 text-gray-400" />
+                    <div className="hidden lg:block">
+                      <p className="text-sm font-medium text-gray-900">
+                        {admin?.fullName || "Admin"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {admin?.role || "Admin"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-x-2 text-sm text-gray-700 hover:text-gray-900"
+                  >
+                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                    <span className="hidden lg:block">Logout</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

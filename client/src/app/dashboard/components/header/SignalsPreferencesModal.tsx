@@ -5,10 +5,13 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { createPortal } from 'react-dom';
 
 export default function SignalsPreferencesModal({
+  open,
   onClose,
 }: {
+  open: boolean;
   onClose: () => void;
 }) {
+  if (!open) return null;
   return createPortal(
     <>
       <div
