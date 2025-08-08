@@ -176,6 +176,7 @@ export default function NewCustomerForm() {
         process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
         {
           method: "POST",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },

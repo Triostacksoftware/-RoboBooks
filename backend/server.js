@@ -25,10 +25,17 @@ import itemRoutes from "./routes/itemRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import bankTransactionRoutes from "./routes/bankTransactionRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import manualJournalRoutes from "./routes/manualJournalRoutes.js";
+import budgetRoutes from "./routes/budgetRoutes.js";
+import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
 
 const app = express();
 
 dotenv.config();
+
+console.log("🚀 Starting server...");
 
 // Connect to database
 connectDB();
@@ -74,13 +81,21 @@ app.use("/api/timesheets", timesheetRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/documents", documentRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/manual-journals", manualJournalRoutes);
+app.use("/api/budgets", budgetRoutes);
+app.use("/api/bulk-updates", bulkUpdateRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {
   res.send("Welcome to the RoboBooks API");
 });
 
-app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/api/health", (_req, res) => {
+  console.log("Health check requested");
+  res.json({ status: "ok" });
+});
 
 // Error handler
 app.use((err, _req, res, _next) => {
@@ -90,6 +105,16 @@ app.use((err, _req, res, _next) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Backend API running on http://localhost:${PORT}`)
-);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Backend API running on http://localhost:${PORT}`);
+  console.log(`✅ Server is listening on port ${PORT}`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+});
+
+server.on('listening', () => {
+  console.log('✅ Server is ready to accept connections');
+});

@@ -38,3 +38,6 @@ export const authorize = (...allowedRoles) => {
     next();
   };
 };
+
+// Default export for backward compatibility
+export default authenticateToken;

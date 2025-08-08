@@ -125,7 +125,13 @@ const NewInvoiceForm = () => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers"
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
+          {
+            credentials: 'include',
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (response.ok) {
           const responseData = await response.json();
@@ -212,7 +218,13 @@ const NewInvoiceForm = () => {
     const fetchNextInvoiceNumber = async () => {
       try {
         const response = await fetch(
-          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number"
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number",
+          {
+            credentials: 'include',
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (response.ok) {
           const result = await response.json();
@@ -405,6 +417,7 @@ const NewInvoiceForm = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
         {
           method: "POST",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },

@@ -1,0 +1,641 @@
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import Report from "./models/Report.js";
+
+dotenv.config();
+
+const systemReports = [
+  // Business Overview Reports
+  {
+    name: "Profit and Loss",
+    description: "System Generated",
+    type: "system",
+    category: "business_overview",
+    subCategory: "Profit and Loss",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Cash Flow Statement",
+    description: "System Generated",
+    type: "system",
+    category: "business_overview",
+    subCategory: "Cash Flow Statement",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Balance Sheet",
+    description: "System Generated",
+    type: "system",
+    category: "business_overview",
+    subCategory: "Balance Sheet",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Movement of Equity",
+    description: "System Generated",
+    type: "system",
+    category: "business_overview",
+    subCategory: "Movement of Equity",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Sales Reports
+  {
+    name: "Sales by Customer",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Sales by Customer",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Sales by Item",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Sales by Item",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Sales by Sales Person",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Sales by Sales Person",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Sales Summary",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Sales Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "AR Aging Summary",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "AR Aging Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Sales Order Details",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Sales Order Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Delivery Challan Details",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Delivery Challan Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Quote Details",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Quote Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Customer Balance Summary",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Customer Balance Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Receivable Summary",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Receivable Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Receivable Details",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Receivable Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Payments Received",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Payments Received",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Time to Get Paid",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Time to Get Paid",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Credit Note Details",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Credit Note Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Refund History",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Refund History",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Recurring Invoices",
+    description: "System Generated",
+    type: "system",
+    category: "sales",
+    subCategory: "Recurring Invoices",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Purchases and Expenses Reports
+  {
+    name: "Vendor Balance Summary",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Vendor Balance Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "AP Aging Details",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "AP Aging Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Bills Details",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Bills Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Vendor Credits Details",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Vendor Credits Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Payments Made",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Payments Made",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Purchase Order Details",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Purchase Order Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Purchase Orders by Vendor",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Purchase Orders by Vendor",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Payable Summary",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Payable Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Purchases by Vendor",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Purchases by Vendor",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Purchases by Item",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Purchases by Item",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Expenses by Category",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Expenses by Category",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Expenses by Customer",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Expenses by Customer",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Expenses by Project",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Expenses by Project",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Expenses by Employee",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Expenses by Employee",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Billable Expenses Details",
+    description: "System Generated",
+    type: "system",
+    category: "purchases_expenses",
+    subCategory: "Billable Expenses Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Banking Reports
+  {
+    name: "Bank Reconciliation",
+    description: "System Generated",
+    type: "system",
+    category: "banking",
+    subCategory: "Bank Reconciliation",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Bank Statement",
+    description: "System Generated",
+    type: "system",
+    category: "banking",
+    subCategory: "Bank Statement",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Cash Flow",
+    description: "System Generated",
+    type: "system",
+    category: "banking",
+    subCategory: "Cash Flow",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Accounting Reports
+  {
+    name: "General Ledger",
+    description: "System Generated",
+    type: "system",
+    category: "accounting",
+    subCategory: "General Ledger",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Trial Balance",
+    description: "System Generated",
+    type: "system",
+    category: "accounting",
+    subCategory: "Trial Balance",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Journal Entries",
+    description: "System Generated",
+    type: "system",
+    category: "accounting",
+    subCategory: "Journal Entries",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Chart of Accounts",
+    description: "System Generated",
+    type: "system",
+    category: "accounting",
+    subCategory: "Chart of Accounts",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Time Tracking Reports
+  {
+    name: "Time by Project",
+    description: "System Generated",
+    type: "system",
+    category: "time_tracking",
+    subCategory: "Time by Project",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Time by Employee",
+    description: "System Generated",
+    type: "system",
+    category: "time_tracking",
+    subCategory: "Time by Employee",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Time Summary",
+    description: "System Generated",
+    type: "system",
+    category: "time_tracking",
+    subCategory: "Time Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Inventory Reports
+  {
+    name: "Stock Summary",
+    description: "System Generated",
+    type: "system",
+    category: "inventory",
+    subCategory: "Stock Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Stock Movement",
+    description: "System Generated",
+    type: "system",
+    category: "inventory",
+    subCategory: "Stock Movement",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Low Stock Items",
+    description: "System Generated",
+    type: "system",
+    category: "inventory",
+    subCategory: "Low Stock Items",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Inventory Valuation",
+    description: "System Generated",
+    type: "system",
+    category: "inventory",
+    subCategory: "Inventory Valuation",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Budgets Reports
+  {
+    name: "Budget vs Actual",
+    description: "System Generated",
+    type: "system",
+    category: "budgets",
+    subCategory: "Budget vs Actual",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Budget Summary",
+    description: "System Generated",
+    type: "system",
+    category: "budgets",
+    subCategory: "Budget Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Currency Reports
+  {
+    name: "Exchange Rate History",
+    description: "System Generated",
+    type: "system",
+    category: "currency",
+    subCategory: "Exchange Rate History",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Currency Gain/Loss",
+    description: "System Generated",
+    type: "system",
+    category: "currency",
+    subCategory: "Currency Gain/Loss",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Activity Reports
+  {
+    name: "User Activity",
+    description: "System Generated",
+    type: "system",
+    category: "activity",
+    subCategory: "User Activity",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "System Logs",
+    description: "System Generated",
+    type: "system",
+    category: "activity",
+    subCategory: "System Logs",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // Advanced Financial Reports
+  {
+    name: "Financial Ratios",
+    description: "System Generated",
+    type: "system",
+    category: "advanced_financial",
+    subCategory: "Financial Ratios",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Trend Analysis",
+    description: "System Generated",
+    type: "system",
+    category: "advanced_financial",
+    subCategory: "Trend Analysis",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "Comparative Analysis",
+    description: "System Generated",
+    type: "system",
+    category: "advanced_financial",
+    subCategory: "Comparative Analysis",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // TDS Reports
+  {
+    name: "TDS Summary",
+    description: "System Generated",
+    type: "system",
+    category: "tds_reports",
+    subCategory: "TDS Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "TDS Details",
+    description: "System Generated",
+    type: "system",
+    category: "tds_reports",
+    subCategory: "TDS Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+
+  // GST Reports
+  {
+    name: "GST Summary",
+    description: "System Generated",
+    type: "system",
+    category: "gst_reports",
+    subCategory: "GST Summary",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "GST Details",
+    description: "System Generated",
+    type: "system",
+    category: "gst_reports",
+    subCategory: "GST Details",
+    isFavorite: false,
+    isPublic: false,
+  },
+  {
+    name: "GST Reconciliation",
+    description: "System Generated",
+    type: "system",
+    category: "gst_reports",
+    subCategory: "GST Reconciliation",
+    isFavorite: false,
+    isPublic: false,
+  },
+];
+
+async function seedReports() {
+  try {
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("Connected to MongoDB");
+
+    // Clear existing reports
+    await Report.deleteMany({});
+    console.log("Cleared existing reports");
+
+    // Insert system reports for all users (createdBy will be set when user creates their own)
+    const reportsToInsert = systemReports.map(report => ({
+      ...report,
+      createdBy: "system", // This will be replaced when users create their own reports
+      parameters: {},
+      filters: {
+        dateRange: {
+          start: null,
+          end: null,
+        },
+        customers: [],
+        items: [],
+        categories: [],
+        status: [],
+      },
+    }));
+
+    await Report.insertMany(reportsToInsert);
+    console.log(`Successfully seeded ${reportsToInsert.length} system reports`);
+
+    console.log("Report seeding completed successfully!");
+  } catch (error) {
+    console.error("Error seeding reports:", error);
+  } finally {
+    await mongoose.disconnect();
+    console.log("Disconnected from MongoDB");
+  }
+}
+
+seedReports();

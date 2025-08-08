@@ -103,7 +103,13 @@ const InvoiceDetailPage = () => {
     const fetchInvoice = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`,
+          {
+            credentials: 'include',
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
 
         if (response.ok) {
@@ -314,6 +320,7 @@ const InvoiceDetailPage = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}/status`,
         {
           method: "PATCH",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },
@@ -365,6 +372,7 @@ const InvoiceDetailPage = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}/send-email`,
         {
           method: "POST",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },
@@ -380,7 +388,13 @@ const InvoiceDetailPage = () => {
         showToastMessage("Invoice sent successfully!", "success");
         // Refresh invoice data to update status
         const refreshResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`,
+          {
+            credentials: 'include',
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (refreshResponse.ok) {
           const refreshResult = await refreshResponse.json();

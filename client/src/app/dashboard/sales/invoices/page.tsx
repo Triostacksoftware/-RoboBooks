@@ -67,7 +67,13 @@ const AllInvoicesPage = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
+        {
+          credentials: 'include',
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       if (response.ok) {
@@ -162,6 +168,7 @@ const AllInvoicesPage = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${invoiceId}/status`,
         {
           method: "PATCH",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },
@@ -203,6 +210,10 @@ const AllInvoicesPage = () => {
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${invoiceId}`,
           {
             method: "DELETE",
+            credentials: 'include',
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
         );
 

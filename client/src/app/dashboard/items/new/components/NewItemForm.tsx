@@ -185,6 +185,7 @@ export default function NewItemForm() {
         process.env.NEXT_PUBLIC_BACKEND_URL + "/api/items",
         {
           method: "POST",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },
