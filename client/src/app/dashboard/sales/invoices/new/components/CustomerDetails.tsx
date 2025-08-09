@@ -43,6 +43,8 @@ interface CustomerDetailsProps {
   onCustomerSelect: (customer: Customer) => void;
   onSearchChange: (value: string) => void;
   onDropdownToggle: (show: boolean) => void;
+  onPlaceOfSupplyChange?: (state: string) => void;
+  companyState?: string;
   formData: {
     billingAddress?: {
       street?: string;
@@ -58,6 +60,7 @@ interface CustomerDetailsProps {
       country?: string;
       zipCode?: string;
     };
+    placeOfSupplyState?: string;
   };
   onFormDataChange: (data: {
     billingAddress?: {
@@ -86,6 +89,8 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
   onCustomerSelect,
   onSearchChange,
   onDropdownToggle,
+  onPlaceOfSupplyChange,
+  companyState,
   formData,
   onFormDataChange,
 }) => {
@@ -351,6 +356,25 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 Use Billing
               </button>
             </div>
+          </div>
+
+          {/* Origin of Supply */}
+          <div className="mt-3 pt-2 border-t border-gray-200">
+            <label className="block text-xs font-medium text-gray-700 mb-1">
+              Origin of Supply
+            </label>
+            <input
+              type="text"
+              className="w-full px-2 py-1.5 border border-gray-300 rounded-md bg-blue-50 text-blue-800 font-medium text-sm cursor-not-allowed"
+              value={companyState || "Karnataka"}
+              readOnly
+              disabled
+              title="Origin of Supply is the company's office location (unchangeable)"
+              placeholder="Office Location"
+            />
+            <p className="text-xs text-blue-600 mt-1 font-medium">
+              📍 Company&#39;s office location - Origin of all goods dispatch
+            </p>
           </div>
         </div>
       </div>

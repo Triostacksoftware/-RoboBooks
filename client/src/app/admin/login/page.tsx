@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/lib/api";
@@ -14,16 +14,38 @@ import {
 export default function AdminLogin() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("admin@robobooks.com");
+  const [email, setEmail] = useState("mockadmin@robobooks.com");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // If already logged in (cookie present), skip login screen
+    (async () => {
+      try {
+        const res = await api<{ success: boolean }>("/api/admin/profile");
+        if (
+          res &&
+          typeof res === "object" &&
+          "success" in res &&
+          (res as any).success
+        ) {
+          // Use window.location to force a full page redirect
+          window.location.href = "/admin/dashboard";
+        }
+      } catch {
+        // ignore, stay on login
+      }
+    })();
+  }, [router]);
+
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     setErr("");
     setLoading(true);
+
+    console.log("response", email, password);
 
     try {
       const response = await api<{ success: boolean }>("/api/admin/login", {
@@ -31,14 +53,15 @@ export default function AdminLogin() {
         json: { email, password },
       });
 
-      // Fix: response is of type 'unknown', so we need to safely check its shape
       if (
         response &&
         typeof response === "object" &&
         "success" in response &&
         (response as any).success
       ) {
-        router.push("/admin/dashboard");
+        // Use window.location to force a full page redirect and break the loop
+        window.location.href = "/admin/dashboard";
+        return;
       } else {
         setErr("Login failed. Please try again.");
       }
@@ -125,7 +148,7 @@ export default function AdminLogin() {
             Demo Credentials:
           </h3>
           <div className="space-y-1 text-xs text-slate-600">
-            <p>Email: admin@robobooks.com</p>
+            <p>Email: mockadmin@robobooks.com</p>
             <p>Password: admin123</p>
           </div>
         </div>

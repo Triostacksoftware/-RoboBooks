@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* SweetAlert2 z-index override */
+.swal-z-index {
+  z-index: 10001 !important;
+}
+
+/* Ensure SweetAlert2 appears above all modals */
+.swal2-container {
+  z-index: 10001 !important;
+}
+
+.swal2-backdrop-show {
+  z-index: 10001 !important;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

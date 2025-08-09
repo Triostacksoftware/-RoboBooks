@@ -1,9 +1,5 @@
 import React from "react";
-import {
-  PlusIcon,
-  XMarkIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 type TaxMode = "GST" | "IGST" | "NON_TAXABLE" | "NO_GST" | "EXPORT";
 
@@ -31,15 +27,6 @@ interface ItemsTableProps {
   onRemoveItem: (id: number) => void;
   onUpdateItem: (id: number, field: string, value: string | number) => void;
   isIntraState: () => boolean;
-  companySettings: {
-    companyName: string;
-    address: string;
-    phone: string;
-    email: string;
-    gstin: string;
-    state: string;
-    website: string;
-  };
 }
 
 const ItemsTable: React.FC<ItemsTableProps> = ({
@@ -48,7 +35,6 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
   onRemoveItem,
   onUpdateItem,
   isIntraState,
-  companySettings,
 }) => {
   // Function to get the appropriate tax mode based on intra/inter-state
   const getAppropriateTaxMode = (currentMode: TaxMode): TaxMode => {
@@ -56,70 +42,6 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
       return isIntraState() ? "GST" : "IGST";
     }
     return currentMode;
-  };
-
-  // Function to get tax mode display text
-  const getTaxModeDisplayText = (mode: TaxMode): string => {
-    switch (mode) {
-      case "GST":
-        return "GST";
-      case "IGST":
-        return "IGST";
-      case "NON_TAXABLE":
-        return "Non-Tax";
-      case "NO_GST":
-        return "No GST";
-      case "EXPORT":
-        return "Export";
-      default:
-        return "GST";
-    }
-  };
-
-  const getTaxDisplay = (item: InvoiceItem) => {
-    const effectiveTaxMode = getAppropriateTaxMode(item.taxMode);
-
-    if (effectiveTaxMode === "GST") {
-      return (
-        <div className="text-xs text-gray-600">
-          <div>CGST: ₹{item.cgst?.toFixed(2)}</div>
-          <div>SGST: ₹{item.sgst?.toFixed(2)}</div>
-        </div>
-      );
-    } else if (effectiveTaxMode === "IGST") {
-      return (
-        <div className="text-xs text-gray-600">
-          IGST: ₹{item.igst?.toFixed(2)}
-        </div>
-      );
-    } else if (effectiveTaxMode === "EXPORT") {
-      return (
-        <div className="text-xs text-green-600">
-          <div>Export (0% GST)</div>
-          {item.taxRemark && (
-            <div className="text-gray-500 italic">{item.taxRemark}</div>
-          )}
-        </div>
-      );
-    } else if (effectiveTaxMode === "NON_TAXABLE") {
-      return (
-        <div className="text-xs text-amber-600">
-          <div>No Tax</div>
-          {item.taxRemark && (
-            <div className="text-gray-500 italic">{item.taxRemark}</div>
-          )}
-        </div>
-      );
-    } else {
-      return (
-        <div className="text-xs text-amber-600">
-          <div>No GST</div>
-          {item.taxRemark && (
-            <div className="text-gray-500 italic">{item.taxRemark}</div>
-          )}
-        </div>
-      );
-    }
   };
 
   return (
@@ -233,7 +155,7 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                 <td className="px-2 py-1">
                   <div className="flex space-x-1">
                     <select
-                      className="w-12 px-1 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent appearance-none"
+                      className="w-20 px-1 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent appearance-none"
                       value={getAppropriateTaxMode(item.taxMode)}
                       onChange={(e) => {
                         const newMode = e.target.value as TaxMode;
@@ -256,13 +178,8 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                     </select>
                     {(getAppropriateTaxMode(item.taxMode) === "GST" ||
                       getAppropriateTaxMode(item.taxMode) === "IGST") && (
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="18"
-                        className="w-10 px-1 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                      <select
+                        className="w-16 px-1 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                         value={item.taxRate}
                         onChange={(e) =>
                           onUpdateItem(
@@ -271,9 +188,15 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                             parseFloat(e.target.value) || 0
                           )
                         }
-                      />
+                      >
+                        <option value="0">0%</option>
+                        <option value="5">5%</option>
+                        <option value="18">18%</option>
+                        <option value="28">28%</option>
+                      </select>
                     )}
                   </div>
+
                   {/* Tax Remarks */}
                   {(getAppropriateTaxMode(item.taxMode) === "NON_TAXABLE" ||
                     getAppropriateTaxMode(item.taxMode) === "NO_GST" ||

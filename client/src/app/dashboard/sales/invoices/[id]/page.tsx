@@ -60,17 +60,24 @@ interface Invoice {
   sellerPhone?: string;
   sellerGstin?: string;
   sellerAddress?: string;
+  // Place of supply
+  placeOfSupplyState?: string;
   items: InvoiceItem[];
   subTotal: number;
   discount: number;
   discountType: "percentage" | "amount";
   discountAmount: number;
-  taxType: string;
-  taxRate: number;
+  // GST Details
   taxAmount: number;
-  shippingCharges: number;
+  cgstTotal: number;
+  sgstTotal: number;
+  igstTotal: number;
+  // TDS/TCS Details
+  additionalTaxType?: "TDS" | "TCS" | null;
+  additionalTaxId?: string;
+  additionalTaxRate: number;
+  additionalTaxAmount: number;
   adjustment: number;
-  roundOff: number;
   total: number;
   paymentTerms?: string;
   paymentMethod?: string;
@@ -105,7 +112,7 @@ const InvoiceDetailPage = () => {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`,
           {
-            credentials: 'include',
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -208,6 +215,63 @@ const InvoiceDetailPage = () => {
       style: "currency",
       currency: "INR",
     }).format(amount);
+  };
+
+  // Helper function to extract state code from address
+  const getStateFromAddress = (address: string | undefined) => {
+    if (!address) return "09"; // Default to UP
+
+    const addr = address.toLowerCase();
+
+    if (addr.includes("uttar pradesh") || addr.includes("up")) return "09";
+    if (addr.includes("west bengal") || addr.includes("wb")) return "19";
+    if (addr.includes("maharashtra") || addr.includes("mh")) return "27";
+    if (addr.includes("tamil nadu") || addr.includes("tn")) return "33";
+    if (addr.includes("gujarat") || addr.includes("gj")) return "24";
+    if (addr.includes("rajasthan") || addr.includes("rj")) return "08";
+    if (addr.includes("punjab") || addr.includes("pb")) return "03";
+    if (addr.includes("haryana") || addr.includes("hr")) return "06";
+    if (addr.includes("delhi") || addr.includes("dl")) return "07";
+    if (addr.includes("karnataka") || addr.includes("ka")) return "29";
+    if (addr.includes("andhra pradesh") || addr.includes("ap")) return "37";
+    if (addr.includes("telangana") || addr.includes("ts")) return "36";
+    if (addr.includes("kerala") || addr.includes("kl")) return "32";
+    if (addr.includes("odisha") || addr.includes("or")) return "21";
+    if (addr.includes("bihar") || addr.includes("br")) return "10";
+    if (addr.includes("jharkhand") || addr.includes("jh")) return "20";
+    if (addr.includes("assam") || addr.includes("as")) return "18";
+
+    console.log("State not detected for address:", address);
+    return "09"; // Default fallback
+  };
+
+  // Check if transaction is inter-state (based on place of supply)
+  const isInterState = () => {
+    if (!invoice) return false;
+
+    const sellerStateCode = "29"; // Karnataka (seller)
+
+    // First check if we have proper place of supply data in the invoice
+    let placeOfSupplyState = "";
+
+    // Check if invoice has explicit place of supply state
+    if (invoice.placeOfSupplyState) {
+      placeOfSupplyState = getStateFromAddress(invoice.placeOfSupplyState);
+    } else {
+      // Fallback to shipping/delivery address
+      const deliveryAddress = invoice.buyerAddress || invoice.customerAddress;
+      placeOfSupplyState = getStateFromAddress(deliveryAddress);
+    }
+
+    console.log("GST Calculation Debug:", {
+      sellerState: "Karnataka (29)",
+      placeOfSupplyState: placeOfSupplyState,
+      deliveryAddress: invoice.buyerAddress || invoice.customerAddress,
+      hasPlaceOfSupply: !!invoice.placeOfSupplyState,
+      isInterState: sellerStateCode !== placeOfSupplyState,
+    });
+
+    return sellerStateCode !== placeOfSupplyState;
   };
 
   const numberToWords = (num: number) => {
@@ -320,7 +384,7 @@ const InvoiceDetailPage = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}/status`,
         {
           method: "PATCH",
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -372,7 +436,7 @@ const InvoiceDetailPage = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}/send-email`,
         {
           method: "POST",
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -390,7 +454,7 @@ const InvoiceDetailPage = () => {
         const refreshResponse = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`,
           {
-            credentials: 'include',
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -565,157 +629,217 @@ const InvoiceDetailPage = () => {
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
           {/* Tax Invoice Card */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            {/* Company Header */}
-            <div className="text-center py-6 border-b border-gray-200">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white">
+            {/* Company Letterhead */}
+            <div className="text-center py-6 mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">
                 {invoice.sellerName || "ROBOBOOKS SOLUTIONS"}
               </h1>
-              <p className="text-sm text-gray-600">
-                {invoice.sellerAddress ||
-                  "123 Business Street, Tech Park, Bangalore"}
-              </p>
-              <p className="text-sm text-gray-600">
-                Phone no.: {invoice.sellerPhone || "+91 98765 43210"}
-              </p>
-              <p className="text-sm text-gray-600">
-                GSTIN: {invoice.sellerGstin || "29ABCDE1234F1Z5"}
-              </p>
-              <p className="text-sm text-gray-600">State: 29-Karnataka</p>
-            </div>
-
-            {/* Tax Invoice Title */}
-            <div className="text-center py-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Tax Invoice</h2>
-            </div>
-
-            {/* Bill To and Invoice Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border-b border-gray-200">
-              {/* Bill To */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Bill To:</h3>
-                <p className="font-medium text-gray-900">
-                  {invoice.buyerName || invoice.customerName}
+              <div className="text-sm text-gray-800 space-y-1">
+                <p>
+                  {invoice.sellerAddress ||
+                    "123 Business Street, Tech Park, Bangalore - 560001"}
                 </p>
-                {(invoice.buyerAddress || invoice.customerAddress) && (
-                  <p className="text-sm text-gray-600">
-                    {invoice.buyerAddress || invoice.customerAddress}
-                  </p>
-                )}
-                {(invoice.buyerPhone || invoice.customerPhone) && (
-                  <p className="text-sm text-gray-600">
-                    Contact No.: {invoice.buyerPhone || invoice.customerPhone}
-                  </p>
-                )}
-                {(invoice.buyerEmail || invoice.customerEmail) && (
-                  <p className="text-sm text-gray-600">
-                    Email: {invoice.buyerEmail || invoice.customerEmail}
-                  </p>
-                )}
-                {invoice.buyerGstin && (
-                  <p className="text-sm text-gray-600">
-                    GSTIN Number: {invoice.buyerGstin}
-                  </p>
-                )}
-                <p className="text-sm text-gray-600">State: 09-Uttar Pradesh</p>
+                <p>
+                  {invoice.sellerPhone || "+91 98765 43210"} |{" "}
+                  {invoice.sellerEmail || "info@robobooks.com"}
+                </p>
+                <p>
+                  GSTIN: {invoice.sellerGstin || "29ABCDE1234F1Z5"} | Origin of
+                  Supply: 29-Karnataka
+                </p>
+
+                {/* Invoice Details as bullet points */}
+                <div className="flex justify-center items-center mt-3 text-xs text-gray-700">
+                  <span>• Invoice No: {invoice.invoiceNumber}</span>
+                  <span className="mx-2">
+                    • Date: {formatDate(invoice.invoiceDate)}
+                  </span>
+                  <span className="mx-2">
+                    • Due Date: {formatDate(invoice.dueDate)}
+                  </span>
+                  {invoice.orderNumber && (
+                    <span className="mx-2">
+                      • Order No: {invoice.orderNumber}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* Invoice Details */}
+              {/* Professional Horizontal Line */}
+              <div className="mt-6 border-t-2 border-gray-900 mx-16"></div>
+            </div>
+
+            {/* Billing and Shipping Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 mx-12">
+              {/* Billing Address */}
               <div>
-                <h3 className="font-bold text-gray-900 mb-2">
-                  Invoice Details:
+                <h3 className="font-bold text-gray-900 mb-3 underline">
+                  Billing Address:
                 </h3>
-                <p className="text-sm text-gray-600">
-                  Invoice No.: {invoice.invoiceNumber}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Date: {formatDate(invoice.invoiceDate)}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Place of Supply: 29-Karnataka
-                </p>
-                {invoice.orderNumber && (
-                  <p className="text-sm text-gray-600">
-                    Order No.: {invoice.orderNumber}
+                <div className="space-y-1">
+                  <p className="font-semibold text-gray-900">
+                    {invoice.buyerName || invoice.customerName}
                   </p>
-                )}
+                  {(invoice.buyerAddress || invoice.customerAddress) && (
+                    <p className="text-sm text-gray-800">
+                      {invoice.buyerAddress || invoice.customerAddress}
+                    </p>
+                  )}
+                  {(invoice.buyerPhone || invoice.customerPhone) && (
+                    <p className="text-sm text-gray-800">
+                      Phone: {invoice.buyerPhone || invoice.customerPhone}
+                    </p>
+                  )}
+                  {(invoice.buyerEmail || invoice.customerEmail) && (
+                    <p className="text-sm text-gray-800">
+                      Email: {invoice.buyerEmail || invoice.customerEmail}
+                    </p>
+                  )}
+                  {invoice.buyerGstin && (
+                    <p className="text-sm text-gray-800">
+                      GSTIN: {invoice.buyerGstin}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-800 font-medium">
+                    State:{" "}
+                    {invoice.buyerAddress?.includes("Uttar Pradesh")
+                      ? "09-Uttar Pradesh"
+                      : invoice.buyerAddress?.includes("West Bengal")
+                      ? "19-West Bengal"
+                      : invoice.buyerAddress?.includes("Maharashtra")
+                      ? "27-Maharashtra"
+                      : invoice.buyerAddress?.includes("Tamil Nadu")
+                      ? "33-Tamil Nadu"
+                      : invoice.buyerAddress?.includes("Gujarat")
+                      ? "24-Gujarat"
+                      : invoice.buyerAddress?.includes("Rajasthan")
+                      ? "08-Rajasthan"
+                      : invoice.buyerAddress?.includes("Punjab")
+                      ? "03-Punjab"
+                      : invoice.buyerAddress?.includes("Haryana")
+                      ? "06-Haryana"
+                      : invoice.buyerAddress?.includes("Delhi")
+                      ? "07-Delhi"
+                      : "09-Uttar Pradesh"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Shipping Address */}
+              <div>
+                <h3 className="font-bold text-gray-900 mb-3 underline">
+                  Shipping Address:
+                </h3>
+                <div className="space-y-1">
+                  <p className="font-semibold text-gray-900">
+                    {invoice.buyerName || invoice.customerName}
+                  </p>
+                  {(invoice.buyerAddress || invoice.customerAddress) && (
+                    <p className="text-sm text-gray-800">
+                      {invoice.buyerAddress || invoice.customerAddress}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-800">
+                    <span className="font-medium">Place of Supply:</span>{" "}
+                    {invoice.placeOfSupplyState
+                      ? `${getStateFromAddress(invoice.placeOfSupplyState)}-${
+                          invoice.placeOfSupplyState
+                        }`
+                      : `${getStateFromAddress(
+                          invoice.buyerAddress || invoice.customerAddress
+                        )}-Delivery Location`}
+                  </p>
+                  {invoice.terms && (
+                    <p className="text-sm text-gray-800">
+                      <span className="font-medium">Terms:</span>{" "}
+                      {invoice.terms}
+                    </p>
+                  )}
+                  {invoice.salesperson && (
+                    <p className="text-sm text-gray-800">
+                      <span className="font-medium">Salesperson:</span>{" "}
+                      {invoice.salesperson}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Items Table */}
-            <div className="p-6">
-              <table className="w-full border-collapse border border-gray-300">
+            <div className="mx-8 mb-8">
+              <table className="w-full border-collapse border border-gray-400">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">
-                      #
+                    <th className="border border-gray-400 px-3 py-2 text-left text-sm font-medium text-gray-900">
+                      SR NO.
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">
-                      Item name
+                    <th className="border border-gray-400 px-3 py-2 text-left text-sm font-medium text-gray-900">
+                      ITEM NAME
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">
+                    <th className="border border-gray-400 px-3 py-2 text-left text-sm font-medium text-gray-900">
                       HSN/SAC
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-right text-xs font-medium text-gray-700">
-                      Quantity
+                    <th className="border border-gray-400 px-3 py-2 text-right text-sm font-medium text-gray-900">
+                      QTY
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-right text-xs font-medium text-gray-700">
-                      Price/unit
+                    <th className="border border-gray-400 px-3 py-2 text-right text-sm font-medium text-gray-900">
+                      RATE
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-right text-xs font-medium text-gray-700">
-                      GST
+                    <th className="border border-gray-400 px-3 py-2 text-right text-sm font-medium text-gray-900">
+                      TAX %
                     </th>
-                    <th className="border border-gray-300 px-3 py-2 text-right text-xs font-medium text-gray-700">
-                      Amount
+                    <th className="border border-gray-400 px-3 py-2 text-right text-sm font-medium text-gray-900">
+                      AMOUNT
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoice.items.map((item, index) => (
                     <tr key={index}>
-                      <td className="border border-gray-300 px-3 py-2 text-sm">
+                      <td className="border border-gray-400 px-3 py-2 text-sm text-gray-900">
                         {index + 1}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm">
+                      <td className="border border-gray-400 px-3 py-2 text-sm text-gray-900">
                         {item.details}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm">
+                      <td className="border border-gray-400 px-3 py-2 text-sm text-gray-900">
                         8704
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-right">
+                      <td className="border border-gray-400 px-3 py-2 text-sm text-right text-gray-900">
                         {item.quantity}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-right">
+                      <td className="border border-gray-400 px-3 py-2 text-sm text-right text-gray-900">
                         {formatCurrency(item.rate)}
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-right">
-                        {formatCurrency(item.taxAmount)} ({item.taxRate}%)
+                      <td className="border border-gray-400 px-3 py-2 text-sm text-right text-gray-900">
+                        {item.taxRate}%
                       </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-right font-medium">
+                      <td className="border border-gray-400 px-3 py-2 text-sm text-right font-medium text-gray-900">
                         {formatCurrency(item.amount)}
                       </td>
                     </tr>
                   ))}
                   {/* Total Row */}
-                  <tr className="bg-gray-50">
+                  <tr className="bg-gray-100">
                     <td
                       colSpan={3}
-                      className="border border-gray-300 px-3 py-2 text-sm font-bold"
+                      className="border border-gray-400 px-3 py-2 text-sm font-bold text-gray-900"
                     >
-                      Total
+                      TOTAL
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-sm text-right font-bold">
+                    <td className="border border-gray-400 px-3 py-2 text-sm text-right font-bold text-gray-900">
                       {invoice.items.reduce(
                         (sum, item) => sum + item.quantity,
                         0
                       )}
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-sm text-right font-bold"></td>
-                    <td className="border border-gray-300 px-3 py-2 text-sm text-right font-bold">
+                    <td className="border border-gray-400 px-3 py-2 text-sm text-right font-bold text-gray-900"></td>
+                    <td className="border border-gray-400 px-3 py-2 text-sm text-right font-bold text-gray-900">
                       {formatCurrency(invoice.taxAmount)}
                     </td>
-                    <td className="border border-gray-300 px-3 py-2 text-sm text-right font-bold">
-                      {formatCurrency(invoice.total)}
+                    <td className="border border-gray-400 px-3 py-2 text-sm text-right font-bold text-gray-900">
+                      {formatCurrency(invoice.subTotal)}
                     </td>
                   </tr>
                 </tbody>
@@ -723,22 +847,22 @@ const InvoiceDetailPage = () => {
             </div>
 
             {/* Summary and Terms */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mx-8">
               {/* Left Side - Amount in Words and Terms */}
               <div>
-                <div className="mb-4">
-                  <h4 className="font-bold text-gray-900 mb-1">
-                    Invoice Amount In Words:
+                <div className="mb-6">
+                  <h4 className="font-bold text-gray-900 mb-2 underline">
+                    INVOICE AMOUNT IN WORDS:
                   </h4>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-800 font-medium">
                     {numberToWords(invoice.total)}
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-bold text-gray-900 mb-1">
-                    Terms And Conditions:
+                  <h4 className="font-bold text-gray-900 mb-2 underline">
+                    TERMS AND CONDITIONS:
                   </h4>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-gray-800">
                     {invoice.termsConditions ||
                       "Thank you for doing business with us."}
                   </p>
@@ -746,53 +870,109 @@ const InvoiceDetailPage = () => {
               </div>
 
               {/* Right Side - Financial Summary */}
-              <div>
+              <div className="border border-gray-400 p-4">
+                <h4 className="font-bold text-gray-900 mb-3 text-center underline">
+                  FINANCIAL SUMMARY
+                </h4>
                 <table className="w-full">
                   <tbody>
                     <tr>
-                      <td className="py-1 text-sm text-gray-600">Sub Total:</td>
-                      <td className="py-1 text-sm text-right font-medium">
+                      <td className="py-1 text-sm text-gray-900">Sub Total:</td>
+                      <td className="py-1 text-sm text-right font-medium text-gray-900">
                         {formatCurrency(invoice.subTotal)}
                       </td>
                     </tr>
+
+                    {/* Discount */}
+                    {invoice.discountAmount > 0 && (
+                      <tr>
+                        <td className="py-1 text-sm text-gray-900">
+                          Discount (
+                          {invoice.discountType === "percentage"
+                            ? `${invoice.discount}%`
+                            : "Fixed"}
+                          ):
+                        </td>
+                        <td className="py-1 text-sm text-right font-medium text-gray-900">
+                          - {formatCurrency(invoice.discountAmount)}
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* GST Breakdown */}
                     {invoice.taxAmount > 0 && (
                       <>
-                        <tr>
-                          <td className="py-1 text-sm text-gray-600">
-                            SGST@{invoice.taxRate / 2}%:
-                          </td>
-                          <td className="py-1 text-sm text-right font-medium">
-                            {formatCurrency(invoice.taxAmount / 2)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="py-1 text-sm text-gray-600">
-                            CGST@{invoice.taxRate / 2}%:
-                          </td>
-                          <td className="py-1 text-sm text-right font-medium">
-                            {formatCurrency(invoice.taxAmount / 2)}
-                          </td>
-                        </tr>
+                        {/* Display GST based on actual transaction type */}
+                        {!isInterState() ? (
+                          /* Intra-State: CGST + SGST (same state) */
+                          <>
+                            <tr>
+                              <td className="py-1 text-sm text-gray-900">
+                                CGST @ 9%:
+                              </td>
+                              <td className="py-1 text-sm text-right font-medium text-gray-900">
+                                {formatCurrency(invoice.taxAmount / 2)}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="py-1 text-sm text-gray-900">
+                                SGST @ 9%:
+                              </td>
+                              <td className="py-1 text-sm text-right font-medium text-gray-900">
+                                {formatCurrency(invoice.taxAmount / 2)}
+                              </td>
+                            </tr>
+                          </>
+                        ) : (
+                          /* Inter-State: IGST (different states) */
+                          <tr>
+                            <td className="py-1 text-sm text-gray-900">
+                              IGST @ 18%:
+                            </td>
+                            <td className="py-1 text-sm text-right font-medium text-gray-900">
+                              {formatCurrency(invoice.taxAmount)}
+                            </td>
+                          </tr>
+                        )}
                       </>
                     )}
-                    <tr className="border-t border-gray-300">
-                      <td className="py-2 text-lg font-bold text-gray-900">
-                        Total:
+
+                    {/* TDS/TCS */}
+                    {invoice.additionalTaxAmount !== 0 &&
+                      invoice.additionalTaxType && (
+                        <tr>
+                          <td className="py-1 text-sm text-gray-900">
+                            {invoice.additionalTaxType} @{" "}
+                            {invoice.additionalTaxRate}%:
+                          </td>
+                          <td className="py-1 text-sm text-right font-medium text-gray-900">
+                            {invoice.additionalTaxType === "TDS" ? "- " : "+ "}
+                            {formatCurrency(
+                              Math.abs(invoice.additionalTaxAmount)
+                            )}
+                          </td>
+                        </tr>
+                      )}
+
+                    {/* Adjustment */}
+                    {invoice.adjustment !== 0 && (
+                      <tr>
+                        <td className="py-1 text-sm text-gray-900">
+                          Adjustment:
+                        </td>
+                        <td className="py-1 text-sm text-right font-medium text-gray-900">
+                          {invoice.adjustment > 0 ? "+ " : "- "}
+                          {formatCurrency(Math.abs(invoice.adjustment))}
+                        </td>
+                      </tr>
+                    )}
+
+                    <tr className="border-t border-gray-400">
+                      <td className="py-2 text-base font-bold text-gray-900">
+                        TOTAL:
                       </td>
-                      <td className="py-2 text-lg font-bold text-right text-gray-900 bg-purple-100">
+                      <td className="py-2 text-base font-bold text-right text-gray-900">
                         {formatCurrency(invoice.total)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 text-sm text-gray-600">Received:</td>
-                      <td className="py-1 text-sm text-right font-medium bg-purple-100">
-                        {formatCurrency(invoice.amountPaid)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 text-sm text-gray-600">Balance:</td>
-                      <td className="py-1 text-sm text-right font-bold bg-purple-100">
-                        {formatCurrency(invoice.balanceDue)}
                       </td>
                     </tr>
                   </tbody>
@@ -801,18 +981,18 @@ const InvoiceDetailPage = () => {
             </div>
 
             {/* Signature Area */}
-            <div className="p-6 border-t border-gray-200">
+            <div className="p-8 mt-12">
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-900 font-medium">
                     For: {invoice.sellerName || "ROBOBOOKS SOLUTIONS"}
                   </p>
-                  <div className="mt-8 border-t border-gray-400 w-32"></div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <div className="mt-16 border-t border-gray-900 w-40"></div>
+                  <p className="text-sm text-gray-900 mt-2">
                     Authorized Signatory
                   </p>
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-900">
                   <p>www.robobooks.com</p>
                 </div>
               </div>

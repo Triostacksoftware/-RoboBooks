@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import Swal from "sweetalert2";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -40,7 +42,11 @@ export default function AdminUsers() {
       setError(null);
       const response = await api("/api/admin/users");
 
-      if (typeof response === "object" && response !== null && "success" in response) {
+      if (
+        typeof response === "object" &&
+        response !== null &&
+        "success" in response
+      ) {
         if ((response as any).success) {
           setUsers((response as any).users || []);
         } else {
@@ -120,45 +126,126 @@ export default function AdminUsers() {
   };
 
   const handleStatusToggle = async (userId: string, currentStatus: boolean) => {
-    try {
-      const response = await api(`/api/admin/users/${userId}/status`, {
-        method: "PUT",
-        body: JSON.stringify({ isActive: !currentStatus }),
-      });
+    const user = users.find((u) => u.id === userId);
 
-      // Fix: response is of type unknown, so we need to check its shape
-      if (typeof response === "object" && response !== null && "success" in response && (response as any).success) {
-        setUsers(
-          users.map((user) =>
-            user.id === userId ? { ...user, isActive: !currentStatus } : user
-          )
-        );
+    const result = await Swal.fire({
+      title: "Confirm Status Change",
+      text: `Are you sure you want to ${
+        currentStatus ? "deactivate" : "activate"
+      } ${user?.companyName || "this user"}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: currentStatus ? "#d33" : "#28a745",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: currentStatus ? "Deactivate" : "Activate",
+      cancelButtonText: "Cancel",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await api(`/api/admin/users/${userId}/status`, {
+          method: "PUT",
+          body: JSON.stringify({ isActive: !currentStatus }),
+        });
+
+        // Fix: response is of type unknown, so we need to check its shape
+        if (
+          typeof response === "object" &&
+          response !== null &&
+          "success" in response &&
+          (response as any).success
+        ) {
+          setUsers(
+            users.map((user) =>
+              user.id === userId ? { ...user, isActive: !currentStatus } : user
+            )
+          );
+
+          // Show success toast
+          Swal.fire({
+            icon: "success",
+            title: "Status Updated!",
+            text: `${user?.companyName || "User"} has been ${
+              !currentStatus ? "activated" : "deactivated"
+            } successfully.`,
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        }
+      } catch (error) {
+        console.error("Error updating user status:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error!",
+          text: "Failed to update user status. Please try again.",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
       }
-    } catch (error) {
-      console.error("Error updating user status:", error);
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) {
-      return;
-    }
+    const user = users.find((u) => u.id === userId);
 
-    try {
-      const response = await api(`/api/admin/users/${userId}`, {
-        method: "DELETE",
-      });
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `You want to delete ${
+        user?.companyName || "this user"
+      }? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
 
-      if (
-        typeof response === "object" &&
-        response !== null &&
-        "success" in response &&
-        (response as any).success
-      ) {
-        setUsers(users.filter((user) => user.id !== userId));
+    if (result.isConfirmed) {
+      try {
+        const response = await api(`/api/admin/users/${userId}`, {
+          method: "DELETE",
+        });
+
+        if (
+          typeof response === "object" &&
+          response !== null &&
+          "success" in response &&
+          (response as any).success
+        ) {
+          setUsers(users.filter((user) => user.id !== userId));
+
+          // Show success toast
+          Swal.fire({
+            icon: "success",
+            title: "Deleted!",
+            text: "User has been deleted successfully.",
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        }
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error!",
+          text: "Failed to delete user. Please try again.",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+        });
       }
-    } catch (error) {
-      console.error("Error deleting user:", error);
     }
   };
 

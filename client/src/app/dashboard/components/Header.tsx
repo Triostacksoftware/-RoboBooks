@@ -31,10 +31,9 @@ const SubscribeButton = dynamic(() => import("./header/PremiumTooltip"), {
 const OrgSwitcher = dynamic(() => import("./header/OrgSwitcher"), {
   ssr: false,
 });
-const NotificationsPanel = dynamic(
-  () => import("./header/NotificationPanel"),
-  { ssr: false }
-);
+const NotificationsPanel = dynamic(() => import("./header/NotificationPanel"), {
+  ssr: false,
+});
 const AllZohoAppsPanel = dynamic(() => import("./header/AllZohoAppsPanel"), {
   ssr: false,
 });
@@ -52,7 +51,6 @@ const ReferralPanel = dynamic(() => import("./header/ReferralPanel"), {
 const SettingsPanel = dynamic(() => import("./header/SettingsPanel"), {
   ssr: false,
 });
-
 
 type Props = {
   onToggleSidebar?: () => void;
@@ -76,11 +74,11 @@ export default function Header({ onToggleSidebar }: Props) {
   const router = useRouter();
 
   const openPanel = (panel: Exclude<Panel, null>) => {
-    console.log('Opening panel:', panel);
-    console.log('Current activePanel:', activePanel);
+    console.log("Opening panel:", panel);
+    console.log("Current activePanel:", activePanel);
     setActivePanel((cur) => {
       const newState = cur === panel ? null : panel;
-      console.log('Setting activePanel to:', newState);
+      console.log("Setting activePanel to:", newState);
       return newState;
     });
   };

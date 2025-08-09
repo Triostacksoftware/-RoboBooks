@@ -33,6 +33,8 @@ import reportRoutes from "./routes/reportRoutes.js";
 import manualJournalRoutes from "./routes/manualJournalRoutes.js";
 import budgetRoutes from "./routes/budgetRoutes.js";
 import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
+import tdsRoutes from "./routes/tdsRoutes.js";
+import tcsRoutes from "./routes/tcsRoutes.js";
 
 const app = express();
 
@@ -92,6 +94,8 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/manual-journals", manualJournalRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/bulk-updates", bulkUpdateRoutes);
+app.use("/api/tds", tdsRoutes);
+app.use("/api/tcs", tcsRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {
@@ -117,10 +121,10 @@ const server = app.listen(PORT, () => {
 });
 
 // Handle server errors
-server.on('error', (error) => {
-  console.error('❌ Server error:', error);
+server.on("error", (error) => {
+  console.error("❌ Server error:", error);
 });
 
-server.on('listening', () => {
-  console.log('✅ Server is ready to accept connections');
+server.on("listening", () => {
+  console.log("✅ Server is ready to accept connections");
 });

@@ -43,12 +43,21 @@ export default function AdminLayout({
     checkAuth();
   }, [pathname]); // Re-check auth when pathname changes
 
+  useEffect(() => {
+    if (!loading && !isAuthenticated && pathname !== "/admin/login") {
+      // Use window.location to avoid router conflicts
+      window.location.href = "/admin/login";
+    }
+  }, [loading, isAuthenticated, pathname]);
+
   const checkAuth = async () => {
     try {
       setLoading(true);
       const response = await api<{ success: boolean; admin?: Admin }>(
         "/api/admin/profile"
       );
+
+      console.log("response2", response);
       if (response.success) {
         setAdmin(response.admin || null);
         setIsAuthenticated(true);
@@ -57,7 +66,7 @@ export default function AdminLayout({
         setAdmin(null);
         // Only redirect if not already on login page
         if (pathname !== "/admin/login") {
-          router.push("/admin/login");
+          window.location.href = "/admin/login";
         }
       }
     } catch (error) {
@@ -65,7 +74,7 @@ export default function AdminLayout({
       setAdmin(null);
       // Only redirect if not already on login page
       if (pathname !== "/admin/login") {
-        router.push("/admin/login");
+        window.location.href = "/admin/login";
       }
     } finally {
       setLoading(false);
@@ -138,9 +147,8 @@ export default function AdminLayout({
     );
   }
 
-  // If not authenticated, redirect to login
+  // If not authenticated, show passive fallback (redirect handled in effect)
   if (!isAuthenticated) {
-    router.push("/admin/login");
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

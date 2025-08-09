@@ -60,16 +60,28 @@ const schema = new mongoose.Schema({
     default: "percentage",
   },
   discountAmount: { type: Number, default: 0.0 },
-  taxType: {
-    type: String,
-    enum: ["TDS", "TCS", "GST", "IGST", "CGST", "SGST"],
-    default: "GST",
-  },
-  taxRate: { type: Number, default: 0 },
+
+  // GST Details
   taxAmount: { type: Number, default: 0.0 },
-  shippingCharges: { type: Number, default: 0.0 },
+  cgstTotal: { type: Number, default: 0.0 },
+  sgstTotal: { type: Number, default: 0.0 },
+  igstTotal: { type: Number, default: 0.0 },
+
+  // TDS/TCS Details
+  additionalTaxType: {
+    type: String,
+    enum: ["TDS", "TCS", null],
+    default: null,
+  },
+  additionalTaxId: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "additionalTaxType",
+  },
+  additionalTaxRate: { type: Number, default: 0 },
+  additionalTaxAmount: { type: Number, default: 0.0 },
+
+  // Other
   adjustment: { type: Number, default: 0.0 },
-  roundOff: { type: Number, default: 0.0 },
   total: { type: Number, default: 0.0 },
 
   // Payment Information

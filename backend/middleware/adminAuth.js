@@ -4,21 +4,25 @@ import Admin from "../models/Admin.js";
 // Admin authentication guard
 export const adminAuthGuard = async (req, res, next) => {
   try {
-    const token = req.cookies.admin_session || req.headers.authorization?.replace('Bearer ', '');
-    
+    const token =
+      req.cookies.admin_session ||
+      req.headers.authorization?.replace("Bearer ", "");
+
     if (!token) {
       return res.status(401).json({ message: "Authentication required" });
     }
 
     const decoded = verifyToken(token);
-    if (!decoded || decoded.type !== 'admin') {
+    if (!decoded || decoded.type !== "admin") {
       return res.status(401).json({ message: "Invalid admin token" });
     }
 
     // Check if admin exists and is active
     const admin = await Admin.findById(decoded.uid);
     if (!admin || !admin.isActive) {
-      return res.status(401).json({ message: "Admin account not found or inactive" });
+      return res
+        .status(401)
+        .json({ message: "Admin account not found or inactive" });
     }
 
     // Add admin info to request
@@ -26,7 +30,7 @@ export const adminAuthGuard = async (req, res, next) => {
       uid: admin._id,
       role: admin.role,
       permissions: admin.permissions,
-      email: admin.email
+      email: admin.email,
     };
 
     next();
@@ -43,7 +47,7 @@ export const superAdminGuard = async (req, res, next) => {
       return res.status(401).json({ message: "Authentication required" });
     }
 
-    if (req.user.role !== 'super_admin') {
+    if (req.user.role !== "super_admin") {
       return res.status(403).json({ message: "Super admin access required" });
     }
 
@@ -83,14 +87,17 @@ export const requirePermission = (requiredPermission) => {
       }
 
       // Super admins have all permissions
-      if (req.user.role === 'super_admin') {
+      if (req.user.role === "super_admin") {
         return next();
       }
 
       // Check if admin has the required permission
-      if (!req.user.permissions || !req.user.permissions.includes(requiredPermission)) {
-        return res.status(403).json({ 
-          message: `Permission denied: ${requiredPermission} required` 
+      if (
+        !req.user.permissions ||
+        !req.user.permissions.includes(requiredPermission)
+      ) {
+        return res.status(403).json({
+          message: `Permission denied: ${requiredPermission} required`,
         });
       }
 
@@ -111,18 +118,21 @@ export const requireAnyPermission = (permissions = []) => {
       }
 
       // Super admins have all permissions
-      if (req.user.role === 'super_admin') {
+      if (req.user.role === "super_admin") {
         return next();
       }
 
       // Check if admin has any of the required permissions
-      const hasPermission = permissions.some(permission => 
-        req.user.permissions && req.user.permissions.includes(permission)
+      const hasPermission = permissions.some(
+        (permission) =>
+          req.user.permissions && req.user.permissions.includes(permission)
       );
 
       if (!hasPermission) {
-        return res.status(403).json({ 
-          message: `Permission denied: One of [${permissions.join(', ')}] required` 
+        return res.status(403).json({
+          message: `Permission denied: One of [${permissions.join(
+            ", "
+          )}] required`,
         });
       }
 
@@ -135,7 +145,10 @@ export const requireAnyPermission = (permissions = []) => {
 };
 
 // Rate limiting for admin endpoints
-export const adminRateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
+export const adminRateLimit = (
+  maxRequests = 100,
+  windowMs = 15 * 60 * 1000
+) => {
   const requests = new Map();
 
   return (req, res, next) => {
@@ -145,14 +158,17 @@ export const adminRateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => 
 
     // Clean old entries
     if (requests.has(ip)) {
-      requests.set(ip, requests.get(ip).filter(timestamp => timestamp > windowStart));
+      requests.set(
+        ip,
+        requests.get(ip).filter((timestamp) => timestamp > windowStart)
+      );
     }
 
     const userRequests = requests.get(ip) || [];
-    
+
     if (userRequests.length >= maxRequests) {
-      return res.status(429).json({ 
-        message: "Too many requests. Please try again later." 
+      return res.status(429).json({
+        message: "Too many requests. Please try again later.",
       });
     }
 
@@ -167,8 +183,8 @@ export const adminRateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => 
 export const adminAuditLog = (action) => {
   return async (req, res, next) => {
     const originalSend = res.send;
-    
-    res.send = function(data) {
+
+    res.send = function (data) {
       // Log admin actions for audit purposes
       const auditData = {
         adminId: req.user?.uid,
@@ -177,15 +193,15 @@ export const adminAuditLog = (action) => {
         method: req.method,
         path: req.path,
         ip: req.ip,
-        userAgent: req.get('User-Agent'),
+        userAgent: req.get("User-Agent"),
         timestamp: new Date(),
         statusCode: res.statusCode,
-        success: res.statusCode < 400
+        success: res.statusCode < 400,
       };
 
       // In production, save to audit log collection
-      console.log('Admin Audit:', auditData);
-      
+      console.log("Admin Audit:", auditData);
+
       originalSend.call(this, data);
     };
 
@@ -219,27 +235,27 @@ export const validateAdminSession = async (req, res, next) => {
 
 // Permission mapping for common admin actions
 export const ADMIN_PERMISSIONS = {
-  MANAGE_USERS: 'manage_users',
-  MANAGE_ADMINS: 'manage_admins',
-  VIEW_ANALYTICS: 'view_analytics',
-  MANAGE_CONTENT: 'manage_content',
-  MANAGE_SETTINGS: 'manage_settings',
-  VIEW_REPORTS: 'view_reports',
-  MANAGE_BILLING: 'manage_billing',
-  MANAGE_SECURITY: 'manage_security',
-  MANAGE_SYSTEM: 'manage_system'
+  MANAGE_USERS: "manage_users",
+  MANAGE_ADMINS: "manage_admins",
+  VIEW_ANALYTICS: "view_analytics",
+  MANAGE_CONTENT: "manage_content",
+  MANAGE_SETTINGS: "manage_settings",
+  VIEW_REPORTS: "view_reports",
+  MANAGE_BILLING: "manage_billing",
+  MANAGE_SECURITY: "manage_security",
+  MANAGE_SYSTEM: "manage_system",
 };
 
 // Admin role definitions
 export const ADMIN_ROLES = {
-  SUPER_ADMIN: 'super_admin',
-  ADMIN: 'admin',
-  MODERATOR: 'moderator'
+  SUPER_ADMIN: "super_admin",
+  ADMIN: "admin",
+  MODERATOR: "moderator",
 };
 
 // Role hierarchy for permission inheritance
 export const ROLE_HIERARCHY = {
-  'super_admin': ['super_admin', 'admin', 'moderator'],
-  'admin': ['admin', 'moderator'],
-  'moderator': ['moderator']
+  super_admin: ["super_admin", "admin", "moderator"],
+  admin: ["admin", "moderator"],
+  moderator: ["moderator"],
 };

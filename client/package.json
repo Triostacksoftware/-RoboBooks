@@ -27,7 +27,7 @@
     "react-select": "^5.10.2",
     "react-sweetalert2": "^0.6.0",
     "recharts": "^3.1.0",
-    "sweetalert2": "^11.22.2",
+    "sweetalert2": "^11.22.3",
     "world-countries": "^5.1.0"
   },
   "devDependencies": {

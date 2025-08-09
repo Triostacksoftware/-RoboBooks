@@ -4,23 +4,18 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
-  Cog6ToothIcon,
-  MagnifyingGlassIcon,
   ChevronDownIcon,
-  InformationCircleIcon,
-  PencilIcon,
-  QrCodeIcon,
   CheckIcon,
-  PlusIcon,
   PaperClipIcon,
   ArrowPathIcon,
-  QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
 
 import CustomerDetails from "./components/CustomerDetails";
 import InvoiceDetails from "./components/InvoiceDetails";
 import ItemsTable from "./components/ItemsTable";
 import InvoiceSummary from "./components/InvoiceSummary";
+import TDSManagementModal from "./components/TDSManagementModal";
+import TCSManagementModal from "./components/TCSManagementModal";
 
 interface Customer {
   firstName: string;
@@ -45,6 +40,23 @@ interface Customer {
     country?: string;
     zipCode?: string;
   };
+}
+
+interface TDSRecord {
+  _id: string;
+  name: string;
+  rate: number;
+  section: string;
+  status: "Active" | "Inactive";
+}
+
+interface TCSRecord {
+  _id: string;
+  name: string;
+  rate: number;
+  natureOfCollection: string;
+  section?: string;
+  status: "Active" | "Inactive";
 }
 
 type TaxMode = "GST" | "IGST" | "NON_TAXABLE" | "NO_GST" | "EXPORT";
@@ -76,6 +88,13 @@ const NewInvoiceForm = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCustomerPreSelected, setShowCustomerPreSelected] = useState(false);
 
+  // TDS/TCS State
+  const [tdsRecords, setTdsRecords] = useState<TDSRecord[]>([]);
+  const [tcsRecords, setTcsRecords] = useState<TCSRecord[]>([]);
+  const [isLoadingTaxes, setIsLoadingTaxes] = useState(false);
+  const [showTDSModal, setShowTDSModal] = useState(false);
+  const [showTCSModal, setShowTCSModal] = useState(false);
+
   const [formData, setFormData] = useState({
     invoiceNumber: "INV-000001",
     orderNumber: "",
@@ -95,10 +114,10 @@ const NewInvoiceForm = () => {
         description: "",
         quantity: 1.0,
         unit: "pcs",
-        rate: 0.0,
-        amount: 0.0,
-        taxMode: "GST" as TaxMode,
-        taxRate: 0,
+        rate: 10000.0, // Set default amount for testing
+        amount: 100000.0, // 10 × 10000 = 100000
+        taxMode: "IGST" as TaxMode, // Use IGST for inter-state
+        taxRate: 18,
         taxAmount: 0,
         cgst: 0,
         sgst: 0,
@@ -116,9 +135,12 @@ const NewInvoiceForm = () => {
     cgstTotal: 0.0,
     sgstTotal: 0.0,
     igstTotal: 0.0,
-    shippingCharges: 0.0,
+    // TDS/TCS fields
+    additionalTaxType: null as "TDS" | "TCS" | null,
+    additionalTaxId: "",
+    additionalTaxRate: 0,
+    additionalTaxAmount: 0.0,
     adjustment: 0.0,
-    roundOff: 0.0,
     total: 0.0,
     paymentTerms: "",
     paymentMethod: "",
@@ -182,7 +204,6 @@ const NewInvoiceForm = () => {
     pinCode: "560001",
   });
 
-  const [showCompanySettings, setShowCompanySettings] = useState(false);
   // Local toast notifications
   const [toasts, setToasts] = useState<
     { id: number; message: string; type: "success" | "error" | "info" }[]
@@ -282,8 +303,8 @@ const NewInvoiceForm = () => {
       );
     }
 
-    // Recalculate all totals with new GST distribution
-    setTimeout(recalculateAllTotals, 0);
+    // Don't automatically recalculate - let user update items manually
+    // setTimeout(recalculateAllTotals, 0);
   };
 
   // Function to handle shipping address updates with automatic GST rule application
@@ -294,10 +315,7 @@ const NewInvoiceForm = () => {
         [field]: value,
       };
 
-      // If state is being updated, automatically update place of supply and apply GST rules
-      if (field === "state" && value) {
-        updatePlaceOfSupplyFromShipping(value);
-      }
+      // Place of supply remains fixed to office state, no automatic updates
 
       return {
         ...prev,
@@ -309,17 +327,8 @@ const NewInvoiceForm = () => {
   // Function to recalculate all totals when tax rate/place changes
   const recalculateAllTotals = () => {
     setFormData((prev) => {
-      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
-        const rate = item.taxMode === "GST" ? item.taxRate ?? prev.taxRate : 0;
-        const taxes = calculateItemTax(
-          item.amount || 0,
-          item.taxMode as TaxMode,
-          rate
-        );
-        return { ...(item as InvoiceItem), taxRate: rate, ...taxes };
-      });
-
-      const subTotal = updatedItems.reduce(
+      // First calculate subtotal and discount
+      const subTotal = prev.items.reduce(
         (sum, item) => sum + (item.amount || 0),
         0
       );
@@ -328,29 +337,69 @@ const NewInvoiceForm = () => {
           ? (subTotal * prev.discount) / 100
           : prev.discount;
 
-      // Calculate tax totals
+      // Calculate GST on (subtotal - discount)
+      const taxableAmount = subTotal - discountAmount;
+
+      // Update items with GST calculated on proportional discounted amounts
+      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let rate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          rate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          rate
+        );
+
+        return { ...(item as InvoiceItem), taxRate: rate, ...taxes };
+      });
+
+      // Calculate GST totals
       const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
       const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
       const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
-      const totalTax = cgstTotal + sgstTotal + igstTotal;
+      const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
+
+      // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
+      let additionalTaxAmount = 0;
+      if (prev.additionalTaxType && prev.additionalTaxRate > 0) {
+        const baseAmountForAdditionalTax = subTotal - discountAmount;
+        additionalTaxAmount =
+          (baseAmountForAdditionalTax * prev.additionalTaxRate) / 100;
+      }
+
+      // Calculate final total
+      // TDS is subtracted (negative), TCS is added (positive)
+      const adjustedAdditionalTax =
+        prev.additionalTaxType === "TDS"
+          ? -additionalTaxAmount
+          : additionalTaxAmount;
 
       const total =
         subTotal -
         discountAmount +
-        totalTax +
-        (prev.shippingCharges || 0) +
-        (prev.adjustment || 0) +
-        (prev.roundOff || 0);
+        totalGSTTax +
+        adjustedAdditionalTax +
+        (prev.adjustment || 0);
 
       return {
         ...prev,
         items: updatedItems,
         subTotal,
         discountAmount,
-        taxAmount: totalTax,
+        taxAmount: totalGSTTax,
         cgstTotal,
         sgstTotal,
         igstTotal,
+        additionalTaxAmount,
         total,
       };
     });
@@ -389,7 +438,7 @@ const NewInvoiceForm = () => {
         const response = await fetch(
           process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
           {
-            credentials: 'include',
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -468,8 +517,7 @@ const NewInvoiceForm = () => {
                   },
                   placeOfSupplyState:
                     foundCustomer.shippingAddress?.state ||
-                    foundCustomer.billingAddress?.state ||
-                    extractStateName(companySettings.state),
+                    extractStateName(companySettings.state), // Set to shipping state
                 }));
 
                 // Hide notification after 3 seconds
@@ -500,7 +548,7 @@ const NewInvoiceForm = () => {
         const response = await fetch(
           process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number",
           {
-            credentials: 'include',
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -526,6 +574,158 @@ const NewInvoiceForm = () => {
     fetchNextInvoiceNumber();
   }, [companySettings.state]);
 
+  // Load TDS and TCS records on component mount
+  useEffect(() => {
+    loadTdsRecords();
+    loadTcsRecords();
+    // Trigger initial GST calculation
+    setTimeout(() => recalculateAllTotals(), 100);
+  }, []);
+
+  // Set default place of supply from company settings
+  useEffect(() => {
+    if (!formData.placeOfSupplyState && companySettings.state) {
+      const defaultState = extractStateName(companySettings.state);
+      setFormData((prev) => ({
+        ...prev,
+        placeOfSupplyState: defaultState,
+      }));
+    }
+  }, [companySettings.state, formData.placeOfSupplyState]);
+
+  // Separate function to recalculate only totals (recalculates GST on discounted amount but preserves item-level GST distribution)
+  const recalculateOnlyTotals = () => {
+    setFormData((prev) => {
+      const subTotal = prev.items.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
+
+      // Recalculate GST on (subtotal - discount) with proportional distribution
+      const taxableAmount = subTotal - discountAmount;
+
+      // Update items with GST calculated on proportional discounted amounts
+      const updatedItems = prev.items.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let rate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          rate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          rate
+        );
+        return { ...item, ...taxes };
+      });
+
+      // Calculate GST totals from updated items
+      const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
+      const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
+      const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+      const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
+
+      // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
+      let additionalTaxAmount = 0;
+      if (prev.additionalTaxType && prev.additionalTaxRate > 0) {
+        const baseAmountForAdditionalTax = subTotal - discountAmount;
+        additionalTaxAmount =
+          (baseAmountForAdditionalTax * prev.additionalTaxRate) / 100;
+      }
+
+      const adjustedAdditionalTax =
+        prev.additionalTaxType === "TDS"
+          ? -additionalTaxAmount
+          : additionalTaxAmount;
+
+      const total =
+        subTotal -
+        discountAmount +
+        totalGSTTax +
+        adjustedAdditionalTax +
+        prev.adjustment;
+
+      return {
+        ...prev,
+        items: updatedItems,
+        subTotal,
+        discountAmount,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
+        taxAmount: totalGSTTax,
+        additionalTaxAmount,
+        total,
+      };
+    });
+  };
+
+  // Recalculate totals when TDS/TCS or adjustment changes (WITHOUT GST recalculation)
+  useEffect(() => {
+    recalculateOnlyTotals();
+  }, [
+    formData.additionalTaxType,
+    formData.additionalTaxRate,
+    formData.adjustment,
+  ]);
+
+  // Recalculate ALL totals INCLUDING GST when place of supply OR discount changes
+  useEffect(() => {
+    recalculateAllTotals();
+  }, [formData.placeOfSupplyState, formData.discount, formData.discountType]);
+
+  // Load TDS records
+  const loadTdsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tds/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTdsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TDS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
+  };
+
+  // Load TCS records
+  const loadTcsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tcs/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTcsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TCS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
+  };
+
   const addItem = () => {
     const companyState = extractStateName(companySettings.state);
     const placeOfSupply = formData.placeOfSupplyState || companyState;
@@ -547,7 +747,7 @@ const NewInvoiceForm = () => {
           rate: 0.0,
           amount: 0.0,
           taxMode: defaultTaxMode as TaxMode,
-          taxRate: prev.taxRate || 18,
+          taxRate: 18, // Always default to 18%
           taxAmount: 0,
           cgst: 0,
           sgst: 0,
@@ -632,30 +832,47 @@ const NewInvoiceForm = () => {
         prev.discountType === "percentage"
           ? (subTotal * prev.discount) / 100
           : prev.discount;
-      const cgstTotal = updatedItems.reduce(
+
+      // Recalculate GST on (subtotal - discount) with proportional distribution
+      const finalUpdatedItems = updatedItems.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let itemRate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          itemRate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          itemRate
+        );
+        return { ...item, ...taxes };
+      });
+
+      const cgstTotal = finalUpdatedItems.reduce(
         (sum: number, i: InvoiceItem) => sum + (i.cgst || 0),
         0
       );
-      const sgstTotal = updatedItems.reduce(
+      const sgstTotal = finalUpdatedItems.reduce(
         (sum: number, i: InvoiceItem) => sum + (i.sgst || 0),
         0
       );
-      const igstTotal = updatedItems.reduce(
+      const igstTotal = finalUpdatedItems.reduce(
         (sum: number, i: InvoiceItem) => sum + (i.igst || 0),
         0
       );
       const totalTax = cgstTotal + sgstTotal + igstTotal;
       const total =
-        subTotal -
-        discountAmount +
-        totalTax +
-        (prev.shippingCharges || 0) +
-        (prev.adjustment || 0) +
-        (prev.roundOff || 0);
+        subTotal - discountAmount + totalTax + (prev.adjustment || 0);
 
       return {
         ...prev,
-        items: updatedItems,
+        items: finalUpdatedItems,
         subTotal,
         discountAmount,
         taxAmount: totalTax,
@@ -706,12 +923,10 @@ const NewInvoiceForm = () => {
       },
       placeOfSupplyState:
         customer.shippingAddress?.state ||
-        customer.billingAddress?.state ||
-        companySettings.state?.split("-")[1] ||
-        companySettings.state ||
-        "",
+        extractStateName(companySettings.state), // Set to shipping state
     }));
-    setTimeout(recalculateAllTotals, 0);
+    // Don't automatically recalculate - let user update items manually
+    // setTimeout(recalculateAllTotals, 0);
   };
 
   const handleSaveInvoice = async (asDraft = false) => {
@@ -746,7 +961,7 @@ const NewInvoiceForm = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
         {
           method: "POST",
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -784,12 +999,6 @@ const NewInvoiceForm = () => {
           <div className="flex items-center space-x-1">
             <button
               className="p-1 text-gray-400 hover:text-gray-600"
-              onClick={() => setShowCompanySettings(!showCompanySettings)}
-            >
-              <Cog6ToothIcon className="h-4 w-4" />
-            </button>
-            <button
-              className="p-1 text-gray-400 hover:text-gray-600"
               onClick={() => router.push("/dashboard/sales/invoices")}
             >
               <XMarkIcon className="h-4 w-4" />
@@ -810,485 +1019,9 @@ const NewInvoiceForm = () => {
         </div>
       )}
 
-      {/* Company Settings Modal */}
-      {showCompanySettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-3 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-semibold text-gray-900">
-                Company Settings
-              </h2>
-              <button
-                onClick={() => setShowCompanySettings(false)}
-                className="p-1 text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Company Name
-                </label>
-                <input
-                  type="text"
-                  value={companySettings.companyName}
-                  onChange={(e) =>
-                    setCompanySettings((prev) => ({
-                      ...prev,
-                      companyName: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-              </div>
-
-              {/* Compact Billing & Shipping Address + Place of Supply */}
-              <div className="mb-3 grid grid-cols-1 lg:grid-cols-3 gap-2">
-                <div className="lg:col-span-1 border rounded-md p-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <h3 className="text-xs font-medium text-gray-900">
-                      Billing Address
-                    </h3>
-                    <button
-                      className="text-xs text-blue-600"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          billingAddress: { ...prev.shippingAddress },
-                        }))
-                      }
-                    >
-                      Use Shipping
-                    </button>
-                  </div>
-                  <div className="space-y-1">
-                    <input
-                      className="w-full px-2 py-1 border rounded text-xs"
-                      placeholder="Street"
-                      value={formData.billingAddress.street}
-                      onChange={(e) =>
-                        setFormData((p) => ({
-                          ...p,
-                          billingAddress: {
-                            ...p.billingAddress,
-                            street: e.target.value,
-                          },
-                        }))
-                      }
-                    />
-                    <div className="grid grid-cols-2 gap-1">
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="City"
-                        value={formData.billingAddress.city}
-                        onChange={(e) =>
-                          setFormData((p) => ({
-                            ...p,
-                            billingAddress: {
-                              ...p.billingAddress,
-                              city: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="State"
-                        value={formData.billingAddress.state}
-                        onChange={(e) =>
-                          setFormData((p) => ({
-                            ...p,
-                            billingAddress: {
-                              ...p.billingAddress,
-                              state: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-1">
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="ZIP"
-                        value={formData.billingAddress.zipCode}
-                        onChange={(e) =>
-                          setFormData((p) => ({
-                            ...p,
-                            billingAddress: {
-                              ...p.billingAddress,
-                              zipCode: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="Country"
-                        value={formData.billingAddress.country}
-                        onChange={(e) =>
-                          setFormData((p) => ({
-                            ...p,
-                            billingAddress: {
-                              ...p.billingAddress,
-                              country: e.target.value,
-                            },
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="lg:col-span-1 border rounded-md p-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <h3 className="text-xs font-medium text-gray-900">
-                      Shipping Address
-                    </h3>
-                    <button
-                      className="text-xs text-blue-600"
-                      onClick={() => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          shippingAddress: { ...prev.billingAddress },
-                          placeOfSupplyState: prev.billingAddress.state,
-                        }));
-                        // Apply GST rules after copying billing address
-                        if (formData.billingAddress.state) {
-                          updatePlaceOfSupplyFromShipping(
-                            formData.billingAddress.state
-                          );
-                        }
-                      }}
-                    >
-                      Use Billing
-                    </button>
-                  </div>
-                  <div className="space-y-1">
-                    <input
-                      className="w-full px-2 py-1 border rounded text-xs"
-                      placeholder="Street"
-                      value={formData.shippingAddress.street}
-                      onChange={(e) =>
-                        handleShippingAddressUpdate("street", e.target.value)
-                      }
-                    />
-                    <div className="grid grid-cols-2 gap-1">
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="City"
-                        value={formData.shippingAddress.city}
-                        onChange={(e) =>
-                          handleShippingAddressUpdate("city", e.target.value)
-                        }
-                      />
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="State"
-                        value={formData.shippingAddress.state}
-                        onChange={(e) =>
-                          handleShippingAddressUpdate("state", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-1">
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="ZIP"
-                        value={formData.shippingAddress.zipCode}
-                        onChange={(e) =>
-                          handleShippingAddressUpdate("zipCode", e.target.value)
-                        }
-                      />
-                      <input
-                        className="px-2 py-1 border rounded text-xs"
-                        placeholder="Country"
-                        value={formData.shippingAddress.country}
-                        onChange={(e) =>
-                          handleShippingAddressUpdate("country", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="lg:col-span-1 border rounded-md p-2">
-                  <h3 className="text-xs font-medium text-gray-900 mb-1.5">
-                    Place of Supply
-                  </h3>
-                  <div className="space-y-1">
-                    <select
-                      className="w-full px-2 py-1 border rounded text-xs"
-                      value={formData.placeOfSupplyState}
-                      onChange={(e) => {
-                        const selectedState = e.target.value;
-                        const companyState = extractStateName(
-                          companySettings.state
-                        );
-                        const isSameState =
-                          companyState.toLowerCase() ===
-                          selectedState.toLowerCase();
-
-                        setFormData((p) => ({
-                          ...p,
-                          placeOfSupplyState: selectedState,
-                        }));
-
-                        // Show toast notification about GST rule application
-                        if (selectedState) {
-                          if (isSameState) {
-                            showToast(
-                              `Same state selected: CGST + SGST will be applied (${companyState} → ${selectedState})`,
-                              "info"
-                            );
-                          } else {
-                            showToast(
-                              `Different state selected: IGST will be applied (${companyState} → ${selectedState})`,
-                              "info"
-                            );
-                          }
-                        }
-
-                        // Recalculate all totals with new GST distribution
-                        setTimeout(recalculateAllTotals, 0);
-                      }}
-                    >
-                      <option value="">Select State</option>
-                      {[
-                        formData.shippingAddress.state,
-                        formData.billingAddress.state,
-                        companySettings.state?.split("-")[1] ||
-                          companySettings.state ||
-                          "",
-                      ]
-                        .filter(Boolean)
-                        .filter((v, i, a) => a.indexOf(v as string) === i)
-                        .map((st) => (
-                          <option key={st as string} value={st as string}>
-                            {st}
-                          </option>
-                        ))}
-                    </select>
-                    <div className="text-xs text-gray-500">
-                      <div className="flex items-center justify-between">
-                        <span>Tax Distribution:</span>
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-white text-xs ${
-                            formData.placeOfSupplyState &&
-                            extractStateName(
-                              companySettings.state
-                            ).toLowerCase() ===
-                              formData.placeOfSupplyState.toLowerCase()
-                              ? "bg-green-600"
-                              : "bg-orange-600"
-                          }`}
-                        >
-                          {formData.placeOfSupplyState &&
-                          extractStateName(
-                            companySettings.state
-                          ).toLowerCase() ===
-                            formData.placeOfSupplyState.toLowerCase()
-                            ? "CGST + SGST"
-                            : "IGST"}
-                        </span>
-                      </div>
-                      <p className="mt-1">
-                        {formData.placeOfSupplyState
-                          ? extractStateName(
-                              companySettings.state
-                            ).toLowerCase() ===
-                            formData.placeOfSupplyState.toLowerCase()
-                            ? `Same state (${extractStateName(
-                                companySettings.state
-                              )}): GST divided into CGST and SGST`
-                            : `Different states (${extractStateName(
-                                companySettings.state
-                              )} → ${formData.placeOfSupplyState}): Using IGST`
-                          : "Intra-state: CGST + SGST. Inter-state: IGST only."}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
-                </label>
-                <textarea
-                  rows={2}
-                  value={companySettings.address}
-                  onChange={(e) =>
-                    setCompanySettings((prev) => ({
-                      ...prev,
-                      address: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.phone}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={companySettings.email}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    GSTIN
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.gstin}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        gstin: e.target.value,
-                      }))
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.state}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        state: e.target.value,
-                      }))
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    PIN Code
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.pinCode}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        pinCode: e.target.value,
-                      }))
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Website
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.website}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        website: e.target.value,
-                      }))
-                    }
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 mt-3">
-              <button
-                onClick={() => setShowCompanySettings(false)}
-                className="px-3 py-1.5 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowCompanySettings(false)}
-                className="px-3 py-1.5 text-white bg-blue-600 rounded-md hover:bg-blue-700 text-sm"
-              >
-                Save Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Ultra Compact Main Form */}
       <div className="p-3 pb-16">
         <div className="max-w-full space-y-3">
-          {/* Fixed Company Address Section */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-sm font-semibold text-blue-900">
-                Company Details
-              </h2>
-              <button
-                className="text-xs text-blue-600 hover:text-blue-800"
-                onClick={() => setShowCompanySettings(true)}
-              >
-                Edit
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-              <div>
-                <p className="font-medium text-blue-900">
-                  {companySettings.companyName}
-                </p>
-                <p className="text-blue-700">{companySettings.address}</p>
-                <p className="text-blue-700">
-                  {extractStateName(companySettings.state)} -{" "}
-                  {companySettings.pinCode}
-                </p>
-              </div>
-              <div>
-                <p className="text-blue-700">GSTIN: {companySettings.gstin}</p>
-                <p className="text-blue-700">Phone: {companySettings.phone}</p>
-                <p className="text-blue-700">Email: {companySettings.email}</p>
-              </div>
-            </div>
-          </div>
-
           {/* Customer Details */}
           <CustomerDetails
             customers={customers}
@@ -1298,26 +1031,52 @@ const NewInvoiceForm = () => {
             onCustomerSelect={handleCustomerSelect}
             onSearchChange={setSearchTerm}
             onDropdownToggle={setShowCustomerDropdown}
+            onPlaceOfSupplyChange={(selectedState) => {
+              const companyState = extractStateName(companySettings.state);
+              const isSameState =
+                companyState.toLowerCase() === selectedState.toLowerCase();
+
+              // Show toast notification about GST rule application
+              if (selectedState) {
+                if (isSameState) {
+                  showToast(
+                    `Same state: CGST + SGST will be applied (${companyState} → ${selectedState})`,
+                    "info"
+                  );
+                } else {
+                  showToast(
+                    `Different state: IGST will be applied (${companyState} → ${selectedState})`,
+                    "info"
+                  );
+                }
+              }
+
+              // Don't automatically recalculate - let user update items manually
+              // setTimeout(recalculateAllTotals, 0);
+            }}
+            companyState={extractStateName(companySettings.state)}
             formData={{
               billingAddress: formData.billingAddress,
               shippingAddress: formData.shippingAddress,
+              placeOfSupplyState: formData.placeOfSupplyState,
             }}
             onFormDataChange={(data) => {
-              // Handle shipping address updates with automatic GST rule application
-              if (
-                data.shippingAddress?.state &&
-                data.shippingAddress.state !== formData.shippingAddress?.state
-              ) {
-                updatePlaceOfSupplyFromShipping(data.shippingAddress.state);
-              }
-
               setFormData((prev) => ({
                 ...prev,
                 billingAddress: data.billingAddress || prev.billingAddress,
                 shippingAddress: data.shippingAddress || prev.shippingAddress,
+                // Update place of supply based on shipping address
                 placeOfSupplyState:
-                  data.placeOfSupplyState || prev.placeOfSupplyState,
+                  data.shippingAddress?.state || prev.placeOfSupplyState,
               }));
+
+              // Trigger GST recalculation when shipping address changes
+              if (
+                data.shippingAddress?.state &&
+                data.shippingAddress.state !== formData.placeOfSupplyState
+              ) {
+                setTimeout(recalculateAllTotals, 100);
+              }
             }}
           />
 
@@ -1331,7 +1090,6 @@ const NewInvoiceForm = () => {
             onRemoveItem={removeItem}
             onUpdateItem={updateItem}
             isIntraState={isIntraState}
-            companySettings={companySettings}
           />
 
           {/* Summary and Additional Sections */}
@@ -1422,8 +1180,18 @@ const NewInvoiceForm = () => {
             <div className="lg:col-span-1">
               <InvoiceSummary
                 formData={formData}
-                onFormDataChange={setFormData}
+                onFormDataChange={(data) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    ...data,
+                  }))
+                }
                 isIntraState={isIntraState}
+                tdsRecords={tdsRecords}
+                tcsRecords={tcsRecords}
+                isLoadingTaxes={isLoadingTaxes}
+                onManageTDS={() => setShowTDSModal(true)}
+                onManageTCS={() => setShowTCSModal(true)}
               />
             </div>
           </div>
@@ -1488,6 +1256,23 @@ const NewInvoiceForm = () => {
           </div>
         ))}
       </div>
+
+      {/* Management Modals */}
+      <TDSManagementModal
+        isOpen={showTDSModal}
+        onClose={() => setShowTDSModal(false)}
+        onUpdate={() => {
+          loadTdsRecords();
+        }}
+      />
+
+      <TCSManagementModal
+        isOpen={showTCSModal}
+        onClose={() => setShowTCSModal(false)}
+        onUpdate={() => {
+          loadTcsRecords();
+        }}
+      />
     </div>
   );
 };

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, type ComponentType } from "react";
 import { api } from "@/lib/api";
 import {
@@ -50,6 +49,9 @@ export default function AdminDashboard() {
         success: boolean;
         stats: Record<string, number>;
       };
+
+      console.log("response1", response);
+
       if (response.success) {
         setStats({
           totalUsers: response.stats.totalUsers ?? 0,
@@ -146,13 +148,12 @@ export default function AdminDashboard() {
               ? `${(value / 1000).toFixed(1)}k`
               : typeof value === "number" && value >= 1000000
               ? `$${(value / 1000000).toFixed(1)}M`
-              : typeof value === "number" && title.toLowerCase().includes("revenue")
+              : typeof value === "number" &&
+                title.toLowerCase().includes("revenue")
               ? `$${value.toLocaleString()}`
               : value}
           </p>
-          {subtitle && (
-            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
           {change && (
             <div className="flex items-center mt-2">
               {changeType === "increase" ? (
@@ -247,7 +248,9 @@ export default function AdminDashboard() {
             href={action.href}
             className="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors group"
           >
-            <div className={`p-2 rounded-lg ${action.color} mr-3 group-hover:scale-110 transition-transform`}>
+            <div
+              className={`p-2 rounded-lg ${action.color} mr-3 group-hover:scale-110 transition-transform`}
+            >
               <action.icon className="h-5 w-5 text-white" />
             </div>
             <div>
