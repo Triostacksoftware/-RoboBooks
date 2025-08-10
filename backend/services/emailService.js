@@ -491,6 +491,44 @@ export const sendInvoiceEmail = async (invoice, recipientEmail) => {
   }
 };
 
+// Generic sendEmail function for delivery challans and other documents
+export const sendEmail = async (emailData) => {
+  try {
+    const { to, cc, subject, html, attachments = [] } = emailData;
+    
+    if (!to || !subject) {
+      throw new Error('Recipient email and subject are required');
+    }
+
+    // Email options
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to,
+      cc,
+      subject,
+      html: html || 'Please find the attached document.',
+      attachments: attachments.map(attachment => ({
+        filename: attachment.filename,
+        content: attachment.content,
+        contentType: attachment.contentType || 'application/octet-stream'
+      }))
+    };
+
+    // Send email
+    const result = await transporter.sendMail(mailOptions);
+
+    return {
+      success: true,
+      messageId: result.messageId,
+      message: "Email sent successfully",
+    };
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
+};
+
 export default {
   sendInvoiceEmail,
+  sendEmail,
 };
