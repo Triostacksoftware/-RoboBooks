@@ -285,36 +285,22 @@ const DeliveryChallanDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Header - Zoho Books Style */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-lg font-medium text-gray-900">
-                All Delivery Challans
-              </h1>
-            </div>
-            <div className="flex items-center space-x-3">
-              <h2 className="text-lg font-medium text-gray-900">
-                {deliveryChallan.challanNo}
-              </h2>
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Row - Zoho Books Style */}
+        {/* Header - RoboBooks Style (Screenshot 1) */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500">tt</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {deliveryChallan.challanNo} •{" "}
-                  {new Date(deliveryChallan.challanDate).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="text-sm font-medium text-gray-900">
-                ₹{deliveryChallan.total.toLocaleString()}
-              </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-500">tt</span>
+              <span className="text-sm font-medium text-gray-900">
+                {deliveryChallan.challanNo} -{" "}
+                {new Date(deliveryChallan.challanDate).toLocaleDateString()}
+              </span>
+            </div>
+
+            <div className="text-sm font-medium text-gray-900">
+              ₹{deliveryChallan.total.toLocaleString()}
+            </div>
+
+            <div className="flex items-center space-x-2">
               <div
                 className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                   deliveryChallan.status === "Draft"
@@ -328,9 +314,7 @@ const DeliveryChallanDetailPage = () => {
               >
                 {deliveryChallan.status.toUpperCase()}
               </div>
-            </div>
 
-            <div className="flex items-center space-x-2">
               {deliveryChallan.status === "Draft" && (
                 <button
                   onClick={() =>
