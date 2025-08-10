@@ -1,26 +1,29 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { 
-  ChevronUpIcon, 
+import React, { useState } from "react";
+import {
+  ChevronUpIcon,
   ChevronDownIcon,
   EllipsisVerticalIcon,
   PlusIcon,
-  ArrowPathIcon
-} from '@heroicons/react/24/outline';
-import { format } from 'date-fns';
-import Link from 'next/link';
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
+import { format } from "date-fns";
+import Link from "next/link";
 
 interface DeliveryChallan {
   _id: string;
   challanNo: string;
   challanDate: string;
   referenceNo?: string;
-  customerId: {
-    _id: string;
-    displayName: string;
-    email: string;
-  };
+  customerId:
+    | {
+        _id: string;
+        displayName: string;
+        email: string;
+      }
+    | string;
+  customerName?: string;
   status: string;
   invoiceStatus: string;
   total: number;
@@ -58,37 +61,37 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
   onSort,
   sortBy,
   sortOrder,
-  onRefresh
+  onRefresh,
 }) => {
   const [selectedChallan, setSelectedChallan] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Draft':
-        return 'bg-gray-100 text-gray-800';
-      case 'Open':
-        return 'bg-blue-100 text-blue-800';
-      case 'Delivered':
-        return 'bg-green-100 text-green-800';
-      case 'Returned':
-        return 'bg-red-100 text-red-800';
-      case 'Partially Returned':
-        return 'bg-orange-100 text-orange-800';
+      case "Draft":
+        return "bg-gray-100 text-gray-800";
+      case "Open":
+        return "bg-blue-100 text-blue-800";
+      case "Delivered":
+        return "bg-green-100 text-green-800";
+      case "Returned":
+        return "bg-red-100 text-red-800";
+      case "Partially Returned":
+        return "bg-orange-100 text-orange-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getInvoiceStatusColor = (status: string) => {
     switch (status) {
-      case 'Not Invoiced':
-        return 'bg-gray-100 text-gray-800';
-      case 'Partially Invoiced':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Fully Invoiced':
-        return 'bg-green-100 text-green-800';
+      case "Not Invoiced":
+        return "bg-gray-100 text-gray-800";
+      case "Partially Invoiced":
+        return "bg-yellow-100 text-yellow-800";
+      case "Fully Invoiced":
+        return "bg-green-100 text-green-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -100,7 +103,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
     if (sortBy !== field) {
       return <ChevronUpIcon className="h-4 w-4 text-gray-400" />;
     }
-    return sortOrder === 'asc' ? (
+    return sortOrder === "asc" ? (
       <ChevronUpIcon className="h-4 w-4 text-blue-600" />
     ) : (
       <ChevronDownIcon className="h-4 w-4 text-blue-600" />
@@ -172,7 +175,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('challanDate')}
+                onClick={() => handleSort("challanDate")}
               >
                 <div className="flex items-center space-x-1">
                   <span>Date</span>
@@ -182,7 +185,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('challanNo')}
+                onClick={() => handleSort("challanNo")}
               >
                 <div className="flex items-center space-x-1">
                   <span>Delivery Challan #</span>
@@ -192,7 +195,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('referenceNo')}
+                onClick={() => handleSort("referenceNo")}
               >
                 <div className="flex items-center space-x-1">
                   <span>Reference No.</span>
@@ -202,7 +205,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('customerId.displayName')}
+                onClick={() => handleSort("customerId.displayName")}
               >
                 <div className="flex items-center space-x-1">
                   <span>Customer Name</span>
@@ -212,7 +215,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('status')}
+                onClick={() => handleSort("status")}
               >
                 <div className="flex items-center space-x-1">
                   <span>Status</span>
@@ -222,7 +225,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('invoiceStatus')}
+                onClick={() => handleSort("invoiceStatus")}
               >
                 <div className="flex items-center space-x-1">
                   <span>Invoice Status</span>
@@ -232,7 +235,7 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
               <th
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('total')}
+                onClick={() => handleSort("total")}
               >
                 <div className="flex items-center space-x-1">
                   <span>Amount</span>
@@ -247,9 +250,14 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {deliveryChallans.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                <td
+                  colSpan={8}
+                  className="px-6 py-12 text-center text-gray-500"
+                >
                   <div className="flex flex-col items-center">
-                    <div className="text-lg font-medium mb-2">No delivery challans found</div>
+                    <div className="text-lg font-medium mb-2">
+                      No delivery challans found
+                    </div>
                     <p className="text-sm text-gray-400 mb-4">
                       Get started by creating your first delivery challan
                     </p>
@@ -268,27 +276,40 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
                 <tr
                   key={challan._id}
                   className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => window.location.href = `/dashboard/sales/delivery-challans/${challan._id}`}
+                  onClick={() =>
+                    (window.location.href = `/dashboard/sales/delivery-challans/${challan._id}`)
+                  }
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {format(new Date(challan.challanDate), 'dd/MM/yyyy')}
+                    {format(new Date(challan.challanDate), "dd/MM/yyyy")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-800">
                     {challan.challanNo}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {challan.referenceNo || '-'}
+                    {challan.referenceNo || "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {challan.customerId.displayName}
+                    {typeof challan.customerId === "object" &&
+                    challan.customerId?.displayName
+                      ? challan.customerId.displayName
+                      : challan.customerName || "Unknown Customer"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(challan.status)}`}>
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                        challan.status
+                      )}`}
+                    >
                       {challan.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getInvoiceStatusColor(challan.invoiceStatus)}`}>
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getInvoiceStatusColor(
+                        challan.invoiceStatus
+                      )}`}
+                    >
                       {challan.invoiceStatus}
                     </span>
                   </td>
@@ -299,7 +320,9 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedChallan(selectedChallan === challan._id ? null : challan._id);
+                        setSelectedChallan(
+                          selectedChallan === challan._id ? null : challan._id
+                        );
                       }}
                       className="text-gray-400 hover:text-gray-600"
                     >
@@ -335,21 +358,26 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing{' '}
+                Showing{" "}
                 <span className="font-medium">
-                  {((currentPage - 1) * pagination.itemsPerPage) + 1}
-                </span>{' '}
-                to{' '}
+                  {(currentPage - 1) * pagination.itemsPerPage + 1}
+                </span>{" "}
+                to{" "}
                 <span className="font-medium">
-                  {Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems)}
-                </span>{' '}
-                of{' '}
-                <span className="font-medium">{pagination.totalItems}</span>{' '}
+                  {Math.min(
+                    currentPage * pagination.itemsPerPage,
+                    pagination.totalItems
+                  )}
+                </span>{" "}
+                of <span className="font-medium">{pagination.totalItems}</span>{" "}
                 results
               </p>
             </div>
             <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <nav
+                className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                aria-label="Pagination"
+              >
                 <button
                   onClick={() => onPageChange(currentPage - 1)}
                   disabled={currentPage === 1}
@@ -358,21 +386,24 @@ const DeliveryChallanList: React.FC<DeliveryChallanListProps> = ({
                   <span className="sr-only">Previous</span>
                   <ChevronUpIcon className="h-5 w-5 rotate-90" />
                 </button>
-                
-                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+
+                {Array.from(
+                  { length: pagination.totalPages },
+                  (_, i) => i + 1
+                ).map((page) => (
                   <button
                     key={page}
                     onClick={() => onPageChange(page)}
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                       page === currentPage
-                        ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                        : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                     }`}
                   >
                     {page}
                   </button>
                 ))}
-                
+
                 <button
                   onClick={() => onPageChange(currentPage + 1)}
                   disabled={currentPage === pagination.totalPages}

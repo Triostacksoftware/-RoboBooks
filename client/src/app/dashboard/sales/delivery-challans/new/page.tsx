@@ -1,9 +1,10 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import DeliveryChallanForm from '../components/DeliveryChallanForm';
-import { useToast } from '../../../../../contexts/ToastContext';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import DeliveryChallanForm from "../components/DeliveryChallanForm";
+import { useToast } from "../../../../../contexts/ToastContext";
 
 const NewDeliveryChallanPage = () => {
   const router = useRouter();
@@ -13,28 +14,28 @@ const NewDeliveryChallanPage = () => {
   const handleSubmit = async (formData: any) => {
     try {
       setLoading(true);
-      
+
       // Add default values
       const data = {
         ...formData,
-        status: 'Draft',
-        invoiceStatus: 'Not Invoiced',
+        status: "Draft",
+        invoiceStatus: "Not Invoiced",
         fy: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-        numberingSeries: 'DC'
+        numberingSeries: "DC",
       };
 
       // API call will be handled in the form component
-      showToast('Delivery Challan created successfully!', 'success');
-      router.push('/dashboard/sales/delivery-challans');
+      showToast("Delivery Challan created successfully!", "success");
+      router.push("/dashboard/sales/delivery-challans");
     } catch (error) {
-      showToast('Failed to create delivery challan', 'error');
+      showToast("Failed to create delivery challan", "error");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    router.push('/dashboard/sales/delivery-challans');
+    router.push("/dashboard/sales/delivery-challans");
   };
 
   return (
@@ -44,8 +45,12 @@ const NewDeliveryChallanPage = () => {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">New Delivery Challan</h1>
-              <p className="text-gray-600 mt-1">Create a new delivery challan for goods movement</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                New Delivery Challan
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Create a new delivery challan for goods movement
+              </p>
             </div>
             <div className="flex items-center space-x-3">
               <button
