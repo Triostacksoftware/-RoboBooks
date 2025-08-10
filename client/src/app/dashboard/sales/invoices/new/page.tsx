@@ -4,22 +4,18 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
-  Cog6ToothIcon,
-  MagnifyingGlassIcon,
   ChevronDownIcon,
-  InformationCircleIcon,
-  PencilIcon,
-  QrCodeIcon,
   CheckIcon,
-  PlusIcon,
   PaperClipIcon,
   ArrowPathIcon,
-  QuestionMarkCircleIcon,
-  BellIcon,
-  ChatBubbleLeftRightIcon,
-  CalendarIcon,
-  ListBulletIcon,
 } from "@heroicons/react/24/outline";
+
+import CustomerDetails from "./components/CustomerDetails";
+import InvoiceDetails from "./components/InvoiceDetails";
+import ItemsTable from "./components/ItemsTable";
+import InvoiceSummary from "./components/InvoiceSummary";
+import TDSManagementModal from "./components/TDSManagementModal";
+import TCSManagementModal from "./components/TCSManagementModal";
 
 interface Customer {
   firstName: string;
@@ -37,6 +33,49 @@ interface Customer {
     country?: string;
     zipCode?: string;
   };
+  shippingAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+}
+
+interface TDSRecord {
+  _id: string;
+  name: string;
+  rate: number;
+  section: string;
+  status: "Active" | "Inactive";
+}
+
+interface TCSRecord {
+  _id: string;
+  name: string;
+  rate: number;
+  natureOfCollection: string;
+  section?: string;
+  status: "Active" | "Inactive";
+}
+
+type TaxMode = "GST" | "IGST" | "NON_TAXABLE" | "NO_GST" | "EXPORT";
+interface InvoiceItem {
+  id: number;
+  itemId: string;
+  details: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  amount: number;
+  taxMode: TaxMode;
+  taxRate: number;
+  taxAmount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  taxRemark: string;
 }
 
 const NewInvoiceForm = () => {
@@ -48,6 +87,13 @@ const NewInvoiceForm = () => {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCustomerPreSelected, setShowCustomerPreSelected] = useState(false);
+
+  // TDS/TCS State
+  const [tdsRecords, setTdsRecords] = useState<TDSRecord[]>([]);
+  const [tcsRecords, setTcsRecords] = useState<TCSRecord[]>([]);
+  const [isLoadingTaxes, setIsLoadingTaxes] = useState(false);
+  const [showTDSModal, setShowTDSModal] = useState(false);
+  const [showTCSModal, setShowTCSModal] = useState(false);
 
   const [formData, setFormData] = useState({
     invoiceNumber: "INV-000001",
@@ -68,22 +114,33 @@ const NewInvoiceForm = () => {
         description: "",
         quantity: 1.0,
         unit: "pcs",
-        rate: 0.0,
-        amount: 0.0,
-        taxRate: 0,
+        rate: 10000.0, // Set default amount for testing
+        amount: 100000.0, // 10 × 10000 = 100000
+        taxMode: "IGST" as TaxMode, // Use IGST for inter-state
+        taxRate: 18,
         taxAmount: 0,
-      },
+        cgst: 0,
+        sgst: 0,
+        igst: 0,
+        taxRemark: "",
+      } as InvoiceItem,
     ],
     subTotal: 0.0,
     discount: 0,
-    discountType: "percentage",
+    discountType: "percentage" as "percentage" | "amount",
     discountAmount: 0.0,
     taxType: "GST",
     taxRate: 18,
     taxAmount: 0.0,
-    shippingCharges: 0.0,
+    cgstTotal: 0.0,
+    sgstTotal: 0.0,
+    igstTotal: 0.0,
+    // TDS/TCS fields
+    additionalTaxType: null as "TDS" | "TCS" | null,
+    additionalTaxId: "",
+    additionalTaxRate: 0,
+    additionalTaxAmount: 0.0,
     adjustment: 0.0,
-    roundOff: 0.0,
     total: 0.0,
     paymentTerms: "",
     paymentMethod: "",
@@ -99,6 +156,34 @@ const NewInvoiceForm = () => {
     buyerPhone: "",
     buyerGstin: "",
     buyerAddress: "",
+    // Address blocks
+    billingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      country: "India",
+      zipCode: "",
+    } as {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      zipCode?: string;
+    },
+    shippingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      country: "India",
+      zipCode: "",
+    } as {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      zipCode?: string;
+    },
+    placeOfSupplyState: "" as string | undefined,
     // Seller Details
     sellerName: "",
     sellerEmail: "",
@@ -116,16 +201,248 @@ const NewInvoiceForm = () => {
     gstin: "29ABCDE1234F1Z5",
     state: "29-Karnataka",
     website: "www.robobooks.com",
+    pinCode: "560001",
   });
 
-  const [showCompanySettings, setShowCompanySettings] = useState(false);
+  // Local toast notifications
+  const [toasts, setToasts] = useState<
+    { id: number; message: string; type: "success" | "error" | "info" }[]
+  >([]);
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3200);
+  };
+
+  const extractStateName = (value: string) => {
+    if (!value) return "";
+    const parts = value.split("-");
+    return (parts[1] || parts[0]).trim();
+  };
+
+  // Enhanced GST calculation with proper distribution
+  const calculateItemTax = (
+    amount: number,
+    taxMode: TaxMode,
+    taxRate: number
+  ) => {
+    if (!amount || amount <= 0) {
+      return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+    }
+
+    // Handle different tax modes
+    if (taxMode === "NON_TAXABLE" || taxMode === "NO_GST") {
+      return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+    }
+
+    if (taxMode === "EXPORT") {
+      // Export is 0% GST
+      return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+    }
+
+    // For GST and IGST modes
+    if (taxMode === "GST" || taxMode === "IGST") {
+      const companyState = extractStateName(companySettings.state);
+      const placeOfSupply = formData.placeOfSupplyState || companyState;
+
+      // Check if same state (intra-state)
+      const isSameState =
+        companyState.toLowerCase() === placeOfSupply.toLowerCase();
+
+      if (isSameState) {
+        // Same state: Divide GST into CGST and SGST (50% each)
+        const halfTax = (amount * taxRate) / 100 / 2;
+        return {
+          cgst: halfTax,
+          sgst: halfTax,
+          igst: 0,
+          taxAmount: halfTax * 2,
+        };
+      } else {
+        // Different state: Use IGST (100%)
+        const igst = (amount * taxRate) / 100;
+        return {
+          cgst: 0,
+          sgst: 0,
+          igst,
+          taxAmount: igst,
+        };
+      }
+    }
+
+    // Default case
+    return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+  };
+
+  // Function to automatically update place of supply based on shipping address
+  const updatePlaceOfSupplyFromShipping = (shippingState: string) => {
+    const companyState = extractStateName(companySettings.state);
+    const isSameState =
+      companyState.toLowerCase() === shippingState.toLowerCase();
+
+    setFormData((prev) => ({
+      ...prev,
+      placeOfSupplyState: shippingState,
+    }));
+
+    // Show toast notification about GST rule application
+    if (isSameState) {
+      showToast(
+        `Same state detected: CGST + SGST will be applied (${companyState} → ${shippingState})`,
+        "info"
+      );
+    } else {
+      showToast(
+        `Different state detected: IGST will be applied (${companyState} → ${shippingState})`,
+        "info"
+      );
+    }
+
+    // Don't automatically recalculate - let user update items manually
+    // setTimeout(recalculateAllTotals, 0);
+  };
+
+  // Function to handle shipping address updates with automatic GST rule application
+  const handleShippingAddressUpdate = (field: string, value: string) => {
+    setFormData((prev) => {
+      const updatedShippingAddress = {
+        ...prev.shippingAddress,
+        [field]: value,
+      };
+
+      // Place of supply remains fixed to office state, no automatic updates
+
+      return {
+        ...prev,
+        shippingAddress: updatedShippingAddress,
+      };
+    });
+  };
+
+  // Function to recalculate all totals when tax rate/place changes
+  const recalculateAllTotals = () => {
+    setFormData((prev) => {
+      // First calculate subtotal and discount
+      const subTotal = prev.items.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
+
+      // Calculate GST on (subtotal - discount)
+      const taxableAmount = subTotal - discountAmount;
+
+      // Update items with GST calculated on proportional discounted amounts
+      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let rate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          rate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          rate
+        );
+
+        return { ...(item as InvoiceItem), taxRate: rate, ...taxes };
+      });
+
+      // Calculate GST totals
+      const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
+      const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
+      const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+      const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
+
+      // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
+      let additionalTaxAmount = 0;
+      if (prev.additionalTaxType && prev.additionalTaxRate > 0) {
+        const baseAmountForAdditionalTax = subTotal - discountAmount;
+        additionalTaxAmount =
+          (baseAmountForAdditionalTax * prev.additionalTaxRate) / 100;
+      }
+
+      // Calculate final total
+      // TDS is subtracted (negative), TCS is added (positive)
+      const adjustedAdditionalTax =
+        prev.additionalTaxType === "TDS"
+          ? -additionalTaxAmount
+          : additionalTaxAmount;
+
+      const total =
+        subTotal -
+        discountAmount +
+        totalGSTTax +
+        adjustedAdditionalTax +
+        (prev.adjustment || 0);
+
+      return {
+        ...prev,
+        items: updatedItems,
+        subTotal,
+        discountAmount,
+        taxAmount: totalGSTTax,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
+        additionalTaxAmount,
+        total,
+      };
+    });
+  };
+
+  // Determine intra vs inter-state with enhanced logic
+  const isIntraState = () => {
+    const companyState = extractStateName(companySettings.state);
+    const placeOfSupply = formData.placeOfSupplyState || companyState;
+    if (!companyState || !placeOfSupply) return true;
+    return companyState.toLowerCase() === placeOfSupply.toLowerCase();
+  };
+
+  // Get GST distribution info
+  const getGSTDistributionInfo = () => {
+    const companyState = extractStateName(companySettings.state);
+    const placeOfSupply = formData.placeOfSupplyState || companyState;
+    const isSameState =
+      companyState.toLowerCase() === placeOfSupply.toLowerCase();
+
+    return {
+      isSameState,
+      companyState,
+      placeOfSupply,
+      distribution: isSameState ? "CGST + SGST" : "IGST",
+      explanation: isSameState
+        ? `Same state (${companyState}): GST divided into CGST and SGST`
+        : `Different states (${companyState} → ${placeOfSupply}): Using IGST`,
+    };
+  };
 
   // Fetch customers from backend and check for pre-selected customer
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
         const response = await fetch(
-          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers"
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
+          {
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (response.ok) {
           const responseData = await response.json();
@@ -184,6 +501,23 @@ const NewInvoiceForm = () => {
                         foundCustomer.billingAddress.city || ""
                       }, ${foundCustomer.billingAddress.state || ""}`.trim()
                     : "",
+                  billingAddress: {
+                    street: foundCustomer.billingAddress?.street || "",
+                    city: foundCustomer.billingAddress?.city || "",
+                    state: foundCustomer.billingAddress?.state || "",
+                    country: foundCustomer.billingAddress?.country || "India",
+                    zipCode: foundCustomer.billingAddress?.zipCode || "",
+                  },
+                  shippingAddress: {
+                    street: foundCustomer.shippingAddress?.street || "",
+                    city: foundCustomer.shippingAddress?.city || "",
+                    state: foundCustomer.shippingAddress?.state || "",
+                    country: foundCustomer.shippingAddress?.country || "India",
+                    zipCode: foundCustomer.shippingAddress?.zipCode || "",
+                  },
+                  placeOfSupplyState:
+                    foundCustomer.shippingAddress?.state ||
+                    extractStateName(companySettings.state), // Set to shipping state
                 }));
 
                 // Hide notification after 3 seconds
@@ -212,7 +546,13 @@ const NewInvoiceForm = () => {
     const fetchNextInvoiceNumber = async () => {
       try {
         const response = await fetch(
-          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number"
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number",
+          {
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (response.ok) {
           const result = await response.json();
@@ -232,9 +572,167 @@ const NewInvoiceForm = () => {
 
     fetchCustomers();
     fetchNextInvoiceNumber();
+  }, [companySettings.state]);
+
+  // Load TDS and TCS records on component mount
+  useEffect(() => {
+    loadTdsRecords();
+    loadTcsRecords();
+    // Trigger initial GST calculation
+    setTimeout(() => recalculateAllTotals(), 100);
   }, []);
 
+  // Set default place of supply from company settings
+  useEffect(() => {
+    if (!formData.placeOfSupplyState && companySettings.state) {
+      const defaultState = extractStateName(companySettings.state);
+      setFormData((prev) => ({
+        ...prev,
+        placeOfSupplyState: defaultState,
+      }));
+    }
+  }, [companySettings.state, formData.placeOfSupplyState]);
+
+  // Separate function to recalculate only totals (recalculates GST on discounted amount but preserves item-level GST distribution)
+  const recalculateOnlyTotals = () => {
+    setFormData((prev) => {
+      const subTotal = prev.items.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
+
+      // Recalculate GST on (subtotal - discount) with proportional distribution
+      const taxableAmount = subTotal - discountAmount;
+
+      // Update items with GST calculated on proportional discounted amounts
+      const updatedItems = prev.items.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let rate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          rate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          rate
+        );
+        return { ...item, ...taxes };
+      });
+
+      // Calculate GST totals from updated items
+      const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
+      const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
+      const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+      const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
+
+      // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
+      let additionalTaxAmount = 0;
+      if (prev.additionalTaxType && prev.additionalTaxRate > 0) {
+        const baseAmountForAdditionalTax = subTotal - discountAmount;
+        additionalTaxAmount =
+          (baseAmountForAdditionalTax * prev.additionalTaxRate) / 100;
+      }
+
+      const adjustedAdditionalTax =
+        prev.additionalTaxType === "TDS"
+          ? -additionalTaxAmount
+          : additionalTaxAmount;
+
+      const total =
+        subTotal -
+        discountAmount +
+        totalGSTTax +
+        adjustedAdditionalTax +
+        prev.adjustment;
+
+      return {
+        ...prev,
+        items: updatedItems,
+        subTotal,
+        discountAmount,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
+        taxAmount: totalGSTTax,
+        additionalTaxAmount,
+        total,
+      };
+    });
+  };
+
+  // Recalculate totals when TDS/TCS or adjustment changes (WITHOUT GST recalculation)
+  useEffect(() => {
+    recalculateOnlyTotals();
+  }, [
+    formData.additionalTaxType,
+    formData.additionalTaxRate,
+    formData.adjustment,
+  ]);
+
+  // Recalculate ALL totals INCLUDING GST when place of supply OR discount changes
+  useEffect(() => {
+    recalculateAllTotals();
+  }, [formData.placeOfSupplyState, formData.discount, formData.discountType]);
+
+  // Load TDS records
+  const loadTdsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tds/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTdsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TDS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
+  };
+
+  // Load TCS records
+  const loadTcsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tcs/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTcsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TCS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
+  };
+
   const addItem = () => {
+    const companyState = extractStateName(companySettings.state);
+    const placeOfSupply = formData.placeOfSupplyState || companyState;
+    const isSameState =
+      companyState.toLowerCase() === placeOfSupply.toLowerCase();
+    const defaultTaxMode = isSameState ? "GST" : "IGST";
+
     setFormData((prev) => ({
       ...prev,
       items: [
@@ -248,51 +746,16 @@ const NewInvoiceForm = () => {
           unit: "pcs",
           rate: 0.0,
           amount: 0.0,
-          taxRate: prev.taxRate || 18,
+          taxMode: defaultTaxMode as TaxMode,
+          taxRate: 18, // Always default to 18%
           taxAmount: 0,
-        },
+          cgst: 0,
+          sgst: 0,
+          igst: 0,
+          taxRemark: "",
+        } as InvoiceItem,
       ],
     }));
-  };
-
-  // Function to recalculate all totals when tax rate changes
-  const recalculateAllTotals = () => {
-    setFormData((prev) => {
-      const updatedItems = prev.items.map((item) => ({
-        ...item,
-        taxRate: prev.taxRate,
-        taxAmount: ((item.amount || 0) * prev.taxRate) / 100,
-      }));
-
-      const subTotal = updatedItems.reduce(
-        (sum, item) => sum + (item.amount || 0),
-        0
-      );
-      const discountAmount =
-        prev.discountType === "percentage"
-          ? (subTotal * prev.discount) / 100
-          : prev.discount;
-      const totalTax = updatedItems.reduce(
-        (sum, item) => sum + (item.taxAmount || 0),
-        0
-      );
-      const total =
-        subTotal -
-        discountAmount +
-        totalTax +
-        (prev.shippingCharges || 0) +
-        (prev.adjustment || 0) +
-        (prev.roundOff || 0);
-
-      return {
-        ...prev,
-        items: updatedItems,
-        subTotal,
-        discountAmount,
-        taxAmount: totalTax,
-        total,
-      };
-    });
   };
 
   const removeItem = (id: number) => {
@@ -306,54 +769,116 @@ const NewInvoiceForm = () => {
 
   const updateItem = (id: number, field: string, value: string | number) => {
     setFormData((prev) => {
-      const updatedItems = prev.items.map((item) => {
-        if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
+      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
+        if (item.id !== id) return item;
+        const updatedItem: InvoiceItem = {
+          ...(item as InvoiceItem),
+          [field]: value,
+        } as InvoiceItem;
 
-          // Auto-calculate amount when quantity or rate changes
-          if (field === "quantity" || field === "rate") {
-            const qty =
-              field === "quantity" ? Number(value) || 0 : item.quantity || 0;
-            const rate = field === "rate" ? Number(value) || 0 : item.rate || 0;
-            updatedItem.amount = qty * rate;
-            // Use the current tax rate from the form
-            updatedItem.taxRate = prev.taxRate || 0;
-            updatedItem.taxAmount =
-              (updatedItem.amount * (prev.taxRate || 0)) / 100;
-          }
-
-          return updatedItem;
+        // Normalize numeric fields
+        if (field === "quantity" || field === "rate" || field === "amount") {
+          const qty =
+            Number(field === "quantity" ? value : updatedItem.quantity) || 0;
+          const rate = Number(field === "rate" ? value : updatedItem.rate) || 0;
+          updatedItem.amount =
+            field === "amount" ? Number(value) || 0 : qty * rate;
         }
-        return item;
+
+        // Handle tax mode updates
+        if (field === "taxMode") {
+          const newMode = value as TaxMode;
+          // If user selects GST/IGST, automatically apply the appropriate one based on state
+          if (newMode === "GST" || newMode === "IGST") {
+            const companyState = extractStateName(companySettings.state);
+            const placeOfSupply = prev.placeOfSupplyState || companyState;
+            const isSameState =
+              companyState.toLowerCase() === placeOfSupply.toLowerCase();
+            updatedItem.taxMode = isSameState ? "GST" : "IGST";
+          } else {
+            updatedItem.taxMode = newMode;
+          }
+        }
+
+        // Determine tax based on effective tax mode
+        const effectiveTaxMode = updatedItem.taxMode;
+        let rateToUse = 0;
+
+        if (effectiveTaxMode === "GST" || effectiveTaxMode === "IGST") {
+          rateToUse = Number(updatedItem.taxRate ?? prev.taxRate) || 0;
+        }
+
+        const taxes = calculateItemTax(
+          updatedItem.amount || 0,
+          effectiveTaxMode as TaxMode,
+          rateToUse
+        );
+
+        updatedItem.cgst = taxes.cgst;
+        updatedItem.sgst = taxes.sgst;
+        updatedItem.igst = taxes.igst;
+        updatedItem.taxAmount = taxes.taxAmount;
+        updatedItem.taxRate = rateToUse;
+
+        return updatedItem;
       });
 
       // Recalculate totals
       const subTotal = updatedItems.reduce(
-        (sum, item) => sum + (item.amount || 0),
+        (sum: number, i: InvoiceItem) => sum + (i.amount || 0),
         0
       );
       const discountAmount =
         prev.discountType === "percentage"
           ? (subTotal * prev.discount) / 100
           : prev.discount;
-      const totalTax = updatedItems.reduce(
-        (sum, item) => sum + (item.taxAmount || 0),
+
+      // Recalculate GST on (subtotal - discount) with proportional distribution
+      const finalUpdatedItems = updatedItems.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let itemRate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          itemRate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          itemRate
+        );
+        return { ...item, ...taxes };
+      });
+
+      const cgstTotal = finalUpdatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.cgst || 0),
         0
       );
+      const sgstTotal = finalUpdatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.sgst || 0),
+        0
+      );
+      const igstTotal = finalUpdatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.igst || 0),
+        0
+      );
+      const totalTax = cgstTotal + sgstTotal + igstTotal;
       const total =
-        subTotal -
-        discountAmount +
-        totalTax +
-        (prev.shippingCharges || 0) +
-        (prev.adjustment || 0) +
-        (prev.roundOff || 0);
+        subTotal - discountAmount + totalTax + (prev.adjustment || 0);
 
       return {
         ...prev,
-        items: updatedItems,
+        items: finalUpdatedItems,
         subTotal,
         discountAmount,
         taxAmount: totalTax,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
         total,
       };
     });
@@ -372,17 +897,48 @@ const NewInvoiceForm = () => {
     setSelectedCustomer(customer);
     setShowCustomerDropdown(false);
     setSearchTerm(customer.firstName + " " + customer.lastName);
+    setFormData((prev) => ({
+      ...prev,
+      buyerName: customer.firstName + " " + customer.lastName,
+      buyerEmail: customer.email,
+      buyerPhone: customer.phone || customer.mobile || customer.workPhone || "",
+      buyerAddress: customer.billingAddress
+        ? `${customer.billingAddress.street || ""}, ${
+            customer.billingAddress.city || ""
+          }, ${customer.billingAddress.state || ""}`.trim()
+        : "",
+      billingAddress: {
+        street: customer.billingAddress?.street || "",
+        city: customer.billingAddress?.city || "",
+        state: customer.billingAddress?.state || "",
+        country: customer.billingAddress?.country || "India",
+        zipCode: customer.billingAddress?.zipCode || "",
+      },
+      shippingAddress: {
+        street: customer.shippingAddress?.street || "",
+        city: customer.shippingAddress?.city || "",
+        state: customer.shippingAddress?.state || "",
+        country: customer.shippingAddress?.country || "India",
+        zipCode: customer.shippingAddress?.zipCode || "",
+      },
+      placeOfSupplyState:
+        customer.shippingAddress?.state ||
+        extractStateName(companySettings.state), // Set to shipping state
+    }));
+    // Don't automatically recalculate - let user update items manually
+    // setTimeout(recalculateAllTotals, 0);
   };
 
   const handleSaveInvoice = async (asDraft = false) => {
     try {
       if (!selectedCustomer) {
-        alert("Please select a customer");
+        showToast("Please select a customer", "error");
         return;
       }
 
       // Remove undefined fields and ensure proper data types
-      const { project, ...formDataWithoutProject } = formData;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { project: _unusedProject, ...formDataWithoutProject } = formData;
 
       const invoiceData = {
         ...formDataWithoutProject,
@@ -405,6 +961,7 @@ const NewInvoiceForm = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -416,1007 +973,306 @@ const NewInvoiceForm = () => {
 
       if (response.ok) {
         console.log("Invoice saved successfully", result);
-        alert(
+        showToast(
           `Invoice ${
             asDraft ? "saved as draft" : "created and sent"
-          } successfully!`
+          } successfully!`,
+          "success"
         );
-        // Redirect to invoices list
-        window.location.href = "/dashboard/sales/invoices";
+        setTimeout(() => router.push("/dashboard/sales/invoices"), 800);
       } else {
         console.error("Error saving invoice:", result.error);
-        alert(`Error: ${result.error}`);
+        showToast(`Error: ${result.error}`, "error");
       }
     } catch (error) {
       console.error("Error saving invoice:", error);
-      alert("Error saving invoice. Please try again.");
+      showToast("Error saving invoice. Please try again.", "error");
     }
   };
 
   return (
     <div className="flex-1 overflow-auto bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      {/* Ultra Compact Header */}
+      <div className="bg-white border-b border-gray-200 px-3 py-2">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">New Invoice</h1>
-          <div className="flex items-center space-x-2">
+          <h1 className="text-lg font-semibold text-gray-900">New Invoice</h1>
+          <div className="flex items-center space-x-1">
             <button
-              className="p-2 text-gray-400 hover:text-gray-600"
-              onClick={() => setShowCompanySettings(!showCompanySettings)}
-            >
-              <Cog6ToothIcon className="h-5 w-5" />
-            </button>
-            <button
-              className="p-2 text-gray-400 hover:text-gray-600"
+              className="p-1 text-gray-400 hover:text-gray-600"
               onClick={() => router.push("/dashboard/sales/invoices")}
             >
-              <XMarkIcon className="h-5 w-5" />
+              <XMarkIcon className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Customer Pre-selected Notification */}
+      {/* Compact Customer Pre-selected Notification */}
       {showCustomerPreSelected && (
-        <div className="bg-green-50 border border-green-200 px-6 py-3">
+        <div className="bg-green-50 border border-green-200 px-3 py-1.5">
           <div className="flex items-center">
-            <CheckIcon className="h-5 w-5 text-green-600 mr-2" />
-            <p className="text-green-800 text-sm">
+            <CheckIcon className="h-3 w-3 text-green-600 mr-1.5" />
+            <p className="text-green-800 text-xs">
               Customer has been pre-selected from the customer details page.
             </p>
           </div>
         </div>
       )}
 
-      {/* Company Settings Modal */}
-      {showCompanySettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Company Settings
-              </h2>
-              <button
-                onClick={() => setShowCompanySettings(false)}
-                className="p-2 text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
+      {/* Ultra Compact Main Form */}
+      <div className="p-3 pb-16">
+        <div className="max-w-full space-y-3">
+          {/* Customer Details */}
+          <CustomerDetails
+            customers={customers}
+            selectedCustomer={selectedCustomer}
+            searchTerm={searchTerm}
+            showCustomerDropdown={showCustomerDropdown}
+            onCustomerSelect={handleCustomerSelect}
+            onSearchChange={setSearchTerm}
+            onDropdownToggle={setShowCustomerDropdown}
+            onPlaceOfSupplyChange={(selectedState) => {
+              const companyState = extractStateName(companySettings.state);
+              const isSameState =
+                companyState.toLowerCase() === selectedState.toLowerCase();
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name
-                </label>
-                <input
-                  type="text"
-                  value={companySettings.companyName}
-                  onChange={(e) =>
-                    setCompanySettings((prev) => ({
-                      ...prev,
-                      companyName: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+              // Show toast notification about GST rule application
+              if (selectedState) {
+                if (isSameState) {
+                  showToast(
+                    `Same state: CGST + SGST will be applied (${companyState} → ${selectedState})`,
+                    "info"
+                  );
+                } else {
+                  showToast(
+                    `Different state: IGST will be applied (${companyState} → ${selectedState})`,
+                    "info"
+                  );
+                }
+              }
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
-                </label>
-                <textarea
-                  rows={3}
-                  value={companySettings.address}
-                  onChange={(e) =>
-                    setCompanySettings((prev) => ({
-                      ...prev,
-                      address: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+              // Don't automatically recalculate - let user update items manually
+              // setTimeout(recalculateAllTotals, 0);
+            }}
+            companyState={extractStateName(companySettings.state)}
+            formData={{
+              billingAddress: formData.billingAddress,
+              shippingAddress: formData.shippingAddress,
+              placeOfSupplyState: formData.placeOfSupplyState,
+            }}
+            onFormDataChange={(data) => {
+              setFormData((prev) => ({
+                ...prev,
+                billingAddress: data.billingAddress || prev.billingAddress,
+                shippingAddress: data.shippingAddress || prev.shippingAddress,
+                // Update place of supply based on shipping address
+                placeOfSupplyState:
+                  data.shippingAddress?.state || prev.placeOfSupplyState,
+              }));
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.phone}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+              // Trigger GST recalculation when shipping address changes
+              if (
+                data.shippingAddress?.state &&
+                data.shippingAddress.state !== formData.placeOfSupplyState
+              ) {
+                setTimeout(recalculateAllTotals, 100);
+              }
+            }}
+          />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={companySettings.email}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+          {/* Invoice Details */}
+          <InvoiceDetails formData={formData} onFormDataChange={setFormData} />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GSTIN
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.gstin}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        gstin: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+          {/* Items Table */}
+          <ItemsTable
+            items={formData.items}
+            onAddItem={addItem}
+            onRemoveItem={removeItem}
+            onUpdateItem={updateItem}
+            isIntraState={isIntraState}
+          />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={companySettings.state}
-                    onChange={(e) =>
-                      setCompanySettings((prev) => ({
-                        ...prev,
-                        state: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+          {/* Summary and Additional Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="lg:col-span-2 space-y-3">
+              {/* Customer Notes */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <h2 className="text-sm font-semibold text-gray-900 mb-2">
+                  Additional Details
+                </h2>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website
-                </label>
-                <input
-                  type="text"
-                  value={companySettings.website}
-                  onChange={(e) =>
-                    setCompanySettings((prev) => ({
-                      ...prev,
-                      website: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowCompanySettings(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowCompanySettings(false)}
-                className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                Save Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Form */}
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6">
-              {/* Customer Details Section */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Customer Name*
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Select or add a customer"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setShowCustomerDropdown(true);
-                    }}
-                    onFocus={() => setShowCustomerDropdown(true)}
-                  />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
-                    <ChevronDownIcon className="h-4 w-4 text-gray-400 ml-1" />
-                  </div>
-
-                  {/* Customer Dropdown */}
-                  {showCustomerDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {filteredCustomers.map((customer) => (
-                        <div
-                          key={customer._id}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => handleCustomerSelect(customer)}
-                        >
-                          <div className="font-medium">
-                            {customer.firstName + customer.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {customer.email}
-                          </div>
-                        </div>
-                      ))}
-                      {filteredCustomers.length === 0 && (
-                        <div className="px-4 py-2 text-gray-500">
-                          No customers found
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Buyer Details Section */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Buyer Details
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Buyer Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.buyerName}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          buyerName: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter buyer name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Buyer Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.buyerEmail}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          buyerEmail: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter buyer email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Buyer Phone
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.buyerPhone}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          buyerPhone: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter buyer phone"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Buyer GSTIN
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.buyerGstin}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          buyerGstin: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter buyer GSTIN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Buyer Address
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={formData.buyerAddress}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          buyerAddress: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter buyer address"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Seller Details Section */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Seller Details
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Seller Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.sellerName || companySettings.companyName}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          sellerName: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter seller name"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Seller Email
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.sellerEmail || companySettings.email}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          sellerEmail: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter seller email"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Seller Phone
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.sellerPhone || companySettings.phone}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          sellerPhone: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter seller phone"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Seller GSTIN
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.sellerGstin || companySettings.gstin}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          sellerGstin: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter seller GSTIN"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Seller Address
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={formData.sellerAddress || companySettings.address}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          sellerAddress: e.target.value,
-                        }))
-                      }
-                      placeholder="Enter seller address"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Invoice Details Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Invoice#
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={formData.invoiceNumber}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      readOnly
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <Cog6ToothIcon className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Order Number
-                  </label>
-                  <input
-                    type="text"
-                    placeholder=""
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={formData.orderNumber}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        orderNumber: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Invoice Date*
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.invoiceDate}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        invoiceDate: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Terms
-                  </label>
-                  <div className="relative">
-                    <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
-                      value={formData.terms}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          terms: e.target.value,
-                        }))
-                      }
-                    >
-                      <option>Due on Receipt</option>
-                      <option>Net 15</option>
-                      <option>Net 30</option>
-                      <option>Net 60</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Due Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.dueDate}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        dueDate: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Salesperson
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Select or Add Salesperson"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.salesperson}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          salesperson: e.target.value,
-                        }))
-                      }
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <span className="flex items-center">
-                      Subject
-                      <InformationCircleIcon className="h-4 w-4 text-gray-400 ml-1" />
-                    </span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Let your customer know what this Invoice is for"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.subject}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          subject: e.target.value,
-                        }))
-                      }
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                      <PencilIcon className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Item Table Section */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Item Table
-                  </h3>
-                  <div className="flex space-x-2">
-                    <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                      <QrCodeIcon className="h-4 w-4 mr-2" />
-                      Scan Item
-                    </button>
-                    <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                      <CheckIcon className="h-4 w-4 mr-2" />
-                      Bulk Actions
-                    </button>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          ITEM DETAILS
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          QUANTITY
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          RATE
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          AMOUNT
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <span className="sr-only">Actions</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {formData.items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="text"
-                              placeholder="Type or click to select an item."
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              value={item.details}
-                              onChange={(e) =>
-                                updateItem(item.id, "details", e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="text"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                updateItem(item.id, "quantity", e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="text"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              value={item.rate}
-                              onChange={(e) =>
-                                updateItem(item.id, "rate", e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="text"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              value={item.amount}
-                              onChange={(e) =>
-                                updateItem(item.id, "amount", e.target.value)
-                              }
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
-                            <button
-                              onClick={() => removeItem(item.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <XMarkIcon className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="mt-4 flex space-x-2">
-                  <button
-                    onClick={addItem}
-                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Add New Row
-                    <ChevronDownIcon className="h-4 w-4 ml-2" />
-                  </button>
-                  <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Add Items in Bulk
-                  </button>
-                </div>
-              </div>
-
-              {/* Summary Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  {/* Customer Notes */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Customer Notes
                     </label>
-                    <div className="relative">
-                      <textarea
-                        rows={4}
-                        placeholder="Thanks for your business."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={formData.customerNotes}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            customerNotes: e.target.value,
-                          }))
-                        }
-                      />
-                      <div className="absolute bottom-2 right-2">
-                        <PencilIcon className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </div>
+                    <textarea
+                      rows={2}
+                      placeholder="Thanks for your business."
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      value={formData.customerNotes}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          customerNotes: e.target.value,
+                        }))
+                      }
+                    />
                     <p className="text-xs text-gray-500 mt-1">
                       Will be displayed on the invoice
                     </p>
                   </div>
 
-                  {/* Terms & Conditions */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Terms & Conditions
                     </label>
-                    <div className="relative">
-                      <textarea
-                        rows={4}
-                        placeholder="Enter the terms and conditions of your business to be displayed in your transaction"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={formData.termsConditions}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            termsConditions: e.target.value,
-                          }))
-                        }
-                      />
-                      <div className="absolute bottom-2 right-2">
-                        <PencilIcon className="h-4 w-4 text-gray-400" />
-                      </div>
-                    </div>
+                    <textarea
+                      rows={2}
+                      placeholder="Enter the terms and conditions of your business to be displayed in your transaction"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      value={formData.termsConditions}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          termsConditions: e.target.value,
+                        }))
+                      }
+                    />
                   </div>
 
-                  {/* Attach Files */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Attach File(s) to Invoice
                     </label>
-                    <div className="flex items-center space-x-2">
-                      <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                        <PaperClipIcon className="h-4 w-4 mr-2" />
-                        Upload File
-                        <ChevronDownIcon className="h-4 w-4 ml-2" />
-                      </button>
-                    </div>
+                    <button className="flex items-center px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <PaperClipIcon className="h-3 w-3 mr-1.5" />
+                      Upload File
+                      <ChevronDownIcon className="h-3 w-3 ml-1.5" />
+                    </button>
                     <p className="text-xs text-gray-500 mt-1">
                       You can upload a maximum of 10 files, 10MB each
                     </p>
                   </div>
-
-                  {/* Payment Gateway Promotion */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-blue-900">
-                          Want to get paid faster?
-                        </p>
-                        <p className="text-sm text-blue-700 mt-1">
-                          Configure payment gateways and receive payments
-                          online.{" "}
-                          <button className="text-blue-600 hover:text-blue-800 underline">
-                            Set up Payment Gateway
-                          </button>
-                        </p>
-                      </div>
-                      <div className="text-xs text-blue-600">WA</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Summary Sidebar */}
-                <div className="lg:col-span-1">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Summary
-                    </h3>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Sub Total</span>
-                        <span className="text-sm font-medium">
-                          ₹{(formData.subTotal || 0).toFixed(2)}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Discount</span>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="number"
-                            step="0.01"
-                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded"
-                            value={formData.discount}
-                            onChange={(e) => {
-                              const discount = parseFloat(e.target.value) || 0;
-                              const discountAmount =
-                                formData.discountType === "percentage"
-                                  ? (formData.subTotal * discount) / 100
-                                  : discount;
-                              const total =
-                                formData.subTotal -
-                                discountAmount +
-                                formData.taxAmount +
-                                formData.shippingCharges +
-                                formData.adjustment +
-                                formData.roundOff;
-                              setFormData((prev) => ({
-                                ...prev,
-                                discount: discount,
-                                discountAmount: discountAmount,
-                                total: total,
-                              }));
-                            }}
-                          />
-                          <select
-                            className="text-sm border border-gray-300 rounded px-1"
-                            value={formData.discountType}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                discountType: e.target.value as
-                                  | "percentage"
-                                  | "amount",
-                              }))
-                            }
-                          >
-                            <option value="percentage">%</option>
-                            <option value="amount">₹</option>
-                          </select>
-                          <span className="text-sm font-medium">
-                            ₹{(formData.discountAmount || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="border-t pt-3">
-                        <div className="mb-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tax Type
-                          </label>
-                          <select
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-                            value={formData.taxType}
-                            onChange={(e) => {
-                              setFormData((prev) => ({
-                                ...prev,
-                                taxType: e.target.value,
-                              }));
-                              setTimeout(recalculateAllTotals, 0);
-                            }}
-                          >
-                            <option value="GST">GST</option>
-                            <option value="IGST">IGST</option>
-                            <option value="CGST">CGST</option>
-                            <option value="SGST">SGST</option>
-                            <option value="TDS">TDS</option>
-                            <option value="TCS">TCS</option>
-                          </select>
-                        </div>
-                        <div className="mb-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tax Rate (%)
-                          </label>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md"
-                              value={formData.taxRate}
-                              onChange={(e) => {
-                                const taxRate = parseFloat(e.target.value) || 0;
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  taxRate,
-                                }));
-                                setTimeout(recalculateAllTotals, 0);
-                              }}
-                            />
-                            <span className="text-sm text-gray-500">%</span>
-                          </div>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">
-                            Tax Amount
-                          </span>
-                          <span className="text-sm font-medium">
-                            ₹{(formData.taxAmount || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">
-                          Adjustment
-                        </span>
-                        <div className="flex items-center space-x-1">
-                          <input
-                            type="text"
-                            className="w-20 px-2 py-1 text-sm border border-dashed border-gray-300 rounded"
-                            value={formData.adjustment}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                adjustment: parseFloat(e.target.value) || 0,
-                              }))
-                            }
-                          />
-                          <QuestionMarkCircleIcon className="h-4 w-4 text-gray-400" />
-                        </div>
-                      </div>
-
-                      <div className="border-t pt-3">
-                        <div className="flex justify-between">
-                          <span className="text-lg font-semibold">
-                            Total (₹)
-                          </span>
-                          <span className="text-lg font-semibold">
-                            ₹{(formData.total || 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
+
+              {/* Payment Gateway Promotion */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-blue-900">
+                      Want to get paid faster?
+                    </p>
+                    <p className="text-xs text-blue-700 mt-0.5">
+                      Configure payment gateways and receive payments online.{" "}
+                      <button className="text-blue-600 hover:text-blue-800 underline">
+                        Set up Payment Gateway
+                      </button>
+                    </p>
+                  </div>
+                  <div className="text-xs text-blue-600">WA</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary Sidebar */}
+            <div className="lg:col-span-1">
+              <InvoiceSummary
+                formData={formData}
+                onFormDataChange={(data) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    ...data,
+                  }))
+                }
+                isIntraState={isIntraState}
+                tdsRecords={tdsRecords}
+                tcsRecords={tcsRecords}
+                isLoadingTaxes={isLoadingTaxes}
+                onManageTDS={() => setShowTDSModal(true)}
+                onManageTCS={() => setShowTCSModal(true)}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      {/* Ultra Compact Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 py-2 shadow-lg">
+        <div className="max-w-full flex items-center justify-between">
+          <div className="flex items-center space-x-2">
             <button
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={() => handleSaveInvoice(true)}
             >
               Save as Draft
             </button>
             <button
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
               onClick={() => handleSaveInvoice(false)}
             >
               Save and Send
             </button>
             <button
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={() => router.push("/dashboard/sales/invoices")}
             >
               Cancel
             </button>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-              <ArrowPathIcon className="h-4 w-4 mr-2" />
+          <div className="flex items-center space-x-2">
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">
+                Total: ₹{(formData.total || 0).toFixed(2)}
+              </span>
+              <span className="ml-2 text-gray-500">
+                Items: {formData.items.length}
+              </span>
+            </div>
+            <button className="flex items-center px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <ArrowPathIcon className="h-3 w-3 mr-1" />
               Make Recurring
             </button>
           </div>
         </div>
-
-        <div className="max-w-6xl mx-auto mt-2 text-sm text-gray-600">
-          <span>Total Amount: ₹{(formData.total || 0).toFixed(2)}</span>
-          <span className="ml-4">Total Quantity: {formData.items.length}</span>
-        </div>
       </div>
+
+      {/* Compact Toasts */}
+      <div className="fixed bottom-4 right-4 space-y-2 z-50">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`px-3 py-2 rounded-lg shadow-lg text-white text-xs font-medium max-w-sm ${
+              t.type === "success"
+                ? "bg-emerald-600 border-l-4 border-emerald-500"
+                : t.type === "error"
+                ? "bg-red-600 border-l-4 border-red-500"
+                : "bg-gray-800 border-l-4 border-gray-700"
+            } transform transition-all duration-300 ease-in-out`}
+          >
+            {t.message}
+          </div>
+        ))}
+      </div>
+
+      {/* Management Modals */}
+      <TDSManagementModal
+        isOpen={showTDSModal}
+        onClose={() => setShowTDSModal(false)}
+        onUpdate={() => {
+          loadTdsRecords();
+        }}
+      />
+
+      <TCSManagementModal
+        isOpen={showTCSModal}
+        onClose={() => setShowTCSModal(false)}
+        onUpdate={() => {
+          loadTcsRecords();
+        }}
+      />
     </div>
   );
 };

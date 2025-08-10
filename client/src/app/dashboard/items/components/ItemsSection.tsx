@@ -82,7 +82,13 @@ export default function ItemsSection() {
       setError(null);
 
       const response = await fetch(
-        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/items"
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/items",
+        {
+          credentials: 'include',
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
       const result = await response.json();
 

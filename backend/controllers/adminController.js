@@ -31,11 +31,15 @@ export const adminLogin = async (req, res, next) => {
     }
 
     if (!validateEmail(email)) {
-      return res.status(400).json({ message: "Please enter a valid email address" });
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address" });
     }
 
     if (!password || password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
     }
 
     // Find admin by email
@@ -50,7 +54,15 @@ export const adminLogin = async (req, res, next) => {
       return res.status(401).json({ message: "Account is deactivated" });
     }
 
-    // Verify password
+    // Check if admin has a valid password hash
+    if (!admin.passwordHash) {
+      console.error(`Admin ${admin.email} has no password hash`);
+      return res.status(401).json({
+        message: "Account setup incomplete. Please contact administrator.",
+      });
+    }
+
+    // Verify password using bcrypt
     const isPasswordValid = await admin.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
@@ -61,10 +73,10 @@ export const adminLogin = async (req, res, next) => {
     await admin.save();
 
     // Generate token and set cookie
-    const token = signToken({ 
-      uid: admin._id, 
+    const token = signToken({
+      uid: admin._id,
       role: admin.role,
-      type: 'admin'
+      type: "admin",
     });
     issueAdminCookie(res, token);
 
@@ -81,7 +93,7 @@ export const adminLogin = async (req, res, next) => {
         permissions: admin.permissions,
         department: admin.department,
         profileImage: admin.profileImage,
-        lastLogin: admin.lastLogin
+        lastLogin: admin.lastLogin,
       },
     });
   } catch (err) {
@@ -99,8 +111,8 @@ export const adminLogout = (req, res) => {
 // Get Admin Profile
 export const getAdminProfile = async (req, res, next) => {
   try {
-    const admin = await Admin.findById(req.user.uid).select('-passwordHash');
-    
+    const admin = await Admin.findById(req.user.uid).select("-passwordHash");
+
     if (!admin) {
       return res.status(404).json({ message: "Admin not found" });
     }
@@ -119,7 +131,7 @@ export const getAdminProfile = async (req, res, next) => {
         profileImage: admin.profileImage,
         phone: admin.phone,
         lastLogin: admin.lastLogin,
-        createdAt: admin.createdAt
+        createdAt: admin.createdAt,
       },
     });
   } catch (err) {
@@ -132,7 +144,7 @@ export const getAdminProfile = async (req, res, next) => {
 export const updateAdminProfile = async (req, res, next) => {
   try {
     const { firstName, lastName, phone, department } = req.body;
-    
+
     const admin = await Admin.findById(req.user.uid);
     if (!admin) {
       return res.status(404).json({ message: "Admin not found" });
@@ -159,7 +171,7 @@ export const updateAdminProfile = async (req, res, next) => {
         department: admin.department,
         profileImage: admin.profileImage,
         phone: admin.phone,
-        lastLogin: admin.lastLogin
+        lastLogin: admin.lastLogin,
       },
     });
   } catch (err) {
@@ -174,11 +186,15 @@ export const changeAdminPassword = async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Current password and new password are required" });
+      return res
+        .status(400)
+        .json({ message: "Current password and new password are required" });
     }
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "New password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ message: "New password must be at least 6 characters" });
     }
 
     const admin = await Admin.findById(req.user.uid);
@@ -206,11 +222,13 @@ export const changeAdminPassword = async (req, res, next) => {
 // Get All Admins (Super Admin only)
 export const getAllAdmins = async (req, res, next) => {
   try {
-    const admins = await Admin.find({}).select('-passwordHash').sort({ createdAt: -1 });
-    
+    const admins = await Admin.find({})
+      .select("-passwordHash")
+      .sort({ createdAt: -1 });
+
     res.json({
       success: true,
-      admins: admins.map(admin => ({
+      admins: admins.map((admin) => ({
         id: admin._id,
         firstName: admin.firstName,
         lastName: admin.lastName,
@@ -221,8 +239,8 @@ export const getAllAdmins = async (req, res, next) => {
         department: admin.department,
         isActive: admin.isActive,
         lastLogin: admin.lastLogin,
-        createdAt: admin.createdAt
-      }))
+        createdAt: admin.createdAt,
+      })),
     });
   } catch (err) {
     console.error("Get all admins error:", err);
@@ -233,19 +251,36 @@ export const getAllAdmins = async (req, res, next) => {
 // Create New Admin (Super Admin only)
 export const createAdmin = async (req, res, next) => {
   try {
-    const { firstName, lastName, email, password, role, permissions, department } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      password,
+      role,
+      permissions,
+      department,
+    } = req.body;
 
     // Validation
-    if (!firstName?.trim() || !lastName?.trim() || !email?.trim() || !password) {
+    if (
+      !firstName?.trim() ||
+      !lastName?.trim() ||
+      !email?.trim() ||
+      !password
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
     if (!validateEmail(email)) {
-      return res.status(400).json({ message: "Please enter a valid email address" });
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address" });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
     }
 
     // Check if admin already exists
@@ -259,9 +294,9 @@ export const createAdmin = async (req, res, next) => {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.toLowerCase().trim(),
-      role: role || 'admin',
+      role: role || "admin",
       permissions: permissions || [],
-      department: department?.trim()
+      department: department?.trim(),
     });
 
     // Hash password
@@ -279,7 +314,7 @@ export const createAdmin = async (req, res, next) => {
         role: admin.role,
         permissions: admin.permissions,
         department: admin.department,
-        createdAt: admin.createdAt
+        createdAt: admin.createdAt,
       },
     });
   } catch (err) {
@@ -295,7 +330,8 @@ export const createAdmin = async (req, res, next) => {
 export const updateAdmin = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, role, permissions, department, isActive } = req.body;
+    const { firstName, lastName, role, permissions, department, isActive } =
+      req.body;
 
     const admin = await Admin.findById(id);
     if (!admin) {
@@ -308,7 +344,7 @@ export const updateAdmin = async (req, res, next) => {
     if (role) admin.role = role;
     if (permissions) admin.permissions = permissions;
     if (department !== undefined) admin.department = department?.trim();
-    if (typeof isActive === 'boolean') admin.isActive = isActive;
+    if (typeof isActive === "boolean") admin.isActive = isActive;
 
     await admin.save();
 
@@ -325,7 +361,7 @@ export const updateAdmin = async (req, res, next) => {
         department: admin.department,
         isActive: admin.isActive,
         lastLogin: admin.lastLogin,
-        createdAt: admin.createdAt
+        createdAt: admin.createdAt,
       },
     });
   } catch (err) {
@@ -341,7 +377,9 @@ export const deleteAdmin = async (req, res, next) => {
 
     // Prevent deleting self
     if (id === req.user.uid) {
-      return res.status(400).json({ message: "Cannot delete your own account" });
+      return res
+        .status(400)
+        .json({ message: "Cannot delete your own account" });
     }
 
     const admin = await Admin.findByIdAndDelete(id);

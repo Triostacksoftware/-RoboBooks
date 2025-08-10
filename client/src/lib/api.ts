@@ -13,8 +13,10 @@ export async function api<T = unknown>(
   console.log("🌐 Request body:", json);
 
   const res = await fetch(`${backendUrl}${path}`, {
-    credentials: "include", // <-- send/receive rb_session cookie
+    credentials: "include", // include cookies for cross-origin
+    cache: "no-store", // avoid 304/etag cache confusing auth flows
     headers: {
+      Accept: "application/json",
       "Content-Type": "application/json",
       ...(init.headers || {}),
     },
@@ -23,7 +25,37 @@ export async function api<T = unknown>(
   });
 
   console.log("🌐 Response status:", res.status);
-  console.log("🌐 Response headers:", Object.fromEntries(res.headers.entries()));
+  console.log(
+    "🌐 Response headers:",
+    Object.fromEntries(res.headers.entries())
+  );
+
+  // Treat 304 as a cache issue and retry once with a cache-buster
+  if (res.status === 304) {
+    const retryUrl = `${backendUrl}${path}${
+      path.includes("?") ? "&" : "?"
+    }_=${Date.now()}`;
+    const retry = await fetch(retryUrl, {
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...(init.headers || {}),
+      },
+      body: json ? JSON.stringify(json) : undefined,
+      ...rest,
+    });
+    if (!retry.ok) {
+      const retryErr = await retry
+        .json()
+        .catch(() => ({ message: "Request failed" }));
+      throw new Error(
+        retryErr.message || `HTTP ${retry.status}: ${retry.statusText}`
+      );
+    }
+    return (await retry.json()) as T;
+  }
 
   if (!res.ok) {
     const errorData = await res
@@ -34,7 +66,7 @@ export async function api<T = unknown>(
       errorData.message || `HTTP ${res.status}: ${res.statusText}`
     );
   }
-  
+
   const data = await res.json();
   console.log("🌐 Response data:", data);
   return data as T;
@@ -59,7 +91,7 @@ export interface Project {
   name: string;
   client: string;
   description: string;
-  status: 'active' | 'completed' | 'on-hold' | 'cancelled';
+  status: "active" | "completed" | "on-hold" | "cancelled";
   progress: number;
   budget: number;
   spent: number;
@@ -76,7 +108,7 @@ export interface Task {
   project_id: string;
   name: string;
   description: string;
-  status: 'pending' | 'in-progress' | 'completed';
+  status: "pending" | "in-progress" | "completed";
   assignedTo: string;
   estimatedHours: number;
   actualHours: number;
@@ -104,7 +136,7 @@ export interface Invoice {
   number: string;
   date: string;
   amount: number;
-  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  status: "draft" | "sent" | "paid" | "overdue";
   dueDate: string;
   createdAt: string;
   updatedAt: string;
@@ -116,8 +148,8 @@ export interface Expense {
   description: string;
   amount: number;
   date: string;
-  category: 'travel' | 'meals' | 'supplies' | 'equipment' | 'other';
-  status: 'pending' | 'approved' | 'rejected';
+  category: "travel" | "meals" | "supplies" | "equipment" | "other";
+  status: "pending" | "approved" | "rejected";
   createdAt: string;
   updatedAt: string;
 }
@@ -145,44 +177,92 @@ export const projectApi = {
   // Project CRUD
   list: () => api<Project[]>("/api/projects"),
   getById: (id: string) => api<ProjectDetails>(`/api/projects/${id}`),
-  create: (data: Partial<Project>) => api<Project>("/api/projects", { method: "POST", json: data }),
-  update: (id: string, data: Partial<Project>) => api<Project>(`/api/projects/${id}`, { method: "PUT", json: data }),
+  create: (data: Partial<Project>) =>
+    api<Project>("/api/projects", { method: "POST", json: data }),
+  update: (id: string, data: Partial<Project>) =>
+    api<Project>(`/api/projects/${id}`, { method: "PUT", json: data }),
   delete: (id: string) => api(`/api/projects/${id}`, { method: "DELETE" }),
   getStats: (id: string) => api<ProjectStats>(`/api/projects/${id}/stats`),
 
   // Task operations
-  getTasks: (projectId: string) => api<Task[]>(`/api/projects/${projectId}/tasks`),
-  createTask: (projectId: string, data: Partial<Task>) => 
-    api<Task>(`/api/projects/${projectId}/tasks`, { method: "POST", json: data }),
-  updateTask: (projectId: string, taskId: string, data: Partial<Task>) => 
-    api<Task>(`/api/projects/${projectId}/tasks/${taskId}`, { method: "PUT", json: data }),
-  deleteTask: (projectId: string, taskId: string) => 
+  getTasks: (projectId: string) =>
+    api<Task[]>(`/api/projects/${projectId}/tasks`),
+  createTask: (projectId: string, data: Partial<Task>) =>
+    api<Task>(`/api/projects/${projectId}/tasks`, {
+      method: "POST",
+      json: data,
+    }),
+  updateTask: (projectId: string, taskId: string, data: Partial<Task>) =>
+    api<Task>(`/api/projects/${projectId}/tasks/${taskId}`, {
+      method: "PUT",
+      json: data,
+    }),
+  deleteTask: (projectId: string, taskId: string) =>
     api(`/api/projects/${projectId}/tasks/${taskId}`, { method: "DELETE" }),
 
   // Time entry operations
-  getTimeEntries: (projectId: string) => api<TimeEntry[]>(`/api/projects/${projectId}/time-entries`),
-  createTimeEntry: (projectId: string, data: Partial<TimeEntry>) => 
-    api<TimeEntry>(`/api/projects/${projectId}/time-entries`, { method: "POST", json: data }),
-  updateTimeEntry: (projectId: string, timeEntryId: string, data: Partial<TimeEntry>) => 
-    api<TimeEntry>(`/api/projects/${projectId}/time-entries/${timeEntryId}`, { method: "PUT", json: data }),
-  deleteTimeEntry: (projectId: string, timeEntryId: string) => 
-    api(`/api/projects/${projectId}/time-entries/${timeEntryId}`, { method: "DELETE" }),
+  getTimeEntries: (projectId: string) =>
+    api<TimeEntry[]>(`/api/projects/${projectId}/time-entries`),
+  createTimeEntry: (projectId: string, data: Partial<TimeEntry>) =>
+    api<TimeEntry>(`/api/projects/${projectId}/time-entries`, {
+      method: "POST",
+      json: data,
+    }),
+  updateTimeEntry: (
+    projectId: string,
+    timeEntryId: string,
+    data: Partial<TimeEntry>
+  ) =>
+    api<TimeEntry>(`/api/projects/${projectId}/time-entries/${timeEntryId}`, {
+      method: "PUT",
+      json: data,
+    }),
+  deleteTimeEntry: (projectId: string, timeEntryId: string) =>
+    api(`/api/projects/${projectId}/time-entries/${timeEntryId}`, {
+      method: "DELETE",
+    }),
 
   // Invoice operations
-  getInvoices: (projectId: string) => api<Invoice[]>(`/api/projects/${projectId}/invoices`),
-  createInvoice: (projectId: string, data: Partial<Invoice>) => 
-    api<Invoice>(`/api/projects/${projectId}/invoices`, { method: "POST", json: data }),
-  updateInvoice: (projectId: string, invoiceId: string, data: Partial<Invoice>) => 
-    api<Invoice>(`/api/projects/${projectId}/invoices/${invoiceId}`, { method: "PUT", json: data }),
-  deleteInvoice: (projectId: string, invoiceId: string) => 
-    api(`/api/projects/${projectId}/invoices/${invoiceId}`, { method: "DELETE" }),
+  getInvoices: (projectId: string) =>
+    api<Invoice[]>(`/api/projects/${projectId}/invoices`),
+  createInvoice: (projectId: string, data: Partial<Invoice>) =>
+    api<Invoice>(`/api/projects/${projectId}/invoices`, {
+      method: "POST",
+      json: data,
+    }),
+  updateInvoice: (
+    projectId: string,
+    invoiceId: string,
+    data: Partial<Invoice>
+  ) =>
+    api<Invoice>(`/api/projects/${projectId}/invoices/${invoiceId}`, {
+      method: "PUT",
+      json: data,
+    }),
+  deleteInvoice: (projectId: string, invoiceId: string) =>
+    api(`/api/projects/${projectId}/invoices/${invoiceId}`, {
+      method: "DELETE",
+    }),
 
   // Expense operations
-  getExpenses: (projectId: string) => api<Expense[]>(`/api/projects/${projectId}/expenses`),
-  createExpense: (projectId: string, data: Partial<Expense>) => 
-    api<Expense>(`/api/projects/${projectId}/expenses`, { method: "POST", json: data }),
-  updateExpense: (projectId: string, expenseId: string, data: Partial<Expense>) => 
-    api<Expense>(`/api/projects/${projectId}/expenses/${expenseId}`, { method: "PUT", json: data }),
-  deleteExpense: (projectId: string, expenseId: string) => 
-    api(`/api/projects/${projectId}/expenses/${expenseId}`, { method: "DELETE" }),
+  getExpenses: (projectId: string) =>
+    api<Expense[]>(`/api/projects/${projectId}/expenses`),
+  createExpense: (projectId: string, data: Partial<Expense>) =>
+    api<Expense>(`/api/projects/${projectId}/expenses`, {
+      method: "POST",
+      json: data,
+    }),
+  updateExpense: (
+    projectId: string,
+    expenseId: string,
+    data: Partial<Expense>
+  ) =>
+    api<Expense>(`/api/projects/${projectId}/expenses/${expenseId}`, {
+      method: "PUT",
+      json: data,
+    }),
+  deleteExpense: (projectId: string, expenseId: string) =>
+    api(`/api/projects/${projectId}/expenses/${expenseId}`, {
+      method: "DELETE",
+    }),
 };

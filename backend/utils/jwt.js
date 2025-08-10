@@ -36,7 +36,8 @@ export function authGuard(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("✅ AuthGuard - Token verified, user:", decoded);
-    req.user = decoded;
+    // Normalize to always expose `uid` property on req.user
+    req.user = decoded && (decoded.uid ? decoded : { uid: decoded.id || decoded.userId || decoded.sub });
     next();
   } catch (err) {
     console.log("❌ AuthGuard - Token verification failed:", err.message);

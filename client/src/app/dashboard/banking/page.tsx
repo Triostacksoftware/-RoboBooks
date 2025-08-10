@@ -289,10 +289,22 @@ export default function BankingPage() {
         </p>
 
         <div className="flex gap-3 mb-6">
-          <button className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+          <button 
+            onClick={() => {
+              window.dispatchEvent(new Event('open-add-bank-account'));
+              setShowConnectModal(false);
+              setActiveTab('accounts');
+            }}
+            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
             Connect Bank / Credit Card
           </button>
-          <button className="flex-1 border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => {
+              window.dispatchEvent(new Event('open-add-bank-account'));
+              setShowConnectModal(false);
+              setActiveTab('accounts');
+            }}
+            className="flex-1 border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
             Add Manually
           </button>
         </div>
@@ -300,7 +312,7 @@ export default function BankingPage() {
         <div className="text-center">
           <p className="text-gray-500 text-sm">
             Don't use banking for your business?{" "}
-            <button className="text-blue-600 hover:underline">Skip</button>
+            <button onClick={() => setShowConnectModal(false)} className="text-blue-600 hover:underline">Skip</button>
           </p>
         </div>
 
@@ -327,7 +339,14 @@ export default function BankingPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowConnectModal(true)}
+          onClick={() => {
+            // Ensure the Accounts tab (with the modal listener) is mounted
+            setActiveTab('accounts');
+            // Dispatch after mount to reliably open the modal
+            setTimeout(() => {
+              window.dispatchEvent(new Event('open-add-bank-account'));
+            }, 0);
+          }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
           <PlusIcon className="h-5 w-5" />
@@ -359,9 +378,9 @@ export default function BankingPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "overview" && <BankingOverview accounts={accounts} />}
+      {activeTab === "overview" && <BankingOverview />}
 
-      {activeTab === "accounts" && <BankAccountManager accounts={accounts} />}
+      {activeTab === "accounts" && <BankAccountManager />}
 
       {activeTab === "transactions" && (
         <TransactionManager transactions={recentTransactions} />

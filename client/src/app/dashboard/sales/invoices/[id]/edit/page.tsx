@@ -92,7 +92,13 @@ const EditInvoicePage = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`,
+        {
+          credentials: 'include',
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       if (response.ok) {
@@ -212,6 +218,7 @@ const EditInvoicePage = () => {
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${params.id}`,
         {
           method: "PUT",
+          credentials: 'include',
           headers: {
             "Content-Type": "application/json",
           },

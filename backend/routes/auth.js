@@ -11,13 +11,29 @@ const router = express.Router();
 // helper – issue http-only cookie
 function issueCookie(res, token) {
   const isProd = process.env.NODE_ENV === "production";
+  const isLocalhost =
+    process.env.CLIENT_ORIGIN?.includes("localhost") ||
+    process.env.FRONTEND_URL?.includes("localhost");
+
+  // For localhost development, use 'lax' instead of 'none' to avoid secure requirement
+  const sameSite = isProd ? "strict" : isLocalhost ? "lax" : "none";
+  const secure = isProd || (!isLocalhost && sameSite === "none");
+
   res.cookie("rb_session", token, {
     httpOnly: true,
-    sameSite: isProd ? "none" : "lax",
-    secure: isProd,
+    sameSite: sameSite,
+    secure: secure,
     maxAge: 1000 * 60 * 60 * 24 * 7,
-    path: "/", // Ensure cookie is sent with all requests
-    domain: isProd ? undefined : undefined, // Remove domain restriction for localhost
+    path: "/",
+  });
+
+  console.log("🍪 Cookie set with options:", {
+    sameSite,
+    secure,
+    isProd,
+    isLocalhost,
+    clientOrigin: process.env.CLIENT_ORIGIN,
+    frontendUrl: process.env.FRONTEND_URL,
   });
 }
 
@@ -114,7 +130,10 @@ router.post("/register", async (req, res, next) => {
 
     // Generate token and set cookie
     const token = signToken({ uid: user._id });
+    console.log("🔐 Generated token for new user:", user.email);
+
     issueCookie(res, token);
+    console.log("🍪 Cookie issued for registration");
 
     // Return user data (without sensitive info)
     res.status(201).json({
@@ -185,7 +204,10 @@ router.post("/login", async (req, res, next) => {
 
     // Generate token and set cookie
     const token = signToken({ uid: user._id });
+    console.log("🔐 Generated token for user:", user.email);
+
     issueCookie(res, token);
+    console.log("🍪 Cookie issued for login");
 
     // Return user data
     res.json({
@@ -366,7 +388,10 @@ router.post("/google/callback", async (req, res, next) => {
     await user.save();
 
     const token = signToken({ uid: user._id });
+    console.log("🔐 Generated token for Google user:", user.email);
+
     issueCookie(res, token);
+    console.log("🍪 Cookie issued for Google login");
 
     console.log("✅ Authentication successful for user:", user.email);
 
