@@ -52,6 +52,112 @@ body,
   }
 }
 
+/* Blob animation for hero section */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Fade-in animation for services page */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+/* Hero component animations */
+@keyframes slide-left-right {
+  0% {
+    transform: translateX(-20px);
+  }
+  50% {
+    transform: translateX(20px);
+  }
+  100% {
+    transform: translateX(-20px);
+  }
+}
+
+.animate-slide-left-right {
+  animation: slide-left-right 5s ease-in-out infinite;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 1s ease-out forwards;
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 1s ease-out forwards;
+}
+
 /* globals.css */
 
 /* when sidebar is fully expanded (width ~18rem): push main right by 18rem */

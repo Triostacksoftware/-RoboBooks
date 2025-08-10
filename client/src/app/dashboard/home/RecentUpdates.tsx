@@ -117,7 +117,7 @@ export default function RecentUpdates() {
           <p className="text-gray-600 mb-4 text-sm">
             Visit our YouTube channel and watch for videos and webinars to learn everything about Robo Books.
           </p>
-          <a href="#" className="text-blue-600 hover:underline text-sm">
+          <a href="https://www.youtube.com" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
             Go to YouTube Channel
           </a>
         </div>

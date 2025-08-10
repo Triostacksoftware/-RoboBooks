@@ -80,14 +80,14 @@ export default function SubscribeButton() {
                 <p>
                   • <strong>Upgrade now</strong>, to a paid plan that best suits
                   your business needs.{' '}
-                  <a href="#" className="text-blue-500 underline">
+                  <a href="/pricing" className="text-blue-500 underline">
                     Compare Plans
                   </a>
                 </p>
                 <p>
                   • Switch to the Free plan of Robo Books. Limited features
                   apply. Visit our{' '}
-                  <a href="#" className="text-blue-500 underline">
+                  <a href="/pricing" className="text-blue-500 underline">
                     pricing page
                   </a>{' '}
                   to see what you get.
@@ -97,12 +97,12 @@ export default function SubscribeButton() {
 
             {/* Footer */}
             <div className="flex justify-center gap-4 px-6 py-4 border-t">
-              <button className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition">
+              <a href="/pricing" className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition text-center">
                 Upgrade Plan
-              </button>
-              <button className="border px-4 py-2 rounded-xl text-black hover:bg-black hover:text-white transition">
+              </a>
+              <a href="/pricing#free" className="border px-4 py-2 rounded-xl text-black hover:bg-black hover:text-white transition text-center">
                 Switch to Free Plan
-              </button>
+              </a>
             </div>
           </div>
         </div>

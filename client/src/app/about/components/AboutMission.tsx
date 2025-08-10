@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from 'react';
 
-export default function AboutCreative() {
+export default function AboutMission() {
   const ref = useRef(null);
 
   return (
     <section
+      id="mission"
       ref={ref}
-      id="about"
       className="
         relative isolate overflow-hidden bg-white
         py-20 lg:py-32
@@ -26,31 +26,10 @@ export default function AboutCreative() {
           lg:grid-cols-2
         "
       >
-        {/* -------- Illustration card (Video) -------- */}
-        <div className="flex justify-center lg:justify-start">
-          <div
-            className="
-              relative w-full max-w-xs sm:max-w-sm md:max-w-md xl:max-w-md
-              rounded-xl ring-4 ring-transparent bg-white/20 overflow-hidden
-              aspect-[3/4] lg:aspect-auto lg:h-full
-              hover:scale-105 transition-transform duration-300
-            "
-          >
-            <video
-              src="/images/aboutsection.mp4"
-              className="absolute inset-0 w-full h-full object-cover rounded-xl"
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
-          </div>
-        </div>
-
         {/* -------- Text block -------- */}
         <div className="space-y-8 text-center lg:text-left animate-fade-in">
           <p className="uppercase tracking-[.25em] text-blue-600 font-semibold">
-            About Robo Books
+            Our Mission
           </p>
 
           <h2
@@ -60,22 +39,23 @@ export default function AboutCreative() {
               bg-clip-text text-transparent
             "
           >
-            Reliable &amp; Effort-less<br />
-            Billing Solutions
+            Simplifying<br />
+            Business Accounting<br />
+            for Everyone
           </h2>
 
           <p className="mx-auto lg:mx-0 max-w-xl text-gray-700 text-lg">
-            We turn complex invoicing into a breeze. Delightful UI, AI-powered
-            automation and bank-grade security—so you can focus on growth while
-            Robo Books handles the numbers.
+            We believe that every business, regardless of size, deserves access to powerful, 
+            user-friendly accounting tools. Our mission is to democratize financial management 
+            by making complex accounting processes simple and accessible.
           </p>
 
           <ul className="space-y-4">
             {[
-              'One-click invoice creation',
-              'Real-time payment reminders',
-              'Seamless GST & tax reports',
-              'Military-grade data security',
+              'Make accounting accessible to all businesses',
+              'Provide GST-compliant solutions for India',
+              'Automate repetitive financial tasks',
+              'Ensure data security and privacy',
             ].map((item) => (
               <li key={item} className="group flex items-start gap-3">
                 <svg
@@ -91,6 +71,27 @@ export default function AboutCreative() {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* -------- Illustration card (Video) -------- */}
+        <div className="flex justify-center lg:justify-end">
+          <div
+            className="
+              relative w-full max-w-xs sm:max-w-sm md:max-w-md xl:max-w-md
+              rounded-xl ring-4 ring-transparent bg-white/20 overflow-hidden
+              aspect-[3/4] lg:aspect-auto lg:h-full
+              hover:scale-105 transition-transform duration-300
+            "
+          >
+            <video
+              src="/images/aboutsplit.mp4"
+              className="absolute inset-0 w-full h-full object-cover rounded-xl"
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          </div>
         </div>
       </div>
     </section>

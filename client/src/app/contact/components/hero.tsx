@@ -31,7 +31,7 @@ export default function Hero({ className }: Props) {
         <div className="absolute -left-24 bottom-[-140px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,rgba(16,185,129,0.66)_0%,rgba(16,185,129,0.42)_35%,transparent_72%)] blur-2xl" />
         <div className="absolute -right-20 -top-16 h-[560px] w-[560px] rounded-full bg-[radial-gradient(50%_50%_at_50%_50%,rgba(59,130,246,0.66)_0%,rgba(59,130,246,0.42)_35%,transparent_72%)] blur-2xl" />
         <div className="absolute inset-0 bg-[radial-gradient(1200px_560px_at_-10%_120%,rgba(255,255,255,0.22),transparent_58%)]" />
-        <div className="absolute -left-40 top-24 h-64 w-[480px] rotate-[-18deg] bg-gradient-to-r from-emerald-500/36 to-blue-500/36 [clip-path:polygon(0_0,100%_0,86%_100%,0_80%)]" />
+        <div className="absolute -left-40 top-24 h-64 w-[480px] rotate-[-18deg] bg-gradient-to-r from-emerald-500/20 to-blue-500/20 [clip-path:polygon(0_0,100%_0,86%_100%,0_80%)]" />
       </div>
 
       <div className="container mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-12 md:py-24 lg:grid-cols-2">
@@ -59,7 +59,7 @@ export default function Hero({ className }: Props) {
           </h1>
 
           <p className="mt-4 max-w-xl text-base leading-relaxed text-white/85 md:text-lg">
-            Questions, partnerships, or support—our team responds fast. Let’s
+            Questions, partnerships, or support—our team responds fast. Let's
             build something brilliant with{' '}
             <span className="text-emerald-100">Robo</span>
             <span className="text-blue-100">Books</span>.

@@ -23,25 +23,25 @@ export default function GettingStarted() {
       id: 'org-details',
       title: 'Add organization details',
       description: 'Add your organization\'s address and tax details to Robo Books to auto-populate them when you create transactions, files, and invoices to provide access to your employees and accountants.',
-      learnMore: '#'
+      learnMore: '/dashboard/settings'
     },
     {
       id: 'first-invoice',
       title: 'Create your first invoice',
       description: 'Email "Your invoice" to the test email id.',
-      learnMore: '#'
+      learnMore: '/dashboard/sales/invoices/new'
     },
     {
       id: 'first-bill',
       title: 'Create your first bill and expense',
       description: 'Set up your first bill and expense entries.',
-      learnMore: '#'
+      learnMore: '/dashboard/expenses/new'
     },
     {
       id: 'banking-journals',
       title: 'Set up banking and journals',
       description: 'Configure your banking details and journal entries.',
-      learnMore: '#'
+      learnMore: '/dashboard/banking'
     }
   ]
 
@@ -49,44 +49,44 @@ export default function GettingStarted() {
     {
       title: 'Configure Chart of Accounts',
       description: 'Define accounts that can be used by any type of business. If there are other accounts that your business needs, you can create them.',
-      learnMore: '#',
-      configure: '#',
-      watchLearn: '#'
+      learnMore: '/dashboard/accounts',
+      configure: '/dashboard/accounts',
+      watchLearn: 'https://www.youtube.com/results?search_query=chart+of+accounts'
     },
     {
       title: 'Enter Opening Balances',
       description: 'The first step to setting up your software, you must enter the opening balances in Robo Books before you start adding transactions to keep your books in sync.',
-      learnMore: '#',
-      configure: '#',
-      watchLearn: '#'
+      learnMore: '/dashboard/opening-balances',
+      configure: '/dashboard/opening-balances',
+      watchLearn: 'https://www.youtube.com/results?search_query=opening+balances+accounting'
     },
     {
       title: 'Connect with Payment Gateways',
       description: 'Connect with payment gateways to accept online payments and gateways and collect payments faster from your customers.',
-      learnMore: '#',
-      configure: '#',
-      watchLearn: '#'
+      learnMore: '/dashboard/settings/payments',
+      configure: '/dashboard/settings/payments',
+      watchLearn: 'https://www.youtube.com/results?search_query=payment+gateway+setup'
     },
     {
       title: 'Enable Customer and Vendor Portals',
       description: 'Enable customer and vendor portals to keep track and communicate with you about all the transactions that you\'ve created for them.',
-      learnMore: '#',
-      configure: '#',
-      watchLearn: '#'
+      learnMore: '/dashboard/settings/portals',
+      configure: '/dashboard/settings/portals',
+      watchLearn: 'https://www.youtube.com/results?search_query=customer+vendor+portal'
     },
     {
       title: 'Set up Payment Reminders',
       description: 'Configure payment reminders to make sure that payments. Configure them to send automated emails and SMSes as reminders and collect payments on time.',
-      learnMore: '#',
-      configure: '#',
-      watchLearn: '#'
+      learnMore: '/dashboard/settings/reminders',
+      configure: '/dashboard/settings/reminders',
+      watchLearn: 'https://www.youtube.com/results?search_query=payment+reminders'
     },
     {
       title: 'Configure Roles and Permission',
       description: 'Configure roles and permissions for accountants as users in Robo Books by configuring different roles and permissions for them.',
-      learnMore: '#',
-      configure: '#',
-      watchLearn: '#'
+      learnMore: '/dashboard/settings/roles',
+      configure: '/dashboard/settings/roles',
+      watchLearn: 'https://www.youtube.com/results?search_query=roles+and+permissions'
     }
   ]
 
@@ -100,7 +100,7 @@ export default function GettingStarted() {
             <p className="text-xl mb-6">The easy-to-use accounting software that you can set up in no time!</p>
             <p className="text-blue-100">
               Need help getting started with Robo Books? Register for one of our free webinars.{' '}
-              <a href="#" className="underline font-semibold">View Live Webinar</a>
+             <a href="https://www.youtube.com/results?search_query=robobooks+webinar" target="_blank" rel="noreferrer" className="underline font-semibold">View Live Webinar</a>
             </p>
           </div>
           <div className="flex justify-center">
@@ -233,7 +233,7 @@ export default function GettingStarted() {
           <p className="text-gray-600 mb-2">Customize your templates.</p>
           <p className="text-gray-600 mb-2">Add your organization's logo to the templates.</p>
           <p className="text-gray-600 mb-4">Add the bank details to the templates.</p>
-          <a href="#" className="text-blue-600 hover:underline">View More</a>
+           <a href="/dashboard/settings/templates" className="text-blue-600 hover:underline">View More</a>
         </div>
       </div>
 
@@ -242,17 +242,17 @@ export default function GettingStarted() {
         <div>
           <h4 className="font-semibold mb-2">Have a question?</h4>
           <p className="text-gray-600 mb-2">Write to us at support.robobooks.com</p>
-          <a href="#" className="text-blue-600 hover:underline">Watch a video</a>
+          <a href="https://www.youtube.com/@" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Watch a video</a>
         </div>
         <div>
           <h4 className="font-semibold mb-2">Searching for an accountant?</h4>
           <p className="text-gray-600 mb-2">Find Robo Books certified financial advisors who can help you grow your business efficiently using Robo Books.</p>
-          <a href="#" className="text-blue-600 hover:underline">Find a Robo Books Advisor</a>
+          <a href="/contact" className="text-blue-600 hover:underline">Find a Robo Books Advisor</a>
         </div>
         <div>
           <h4 className="font-semibold mb-2">Learn more from our webinars</h4>
           <p className="text-gray-600 mb-2">Stay in-depth understanding from our webinars of Robo Books webinars.</p>
-          <a href="#" className="text-blue-600 hover:underline">Watch a webinar</a>
+          <a href="https://www.youtube.com/results?search_query=robobooks+webinar" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Watch a webinar</a>
         </div>
         <div>
           <h4 className="font-semibold mb-2">Follow us and stay up to date</h4>

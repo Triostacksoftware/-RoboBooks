@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 const Hero: React.FC = () => {
@@ -33,12 +34,18 @@ const Hero: React.FC = () => {
 
         {/* CTA Buttons */}
         <div className="mt-8 flex justify-center flex-wrap gap-4 animate-fade-in-up">
-          <button className="bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold transition duration-300 transform hover:bg-yellow-300 hover:scale-105 shadow-lg">
+          <Link
+            href="/register"
+            className="inline-block w-full sm:w-auto bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold transition duration-300 transform hover:bg-yellow-300 hover:scale-105 shadow-lg text-center"
+          >
             Start my free trial
-          </button>
-          <button className="border border-yellow-300 text-yellow-200 px-8 py-3 rounded-full font-semibold transition duration-300 hover:bg-yellow-100 hover:text-black hover:scale-105">
+          </Link>
+          <Link
+            href="/contact"
+            className="inline-block w-full sm:w-auto border border-yellow-300 text-yellow-200 px-8 py-3 rounded-full font-semibold transition duration-300 hover:bg-yellow-100 hover:text-black hover:scale-105 text-center"
+          >
             Request a demo
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -51,12 +58,7 @@ const Hero: React.FC = () => {
         <div className="absolute right-0 top-1/2 -translate-y-1/2 w-72 h-72 bg-yellow-400 opacity-20 rounded-full blur-3xl animate-spin" />
 
         {/* Animated Image */}
-        <div
-          className="relative z-10 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-white/10 backdrop-blur-sm"
-          style={{
-            animation: "slide-left-right 5s ease-in-out infinite",
-          }}
-        >
+        <div className="relative z-10 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-white/10 backdrop-blur-sm animate-slide-left-right">
           <Image
             src="/images/usability.png"
             alt="Dashboard Preview"
@@ -66,66 +68,6 @@ const Hero: React.FC = () => {
           />
         </div>
       </div>
-
-      {/* Custom Animations */}
-      <style jsx>{`
-        @keyframes slide-left-right {
-          0% {
-            transform: translateX(-20px);
-          }
-          50% {
-            transform: translateX(20px);
-          }
-          100% {
-            transform: translateX(-20px);
-          }
-        }
-
-        @keyframes fadeInUp {
-          0% {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fadeInDown {
-          0% {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes slideUp {
-          0% {
-            opacity: 0;
-            transform: translateY(40px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in-up {
-          animation: fadeInUp 1s ease-out forwards;
-        }
-
-        .animate-fade-in-down {
-          animation: fadeInDown 1s ease-out forwards;
-        }
-
-        .animate-slide-up {
-          animation: slideUp 1s ease-out forwards;
-        }
-      `}</style>
     </section>
   );
 };
