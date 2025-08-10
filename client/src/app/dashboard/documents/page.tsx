@@ -1,88 +1,112 @@
+"use client";
+import { useState, useEffect } from "react";
 import React from "react";
 import DocumentsOverview from "./components/DocumentsOverview";
 import DocumentTypes from "./components/DocumentTypes";
 import DocumentFeatures from "./components/DocumentFeatures";
 
+interface DocumentData {
+  _id: string;
+  filename: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  uploadDate: string;
+  userId: string;
+}
+
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { showToast } = useToast();
+  // const { showToast } = useToast();
 
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
       const response = await fetch(`${backendUrl}/api/documents`, {
-        credentials: 'include', // Use HTTP-only cookies for authentication
+        credentials: "include", // Use HTTP-only cookies for authentication
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch documents');
+        throw new Error(errorData.message || "Failed to fetch documents");
       }
 
       const data = await response.json();
       setDocuments(data.data || []);
     } catch (error) {
-      console.error('Fetch documents error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch documents');
+      console.error("Fetch documents error:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch documents"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) {
+    if (!confirm("Are you sure you want to delete this document?")) {
       return;
     }
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
       const response = await fetch(`${backendUrl}/api/documents/${id}`, {
-        method: 'DELETE',
-        credentials: 'include', // Use HTTP-only cookies for authentication
+        method: "DELETE",
+        credentials: "include", // Use HTTP-only cookies for authentication
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete document');
+        throw new Error(errorData.message || "Failed to delete document");
       }
 
       // Remove the document from the list
-      setDocuments(prev => prev.filter(doc => doc._id !== id));
-      showToast('Document deleted successfully!', 'success');
+      setDocuments((prev) => prev.filter((doc) => doc._id !== id));
+      alert("Document deleted successfully! success");
     } catch (error) {
-      console.error('Delete document error:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to delete document', 'error');
+      console.error("Delete document error:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to delete document"
+      );
     }
   };
 
   const handleDownload = async (id: string) => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-      const response = await fetch(`${backendUrl}/api/documents/${id}/download`, {
-        credentials: 'include', // Use HTTP-only cookies for authentication
-      });
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(
+        `${backendUrl}/api/documents/${id}/download`,
+        {
+          credentials: "include", // Use HTTP-only cookies for authentication
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to download document');
+        throw new Error(errorData.message || "Failed to download document");
       }
 
       // Create a blob from the response and download it
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = ''; // The server will set the filename
+      a.download = ""; // The server will set the filename
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Download document error:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to download document', 'error');
+      console.error("Download document error:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to download document"
+      );
     }
   };
 

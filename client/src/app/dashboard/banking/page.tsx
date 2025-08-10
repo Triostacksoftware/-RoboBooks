@@ -289,30 +289,37 @@ export default function BankingPage() {
         </p>
 
         <div className="flex gap-3 mb-6">
-          <button 
+          <button
             onClick={() => {
-              window.dispatchEvent(new Event('open-add-bank-account'));
+              window.dispatchEvent(new Event("open-add-bank-account"));
               setShowConnectModal(false);
-              setActiveTab('accounts');
+              setActiveTab("accounts");
             }}
-            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+            className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+          >
             Connect Bank / Credit Card
           </button>
-          <button 
+          <button
             onClick={() => {
-              window.dispatchEvent(new Event('open-add-bank-account'));
+              window.dispatchEvent(new Event("open-add-bank-account"));
               setShowConnectModal(false);
-              setActiveTab('accounts');
+              setActiveTab("accounts");
             }}
-            className="flex-1 border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+            className="flex-1 border border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
+          >
             Add Manually
           </button>
         </div>
 
         <div className="text-center">
           <p className="text-gray-500 text-sm">
-            Don't use banking for your business?{" "}
-            <button onClick={() => setShowConnectModal(false)} className="text-blue-600 hover:underline">Skip</button>
+            Don&#39;t use banking for your business?{" "}
+            <button
+              onClick={() => setShowConnectModal(false)}
+              className="text-blue-600 hover:underline"
+            >
+              Skip
+            </button>
           </p>
         </div>
 
@@ -341,10 +348,10 @@ export default function BankingPage() {
         <button
           onClick={() => {
             // Ensure the Accounts tab (with the modal listener) is mounted
-            setActiveTab('accounts');
+            setActiveTab("accounts");
             // Dispatch after mount to reliably open the modal
             setTimeout(() => {
-              window.dispatchEvent(new Event('open-add-bank-account'));
+              window.dispatchEvent(new Event("open-add-bank-account"));
             }, 0);
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
