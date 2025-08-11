@@ -2,6 +2,7 @@ import Document from "../models/Document.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { logAction } from "../services/auditTrailservice.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,6 +79,24 @@ export const uploadDocument = async (req, res) => {
     console.log("Saving document to database...");
     await document.save();
     console.log("Document saved successfully:", document._id);
+
+    // Log audit trail
+    await logAction({
+      user: req.user.uid,
+      action: "upload",
+      entity: "document",
+      entityId: document._id,
+      message: `Document "${title}" uploaded successfully`,
+      details: {
+        fileName: req.file.filename,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        documentType,
+        category
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
 
     res.status(201).json({
       success: true,
@@ -229,6 +248,18 @@ export const updateDocument = async (req, res) => {
       { new: true }
     ).populate("uploadedBy", "name email");
 
+    // Log audit trail
+    await logAction({
+      user: req.user.uid,
+      action: "update",
+      entity: "document",
+      entityId: req.params.id,
+      message: `Document "${updatedDocument.title}" updated`,
+      details: updateData,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
     res.json({
       success: true,
       message: "Document updated successfully",
@@ -270,6 +301,21 @@ export const deleteDocument = async (req, res) => {
     }
 
     await Document.findByIdAndDelete(req.params.id);
+
+    // Log audit trail
+    await logAction({
+      user: req.user.uid,
+      action: "delete",
+      entity: "document",
+      entityId: req.params.id,
+      message: `Document "${document.title}" deleted`,
+      details: {
+        fileName: document.fileName,
+        originalName: document.originalName
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
 
     res.json({
       success: true,

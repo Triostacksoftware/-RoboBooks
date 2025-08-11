@@ -129,8 +129,12 @@ router.post("/register", async (req, res, next) => {
     });
 
     // Generate token and set cookie
-    const token = signToken({ uid: user._id });
-    console.log("🔐 Generated token for new user:", user.email);
+    const token = signToken({ 
+      uid: user._id, 
+      role: 'user', // Default role for regular users
+      email: user.email 
+    });
+    console.log("🔐 Generated token for user:", user.email);
 
     issueCookie(res, token);
     console.log("🍪 Cookie issued for registration");
@@ -209,9 +213,10 @@ router.post("/login", async (req, res, next) => {
     issueCookie(res, token);
     console.log("🍪 Cookie issued for login");
 
-    // Return user data
+    // Return user data and access token
     res.json({
       success: true,
+      accessToken: token,
       user: {
         id: user._id,
         companyName: user.companyName,
@@ -270,11 +275,16 @@ router.post("/login/google", async (req, res, next) => {
     user.lastLogin = new Date();
     await user.save();
 
-    const token = signToken({ uid: user._id });
+    const token = signToken({ 
+      uid: user._id, 
+      role: 'user', // Default role for regular users
+      email: user.email 
+    });
     issueCookie(res, token);
 
     res.json({
       success: true,
+      accessToken: token,
       user: {
         id: user._id,
         companyName: user.companyName,
@@ -387,7 +397,11 @@ router.post("/google/callback", async (req, res, next) => {
     user.lastLogin = new Date();
     await user.save();
 
-    const token = signToken({ uid: user._id });
+    const token = signToken({ 
+      uid: user._id, 
+      role: 'user', // Default role for regular users
+      email: user.email 
+    });
     console.log("🔐 Generated token for Google user:", user.email);
 
     issueCookie(res, token);
@@ -397,6 +411,7 @@ router.post("/google/callback", async (req, res, next) => {
 
     res.json({
       success: true,
+      accessToken: token,
       user: {
         id: user._id,
         companyName: user.companyName,

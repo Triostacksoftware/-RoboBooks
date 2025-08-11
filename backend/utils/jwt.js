@@ -1,12 +1,12 @@
 import jwt from "jsonwebtoken";
 
 export function signToken(payload) {
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
+  return jwt.sign(payload, process.env.JWT_SECRET || 'fallback-secret-key', { expiresIn: "1h" });
 }
 
 export function verifyToken(token) {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET);
+    return jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
   } catch (err) {
     throw new Error("Invalid or expired token");
   }
@@ -36,8 +36,15 @@ export function authGuard(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("✅ AuthGuard - Token verified, user:", decoded);
-    // Normalize to always expose `uid` property on req.user
-    req.user = decoded && (decoded.uid ? decoded : { uid: decoded.id || decoded.userId || decoded.sub });
+    
+    // Create a consistent user object structure
+    req.user = {
+      uid: decoded.uid,
+      id: decoded.uid, // For backward compatibility with controllers expecting req.user.id
+      role: decoded.role || 'user', // Default role if not specified
+      email: decoded.email
+    };
+    
     next();
   } catch (err) {
     console.log("❌ AuthGuard - Token verification failed:", err.message);

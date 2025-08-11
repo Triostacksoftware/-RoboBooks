@@ -243,9 +243,8 @@ export default function AdminBilling() {
           <EyeIcon className="h-4 w-4" />
           <span>View</span>
         </button>
-        <button className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+        <button className="flex items-center justify-center px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-lg" title="Edit">
           <PencilIcon className="h-4 w-4" />
-          <span>Edit</span>
         </button>
         {subscription.status === "active" && (
           <button 

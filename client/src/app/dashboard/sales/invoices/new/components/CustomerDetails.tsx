@@ -1,31 +1,7 @@
 import React, { useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Select from "react-select";
-
-interface Customer {
-  firstName: string;
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  lastName: string;
-  mobile?: string;
-  workPhone?: string;
-  billingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-  shippingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-}
+import { Customer } from "@/services/customerService";
 
 interface AddressFormData {
   street: string;
@@ -260,9 +236,9 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                   {selectedCustomer.firstName} {selectedCustomer.lastName}
                 </h3>
                 <p className="text-gray-600">{selectedCustomer.email}</p>
-                {selectedCustomer.phone && (
-                  <p className="text-gray-600">{selectedCustomer.phone}</p>
-                )}
+                            {(selectedCustomer.workPhone || selectedCustomer.mobile) && (
+              <p className="text-gray-600">{selectedCustomer.workPhone || selectedCustomer.mobile}</p>
+            )}
               </div>
             </div>
           )}
