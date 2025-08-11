@@ -35,8 +35,7 @@ import budgetRoutes from "./routes/budgetRoutes.js";
 import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
 import tdsRoutes from "./routes/tdsRoutes.js";
 import tcsRoutes from "./routes/tcsRoutes.js";
-import uploadsRoutes from "./routes/uploads.routes.js";
-import quotesRoutes from "./routes/quotes.routes.js";
+import deliveryChallanRoutes from "./routes/deliveryChallanRoutes.js";
 
 const app = express();
 
@@ -98,6 +97,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/timesheets", timesheetRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/delivery-challans", deliveryChallanRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/reports", reportRoutes);
