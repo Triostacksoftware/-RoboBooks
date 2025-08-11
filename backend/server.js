@@ -35,6 +35,8 @@ import budgetRoutes from "./routes/budgetRoutes.js";
 import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
 import tdsRoutes from "./routes/tdsRoutes.js";
 import tcsRoutes from "./routes/tcsRoutes.js";
+import uploadsRoutes from "./routes/uploads.routes.js";
+import quotesRoutes from "./routes/quotes.routes.js";
 
 const app = express();
 
@@ -73,6 +75,9 @@ app.use(
 
 app.use(morgan("dev"));
 
+// Serve static files from uploads directory
+app.use("/uploads", express.static("uploads"));
+
 // Passport initialization (for OAuth)
 app.use(passport.initialize());
 
@@ -101,6 +106,8 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/bulk-updates", bulkUpdateRoutes);
 app.use("/api/tds", tdsRoutes);
 app.use("/api/tcs", tcsRoutes);
+app.use("/api/uploads", uploadsRoutes);
+app.use("/api/quotes", quotesRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {
