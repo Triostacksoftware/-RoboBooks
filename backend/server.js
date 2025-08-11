@@ -36,6 +36,7 @@ import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
 import tdsRoutes from "./routes/tdsRoutes.js";
 import tcsRoutes from "./routes/tcsRoutes.js";
 import deliveryChallanRoutes from "./routes/deliveryChallanRoutes.js";
+import salespersonRoutes from "./routes/salespersonRoutes.js";
 
 const app = express();
 
@@ -103,6 +104,7 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/bulk-updates", bulkUpdateRoutes);
 app.use("/api/tds", tdsRoutes);
 app.use("/api/tcs", tcsRoutes);
+app.use("/api/salespersons", salespersonRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {

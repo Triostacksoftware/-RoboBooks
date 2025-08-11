@@ -114,8 +114,8 @@ const NewInvoiceForm = () => {
         description: "",
         quantity: 1.0,
         unit: "pcs",
-        rate: 10000.0, // Set default amount for testing
-        amount: 100000.0, // 10 × 10000 = 100000
+        rate: 0.0,
+        amount: 0.0,
         taxMode: "IGST" as TaxMode, // Use IGST for inter-state
         taxRate: 18,
         taxAmount: 0,
@@ -1089,6 +1089,84 @@ const NewInvoiceForm = () => {
             onAddItem={addItem}
             onRemoveItem={removeItem}
             onUpdateItem={updateItem}
+            onItemSelect={(id, itemId, itemDetails) => {
+              setFormData((prev) => {
+                const updatedItems = prev.items.map((item) => {
+                  if (item.id !== id) return item;
+                  
+                  return {
+                    ...item,
+                    itemId: itemId,
+                    details: itemDetails.name || "",
+                    description: itemDetails.description || "",
+                    rate: itemDetails.sellingPrice || 0,
+                    unit: itemDetails.unit || "pcs",
+                    amount: (item.quantity || 1) * (itemDetails.sellingPrice || 0),
+                    // Update tax rate if available from item
+                    taxRate: itemDetails.gstRate || item.taxRate || 18,
+                  };
+                });
+
+                // Recalculate totals
+                const subTotal = updatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.amount || 0),
+                  0
+                );
+                const discountAmount =
+                  prev.discountType === "percentage"
+                    ? (subTotal * prev.discount) / 100
+                    : prev.discount;
+
+                // Recalculate GST on (subtotal - discount) with proportional distribution
+                const finalUpdatedItems = updatedItems.map((item) => {
+                  // Ensure all GST/IGST items have the correct tax rate
+                  let itemRate = 0;
+                  if (item.taxMode === "GST" || item.taxMode === "IGST") {
+                    itemRate = item.taxRate || 18;
+                  }
+
+                  // Calculate proportional discount for this item
+                  const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+                  const itemDiscountAmount = discountAmount * itemProportion;
+                  const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+                  const taxes = calculateItemTax(
+                    itemTaxableAmount,
+                    item.taxMode as TaxMode,
+                    itemRate
+                  );
+                  return { ...item, ...taxes };
+                });
+
+                const cgstTotal = finalUpdatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.cgst || 0),
+                  0
+                );
+                const sgstTotal = finalUpdatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.sgst || 0),
+                  0
+                );
+                const igstTotal = finalUpdatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.igst || 0),
+                  0
+                );
+                const totalTax = cgstTotal + sgstTotal + igstTotal;
+                const total =
+                  subTotal - discountAmount + totalTax + (prev.adjustment || 0);
+
+                return {
+                  ...prev,
+                  items: finalUpdatedItems,
+                  subTotal,
+                  discountAmount,
+                  taxAmount: totalTax,
+                  cgstTotal,
+                  sgstTotal,
+                  igstTotal,
+                  total,
+                };
+              });
+            }}
             isIntraState={isIntraState}
           />
 

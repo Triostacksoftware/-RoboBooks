@@ -1,5 +1,6 @@
 import React from "react";
 import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import ItemSelector from "./ItemSelector";
 
 type TaxMode = "GST" | "IGST" | "NON_TAXABLE" | "NO_GST" | "EXPORT";
 
@@ -26,6 +27,22 @@ interface ItemsTableProps {
   onAddItem: () => void;
   onRemoveItem: (id: number) => void;
   onUpdateItem: (id: number, field: string, value: string | number) => void;
+  onItemSelect: (
+    id: number,
+    itemId: string,
+    itemDetails: {
+      name?: string;
+      sku?: string;
+      sellingPrice?: number;
+      unit?: string;
+      description?: string;
+      category?: string;
+      brand?: string;
+      hsnCode?: string;
+      sacCode?: string;
+      gstRate?: number;
+    }
+  ) => void;
   isIntraState: () => boolean;
 }
 
@@ -34,6 +51,7 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
   onAddItem,
   onRemoveItem,
   onUpdateItem,
+  onItemSelect,
   isIntraState,
 }) => {
   // Function to get the appropriate tax mode based on intra/inter-state
@@ -85,16 +103,18 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {items.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="px-2 py-1">
-                  <input
-                    type="text"
+              <tr
+                key={item.id}
+                className="hover:bg-gray-50 relative"
+                style={{ zIndex: 99999 }}
+              >
+                <td className="px-2 py-1 relative" style={{ zIndex: 99999 }}>
+                  <ItemSelector
+                    value={item.itemId}
+                    onChange={(itemId, itemDetails) => {
+                      onItemSelect(item.id, itemId, itemDetails);
+                    }}
                     placeholder="Type or click to select an item"
-                    className="w-full px-1.5 py-0.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                    value={item.details}
-                    onChange={(e) =>
-                      onUpdateItem(item.id, "details", e.target.value)
-                    }
                   />
                 </td>
                 <td className="px-2 py-1">
