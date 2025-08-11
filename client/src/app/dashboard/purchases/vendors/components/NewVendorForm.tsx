@@ -45,7 +45,6 @@ interface VendorFormData {
   currency: string;
   openingBalance: string;
   paymentTerms: string;
-  tds: string;
   enablePortal: boolean;
   portalLanguage: string;
 }
@@ -94,7 +93,6 @@ export default function NewVendorForm() {
     currency: "INR- Indian Rupee",
     openingBalance: "",
     paymentTerms: "Due on Receipt",
-    tds: "",
     enablePortal: false,
     portalLanguage: "English",
   });
@@ -158,19 +156,49 @@ export default function NewVendorForm() {
     }));
   };
 
+  const formatAddress = (address: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    zipCode: string;
+  }) => {
+    const parts = [
+      address.street,
+      address.city,
+      address.state,
+      address.country,
+      address.zipCode,
+    ].filter((part) => part && part.trim() !== "");
+
+    return parts.length > 0 ? parts.join(", ") : "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Validate required fields
+    console.log("Form data:", formData);
+    console.log("Display name:", formData.displayName);
+    console.log("Display name trimmed:", formData.displayName.trim());
+
+    if (!formData.displayName.trim()) {
+      setError('"displayName" is required');
+      setLoading(false);
+      return;
+    }
 
     try {
       const vendorData = {
         name: formData.displayName || formData.name,
         gstin: formData.gstin,
         companyName: formData.companyName,
+        displayName: formData.displayName,
         email: formData.email,
         phone: formData.mobile || formData.workPhone,
-        address: `${formData.address.street}, ${formData.address.city}, ${formData.address.state}, ${formData.address.country} ${formData.address.zipCode}`,
+        address: formatAddress(formData.address),
         contactInfo: `${formData.email} | ${
           formData.mobile || formData.workPhone
         }`,
@@ -180,7 +208,6 @@ export default function NewVendorForm() {
         currency: formData.currency,
         openingBalance: parseFloat(formData.openingBalance) || 0,
         paymentTerms: formData.paymentTerms,
-        tds: formData.tds,
         enablePortal: formData.enablePortal,
         portalLanguage: formData.portalLanguage,
         contactPersons: formData.contactPersons,
@@ -222,9 +249,9 @@ export default function NewVendorForm() {
           className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
-          Back to Vendors
+          Back to Customers
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">New Vendor</h1>
+        <h1 className="text-2xl font-bold text-gray-900">New Customer</h1>
       </div>
 
       {/* Prefill Banner */}
@@ -232,7 +259,8 @@ export default function NewVendorForm() {
         <div className="flex items-start">
           <InformationCircleIcon className="h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
           <div className="text-sm text-blue-800">
-            Prefill Vendor details from the GST portal using the Vendor's GSTIN.{" "}
+            Prefill Customer details from the GST portal using the Customer's
+            GSTIN.{" "}
             <button className="text-blue-600 hover:text-blue-800 font-medium">
               Prefill
             </button>
@@ -241,6 +269,38 @@ export default function NewVendorForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Customer Type Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center mb-4">
+            <InformationCircleIcon className="h-5 w-5 text-gray-400 mr-2" />
+            <h2 className="text-lg font-medium text-gray-900">Customer Type</h2>
+          </div>
+          <div className="space-y-3">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="type"
+                value="business"
+                checked={formData.type === "business"}
+                onChange={(e) => handleInputChange("type", e.target.value)}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Business</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="type"
+                value="individual"
+                checked={formData.type === "individual"}
+                onChange={(e) => handleInputChange("type", e.target.value)}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Individual</span>
+            </label>
+          </div>
+        </div>
+
         {/* Primary Contact Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center mb-4">
@@ -500,22 +560,7 @@ export default function NewVendorForm() {
                       <option value="Net 60">Net 60</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      TDS
-                    </label>
-                    <select
-                      value={formData.tds}
-                      onChange={(e) => handleInputChange("tds", e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select a Tax</option>
-                      <option value="TDS 1%">TDS 1%</option>
-                      <option value="TDS 2%">TDS 2%</option>
-                      <option value="TDS 5%">TDS 5%</option>
-                      <option value="TDS 10%">TDS 10%</option>
-                    </select>
-                  </div>
+                  <div>{/* Empty div to maintain grid layout */}</div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
