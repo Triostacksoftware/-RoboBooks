@@ -7,7 +7,7 @@ export default function QuoteIntroSection() {
   const router = useRouter();
 
   const handleCreateQuote = () => {
-    router.push('/quotes/new'); // ✅ Redirect to create quote page
+    router.push('/dashboard/sales/quotes/new'); // ✅ Redirect to create quote page
   };
 
   const handleImportQuotes = () => {

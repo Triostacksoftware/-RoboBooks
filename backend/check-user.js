@@ -13,7 +13,7 @@ async function checkUser() {
 
     // Find the test user
     const user = await User.findOne({ email: "test@example.com" });
-    
+
     if (!user) {
       console.log("❌ Test user not found");
       return;
@@ -33,8 +33,10 @@ async function checkUser() {
     // Test with wrong password
     const wrongPassword = "wrongpassword";
     const isWrongMatch = await bcrypt.compare(wrongPassword, user.passwordHash);
-    console.log("Wrong password test:", isWrongMatch ? "❌ Should not match" : "✅ Correctly rejected");
-
+    console.log(
+      "Wrong password test:",
+      isWrongMatch ? "❌ Should not match" : "✅ Correctly rejected"
+    );
   } catch (error) {
     console.error("Error checking user:", error);
   } finally {

@@ -37,6 +37,7 @@ import tdsRoutes from "./routes/tdsRoutes.js";
 import tcsRoutes from "./routes/tcsRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import auditTrailRoutes from "./routes/auditTrailRoutes.js";
+import deliveryChallanRoutes from "./routes/deliveryChallanRoutes.js";
 
 const app = express();
 
@@ -54,7 +55,12 @@ app.use(cookieParser());
 // CORS configuration - must be before other middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+    origin: [
+      process.env.CLIENT_ORIGIN || "http://localhost:3000",
+      "https://robobookss.com",
+      "https://www.robobookss.com",
+      "http://localhost:3000",
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -69,6 +75,9 @@ app.use(
 );
 
 app.use(morgan("dev"));
+
+// Serve static files from uploads directory
+app.use("/uploads", express.static("uploads"));
 
 // Passport initialization (for OAuth)
 app.use(passport.initialize());
@@ -90,6 +99,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/timesheets", timesheetRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/delivery-challans", deliveryChallanRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/reports", reportRoutes);
@@ -100,6 +110,8 @@ app.use("/api/tds", tdsRoutes);
 app.use("/api/tcs", tcsRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/audit-trail", auditTrailRoutes);
+app.use("/api/uploads", uploadsRoutes);
+app.use("/api/quotes", quotesRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {

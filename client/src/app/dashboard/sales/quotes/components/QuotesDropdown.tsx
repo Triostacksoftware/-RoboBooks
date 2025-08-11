@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -40,6 +41,7 @@ const sortFields = [
 ];
 
 export default function QuotesHeader() {
+  const router = useRouter();
   const [openDropdown, setOpenDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -120,7 +122,7 @@ export default function QuotesHeader() {
         {/* Right side: +New and 3 dots */}
         <div className="flex items-center gap-2 relative">
           <button
-            onClick={() => console.log('Create new quote')}
+            onClick={() => router.push('/dashboard/sales/quotes/new')}
             className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 sm:py-2 rounded-xl text-sm sm:text-base font-semibold shadow transition"
           >
             <PlusIcon className="w-4 h-4" />
