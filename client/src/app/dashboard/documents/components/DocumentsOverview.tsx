@@ -16,7 +16,7 @@ export default function DocumentsOverview({
   const handleUpload = async (formData: FormData) => {
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
       const response = await fetch(`${backendUrl}/api/documents/upload`, {
         method: "POST",
         credentials: "include", // Use HTTP-only cookies for authentication

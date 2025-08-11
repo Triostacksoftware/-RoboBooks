@@ -13,6 +13,7 @@ import Projects from "./home/Projects";
 import BankAndCards from "./home/BankAndCards";
 import Watchlist from "./home/Watchlist";
 import Footer from "./home/Footer";
+import ActivityHistory from "./components/ActivityHistory";
 
 // Add type for API response
 interface AuthMeResponse {
@@ -153,6 +154,11 @@ export default function DashboardHome() {
           {/* Row 6: Account Watchlist */}
           <div className="mb-8">
             <Watchlist />
+          </div>
+
+          {/* Row 7: Activity History */}
+          <div className="mb-8">
+            <ActivityHistory title="Recent System Activity" maxItems={15} />
           </div>
 
           {/* Footer with info, links, QR, etc. */}

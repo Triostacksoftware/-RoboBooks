@@ -14,50 +14,7 @@ import {
   PencilIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
-
-interface Customer {
-  _id: string;
-  customerType: "Business" | "Individual";
-  salutation: string;
-  firstName: string;
-  lastName: string;
-  companyName?: string;
-  displayName: string;
-  email: string;
-  workPhone?: string;
-  mobile?: string;
-  pan?: string;
-  currency: string;
-  openingBalance: number;
-  paymentTerms: string;
-  portalEnabled: boolean;
-  portalLanguage: string;
-  billingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-  shippingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-  contactPersons: Array<{
-    name: string;
-    email: string;
-    phone: string;
-    designation: string;
-  }>;
-  receivables: number;
-  unusedCredits: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Customer } from "@/services/customerService";
 
 const filters = ["All", "Active", "Inactive", "Business", "Individual"];
 

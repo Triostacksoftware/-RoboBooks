@@ -311,9 +311,8 @@ export default function AdminUsers() {
           <EyeIcon className="h-4 w-4" />
           <span>View</span>
         </button>
-        <button className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-lg">
+        <button className="flex items-center justify-center px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-lg" title="Edit">
           <PencilIcon className="h-4 w-4" />
-          <span>Edit</span>
         </button>
         <button
           onClick={() => handleStatusToggle(user.id, user.isActive)}
@@ -327,10 +326,10 @@ export default function AdminUsers() {
         </button>
         <button
           onClick={() => handleDeleteUser(user.id)}
-          className="flex items-center space-x-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+          className="flex items-center justify-center px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+          title="Delete"
         >
           <TrashIcon className="h-4 w-4" />
-          <span>Delete</span>
         </button>
       </div>
     </div>

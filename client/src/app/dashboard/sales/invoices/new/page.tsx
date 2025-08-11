@@ -16,31 +16,7 @@ import ItemsTable from "./components/ItemsTable";
 import InvoiceSummary from "./components/InvoiceSummary";
 import TDSManagementModal from "./components/TDSManagementModal";
 import TCSManagementModal from "./components/TCSManagementModal";
-
-interface Customer {
-  firstName: string;
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  lastName: string;
-  mobile?: string;
-  workPhone?: string;
-  billingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-  shippingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-}
+import { Customer } from "@/services/customerService";
 
 interface TDSRecord {
   _id: string;
@@ -492,9 +468,8 @@ const NewInvoiceForm = () => {
                     foundCustomer.firstName + " " + foundCustomer.lastName,
                   buyerEmail: foundCustomer.email,
                   buyerPhone:
-                    foundCustomer.phone ||
-                    foundCustomer.mobile ||
                     foundCustomer.workPhone ||
+                    foundCustomer.mobile ||
                     "",
                   buyerAddress: foundCustomer.billingAddress
                     ? `${foundCustomer.billingAddress.street || ""}, ${
@@ -901,7 +876,7 @@ const NewInvoiceForm = () => {
       ...prev,
       buyerName: customer.firstName + " " + customer.lastName,
       buyerEmail: customer.email,
-      buyerPhone: customer.phone || customer.mobile || customer.workPhone || "",
+      buyerPhone: customer.workPhone || customer.mobile || "",
       buyerAddress: customer.billingAddress
         ? `${customer.billingAddress.street || ""}, ${
             customer.billingAddress.city || ""
@@ -946,7 +921,7 @@ const NewInvoiceForm = () => {
         customerName:
           selectedCustomer.firstName + " " + selectedCustomer.lastName,
         customerEmail: selectedCustomer.email,
-        customerPhone: selectedCustomer.phone,
+        customerPhone: selectedCustomer.workPhone || selectedCustomer.mobile || "",
         status: asDraft ? "Draft" : "Sent",
         invoiceDate: new Date(formData.invoiceDate),
         dueDate: new Date(formData.dueDate),

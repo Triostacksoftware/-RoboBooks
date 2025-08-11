@@ -35,6 +35,8 @@ import budgetRoutes from "./routes/budgetRoutes.js";
 import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
 import tdsRoutes from "./routes/tdsRoutes.js";
 import tcsRoutes from "./routes/tcsRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import auditTrailRoutes from "./routes/auditTrailRoutes.js";
 
 const app = express();
 
@@ -96,6 +98,8 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/bulk-updates", bulkUpdateRoutes);
 app.use("/api/tds", tdsRoutes);
 app.use("/api/tcs", tcsRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/audit-trail", auditTrailRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {
