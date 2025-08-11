@@ -14,7 +14,7 @@ import "./config/passport.js";
 import authRoutes from "./routes/auth.js";
 import accountsRoutes from "./routes/accounts.js";
 // Removed legacy bankTransactions router to avoid conflicts
-import vendorsRoutes from "./routes/vendors.routes.js";
+import vendorsRoutes from "./routes/vendorsRoutes.js";
 import billsRoutes from "./routes/bills.routes.js";
 import expensesRoutes from "./routes/expenses.routes.js";
 import estimatesRoutes from "./routes/estimates.routes.js";
@@ -39,6 +39,8 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import auditTrailRoutes from "./routes/auditTrailRoutes.js";
 import deliveryChallanRoutes from "./routes/deliveryChallanRoutes.js";
 import salespersonRoutes from "./routes/salespersonRoutes.js";
+import uploadsRoutes from "./routes/uploadsRoutes.js";
+import quotesRoutes from "./routes/RoutesRoutes.js";
 
 const app = express();
 
