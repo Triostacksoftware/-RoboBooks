@@ -39,6 +39,7 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import auditTrailRoutes from "./routes/auditTrailRoutes.js";
 import deliveryChallanRoutes from "./routes/deliveryChallanRoutes.js";
 import salespersonRoutes from "./routes/salespersonRoutes.js";
+import recurringInvoiceRoutes from "./routes/recurringInvoiceRoutes.js";
 import uploadsRoutes from "./routes/uploadsRoutes.js";
 import quotesRoutes from "./routes/RoutesRoutes.js";
 
@@ -112,6 +113,7 @@ app.use("/api/bulk-updates", bulkUpdateRoutes);
 app.use("/api/tds", tdsRoutes);
 app.use("/api/tcs", tcsRoutes);
 app.use("/api/salespersons", salespersonRoutes);
+app.use("/api/recurring-invoices", recurringInvoiceRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/audit-trail", auditTrailRoutes);
 app.use("/api/uploads", uploadsRoutes);
