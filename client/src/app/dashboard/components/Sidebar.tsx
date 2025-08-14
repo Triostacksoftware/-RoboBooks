@@ -34,6 +34,7 @@ import {
   ArrowPathIcon,
   QuestionMarkCircleIcon,
 } from "@heroicons/react/24/outline";
+import { useModulePreferences } from "../../../contexts/ModulePreferenceContext";
 
 type Leaf = {
   id: string;
@@ -268,6 +269,7 @@ const cn = (...xs: (string | false | undefined)[]) =>
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isModuleEnabled } = useModulePreferences();
   const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({
     sales: true,
@@ -371,7 +373,7 @@ export default function Sidebar() {
 
       {/* Nav list */}
       <div className="flex-1 overflow-y-auto px-2 pt-3">
-        {NAV.map((node) => {
+        {NAV.filter((node) => isModuleEnabled(node.id)).map((node) => {
           const Icon = node.icon;
           const isActive = activeTopId === node.id;
           const hasChildren = !!node.children?.length;
@@ -426,7 +428,7 @@ export default function Sidebar() {
                     )}
                   >
                     <ul className="py-1">
-                      {node.children!.map((leaf) => {
+                      {node.children!.filter((leaf) => isModuleEnabled(leaf.id)).map((leaf) => {
                         const selected = pathname?.startsWith(leaf.href);
                         const LeafIcon = leaf.icon;
                         return (

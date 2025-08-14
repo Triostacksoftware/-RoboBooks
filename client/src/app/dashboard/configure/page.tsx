@@ -1,84 +1,63 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-
-// Feature configuration data
-const FEATURE_CONFIG = [
-  {
-    id: "quotes",
-    name: "Quotes",
-    description: "Send new proposals and get them approved from your customer.",
-    enabled: true,
-  },
-  {
-    id: "retainer-invoices",
-    name: "Retainer Invoices",
-    description: "Collect advance payments or retainers from your customers.",
-    enabled: false,
-  },
-  {
-    id: "timesheet",
-    name: "Timesheet",
-    description: "Track time for projects and bill them to your customers.",
-    enabled: true,
-  },
-  {
-    id: "price-list",
-    name: "Price List",
-    description:
-      "Customize price lists for your customers, for the items you sell.",
-    enabled: false,
-  },
-  {
-    id: "sales-orders",
-    name: "Sales Orders",
-    description: "Confirm your customer's order and ship goods soon.",
-    enabled: true,
-  },
-  {
-    id: "delivery-challans",
-    name: "Delivery Challans",
-    description: "Manage transfer of goods effectively.",
-    enabled: true,
-  },
-  {
-    id: "purchase-orders",
-    name: "Purchase Orders",
-    description: "Create and send orders to purchase goods.",
-    enabled: true,
-  },
-  {
-    id: "inventory",
-    name: "I would like to enable Inventory.",
-    description: "Manage your stock levels effectively.",
-    enabled: false,
-  },
-];
+import modulePreferenceService, { ModulePreference } from "../../../services/modulePreferenceService";
+import { useToast } from "../../../contexts/ToastContext";
+import { useModulePreferences } from "../../../contexts/ModulePreferenceContext";
 
 export default function ConfigurePage() {
-  const [featureConfig, setFeatureConfig] = useState(FEATURE_CONFIG);
+  const [modulePreferences, setModulePreferences] = useState<ModulePreference[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
+  const { refreshPreferences } = useModulePreferences();
 
-  const handleFeatureToggle = (featureId: string) => {
-    setFeatureConfig((prev) =>
-      prev.map((feature) =>
-        feature.id === featureId
-          ? { ...feature, enabled: !feature.enabled }
-          : feature
+  // Load user's module preferences on component mount
+  useEffect(() => {
+    loadModulePreferences();
+  }, []);
+
+  const loadModulePreferences = async () => {
+    try {
+      setLoading(true);
+      const preferences = await modulePreferenceService.getUserModulePreferences();
+      setModulePreferences(preferences);
+    } catch (error) {
+      console.error('Error loading module preferences:', error);
+      showToast('Failed to load module preferences', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleModuleToggle = (moduleName: string) => {
+    setModulePreferences((prev) =>
+      prev.map((module) =>
+        module.name === moduleName
+          ? { ...module, isEnabled: !module.isEnabled }
+          : module
       )
     );
   };
 
-  const handleSaveFeatures = () => {
-    // Here you would typically save to backend/localStorage
-    console.log("Saving feature configuration:", featureConfig);
-    // Show success message (you can use your toast system here)
-    alert("Features saved successfully!");
+  const handleSavePreferences = async () => {
+    try {
+      setSaving(true);
+      await modulePreferenceService.saveUserModulePreferences(modulePreferences);
+      await refreshPreferences(); // Refresh the global context
+      showToast('Module preferences saved successfully!', 'success');
+    } catch (error) {
+      console.error('Error saving module preferences:', error);
+      showToast('Failed to save module preferences', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleCancelFeatures = () => {
-    // Reset to original configuration
-    setFeatureConfig(FEATURE_CONFIG);
+  const handleCancelPreferences = () => {
+    // Reset to original preferences
+    loadModulePreferences();
   };
 
   return (
@@ -130,33 +109,39 @@ export default function ConfigurePage() {
 
           {/* Features List */}
           <div className="px-6 py-4">
-            <div className="space-y-4">
-              {featureConfig.map((feature) => (
-                <div
-                  key={feature.id}
-                  className="flex items-start space-x-4 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition"
-                >
-                  <input
-                    type="checkbox"
-                    id={feature.id}
-                    checked={feature.enabled}
-                    onChange={() => handleFeatureToggle(feature.id)}
-                    className="mt-1 w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                  />
-                  <div className="flex-1">
-                    <label
-                      htmlFor={feature.id}
-                      className="text-base font-medium text-gray-900 cursor-pointer"
-                    >
-                      {feature.name}
-                    </label>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {feature.description}
-                    </p>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {modulePreferences.map((module) => (
+                  <div
+                    key={module.name}
+                    className="flex items-start space-x-4 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition"
+                  >
+                    <input
+                      type="checkbox"
+                      id={module.name}
+                      checked={module.isEnabled}
+                      onChange={() => handleModuleToggle(module.name)}
+                      className="mt-1 w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={module.name}
+                        className="text-base font-medium text-gray-900 cursor-pointer"
+                      >
+                        {module.label}
+                      </label>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {module.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Note */}
@@ -175,16 +160,21 @@ export default function ConfigurePage() {
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
             <div className="flex justify-end space-x-3">
               <button
-                onClick={handleCancelFeatures}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+                onClick={handleCancelPreferences}
+                disabled={saving}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSaveFeatures}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                onClick={handleSavePreferences}
+                disabled={saving || loading}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 flex items-center space-x-2"
               >
-                Save Changes
+                {saving && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
               </button>
             </div>
           </div>

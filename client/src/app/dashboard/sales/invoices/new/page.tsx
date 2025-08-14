@@ -191,7 +191,7 @@ const NewInvoiceForm = () => {
   // Modal states
   const [showInvoiceDetailsModal, setShowInvoiceDetailsModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [isHeaderMinimized, setIsHeaderMinimized] = useState(false);
+  const [isHeaderMinimized, setIsHeaderMinimized] = useState(true);
 
   // Local toast notifications
   const [toasts, setToasts] = useState<
