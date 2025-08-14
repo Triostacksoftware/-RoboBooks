@@ -1,363 +1,456 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import {
-  Plus,
-  Play,
-  Download,
-  Upload,
-  Search,
-  Filter,
-  MoreVertical,
-  Eye,
-  Edit,
+import React, { useState, useEffect } from 'react';
+import { 
+  Search, 
+  Filter, 
+  Plus, 
+  Download, 
+  MoreHorizontal, 
+  Eye, 
+  Edit, 
   Trash2,
-  FileText,
+  Calendar,
   DollarSign,
   User,
-  Calendar,
-  ArrowRight,
-} from "lucide-react";
+  FileText,
+  CheckCircle,
+  Clock,
+  AlertCircle
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface CreditNote {
   id: string;
   creditNoteNumber: string;
   customerName: string;
-  date: string;
+  customerEmail: string;
   amount: number;
-  status: "draft" | "open" | "void";
-  reference?: string;
-  subject?: string;
+  status: 'draft' | 'sent' | 'paid' | 'cancelled';
+  date: string;
+  dueDate: string;
+  description: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    rate: number;
+    amount: number;
+  }>;
 }
 
-const CreditNotesPage = () => {
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+const mockCreditNotes: CreditNote[] = [
+  {
+    id: '1',
+    creditNoteNumber: 'CN-2024-001',
+    customerName: 'Acme Corporation',
+    customerEmail: 'accounts@acme.com',
+    amount: 2500.00,
+    status: 'sent',
+    date: '2024-01-15',
+    dueDate: '2024-02-15',
+    description: 'Credit for damaged goods returned',
+    items: [
+      { name: 'Product A', quantity: 2, rate: 500, amount: 1000 },
+      { name: 'Product B', quantity: 3, rate: 500, amount: 1500 }
+    ]
+  },
+  {
+    id: '2',
+    creditNoteNumber: 'CN-2024-002',
+    customerName: 'Tech Solutions Ltd',
+    customerEmail: 'finance@techsolutions.com',
+    amount: 1800.00,
+    status: 'paid',
+    date: '2024-01-10',
+    dueDate: '2024-02-10',
+    description: 'Credit for late delivery compensation',
+    items: [
+      { name: 'Service Package', quantity: 1, rate: 1800, amount: 1800 }
+    ]
+  },
+  {
+    id: '3',
+    creditNoteNumber: 'CN-2024-003',
+    customerName: 'Global Industries',
+    customerEmail: 'payments@global.com',
+    amount: 3200.00,
+    status: 'draft',
+    date: '2024-01-20',
+    dueDate: '2024-02-20',
+    description: 'Credit for quality issues',
+    items: [
+      { name: 'Premium Product', quantity: 2, rate: 1600, amount: 3200 }
+    ]
+  }
+];
 
-  // Mock data for demonstration
-  useEffect(() => {
-    const mockCreditNotes: CreditNote[] = [
-      {
-        id: "1",
-        creditNoteNumber: "CN-00001",
-        customerName: "ABC Company Ltd",
-        date: "2025-08-11",
-        amount: 15000.0,
-        status: "open",
-        reference: "REF-001",
-        subject: "Product return - Damaged goods",
-      },
-      {
-        id: "2",
-        creditNoteNumber: "CN-00002",
-        customerName: "XYZ Corporation",
-        date: "2025-08-10",
-        amount: 8500.0,
-        status: "draft",
-        reference: "REF-002",
-        subject: "Order cancellation",
-      },
-    ];
+const statusColors = {
+  draft: 'bg-gray-100 text-gray-800',
+  sent: 'bg-blue-100 text-blue-800',
+  paid: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800'
+};
 
-    setTimeout(() => {
-      setCreditNotes(mockCreditNotes);
-      setLoading(false);
-    }, 1000);
-  }, []);
+const statusIcons = {
+  draft: Clock,
+  sent: FileText,
+  paid: CheckCircle,
+  cancelled: AlertCircle
+};
 
-  const filteredCreditNotes = creditNotes.filter((note) => {
-    const matchesSearch =
-      note.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      note.creditNoteNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || note.status === filterStatus;
+export default function CreditNotesPage() {
+  const [creditNotes, setCreditNotes] = useState<CreditNote[]>(mockCreditNotes);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [selectedCreditNotes, setSelectedCreditNotes] = useState<string[]>([]);
+
+  const filteredCreditNotes = creditNotes.filter(creditNote => {
+    const matchesSearch = 
+      creditNote.creditNoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      creditNote.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      creditNote.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || creditNote.status === statusFilter;
+    
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "open":
-        return "bg-green-100 text-green-800";
-      case "draft":
-        return "bg-yellow-100 text-yellow-800";
-      case "void":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  const totalAmount = filteredCreditNotes.reduce((sum, note) => sum + note.amount, 0);
+  const paidAmount = filteredCreditNotes
+    .filter(note => note.status === 'paid')
+    .reduce((sum, note) => sum + note.amount, 0);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCreditNotes(filteredCreditNotes.map(note => note.id));
+    } else {
+      setSelectedCreditNotes([]);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
+  const handleSelectCreditNote = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCreditNotes([...selectedCreditNotes, id]);
+    } else {
+      setSelectedCreditNotes(selectedCreditNotes.filter(noteId => noteId !== id));
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const handleDeleteSelected = () => {
+    setCreditNotes(creditNotes.filter(note => !selectedCreditNotes.includes(note.id)));
+    setSelectedCreditNotes([]);
+  };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">All Credit Notes</h1>
-          <p className="text-gray-600 mt-1">
-            Manage customer refunds and credits
-          </p>
-        </div>
-        <div className="flex items-center space-x-3">
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Credit Notes</h1>
+            <p className="text-gray-600 mt-2">Manage and track your credit notes</p>
+          </div>
           <Link
             href="/dashboard/sales/credit-notes/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            <span>CREATE NEW CREDIT NOTE</span>
+            <Plus className="w-5 h-5" />
+            New Credit Note
           </Link>
         </div>
       </div>
 
-      {/* Getting Started Section */}
-      {creditNotes.length === 0 && (
-        <div className="bg-white rounded-lg border p-8 text-center">
-          <div className="max-w-md mx-auto space-y-6">
-            {/* Video Tutorial Card */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-6 border-2 border-dashed border-gray-300">
-              <div className="flex items-center justify-center space-x-3 mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <Play className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-gray-900">Zoho Books</div>
-                  <div className="text-sm text-gray-600">
-                    How to create a credit note
-                  </div>
-                </div>
-              </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Credit Notes</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredCreditNotes.length}</p>
             </div>
+            <FileText className="w-8 h-8 text-blue-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Amount</p>
+              <p className="text-2xl font-bold text-gray-900">${totalAmount.toLocaleString()}</p>
+            </div>
+            <DollarSign className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Paid Amount</p>
+              <p className="text-2xl font-bold text-gray-900">${paidAmount.toLocaleString()}</p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pending Amount</p>
+              <p className="text-2xl font-bold text-gray-900">${(totalAmount - paidAmount).toLocaleString()}</p>
+            </div>
+            <Clock className="w-8 h-8 text-orange-600" />
+          </div>
+        </div>
+      </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Link
-                href="/dashboard/sales/credit-notes/new"
-                className="block w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 font-medium"
+      {/* Filters and Search */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search credit notes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="sent">Sent</option>
+              <option value="paid">Paid</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Dates</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="quarter">This Quarter</option>
+            </select>
+          </div>
+          
+          <div className="flex gap-2">
+            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              More Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bulk Actions */}
+      {selectedCreditNotes.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <p className="text-blue-800">
+              {selectedCreditNotes.length} credit note(s) selected
+            </p>
+            <div className="flex gap-2">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Send Selected
+              </button>
+              <button 
+                onClick={handleDeleteSelected}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
-                CREATE NEW CREDIT NOTE
-              </Link>
-              <button className="block w-full text-blue-600 hover:text-blue-700 font-medium">
-                Import Credit Notes
+                Delete Selected
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Life Cycle Section */}
-      <div className="bg-white rounded-lg border p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Life cycle of a Credit Note
-        </h2>
-        <div className="flex items-center justify-center space-x-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-              <span className="text-yellow-600">✓</span>
-            </div>
-            <span className="font-medium">PRODUCT RETURNED</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-gray-400" />
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-              <span className="text-red-600">✗</span>
-            </div>
-            <span className="font-medium">ORDER CANCELLED</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-gray-400" />
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-4 h-4 text-blue-600" />
-            </div>
-            <span className="font-medium">CREDIT NOTES</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-gray-400" />
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-blue-600" />
-            </div>
-            <span className="font-medium">REFUND</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-gray-400" />
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <User className="w-4 h-4 text-blue-600" />
-            </div>
-            <span className="font-medium">CREDITS</span>
-          </div>
-          <ArrowRight className="w-4 h-4 text-gray-400" />
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-4 h-4 text-blue-600" />
-            </div>
-            <span className="font-medium">APPLY TO FUTURE INVOICES</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Module Capabilities */}
-      <div className="bg-white rounded-lg border p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          In the Credit Notes module, you can:
-        </h2>
-        <ul className="space-y-2">
-          <li className="flex items-center space-x-2">
-            <span className="text-green-600">✓</span>
-            <span>
-              Issue refunds and credits to your customers and apply them to
-              invoices
-            </span>
-          </li>
-          <li className="flex items-center space-x-2">
-            <span className="text-green-600">✓</span>
-            <span>
-              Record and manage excess payments as credits.{" "}
-              <a href="#" className="text-blue-600 hover:underline">
-                Learn More
-              </a>
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      {/* Credit Notes List */}
-      {creditNotes.length > 0 && (
-        <div className="bg-white rounded-lg border">
-          {/* Search and Filter Bar */}
-          <div className="p-4 border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      {/* Credit Notes Table */}
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-6 py-3 text-left">
                   <input
-                    type="text"
-                    placeholder="Search credit notes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    type="checkbox"
+                    checked={selectedCreditNotes.length === filteredCreditNotes.length && filteredCreditNotes.length > 0}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                </div>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Status</option>
-                  <option value="draft">Draft</option>
-                  <option value="open">Open</option>
-                  <option value="void">Void</option>
-                </select>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                  <Download className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
-                  <Upload className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Credit Note #
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCreditNotes.map((note) => (
-                  <tr key={note.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        href={`/dashboard/sales/credit-notes/${note.id}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        {note.creditNoteNumber}
-                      </Link>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Credit Note
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Due Date
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredCreditNotes.map((creditNote) => {
+                const StatusIcon = statusIcons[creditNote.status];
+                return (
+                  <tr key={creditNote.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedCreditNotes.includes(creditNote.id)}
+                        onChange={(e) => handleSelectCreditNote(creditNote.id, e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {note.customerName}
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {creditNote.creditNoteNumber}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {creditNote.description}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(note.date).toLocaleDateString()}
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {creditNote.customerName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {creditNote.customerEmail}
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {formatCurrency(note.amount)}
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        ${creditNote.amount.toLocaleString()}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                          note.status
-                        )}`}
-                      >
-                        {note.status.charAt(0).toUpperCase() +
-                          note.status.slice(1)}
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[creditNote.status]}`}>
+                        <StatusIcon className="w-3 h-3 mr-1" />
+                        {creditNote.status.charAt(0).toUpperCase() + creditNote.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {new Date(creditNote.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {new Date(creditNote.dueDate).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
                         <Link
-                          href={`/dashboard/sales/credit-notes/${note.id}`}
-                          className="text-blue-600 hover:text-blue-800"
+                          href={`/dashboard/sales/credit-notes/${creditNote.id}`}
+                          className="text-blue-600 hover:text-blue-900 p-1"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
                         <Link
-                          href={`/dashboard/sales/credit-notes/${note.id}/edit`}
-                          className="text-green-600 hover:text-green-800"
+                          href={`/dashboard/sales/credit-notes/${creditNote.id}/edit`}
+                          className="text-gray-600 hover:text-gray-900 p-1"
                         >
                           <Edit className="w-4 h-4" />
                         </Link>
-                        <button className="text-red-600 hover:text-red-800">
+                        <button className="text-red-600 hover:text-red-900 p-1">
                           <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button className="text-gray-600 hover:text-gray-900 p-1">
+                          <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredCreditNotes.length === 0 && (
+          <div className="text-center py-12">
+            <FileText className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No credit notes found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchTerm || statusFilter !== 'all' ? 'Try adjusting your search or filters.' : 'Get started by creating a new credit note.'}
+            </p>
+            {!searchTerm && statusFilter === 'all' && (
+              <div className="mt-6">
+                <Link
+                  href="/dashboard/sales/credit-notes/new"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Credit Note
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {filteredCreditNotes.length > 0 && (
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-6 rounded-lg shadow-sm border">
+          <div className="flex-1 flex justify-between sm:hidden">
+            <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              Previous
+            </button>
+            <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredCreditNotes.length}</span> of{' '}
+                <span className="font-medium">{filteredCreditNotes.length}</span> results
+              </p>
+            </div>
+            <div>
+              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                  Previous
+                </button>
+                <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  1
+                </button>
+                <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                  Next
+                </button>
+              </nav>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default CreditNotesPage;
+}

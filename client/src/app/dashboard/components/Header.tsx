@@ -101,7 +101,7 @@ export default function Header({ onToggleSidebar }: Props) {
     <>
       <header
         data-settings-header
-        className="sticky top-0 z-20 bg-slate-800 text-white shadow-md"
+        className="sticky top-0 z-[2000] bg-slate-800 text-white shadow-md"
       >
         <div className="mx-auto flex h-14 items-center gap-3 px-4 sm:px-6">
           {/* Mobile sidebar toggle */}

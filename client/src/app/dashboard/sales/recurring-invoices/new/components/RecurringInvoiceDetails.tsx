@@ -188,7 +188,7 @@ const RecurringInvoiceDetails: React.FC<RecurringInvoiceDetailsProps> = ({
               position &&
               createPortal(
                 <div
-                  className="fixed z-[100000] bg-white border border-gray-200 rounded-md shadow-xl"
+                  className="fixed z-[9999] bg-white border border-gray-200 rounded-md shadow-xl"
                   style={{
                     top: position.top,
                     left: position.left,

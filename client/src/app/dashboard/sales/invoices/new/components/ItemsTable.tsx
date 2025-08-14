@@ -106,9 +106,9 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
               <tr
                 key={item.id}
                 className="hover:bg-gray-50 relative"
-                style={{ zIndex: 99999 }}
+                style={{ zIndex: 10 }}
               >
-                <td className="px-2 py-1 relative" style={{ zIndex: 99999 }}>
+                <td className="px-2 py-1 relative" style={{ zIndex: 10 }}>
                   <ItemSelector
                     value={item.itemId}
                     onChange={(itemId, itemDetails) => {

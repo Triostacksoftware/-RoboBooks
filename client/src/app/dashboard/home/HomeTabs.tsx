@@ -2,8 +2,8 @@
 
 import { PlusIcon } from "@heroicons/react/24/outline";
 import React, { useState } from "react";
-import GettingStarted from "./GettingStarted";
-import RecentUpdates from "./RecentUpdates";
+import TabularView from "./TabularView";
+import GraphicalView from "./GraphicalView";
 
 interface HomeTabsProps {
   companyName?: string;
@@ -11,13 +11,11 @@ interface HomeTabsProps {
 }
 
 export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
-  const [activeTab, setActiveTab] = useState<
-    "dashboard" | "getting-started" | "recent-updates"
-  >("dashboard");
+  const [activeTab, setActiveTab] = useState<"tabular" | "graphical">(
+    "tabular"
+  );
 
-  const handleTabChange = (
-    tab: "dashboard" | "getting-started" | "recent-updates"
-  ) => {
+  const handleTabChange = (tab: "tabular" | "graphical") => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -54,34 +52,24 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
       <div className="mt-6 flex items-center justify-between border-b">
         <div className="flex gap-8 text-sm">
           <button
-            onClick={() => handleTabChange("dashboard")}
+            onClick={() => handleTabChange("tabular")}
             className={`pb-3 border-b-2 transition-colors ${
-              activeTab === "dashboard"
+              activeTab === "tabular"
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent hover:text-gray-800 text-gray-500"
             }`}
           >
-            Dashboard
+            Tabular View
           </button>
           <button
-            onClick={() => handleTabChange("getting-started")}
+            onClick={() => handleTabChange("graphical")}
             className={`pb-3 border-b-2 transition-colors ${
-              activeTab === "getting-started"
+              activeTab === "graphical"
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent hover:text-gray-800 text-gray-500"
             }`}
           >
-            Getting Started
-          </button>
-          <button
-            onClick={() => handleTabChange("recent-updates")}
-            className={`pb-3 border-b-2 transition-colors ${
-              activeTab === "recent-updates"
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent hover:text-gray-800 text-gray-500"
-            }`}
-          >
-            Recent Updates
+            Graphical View
           </button>
         </div>
         <button className="inline-flex items-center gap-1 text-blue-600 py-2">
@@ -91,8 +79,8 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
 
       {/* Tab Content */}
       <div className="mt-6">
-        {activeTab === "getting-started" && <GettingStarted />}
-        {activeTab === "recent-updates" && <RecentUpdates />}
+        {activeTab === "tabular" && <TabularView />}
+        {activeTab === "graphical" && <GraphicalView />}
       </div>
     </div>
   );

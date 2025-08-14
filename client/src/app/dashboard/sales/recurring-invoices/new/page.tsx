@@ -1,48 +1,48 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import {
+  XMarkIcon,
+  ChevronDownIcon,
+  CheckIcon,
+  PaperClipIcon,
+  ArrowPathIcon,
+  BuildingOfficeIcon,
+  MapPinIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  GlobeAltIcon,
+  ChevronUpIcon,
+  ChevronRightIcon,
+  ArrowLeftIcon,
+} from "@heroicons/react/24/outline";
+
 import CustomerDetails from "../../invoices/new/components/CustomerDetails";
-import RecurringInvoiceDetails from "./components/RecurringInvoiceDetails";
-import RecurrenceSettings from "./components/RecurrenceSettings";
+import InvoiceDetails from "../../invoices/new/components/InvoiceDetails";
 import ItemsTable from "../../invoices/new/components/ItemsTable";
 import InvoiceSummary from "../../invoices/new/components/InvoiceSummary";
 import TDSManagementModal from "../../invoices/new/components/TDSManagementModal";
 import TCSManagementModal from "../../invoices/new/components/TCSManagementModal";
+import RecurringInvoiceDetails from "./components/RecurringInvoiceDetails";
+import RecurrenceSettings from "./components/RecurrenceSettings";
 import { Customer } from "@/services/customerService";
 
 interface TDSRecord {
   _id: string;
   name: string;
   rate: number;
-  description: string;
+  section: string;
+  status: "Active" | "Inactive";
 }
 
 interface TCSRecord {
   _id: string;
   name: string;
   rate: number;
-  description: string;
-}
-
-interface InvoiceItem {
-  id: number;
-  itemId: string;
-  details: string;
-  description: string;
-  quantity: number;
-  unit: string;
-  rate: number;
-  amount: number;
-  taxMode: "GST" | "IGST" | "NON_TAXABLE" | "NO_GST" | "EXPORT";
-  taxRate: number;
-  taxAmount: number;
-  cgst: number;
-  sgst: number;
-  igst: number;
-  taxRemark: string;
+  natureOfCollection: string;
+  section?: string;
+  status: "Active" | "Inactive";
 }
 
 interface ItemDetails {
@@ -58,22 +58,45 @@ interface ItemDetails {
   gstRate?: number;
 }
 
-const NewRecurringInvoicePage = () => {
+type TaxMode = "GST" | "IGST" | "NON_TAXABLE" | "NO_GST" | "EXPORT";
+interface InvoiceItem {
+  id: number;
+  itemId: string;
+  details: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  rate: number;
+  amount: number;
+  taxMode: TaxMode;
+  taxRate: number;
+  taxAmount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  taxRemark: string;
+}
+
+const NewRecurringInvoiceForm = () => {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCustomerPreSelected, setShowCustomerPreSelected] = useState(false);
+
+  // TDS/TCS State
   const [tdsRecords, setTdsRecords] = useState<TDSRecord[]>([]);
   const [tcsRecords, setTcsRecords] = useState<TCSRecord[]>([]);
   const [isLoadingTaxes, setIsLoadingTaxes] = useState(false);
   const [showTDSModal, setShowTDSModal] = useState(false);
   const [showTCSModal, setShowTCSModal] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+
+  // Toast state
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     // Recurrence Settings
@@ -83,47 +106,17 @@ const NewRecurringInvoicePage = () => {
     endDate: "",
     neverExpires: false,
 
-    // Customer Information
-    customerId: "",
-    customerName: "",
-    customerEmail: "",
-    customerPhone: "",
-    customerAddress: "",
-    buyerName: "",
-    buyerEmail: "",
-    buyerPhone: "",
-    buyerGstin: "",
-    buyerAddress: "",
-    sellerName: "",
-    sellerEmail: "",
-    sellerPhone: "",
-    sellerGstin: "",
-    sellerAddress: "",
-
     // Invoice Details
+    invoiceNumber: "RINV-000001",
     orderNumber: "",
+    invoiceDate: new Date().toISOString().split("T")[0],
     terms: "Due on Receipt",
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
     salesperson: "",
     subject: "",
-
-    // Address Information
-    billingAddress: {
-      street: "",
-      city: "",
-      state: "",
-      country: "India",
-      zipCode: "",
-    },
-    shippingAddress: {
-      street: "",
-      city: "",
-      state: "",
-      country: "India",
-      zipCode: "",
-    },
-    placeOfSupplyState: "",
-
-    // Items
+    project: "",
     items: [
       {
         id: 1,
@@ -134,47 +127,361 @@ const NewRecurringInvoicePage = () => {
         unit: "pcs",
         rate: 0.0,
         amount: 0.0,
-        taxMode: "GST",
-        taxRate: 0,
+        taxMode: "IGST" as TaxMode, // Use IGST for inter-state
+        taxRate: 18,
         taxAmount: 0,
         cgst: 0,
         sgst: 0,
         igst: 0,
         taxRemark: "",
-      },
-    ] as InvoiceItem[],
-
-    // Summary
+      } as InvoiceItem,
+    ],
     subTotal: 0.0,
     discount: 0,
     discountType: "percentage" as "percentage" | "amount",
     discountAmount: 0.0,
+    taxType: "GST",
+    taxRate: 18,
     taxAmount: 0.0,
     cgstTotal: 0.0,
     sgstTotal: 0.0,
     igstTotal: 0.0,
+    // TDS/TCS fields
     additionalTaxType: null as "TDS" | "TCS" | null,
     additionalTaxId: "",
     additionalTaxRate: 0,
     additionalTaxAmount: 0.0,
     adjustment: 0.0,
     total: 0.0,
-
-    // Notes
+    paymentTerms: "",
+    paymentMethod: "",
     customerNotes: "Thanks for your business.",
     termsConditions: "",
     internalNotes: "",
+    files: [],
+    currency: "INR",
+    exchangeRate: 1,
+    // Customer fields
+    customerId: "",
+    customerName: "",
+    customerEmail: "",
+    customerPhone: "",
+    customerAddress: "",
+    // Buyer Details
+    buyerName: "",
+    buyerEmail: "",
+    buyerPhone: "",
+    buyerGstin: "",
+    buyerAddress: "",
+    // Address blocks
+    billingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      country: "India",
+      zipCode: "",
+    } as {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      zipCode?: string;
+    },
+    shippingAddress: {
+      street: "",
+      city: "",
+      state: "",
+      country: "India",
+      zipCode: "",
+    } as {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      zipCode?: string;
+    },
+    placeOfSupplyState: "" as string | undefined,
+    // Seller Details
+    sellerName: "",
+    sellerEmail: "",
+    sellerPhone: "",
+    sellerGstin: "",
+    sellerAddress: "",
   });
+
+  // Company settings state
+  const [companySettings, setCompanySettings] = useState({
+    companyName: "ROBOBOOKS SOLUTIONS",
+    address: "123 Business Street, Tech Park, Bangalore",
+    phone: "+91 98765 43210",
+    email: "info@robobooks.com",
+    gstin: "29ABCDE1234F1Z5",
+    state: "29-Karnataka",
+    website: "www.robobooks.com",
+    pinCode: "560001",
+  });
+
+  // Modal states
+  const [showInvoiceDetailsModal, setShowInvoiceDetailsModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [isHeaderMinimized, setIsHeaderMinimized] = useState(false);
+
+  // Local toast notifications
+  const [toasts, setToasts] = useState<
+    { id: number; message: string; type: "success" | "error" | "info" }[]
+  >([]);
+  const [lastToastMessage, setLastToastMessage] = useState<string>("");
+
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
+    // Prevent duplicate toast messages
+    if (message === lastToastMessage) {
+      return;
+    }
+
+    setLastToastMessage(message);
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3200);
+
+    // Clear the last toast message after a delay to allow future toasts
+    setTimeout(() => {
+      setLastToastMessage("");
+    }, 1000);
+  };
+
+  const showToastMessage = (message: string, type: "success" | "error") => {
+    setToastMessage(message);
+    setToastType(type);
+    setToasts((prev) => [...prev, { id: Date.now(), message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== Date.now()));
+    }, 3000);
+  };
+
+  const extractStateName = (value: string) => {
+    if (!value) return "";
+    const parts = value.split("-");
+    return (parts[1] || parts[0]).trim();
+  };
 
   useEffect(() => {
     fetchCustomers();
     fetchTaxes();
+    // Trigger initial GST calculation
+    setTimeout(() => recalculateAllTotals(), 100);
   }, []);
 
+  // Enhanced GST calculation with proper distribution
+  const calculateItemTax = (
+    amount: number,
+    taxMode: TaxMode,
+    taxRate: number
+  ) => {
+    if (!amount || amount <= 0) {
+      return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+    }
+
+    // Handle different tax modes
+    if (taxMode === "NON_TAXABLE" || taxMode === "NO_GST") {
+      return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+    }
+
+    if (taxMode === "EXPORT") {
+      // Export is 0% GST
+      return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+    }
+
+    // For GST and IGST modes
+    if (taxMode === "GST" || taxMode === "IGST") {
+      const companyState = extractStateName(companySettings.state);
+      const placeOfSupply = formData.placeOfSupplyState || companyState;
+
+      // Check if same state (intra-state)
+      const isSameState =
+        companyState.toLowerCase() === placeOfSupply.toLowerCase();
+
+      if (isSameState) {
+        // Same state: Divide GST into CGST and SGST (50% each)
+        const halfTax = (amount * taxRate) / 100 / 2;
+        return {
+          cgst: halfTax,
+          sgst: halfTax,
+          igst: 0,
+          taxAmount: halfTax * 2,
+        };
+      } else {
+        // Different state: Use IGST (100%)
+        const igst = (amount * taxRate) / 100;
+        return {
+          cgst: 0,
+          sgst: 0,
+          igst,
+          taxAmount: igst,
+        };
+      }
+    }
+
+    // Default case
+    return { cgst: 0, sgst: 0, igst: 0, taxAmount: 0 };
+  };
+
+  // Function to automatically update place of supply based on shipping address
+  const updatePlaceOfSupplyFromShipping = (shippingState: string) => {
+    const companyState = extractStateName(companySettings.state);
+    const isSameState =
+      companyState.toLowerCase() === shippingState.toLowerCase();
+
+    setFormData((prev) => ({
+      ...prev,
+      placeOfSupplyState: shippingState,
+    }));
+
+    // Show toast notification about GST rule application
+    if (isSameState) {
+      showToast(
+        `Same state detected: CGST + SGST will be applied (${companyState} → ${shippingState})`,
+        "info"
+      );
+    } else {
+      showToast(
+        `Different state detected: IGST will be applied (${companyState} → ${shippingState})`,
+        "info"
+      );
+    }
+  };
+
+  // Function to handle shipping address updates with automatic GST rule application
+  const handleShippingAddressUpdate = (field: string, value: string) => {
+    setFormData((prev) => {
+      const updatedShippingAddress = {
+        ...prev.shippingAddress,
+        [field]: value,
+      };
+
+      return {
+        ...prev,
+        shippingAddress: updatedShippingAddress,
+      };
+    });
+  };
+
+  // Function to recalculate all totals when tax rate/place changes
+  const recalculateAllTotals = () => {
+    setFormData((prev) => {
+      // First calculate subtotal and discount
+      const subTotal = prev.items.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
+
+      // Calculate GST on (subtotal - discount)
+      const taxableAmount = subTotal - discountAmount;
+
+      // Update items with GST calculated on proportional discounted amounts
+      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let rate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          rate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          rate
+        );
+
+        return { ...(item as InvoiceItem), taxRate: rate, ...taxes };
+      });
+
+      // Calculate GST totals
+      const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
+      const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
+      const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+      const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
+
+      // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
+      let additionalTaxAmount = 0;
+      if (prev.additionalTaxType && prev.additionalTaxRate > 0) {
+        const baseAmountForAdditionalTax = subTotal - discountAmount;
+        additionalTaxAmount =
+          (baseAmountForAdditionalTax * prev.additionalTaxRate) / 100;
+      }
+
+      // Calculate final total
+      // TDS is subtracted (negative), TCS is added (positive)
+      const adjustedAdditionalTax =
+        prev.additionalTaxType === "TDS"
+          ? -additionalTaxAmount
+          : additionalTaxAmount;
+
+      const total =
+        subTotal -
+        discountAmount +
+        totalGSTTax +
+        adjustedAdditionalTax +
+        (prev.adjustment || 0);
+
+      return {
+        ...prev,
+        items: updatedItems,
+        subTotal,
+        discountAmount,
+        taxAmount: totalGSTTax,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
+        additionalTaxAmount,
+        total,
+      };
+    });
+  };
+
+  // Determine intra vs inter-state with enhanced logic
+  const isIntraState = () => {
+    const companyState = extractStateName(companySettings.state);
+    const placeOfSupply = formData.placeOfSupplyState || companyState;
+    if (!companyState || !placeOfSupply) return true;
+    return companyState.toLowerCase() === placeOfSupply.toLowerCase();
+  };
+
+  // Get GST distribution info
+  const getGSTDistributionInfo = () => {
+    const companyState = extractStateName(companySettings.state);
+    const placeOfSupply = formData.placeOfSupplyState || companyState;
+    const isSameState =
+      companyState.toLowerCase() === placeOfSupply.toLowerCase();
+
+    return {
+      isSameState,
+      companyState,
+      placeOfSupply,
+      distribution: isSameState ? "CGST + SGST" : "IGST",
+      explanation: isSameState
+        ? `Same state (${companyState}): GST divided into CGST and SGST`
+        : `Different states (${companyState} → ${placeOfSupply}): Using IGST`,
+    };
+  };
+
+  // Fetch customers from backend and check for pre-selected customer
   const fetchCustomers = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/customers`,
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
         {
           credentials: "include",
           headers: {
@@ -182,16 +489,100 @@ const NewRecurringInvoicePage = () => {
           },
         }
       );
-
       if (response.ok) {
-        const result = await response.json();
-        setCustomers(result.data || []);
+        const responseData = await response.json();
+        console.log("Raw API response:", responseData);
+        // Handle the response structure: {success: true, data: [...]}
+        const customersData = responseData.data || responseData;
+        console.log("Customers data:", customersData);
+        // Filter out any undefined/null customers and ensure they have required fields
+        const validCustomers = Array.isArray(customersData)
+          ? customersData.filter(
+              (customer) =>
+                customer && customer._id && customer.firstName && customer.email
+            )
+          : [];
+        console.log("Valid customers:", validCustomers);
+        setCustomers(validCustomers);
+
+        // Check if there's a pre-selected customer from sessionStorage
+        const storedCustomerData = sessionStorage.getItem(
+          "selectedCustomerForInvoice"
+        );
+        if (storedCustomerData) {
+          try {
+            const customerData = JSON.parse(storedCustomerData);
+            console.log("Pre-selected customer data:", customerData);
+
+            // Find the customer in the fetched customers list
+            const foundCustomer = validCustomers.find(
+              (customer) => customer._id === customerData._id
+            );
+
+            if (foundCustomer) {
+              // Pre-select the customer
+              setSelectedCustomer(foundCustomer);
+              setSearchTerm(
+                foundCustomer.firstName + " " + foundCustomer.lastName
+              );
+              setShowCustomerPreSelected(true);
+
+              // Update form data with customer details
+              setFormData((prev) => ({
+                ...prev,
+                buyerName:
+                  foundCustomer.firstName + " " + foundCustomer.lastName,
+                buyerEmail: foundCustomer.email,
+                buyerPhone:
+                  foundCustomer.workPhone || foundCustomer.mobile || "",
+                buyerAddress: foundCustomer.billingAddress
+                  ? `${foundCustomer.billingAddress.street || ""}, ${
+                      foundCustomer.billingAddress.city || ""
+                    }, ${foundCustomer.billingAddress.state || ""}`.trim()
+                  : "",
+                billingAddress: {
+                  street: foundCustomer.billingAddress?.street || "",
+                  city: foundCustomer.billingAddress?.city || "",
+                  state: foundCustomer.billingAddress?.state || "",
+                  country: foundCustomer.billingAddress?.country || "India",
+                  zipCode: foundCustomer.billingAddress?.zipCode || "",
+                },
+                shippingAddress: {
+                  street: foundCustomer.shippingAddress?.street || "",
+                  city: foundCustomer.shippingAddress?.city || "",
+                  state: foundCustomer.shippingAddress?.state || "",
+                  country: foundCustomer.shippingAddress?.country || "India",
+                  zipCode: foundCustomer.shippingAddress?.zipCode || "",
+                },
+                placeOfSupplyState:
+                  foundCustomer.shippingAddress?.state ||
+                  extractStateName(companySettings.state), // Set to shipping state
+              }));
+
+              // Hide notification after 3 seconds
+              setTimeout(() => {
+                setShowCustomerPreSelected(false);
+              }, 3000);
+            }
+
+            // Clear the stored data after using it
+            sessionStorage.removeItem("selectedCustomerForInvoice");
+          } catch (error) {
+            console.error("Error parsing stored customer data:", error);
+            sessionStorage.removeItem("selectedCustomerForInvoice");
+          }
+        }
+      } else {
+        console.error("Error fetching customers:", response.status);
+        setCustomers([]);
       }
     } catch (error) {
       console.error("Error fetching customers:", error);
+      setCustomers([]);
     }
   };
 
+  // Load TDS and TCS records on component mount
   const fetchTaxes = async () => {
     try {
       setIsLoadingTaxes(true);
@@ -220,184 +611,162 @@ const NewRecurringInvoicePage = () => {
     }
   };
 
-  const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastMessage(message);
-    setToastType(type);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-  };
+  // Load TDS and TCS records on component mount
+  useEffect(() => {
+    loadTdsRecords();
+    loadTcsRecords();
+    // Trigger initial GST calculation
+    setTimeout(() => recalculateAllTotals(), 100);
+  }, []);
 
-  const handleCustomerSelect = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setFormData((prev) => ({
-      ...prev,
-      customerId: customer._id,
-      customerName: `${customer.firstName} ${customer.lastName}`,
-      customerEmail: customer.email,
-      customerPhone: customer.mobile || customer.workPhone || "",
-      customerAddress: customer.billingAddress?.street || "",
-      buyerName: `${customer.firstName} ${customer.lastName}`,
-      buyerEmail: customer.email,
-      buyerPhone: customer.mobile || customer.workPhone || "",
-      buyerGstin: customer.pan || "",
-      buyerAddress: customer.billingAddress?.street || "",
-    }));
-  };
+  // Set default place of supply from company settings
+  useEffect(() => {
+    if (!formData.placeOfSupplyState && companySettings.state) {
+      const defaultState = extractStateName(companySettings.state);
+      setFormData((prev) => ({
+        ...prev,
+        placeOfSupplyState: defaultState,
+      }));
+    }
+  }, [companySettings.state, formData.placeOfSupplyState]);
 
-  const addItem = () => {
-    setFormData((prev) => ({
-      ...prev,
-      items: [
-        ...prev.items,
-        {
-          id: Math.max(...prev.items.map((item) => item.id), 0) + 1,
-          itemId: "",
-          details: "",
-          description: "",
-          quantity: 1.0,
-          unit: "pcs",
-          rate: 0.0,
-          amount: 0.0,
-          taxMode: "GST",
-          taxRate: 0,
-          taxAmount: 0,
-          cgst: 0,
-          sgst: 0,
-          igst: 0,
-          taxRemark: "",
-        },
-      ],
-    }));
-  };
-
-  const removeItem = (id: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      items: prev.items.filter((item) => item.id !== id),
-    }));
-  };
-
-  const updateItem = (id: number, field: string, value: string | number) => {
+  // Separate function to recalculate only totals (recalculates GST on discounted amount but preserves item-level GST distribution)
+  const recalculateOnlyTotals = () => {
     setFormData((prev) => {
-      const newItems = prev.items.map((item) => {
-        if (item.id === id) {
-          const updatedItem = { ...item, [field]: value };
+      const subTotal = prev.items.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0
+      );
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
 
-          // Recalculate amount
-          if (field === "quantity" || field === "rate") {
-            updatedItem.amount = updatedItem.quantity * updatedItem.rate;
-            updatedItem.taxAmount =
-              (updatedItem.amount * updatedItem.taxRate) / 100;
-            updatedItem.cgst = updatedItem.taxAmount / 2;
-            updatedItem.sgst = updatedItem.taxAmount / 2;
-            updatedItem.igst = 0;
-          }
+      // Recalculate GST on (subtotal - discount) with proportional distribution
+      const taxableAmount = subTotal - discountAmount;
 
-          return updatedItem;
+      // Update items with GST calculated on proportional discounted amounts
+      const updatedItems = prev.items.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let rate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          rate = item.taxRate || 18; // Default to 18% if not set
         }
-        return item;
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          rate
+        );
+        return { ...item, ...taxes };
       });
 
-      return { ...prev, items: newItems };
+      // Calculate GST totals from updated items
+      const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
+      const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
+      const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+      const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
+
+      // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
+      let additionalTaxAmount = 0;
+      if (prev.additionalTaxType && prev.additionalTaxRate > 0) {
+        const baseAmountForAdditionalTax = subTotal - discountAmount;
+        additionalTaxAmount =
+          (baseAmountForAdditionalTax * prev.additionalTaxRate) / 100;
+      }
+
+      const adjustedAdditionalTax =
+        prev.additionalTaxType === "TDS"
+          ? -additionalTaxAmount
+          : additionalTaxAmount;
+
+      const total =
+        subTotal -
+        discountAmount +
+        totalGSTTax +
+        adjustedAdditionalTax +
+        prev.adjustment;
+
+      return {
+        ...prev,
+        items: updatedItems,
+        subTotal,
+        discountAmount,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
+        taxAmount: totalGSTTax,
+        additionalTaxAmount,
+        total,
+      };
     });
   };
 
-  const handleItemSelect = (
-    id: number,
-    itemId: string,
-    itemDetails: ItemDetails
-  ) => {
-    updateItem(id, "itemId", itemId);
-    updateItem(id, "details", itemDetails.name || "");
-    updateItem(id, "description", itemDetails.description || "");
-    updateItem(id, "rate", itemDetails.sellingPrice || 0);
-    updateItem(id, "unit", itemDetails.unit || "pcs");
-    updateItem(id, "taxRate", itemDetails.gstRate || 0);
-  };
-
-  const calculateItemTax = (item: InvoiceItem) => {
-    const amount = item.quantity * item.rate;
-    const taxAmount = (amount * item.taxRate) / 100;
-    return { amount, taxAmount };
-  };
-
-  const recalculateAllTotals = () => {
-    let subTotal = 0;
-    let totalTax = 0;
-
-    formData.items.forEach((item) => {
-      const { amount, taxAmount } = calculateItemTax(item);
-      subTotal += amount;
-      totalTax += taxAmount;
-    });
-
-    const discountAmount =
-      formData.discountType === "percentage"
-        ? (subTotal * formData.discount) / 100
-        : formData.discount;
-
-    const taxableAmount = subTotal - discountAmount;
-    const cgstTotal = totalTax / 2;
-    const sgstTotal = totalTax / 2;
-    const igstTotal = 0; // For inter-state transactions
-
-    const additionalTaxAmount =
-      (taxableAmount * formData.additionalTaxRate) / 100;
-
-    const total =
-      taxableAmount + totalTax + additionalTaxAmount + formData.adjustment;
-
-    setFormData((prev) => ({
-      ...prev,
-      subTotal,
-      discountAmount,
-      taxAmount: totalTax,
-      cgstTotal,
-      sgstTotal,
-      igstTotal,
-      additionalTaxAmount,
-      total,
-    }));
-  };
-
+  // Recalculate totals when TDS/TCS or adjustment changes (WITHOUT GST recalculation)
   useEffect(() => {
-    recalculateAllTotals();
+    recalculateOnlyTotals();
   }, [
-    formData.items,
-    formData.discount,
-    formData.discountType,
+    formData.additionalTaxType,
     formData.additionalTaxRate,
     formData.adjustment,
   ]);
 
-  const isIntraState = () => {
-    // Simple logic - you can enhance this based on your requirements
-    return formData.billingAddress.state === formData.shippingAddress.state;
+  // Recalculate ALL totals INCLUDING GST when place of supply OR discount changes
+  useEffect(() => {
+    recalculateAllTotals();
+  }, [formData.placeOfSupplyState, formData.discount, formData.discountType]);
+
+  // Load TDS records
+  const loadTdsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tds/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTdsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TDS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
+  };
+
+  // Load TCS records
+  const loadTcsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tcs/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTcsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TCS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
   };
 
   const handleSaveRecurringInvoice = async () => {
     try {
-      // Validate required fields
-      if (!formData.profileName.trim()) {
-        showToastMessage("Profile name is required", "error");
-        return;
-      }
-
-      if (!formData.customerId) {
+      if (!selectedCustomer) {
         showToastMessage("Please select a customer", "error");
-        return;
-      }
-
-      if (!formData.startDate) {
-        showToastMessage("Start date is required", "error");
-        return;
-      }
-
-      if (!formData.neverExpires && !formData.endDate) {
-        showToastMessage(
-          "End date is required when not set to never expire",
-          "error"
-        );
         return;
       }
 
@@ -413,20 +782,350 @@ const NewRecurringInvoicePage = () => {
         }
       );
 
+      const result = await response.json();
+
       if (response.ok) {
-        const result = await response.json();
-        showToastMessage("Recurring invoice created successfully", "success");
-        router.push("/dashboard/sales/recurring-invoices");
-      } else {
-        const errorData = await response.json();
-        showToastMessage(
-          errorData.message || "Failed to create recurring invoice",
-          "error"
+        console.log("Recurring invoice saved successfully", result);
+        showToastMessage("Recurring invoice created successfully!", "success");
+        setTimeout(
+          () => router.push("/dashboard/sales/recurring-invoices"),
+          800
         );
+      } else {
+        console.error("Error saving recurring invoice:", result.error);
+        showToastMessage(`Error: ${result.error}`, "error");
       }
     } catch (error) {
-      console.error("Error creating recurring invoice:", error);
-      showToastMessage("Failed to create recurring invoice", "error");
+      console.error("Error saving recurring invoice:", error);
+      showToastMessage(
+        "Error saving recurring invoice. Please try again.",
+        "error"
+      );
+    }
+  };
+
+  const handleCustomerSelect = (customer: Customer | null) => {
+    if (customer) {
+      setSelectedCustomer(customer);
+      setShowCustomerDropdown(false);
+      setSearchTerm(customer.firstName + " " + customer.lastName);
+
+      // Update form data with customer details
+      setFormData((prev) => ({
+        ...prev,
+        buyerName: customer.firstName + " " + customer.lastName,
+        buyerEmail: customer.email,
+        buyerPhone: customer.workPhone || customer.mobile || "",
+        buyerAddress: customer.billingAddress
+          ? `${customer.billingAddress.street || ""}, ${
+              customer.billingAddress.city || ""
+            }, ${customer.billingAddress.state || ""}`.trim()
+          : "",
+        billingAddress: {
+          street: customer.billingAddress?.street || "",
+          city: customer.billingAddress?.city || "",
+          state: customer.billingAddress?.state || "",
+          country: customer.billingAddress?.country || "India",
+          zipCode: customer.billingAddress?.zipCode || "",
+        },
+        shippingAddress: {
+          street: customer.shippingAddress?.street || "",
+          city: customer.shippingAddress?.city || "",
+          state: customer.shippingAddress?.state || "",
+          country: customer.shippingAddress?.country || "India",
+          zipCode: customer.shippingAddress?.zipCode || "",
+        },
+        placeOfSupplyState:
+          customer.shippingAddress?.state ||
+          extractStateName(companySettings.state), // Set to shipping state
+      }));
+
+      // Show toast notification about customer selection
+      showToast(
+        `Customer "${customer.firstName} ${customer.lastName}" selected successfully!`,
+        "success"
+      );
+
+      // Trigger GST recalculation after a short delay to ensure state updates
+      setTimeout(() => {
+        recalculateAllTotals();
+      }, 100);
+    } else {
+      // Clear customer selection
+      setSelectedCustomer(null);
+      setShowCustomerDropdown(false);
+      setSearchTerm("");
+
+      // Clear form data related to customer
+      setFormData((prev) => ({
+        ...prev,
+        buyerName: "",
+        buyerEmail: "",
+        buyerPhone: "",
+        buyerAddress: "",
+        billingAddress: {
+          street: "",
+          city: "",
+          state: "",
+          country: "India",
+          zipCode: "",
+        },
+        shippingAddress: {
+          street: "",
+          city: "",
+          state: "",
+          country: "India",
+          zipCode: "",
+        },
+        placeOfSupplyState: "",
+      }));
+
+      showToast("Customer selection cleared", "info");
+    }
+  };
+
+  const addItem = () => {
+    const companyState = extractStateName(companySettings.state);
+    const placeOfSupply = formData.placeOfSupplyState || companyState;
+    const isSameState =
+      companyState.toLowerCase() === placeOfSupply.toLowerCase();
+    const defaultTaxMode = isSameState ? "GST" : "IGST";
+
+    setFormData((prev) => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          id: prev.items.length + 1,
+          itemId: "",
+          details: "",
+          description: "",
+          quantity: 1.0,
+          unit: "pcs",
+          rate: 0.0,
+          amount: 0.0,
+          taxMode: defaultTaxMode as TaxMode,
+          taxRate: 18, // Always default to 18%
+          taxAmount: 0,
+          cgst: 0,
+          sgst: 0,
+          igst: 0,
+          taxRemark: "",
+        } as InvoiceItem,
+      ],
+    }));
+  };
+
+  const removeItem = (id: number) => {
+    if (formData.items.length > 1) {
+      setFormData((prev) => ({
+        ...prev,
+        items: prev.items.filter((item) => item.id !== id),
+      }));
+    }
+  };
+
+  const handleItemSelect = (
+    id: number,
+    itemId: string,
+    itemDetails: ItemDetails
+  ) => {
+    updateItem(id, "itemId", itemId);
+    updateItem(id, "details", itemDetails.name || "");
+    updateItem(id, "description", itemDetails.description || "");
+    updateItem(id, "rate", itemDetails.sellingPrice || 0);
+    updateItem(id, "unit", itemDetails.unit || "pcs");
+    updateItem(id, "taxRate", itemDetails.gstRate || 0);
+  };
+
+  const updateItem = (id: number, field: string, value: string | number) => {
+    setFormData((prev) => {
+      const updatedItems: InvoiceItem[] = prev.items.map((item) => {
+        if (item.id !== id) return item;
+        const updatedItem: InvoiceItem = {
+          ...(item as InvoiceItem),
+          [field]: value,
+        } as InvoiceItem;
+
+        // Normalize numeric fields
+        if (field === "quantity" || field === "rate" || field === "amount") {
+          const qty =
+            Number(field === "quantity" ? value : updatedItem.quantity) || 0;
+          const rate = Number(field === "rate" ? value : updatedItem.rate) || 0;
+          updatedItem.amount =
+            field === "amount" ? Number(value) || 0 : qty * rate;
+        }
+
+        // Handle tax mode updates
+        if (field === "taxMode") {
+          const newMode = value as TaxMode;
+          // If user selects GST/IGST, automatically apply the appropriate one based on state
+          if (newMode === "GST" || newMode === "IGST") {
+            const companyState = extractStateName(companySettings.state);
+            const placeOfSupply = prev.placeOfSupplyState || companyState;
+            const isSameState =
+              companyState.toLowerCase() === placeOfSupply.toLowerCase();
+            updatedItem.taxMode = isSameState ? "GST" : "IGST";
+          } else {
+            updatedItem.taxMode = newMode;
+          }
+        }
+
+        // Determine tax based on effective tax mode
+        const effectiveTaxMode = updatedItem.taxMode;
+        let rateToUse = 0;
+
+        if (effectiveTaxMode === "GST" || effectiveTaxMode === "IGST") {
+          rateToUse = Number(updatedItem.taxRate ?? prev.taxRate) || 0;
+        }
+
+        const taxes = calculateItemTax(
+          updatedItem.amount || 0,
+          effectiveTaxMode as TaxMode,
+          rateToUse
+        );
+
+        updatedItem.cgst = taxes.cgst;
+        updatedItem.sgst = taxes.sgst;
+        updatedItem.igst = taxes.igst;
+        updatedItem.taxAmount = taxes.taxAmount;
+        updatedItem.taxRate = rateToUse;
+
+        return updatedItem;
+      });
+
+      // Recalculate totals
+      const subTotal = updatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.amount || 0),
+        0
+      );
+      const discountAmount =
+        prev.discountType === "percentage"
+          ? (subTotal * prev.discount) / 100
+          : prev.discount;
+
+      // Recalculate GST on (subtotal - discount) with proportional distribution
+      const finalUpdatedItems = updatedItems.map((item) => {
+        // Ensure all GST/IGST items have 18% tax rate
+        let itemRate = 0;
+        if (item.taxMode === "GST" || item.taxMode === "IGST") {
+          itemRate = item.taxRate || 18; // Default to 18% if not set
+        }
+
+        // Calculate proportional discount for this item
+        const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+        const itemDiscountAmount = discountAmount * itemProportion;
+        const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+        const taxes = calculateItemTax(
+          itemTaxableAmount,
+          item.taxMode as TaxMode,
+          itemRate
+        );
+        return { ...item, ...taxes };
+      });
+
+      const cgstTotal = finalUpdatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.cgst || 0),
+        0
+      );
+      const sgstTotal = finalUpdatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.sgst || 0),
+        0
+      );
+      const igstTotal = finalUpdatedItems.reduce(
+        (sum: number, i: InvoiceItem) => sum + (i.igst || 0),
+        0
+      );
+      const totalTax = cgstTotal + sgstTotal + igstTotal;
+      const total =
+        subTotal - discountAmount + totalTax + (prev.adjustment || 0);
+
+      return {
+        ...prev,
+        items: finalUpdatedItems,
+        subTotal,
+        discountAmount,
+        taxAmount: totalTax,
+        cgstTotal,
+        sgstTotal,
+        igstTotal,
+        total,
+      };
+    });
+  };
+
+  const filteredCustomers = (customers || []).filter(
+    (customer) =>
+      customer &&
+      customer.firstName &&
+      customer.email &&
+      (customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const handleSaveInvoice = async (asDraft = false) => {
+    try {
+      if (!selectedCustomer) {
+        showToast("Please select a customer", "error");
+        return;
+      }
+
+      // Remove undefined fields and ensure proper data types
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { project: _unusedProject, ...formDataWithoutProject } = formData;
+
+      const invoiceData = {
+        ...formDataWithoutProject,
+        customerId: selectedCustomer._id,
+        customerName:
+          selectedCustomer.firstName + " " + selectedCustomer.lastName,
+        customerEmail: selectedCustomer.email,
+        customerPhone:
+          selectedCustomer.workPhone || selectedCustomer.mobile || "",
+        status: asDraft ? "Draft" : "Sent",
+        invoiceDate: new Date(formData.invoiceDate),
+        dueDate: new Date(formData.dueDate),
+        // Clean up items - remove empty itemId fields
+        items: formData.items.map((item) => ({
+          ...item,
+          itemId: item.itemId || undefined,
+        })),
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/recurring-invoices`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(invoiceData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log("Recurring invoice saved successfully", result);
+        showToast(
+          `Recurring invoice ${
+            asDraft ? "saved as draft" : "created and sent"
+          } successfully!`,
+          "success"
+        );
+        setTimeout(
+          () => router.push("/dashboard/sales/recurring-invoices"),
+          800
+        );
+      } else {
+        console.error("Error saving recurring invoice:", result.error);
+        showToast(`Error: ${result.error}`, "error");
+      }
+    } catch (error) {
+      console.error("Error saving recurring invoice:", error);
+      showToast("Error saving recurring invoice. Please try again.", "error");
     }
   };
 
@@ -477,7 +1176,11 @@ const NewRecurringInvoicePage = () => {
               }
               searchTerm=""
               showCustomerDropdown={false}
-              onCustomerSelect={handleCustomerSelect}
+              onCustomerSelect={(customer) => {
+                if (customer) {
+                  handleCustomerSelect(customer);
+                }
+              }}
               onSearchChange={() => {}}
               onDropdownToggle={() => {}}
               formData={{
@@ -489,7 +1192,9 @@ const NewRecurringInvoicePage = () => {
                   zipCode: "",
                 },
                 shippingAddress: {
-                  street: formData.customerAddress || "",
+                  street: formData.customerAddress
+                    ? formData.customerAddress
+                    : "",
                   city: "",
                   state: "",
                   country: "India",
@@ -624,7 +1329,7 @@ const NewRecurringInvoicePage = () => {
       />
 
       {/* Toast Notification */}
-      {showToast && (
+      {toastMessage && (
         <div className="fixed bottom-4 right-4 z-50">
           <div
             className={`px-4 py-2 rounded-md shadow-lg ${
@@ -641,4 +1346,4 @@ const NewRecurringInvoicePage = () => {
   );
 };
 
-export default NewRecurringInvoicePage;
+export default NewRecurringInvoiceForm;

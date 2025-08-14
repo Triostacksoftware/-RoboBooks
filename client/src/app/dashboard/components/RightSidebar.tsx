@@ -21,6 +21,7 @@ import {
   BellIcon,
   ListBulletIcon,
   ClipboardDocumentCheckIcon,
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 
 // Custom ReadAllIcon component
@@ -67,6 +68,12 @@ const ICON_BUTTONS = [
     badge: null,
     action: "extensions",
   },
+  {
+    Icon: WrenchScrewdriverIcon,
+    label: "Configure Features",
+    badge: null,
+    action: "configure-features",
+  },
 ];
 
 const FAQ_ITEMS = [
@@ -93,6 +100,59 @@ const DOCUMENT_ITEMS = [
   "Advanced Reporting",
 ];
 
+// Feature configuration data
+const FEATURE_CONFIG = [
+  {
+    id: "quotes",
+    name: "Quotes",
+    description: "Send new proposals and get them approved from your customer.",
+    enabled: true,
+  },
+  {
+    id: "retainer-invoices",
+    name: "Retainer Invoices",
+    description: "Collect advance payments or retainers from your customers.",
+    enabled: false,
+  },
+  {
+    id: "timesheet",
+    name: "Timesheet",
+    description: "Track time for projects and bill them to your customers.",
+    enabled: true,
+  },
+  {
+    id: "price-list",
+    name: "Price List",
+    description:
+      "Customize price lists for your customers, for the items you sell.",
+    enabled: false,
+  },
+  {
+    id: "sales-orders",
+    name: "Sales Orders",
+    description: "Confirm your customer's order and ship goods soon.",
+    enabled: true,
+  },
+  {
+    id: "delivery-challans",
+    name: "Delivery Challans",
+    description: "Manage transfer of goods effectively.",
+    enabled: true,
+  },
+  {
+    id: "purchase-orders",
+    name: "Purchase Orders",
+    description: "Create and send orders to purchase goods.",
+    enabled: true,
+  },
+  {
+    id: "inventory",
+    name: "I would like to enable Inventory.",
+    description: "Manage your stock levels effectively.",
+    enabled: false,
+  },
+];
+
 export default function RightSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [helpPanelOpen, setHelpPanelOpen] = useState(false);
@@ -100,12 +160,15 @@ export default function RightSidebar() {
   const [webinarsOpen, setWebinarsOpen] = useState(false);
   const [roboNotebookOpen, setRoboNotebookOpen] = useState(false);
   const [extensionsOpen, setExtensionsOpen] = useState(false);
+  const [configureFeaturesOpen, setConfigureFeaturesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isPinned, setIsPinned] = useState(false);
   const [isAnnouncementsPinned, setIsAnnouncementsPinned] = useState(false);
   const [isWebinarsPinned, setIsWebinarsPinned] = useState(false);
   const [isRoboNotebookPinned, setIsRoboNotebookPinned] = useState(false);
   const [isExtensionsPinned, setIsExtensionsPinned] = useState(false);
+  const [isConfigureFeaturesPinned, setIsConfigureFeaturesPinned] =
+    useState(false);
   const [showAllFAQ, setShowAllFAQ] = useState(false);
   const [showAllDocuments, setShowAllDocuments] = useState(false);
   const [modulesOpen, setModulesOpen] = useState(false);
@@ -114,6 +177,7 @@ export default function RightSidebar() {
     number | null
   >(null);
   const [unreadAnnouncements, setUnreadAnnouncements] = useState(1);
+  const [featureConfig, setFeatureConfig] = useState(FEATURE_CONFIG);
 
   // 1) Sync a body–level class so your main content can react in global CSS:
   useEffect(() => {
@@ -156,6 +220,11 @@ export default function RightSidebar() {
           setExtensionsOpen(false);
         }
       }
+      if (configureFeaturesOpen && !isConfigureFeaturesPinned) {
+        if (!target.closest("[data-configure-features-panel]")) {
+          setConfigureFeaturesOpen(false);
+        }
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -173,6 +242,8 @@ export default function RightSidebar() {
     isRoboNotebookPinned,
     extensionsOpen,
     isExtensionsPinned,
+    configureFeaturesOpen,
+    isConfigureFeaturesPinned,
   ]);
 
   // 2) Choose the correct arrow
@@ -192,6 +263,8 @@ export default function RightSidebar() {
         setRoboNotebookOpen(true);
       } else if (action === "extensions") {
         setExtensionsOpen(true);
+      } else if (action === "configure-features") {
+        setConfigureFeaturesOpen(true);
       }
     };
 
@@ -240,6 +313,14 @@ export default function RightSidebar() {
       }
     };
 
+    const handleConfigureFeaturesPinToggle = () => {
+      setIsConfigureFeaturesPinned(!isConfigureFeaturesPinned);
+      // If pinning, keep the panel open
+      if (!isConfigureFeaturesPinned) {
+        setConfigureFeaturesOpen(true);
+      }
+    };
+
     const handleClosePanel = () => {
       // Only close if not pinned
       if (!isPinned) {
@@ -273,6 +354,36 @@ export default function RightSidebar() {
       if (!isExtensionsPinned) {
         setExtensionsOpen(false);
       }
+    };
+
+    const handleCloseConfigureFeatures = () => {
+      // Only close if not pinned
+      if (!isConfigureFeaturesPinned) {
+        setConfigureFeaturesOpen(false);
+      }
+    };
+
+    const handleFeatureToggle = (featureId: string) => {
+      setFeatureConfig((prev) =>
+        prev.map((feature) =>
+          feature.id === featureId
+            ? { ...feature, enabled: !feature.enabled }
+            : feature
+        )
+      );
+    };
+
+    const handleSaveFeatures = () => {
+      // Here you would typically save to backend/localStorage
+      console.log("Saving feature configuration:", featureConfig);
+      // Show success message (you can use your toast system here)
+      setConfigureFeaturesOpen(false);
+    };
+
+    const handleCancelFeatures = () => {
+      // Reset to original configuration
+      setFeatureConfig(FEATURE_CONFIG);
+      setConfigureFeaturesOpen(false);
     };
 
     const handleModuleSelect = (module: string) => {
@@ -1415,6 +1526,188 @@ export default function RightSidebar() {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </aside>
+        </>
+      );
+    }
+
+    // Configure Features Panel
+    if (configureFeaturesOpen) {
+      return (
+        <>
+          {/* Always show the sidebar */}
+          <aside
+            data-settings-utils
+            className="fixed top-14 right-0 bottom-0 flex flex-col items-center bg-white shadow-lg px-4 py-4 select-none z-40 w-20"
+          >
+            {/* icon stack, pushed down via pt-6 */}
+            <div className="flex-1 w-full overflow-y-auto space-y-4 pt-2 pb-4">
+              {ICON_BUTTONS.map(({ Icon, label, badge, action }) => (
+                <div key={label} className="relative group">
+                  <button
+                    aria-label={label}
+                    onClick={() => handleIconClick(action)}
+                    className="w-10 h-10 mx-auto flex items-center justify-center bg-blue-100 rounded-full shadow hover:shadow-lg transition relative"
+                  >
+                    <Icon className="w-5 h-5 text-gray-600" />
+                    {/* Notification Badge */}
+                    {action === "announcements"
+                      ? unreadAnnouncements > 0 && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                            {unreadAnnouncements}
+                          </div>
+                        )
+                      : badge && (
+                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                            {badge}
+                          </div>
+                        )}
+                  </button>
+                  {/* Tooltip */}
+                  <div className="absolute right-full mr-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <div className="bg-gray-800 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
+                      {label}
+                      {/* Tooltip arrow pointing right */}
+                      <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-800 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Single collapse toggle at the bottom */}
+            <button
+              onClick={() => setCollapsed(true)}
+              aria-label={ariaLabel}
+              className="mt-auto p-2 rounded-full hover:bg-gray-100 transition"
+            >
+              <ToggleIcon className="w-5 h-5 text-gray-600" />
+            </button>
+          </aside>
+
+          {/* Configure Features Panel */}
+          <aside
+            data-configure-features-panel
+            className="fixed top-14 right-20 bottom-0 w-96 bg-white shadow-lg z-50 flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                {/* Pin Option */}
+                <button
+                  onClick={handleConfigureFeaturesPinToggle}
+                  className={`p-1 rounded transition ${
+                    isConfigureFeaturesPinned
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-400 hover:text-gray-600"
+                  }`}
+                  title={
+                    isConfigureFeaturesPinned ? "Unpin panel" : "Pin panel"
+                  }
+                >
+                  <PaperClipIcon
+                    className={`w-4 h-4 ${
+                      isConfigureFeaturesPinned ? "rotate-45" : ""
+                    }`}
+                  />
+                </button>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Configure Features
+                </h2>
+              </div>
+              <button
+                onClick={handleCloseConfigureFeatures}
+                className={`p-1 rounded-full hover:bg-gray-100 transition ${
+                  isConfigureFeaturesPinned
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+                disabled={isConfigureFeaturesPinned}
+                title={
+                  isConfigureFeaturesPinned
+                    ? "Panel is pinned - unpin to close"
+                    : "Close panel"
+                }
+              >
+                <XMarkIcon className="w-5 h-5 text-red-600" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Subtitle */}
+              <p className="text-sm text-gray-600 mb-4">
+                Enable the modules required for your business.
+              </p>
+
+              {/* Information Box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                <div className="flex items-start space-x-2">
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+                    <span className="text-white text-xs font-bold">i</span>
+                  </div>
+                  <p className="text-sm text-blue-800">
+                    Invoices, Credit Notes, Expenses, Bills, Recurring Invoices
+                    and more are available by default in Robo Books.
+                  </p>
+                </div>
+              </div>
+
+              {/* Features List */}
+              <div className="space-y-4">
+                {featureConfig.map((feature) => (
+                  <div
+                    key={feature.id}
+                    className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    <input
+                      type="checkbox"
+                      id={feature.id}
+                      checked={feature.enabled}
+                      onChange={() => handleFeatureToggle(feature.id)}
+                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={feature.id}
+                        className="text-sm font-medium text-gray-800 cursor-pointer"
+                      >
+                        {feature.name}
+                      </label>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Note */}
+              <div className="mt-6 p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600">
+                  Note: You can change these details later in Settings, if
+                  needed.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer with Action Buttons */}
+            <div className="border-t border-gray-200 p-4">
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCancelFeatures}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveFeatures}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                >
+                  Save
+                </button>
               </div>
             </div>
           </aside>

@@ -1,8 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, X, Settings, Info, ChevronDown, Search } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Plus,
+  X,
+  Settings,
+  Info,
+  ChevronDown,
+  Search,
+} from "lucide-react";
+import TDSManagementModal from "../../invoices/new/components/TDSManagementModal";
+import TCSManagementModal from "../../invoices/new/components/TCSManagementModal";
 
 interface Customer {
   id: string;
@@ -13,6 +23,10 @@ interface Customer {
 interface Salesperson {
   id: string;
   name: string;
+  email: string;
+  phone: string;
+  department: string;
+  status: "Active" | "Inactive";
 }
 
 interface Item {
@@ -30,105 +44,240 @@ interface CreditNoteItem {
   amount: number;
 }
 
+interface TDSRecord {
+  _id: string;
+  name: string;
+  rate: number;
+  section: string;
+  status: "Active" | "Inactive";
+}
+
+interface TCSRecord {
+  _id: string;
+  name: string;
+  rate: number;
+  natureOfCollection: string;
+  section?: string;
+  status: "Active" | "Inactive";
+}
+
 const NewCreditNotePage = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  
+
   // Form state
-  const [customerName, setCustomerName] = useState('');
-  const [creditNoteNumber, setCreditNoteNumber] = useState('CN-00001');
-  const [referenceNumber, setReferenceNumber] = useState('');
-  const [creditNoteDate, setCreditNoteDate] = useState(new Date().toISOString().split('T')[0]);
-  const [salesperson, setSalesperson] = useState('');
-  const [subject, setSubject] = useState('');
+  const [customerName, setCustomerName] = useState("");
+  const [creditNoteNumber, setCreditNoteNumber] = useState("CN-00001");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [creditNoteDate, setCreditNoteDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [salesperson, setSalesperson] = useState("");
+  const [subject, setSubject] = useState("");
   const [items, setItems] = useState<CreditNoteItem[]>([
     {
-      id: '1',
-      itemDetails: '',
-      account: '',
+      id: "1",
+      itemDetails: "",
+      account: "",
       quantity: 1,
       rate: 0,
-      amount: 0
-    }
+      amount: 0,
+    },
   ]);
-  
+
   // Summary state
   const [subTotal, setSubTotal] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState('percentage');
-  const [tdsType, setTdsType] = useState('TDS');
-  const [selectedTax, setSelectedTax] = useState('');
+  const [discountType, setDiscountType] = useState("percentage");
+  const [tdsType, setTdsType] = useState("TDS");
+  const [selectedTax, setSelectedTax] = useState("");
   const [tdsAmount, setTdsAmount] = useState(0);
   const [adjustment, setAdjustment] = useState(0);
   const [total, setTotal] = useState(0);
 
+  // TDS/TCS State
+  const [tdsRecords, setTdsRecords] = useState<TDSRecord[]>([]);
+  const [tcsRecords, setTcsRecords] = useState<TCSRecord[]>([]);
+  const [isLoadingTaxes, setIsLoadingTaxes] = useState(false);
+  const [showTDSModal, setShowTDSModal] = useState(false);
+  const [showTCSModal, setShowTCSModal] = useState(false);
+
+  // Salesperson Modal State
+  const [showSalespersonModal, setShowSalespersonModal] = useState(false);
+  const [salespeople, setSalespeople] = useState<Salesperson[]>([]);
+  const [showSalespersonDropdown, setShowSalespersonDropdown] = useState(false);
+  const [salespersonSearchTerm, setSalespersonSearchTerm] = useState("");
+
   // Mock data
   const [customers] = useState<Customer[]>([
-    { id: '1', name: 'ABC Company Ltd', email: 'contact@abc.com' },
-    { id: '2', name: 'XYZ Corporation', email: 'info@xyz.com' },
-    { id: '3', name: 'DEF Industries', email: 'sales@def.com' }
-  ]);
-
-  const [salespeople] = useState<Salesperson[]>([
-    { id: '1', name: 'John Doe' },
-    { id: '2', name: 'Jane Smith' },
-    { id: '3', name: 'Mike Johnson' }
+    { id: "1", name: "ABC Company Ltd", email: "contact@abc.com" },
+    { id: "2", name: "XYZ Corporation", email: "info@xyz.com" },
+    { id: "3", name: "DEF Industries", email: "sales@def.com" },
   ]);
 
   const [accounts] = useState([
-    'Sales',
-    'Service Revenue',
-    'Product Returns',
-    'Discounts',
-    'Other Income'
+    "Sales",
+    "Service Revenue",
+    "Product Returns",
+    "Discounts",
+    "Other Income",
   ]);
+
+  // Load TDS and TCS records on component mount
+  useEffect(() => {
+    loadTdsRecords();
+    loadTcsRecords();
+    loadSalespeople();
+  }, []);
 
   // Calculate totals when items change
   useEffect(() => {
     const newSubTotal = items.reduce((sum, item) => sum + item.amount, 0);
     setSubTotal(newSubTotal);
-    
-    const discountAmount = discountType === 'percentage' 
-      ? (newSubTotal * discount / 100) 
-      : discount;
-    
+
+    const discountAmount =
+      discountType === "percentage" ? (newSubTotal * discount) / 100 : discount;
+
     const newTotal = newSubTotal - discountAmount - tdsAmount + adjustment;
     setTotal(newTotal);
   }, [items, discount, discountType, tdsAmount, adjustment]);
 
+  // Load TDS records
+  const loadTdsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tds/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTdsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TDS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
+  };
+
+  // Load TCS records
+  const loadTcsRecords = async () => {
+    try {
+      setIsLoadingTaxes(true);
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/tcs/active",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setTcsRecords(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading TCS records:", error);
+    } finally {
+      setIsLoadingTaxes(false);
+    }
+  };
+
+  // Load salespeople
+  const loadSalespeople = async () => {
+    try {
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/salespeople",
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        setSalespeople(result.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading salespeople:", error);
+      // Use mock data if API fails
+      setSalespeople([
+        {
+          id: "1",
+          name: "John Doe",
+          email: "john@company.com",
+          phone: "+91 98765 43210",
+          department: "Sales",
+          status: "Active",
+        },
+        {
+          id: "2",
+          name: "Jane Smith",
+          email: "jane@company.com",
+          phone: "+91 98765 43211",
+          department: "Sales",
+          status: "Active",
+        },
+        {
+          id: "3",
+          name: "Mike Johnson",
+          email: "mike@company.com",
+          phone: "+91 98765 43212",
+          department: "Sales",
+          status: "Active",
+        },
+      ]);
+    }
+  };
+
   // Update item amount when quantity or rate changes
   const updateItemAmount = (id: string, quantity: number, rate: number) => {
-    setItems(prev => prev.map(item => 
-      item.id === id 
-        ? { ...item, quantity, rate, amount: quantity * rate }
-        : item
-    ));
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? { ...item, quantity, rate, amount: quantity * rate }
+          : item
+      )
+    );
   };
 
   // Add new item row
   const addItemRow = () => {
     const newItem: CreditNoteItem = {
       id: Date.now().toString(),
-      itemDetails: '',
-      account: '',
+      itemDetails: "",
+      account: "",
       quantity: 1,
       rate: 0,
-      amount: 0
+      amount: 0,
     };
-    setItems(prev => [...prev, newItem]);
+    setItems((prev) => [...prev, newItem]);
   };
 
   // Remove item row
   const removeItemRow = (id: string) => {
     if (items.length > 1) {
-      setItems(prev => prev.filter(item => item.id !== id));
+      setItems((prev) => prev.filter((item) => item.id !== id));
     }
   };
 
+  // Handle salesperson selection
+  const handleSalespersonSelect = (selectedSalesperson: Salesperson) => {
+    setSalesperson(selectedSalesperson.name);
+    setShowSalespersonDropdown(false);
+    setSalespersonSearchTerm(selectedSalesperson.name);
+  };
+
+  // Filtered salespeople
+  const filteredSalespeople = salespeople.filter(
+    (sp) =>
+      sp.name.toLowerCase().includes(salespersonSearchTerm.toLowerCase()) ||
+      sp.email.toLowerCase().includes(salespersonSearchTerm.toLowerCase())
+  );
+
   // Handle form submission
-  const handleSubmit = async (status: 'draft' | 'open') => {
+  const handleSubmit = async (status: "draft" | "open") => {
     setLoading(true);
-    
+
     try {
       // Here you would typically send the data to your API
       const creditNoteData = {
@@ -147,21 +296,21 @@ const NewCreditNotePage = () => {
         tdsAmount,
         adjustment,
         total,
-        status
+        status,
       };
-      
-      console.log('Credit Note Data:', creditNoteData);
-      
+
+      console.log("Credit Note Data:", creditNoteData);
+
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Show success message (using toast as per user preference)
       // You can integrate with your toast system here
-      
+
       // Redirect to credit notes list
-      router.push('/dashboard/sales/credit-notes');
+      router.push("/dashboard/sales/credit-notes");
     } catch (error) {
-      console.error('Error creating credit note:', error);
+      console.error("Error creating credit note:", error);
     } finally {
       setLoading(false);
     }
@@ -179,8 +328,12 @@ const NewCreditNotePage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">New Credit Note</h1>
-            <p className="text-gray-600 mt-1">Create a new credit note for customer refunds or credits</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              New Credit Note
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Create a new credit note for customer refunds or credits
+            </p>
           </div>
         </div>
       </div>
@@ -190,7 +343,9 @@ const NewCreditNotePage = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Details */}
           <div className="bg-white rounded-lg border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Customer Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Customer Details
+            </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -215,7 +370,9 @@ const NewCreditNotePage = () => {
 
           {/* Credit Note Details */}
           <div className="bg-white rounded-lg border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Credit Note Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Credit Note Details
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -258,27 +415,74 @@ const NewCreditNotePage = () => {
 
           {/* Salesperson */}
           <div className="bg-white rounded-lg border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Salesperson</h2>
-            <div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Salesperson
+            </h2>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Salesperson
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  value={salesperson}
-                  onChange={(e) => setSalesperson(e.target.value)}
+                  value={salespersonSearchTerm}
+                  onChange={(e) => {
+                    setSalespersonSearchTerm(e.target.value);
+                    setShowSalespersonDropdown(true);
+                  }}
+                  onFocus={() => setShowSalespersonDropdown(true)}
                   placeholder="Select or Add Salesperson"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                 />
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
+
+              {/* Salesperson Dropdown */}
+              {showSalespersonDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  <div className="p-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Salespeople
+                      </span>
+                      <button
+                        onClick={() => setShowSalespersonModal(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        + Add New
+                      </button>
+                    </div>
+                    {filteredSalespeople.length > 0 ? (
+                      filteredSalespeople.map((sp) => (
+                        <div
+                          key={sp.id}
+                          onClick={() => handleSalespersonSelect(sp)}
+                          className="p-2 hover:bg-gray-100 rounded cursor-pointer"
+                        >
+                          <div className="font-medium text-gray-900">
+                            {sp.name}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {sp.email}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-gray-500 text-sm">
+                        No salespeople found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Subject */}
           <div className="bg-white rounded-lg border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Subject</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Subject
+            </h2>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                 Subject
@@ -297,21 +501,33 @@ const NewCreditNotePage = () => {
           {/* Item Table */}
           <div className="bg-white rounded-lg border p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Item Table</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Item Table
+              </h2>
               <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
                 Bulk Actions
               </button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ITEM DETAILS</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ACCOUNT</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">QUANTITY</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">RATE (₹)</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">AMOUNT</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      ITEM DETAILS
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      ACCOUNT
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      QUANTITY
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      RATE (₹)
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                      AMOUNT
+                    </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"></th>
                   </tr>
                 </thead>
@@ -322,9 +538,15 @@ const NewCreditNotePage = () => {
                         <input
                           type="text"
                           value={item.itemDetails}
-                          onChange={(e) => setItems(prev => prev.map(i => 
-                            i.id === item.id ? { ...i, itemDetails: e.target.value } : i
-                          ))}
+                          onChange={(e) =>
+                            setItems((prev) =>
+                              prev.map((i) =>
+                                i.id === item.id
+                                  ? { ...i, itemDetails: e.target.value }
+                                  : i
+                              )
+                            )
+                          }
                           placeholder="Type or click to select an item."
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                         />
@@ -334,9 +556,15 @@ const NewCreditNotePage = () => {
                           <input
                             type="text"
                             value={item.account}
-                            onChange={(e) => setItems(prev => prev.map(i => 
-                              i.id === item.id ? { ...i, account: e.target.value } : i
-                            ))}
+                            onChange={(e) =>
+                              setItems((prev) =>
+                                prev.map((i) =>
+                                  i.id === item.id
+                                    ? { ...i, account: e.target.value }
+                                    : i
+                                )
+                              )
+                            }
                             placeholder="Select an account"
                             className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent pr-6"
                           />
@@ -347,7 +575,13 @@ const NewCreditNotePage = () => {
                         <input
                           type="number"
                           value={item.quantity}
-                          onChange={(e) => updateItemAmount(item.id, parseFloat(e.target.value) || 0, item.rate)}
+                          onChange={(e) =>
+                            updateItemAmount(
+                              item.id,
+                              parseFloat(e.target.value) || 0,
+                              item.rate
+                            )
+                          }
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                         />
                       </td>
@@ -355,7 +589,13 @@ const NewCreditNotePage = () => {
                         <input
                           type="number"
                           value={item.rate}
-                          onChange={(e) => updateItemAmount(item.id, item.quantity, parseFloat(e.target.value) || 0)}
+                          onChange={(e) =>
+                            updateItemAmount(
+                              item.id,
+                              item.quantity,
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
                           className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                         />
                       </td>
@@ -380,7 +620,7 @@ const NewCreditNotePage = () => {
                 </tbody>
               </table>
             </div>
-            
+
             <div className="mt-4 space-x-3">
               <button
                 onClick={addItemRow}
@@ -398,21 +638,27 @@ const NewCreditNotePage = () => {
         {/* Summary Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg border p-6 sticky top-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Summary</h2>
-            
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Summary
+            </h2>
+
             <div className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-gray-600">Sub Total</span>
                 <span className="font-medium">₹{subTotal.toFixed(2)}</span>
               </div>
-              
+
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Discount</label>
+                <label className="block text-sm text-gray-600 mb-1">
+                  Discount
+                </label>
                 <div className="flex space-x-2">
                   <input
                     type="number"
                     value={discount}
-                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setDiscount(parseFloat(e.target.value) || 0)
+                    }
                     className="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                   />
                   <select
@@ -425,19 +671,24 @@ const NewCreditNotePage = () => {
                   </select>
                 </div>
                 <div className="text-right text-sm text-gray-500 mt-1">
-                  ₹{discountType === 'percentage' ? (subTotal * discount / 100).toFixed(2) : discount.toFixed(2)}
+                  ₹
+                  {discountType === "percentage"
+                    ? ((subTotal * discount) / 100).toFixed(2)
+                    : discount.toFixed(2)}
                 </div>
               </div>
-              
+
               <div>
-                <label className="block text-sm text-gray-600 mb-1">TDS / TCS</label>
+                <label className="block text-sm text-gray-600 mb-1">
+                  TDS / TCS
+                </label>
                 <div className="space-y-2">
                   <div className="flex space-x-2">
                     <label className="flex items-center">
                       <input
                         type="radio"
                         value="TDS"
-                        checked={tdsType === 'TDS'}
+                        checked={tdsType === "TDS"}
                         onChange={(e) => setTdsType(e.target.value)}
                         className="mr-1"
                       />
@@ -447,7 +698,7 @@ const NewCreditNotePage = () => {
                       <input
                         type="radio"
                         value="TCS"
-                        checked={tdsType === 'TCS'}
+                        checked={tdsType === "TCS"}
                         onChange={(e) => setTdsType(e.target.value)}
                         className="mr-1"
                       />
@@ -467,9 +718,23 @@ const NewCreditNotePage = () => {
                   <div className="text-right text-sm text-gray-500">
                     - ₹{tdsAmount.toFixed(2)}
                   </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setShowTDSModal(true)}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Manage TDS
+                    </button>
+                    <button
+                      onClick={() => setShowTCSModal(true)}
+                      className="text-xs text-green-600 hover:text-green-800"
+                    >
+                      Manage TCS
+                    </button>
+                  </div>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm text-gray-600 mb-1 flex items-center">
                   Adjustment
@@ -478,11 +743,13 @@ const NewCreditNotePage = () => {
                 <input
                   type="number"
                   value={adjustment}
-                  onChange={(e) => setAdjustment(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setAdjustment(parseFloat(e.target.value) || 0)
+                  }
                   className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              
+
               <div className="border-t pt-4">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
@@ -490,22 +757,22 @@ const NewCreditNotePage = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="mt-6 space-y-3">
               <button
-                onClick={() => handleSubmit('draft')}
+                onClick={() => handleSubmit("draft")}
                 disabled={loading}
                 className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Save as Draft'}
+                {loading ? "Saving..." : "Save as Draft"}
               </button>
               <button
-                onClick={() => handleSubmit('open')}
+                onClick={() => handleSubmit("open")}
                 disabled={loading}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Save as Open'}
+                {loading ? "Saving..." : "Save as Open"}
               </button>
               <button
                 onClick={() => router.back()}
@@ -518,6 +785,97 @@ const NewCreditNotePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Salesperson Modal */}
+      {showSalespersonModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-lg font-semibold">Add New Salesperson</h2>
+              <button
+                onClick={() => setShowSalespersonModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter salesperson name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="Enter email address"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="Enter phone number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Department
+                  </label>
+                  <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Select Department</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Customer Service">Customer Service</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowSalespersonModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                  Add Salesperson
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TDS Management Modal */}
+      <TDSManagementModal
+        isOpen={showTDSModal}
+        onClose={() => setShowTDSModal(false)}
+        onUpdate={() => {
+          loadTdsRecords();
+        }}
+      />
+
+      {/* TCS Management Modal */}
+      <TCSManagementModal
+        isOpen={showTCSModal}
+        onClose={() => setShowTCSModal(false)}
+        onUpdate={() => {
+          loadTcsRecords();
+        }}
+      />
     </div>
   );
 };

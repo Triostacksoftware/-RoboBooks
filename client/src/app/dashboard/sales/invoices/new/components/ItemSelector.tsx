@@ -228,7 +228,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
         createPortal(
           <div
             ref={popoverRef}
-            className="fixed z-[100000] bg-white border border-gray-300 rounded-md shadow-xl"
+            className="fixed item-selector-dropdown bg-white border border-gray-300 rounded-md shadow-xl"
             style={{
               top: geometry.top,
               left: geometry.left,

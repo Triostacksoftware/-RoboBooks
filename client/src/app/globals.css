@@ -2,18 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SweetAlert2 z-index override */
+/* Z-Index Hierarchy for Modals and Overlays */
+/* SweetAlert2 - Highest priority (confirmations, alerts) */
 .swal-z-index {
   z-index: 10001 !important;
 }
 
-/* Ensure SweetAlert2 appears above all modals */
 .swal2-container {
   z-index: 10001 !important;
 }
 
 .swal2-backdrop-show {
   z-index: 10001 !important;
+}
+
+/* Address Edit Popups - High priority */
+.address-edit-popup {
+  z-index: 10000 !important;
+}
+
+/* Add Item Modal - High priority */
+/* Z-Index Hierarchy for Modals and Overlays */
+
+/* Highest Priority - Critical Modals */
+.tds-tcs-modal {
+  z-index: 10001 !important;
+}
+
+/* High Priority - Management Modals */
+.salesperson-management-modal {
+  z-index: 10000 !important;
+}
+
+.add-item-modal {
+  z-index: 9999 !important;
+}
+
+/* Medium Priority - Regular Modals */
+.invoice-details-modal {
+  z-index: 9997 !important;
+}
+
+/* Low Priority - Notifications and Dropdowns */
+.toast-notifications {
+  z-index: 9996 !important;
+}
+
+.item-selector-dropdown {
+  z-index: 1000 !important;
+}
+
+.salesperson-dropdown {
+  z-index: 1000 !important;
+}
+
+.dropdown-menu {
+  z-index: 1000 !important;
 }
 
 :root {

@@ -148,7 +148,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] overflow-y-auto">
+    <div className="fixed inset-0 add-item-modal overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
