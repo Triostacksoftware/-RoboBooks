@@ -1,9 +1,106 @@
 import UserModulePreference from "../models/UserModulePreference.js";
+import jwt from "jsonwebtoken";
 
 // Get user's module preferences
 const getUserModulePreferences = async (req, res) => {
   try {
-    const userId = req.user.id;
+    // Get user ID from JWT token (rb_session cookie)
+    let userId = null;
+
+    // Try to get user ID from JWT token in cookies
+    if (req.cookies && req.cookies.rb_session) {
+      try {
+        const decoded = jwt.verify(
+          req.cookies.rb_session,
+          process.env.JWT_SECRET || "fallback-secret-key"
+        );
+        userId = decoded.uid; // JWT token mein uid field hai
+        console.log("✅ User ID extracted from JWT for GET:", userId);
+      } catch (e) {
+        console.warn("Could not verify JWT token for GET:", e.message);
+      }
+    }
+
+    // If no user ID, return default preferences
+    if (!userId) {
+      console.log("⚠️ No user ID found, returning default preferences");
+      // Return default preferences (all enabled)
+      const allModules = [
+        {
+          name: "home",
+          label: "Home",
+          description: "Dashboard overview and main navigation",
+          isEnabled: true,
+        },
+        {
+          name: "items",
+          label: "Items",
+          description: "Manage your products and services",
+          isEnabled: true,
+        },
+
+        {
+          name: "sales",
+          label: "Sales",
+          description: "Invoices, quotes, and sales management",
+          isEnabled: true,
+        },
+        {
+          name: "purchases",
+          label: "Purchases",
+          description: "Purchase orders and vendor management",
+          isEnabled: true,
+        },
+        {
+          name: "banking",
+          label: "Banking",
+          description: "Bank accounts and transactions",
+          isEnabled: true,
+        },
+        {
+          name: "time",
+          label: "Time Tracking",
+          description: "Track time for projects and tasks",
+          isEnabled: true,
+        },
+        {
+          name: "accountant",
+          label: "Accountant",
+          description: "Accounting and financial management",
+          isEnabled: true,
+        },
+        {
+          name: "reports",
+          label: "Reports",
+          description: "Analytics and business reports",
+          isEnabled: true,
+        },
+        {
+          name: "documents",
+          label: "Documents",
+          description: "Document management and storage",
+          isEnabled: true,
+        },
+
+        {
+          name: "help-support",
+          label: "Help & Support",
+          description: "Get help and support",
+          isEnabled: true,
+        },
+        {
+          name: "configure",
+          label: "Configure Features",
+          description: "Configure system settings",
+          isEnabled: true,
+        },
+      ];
+
+      return res.json({
+        success: true,
+        data: allModules,
+      });
+    }
 
     const preferences = await UserModulePreference.find({ userId });
 
@@ -25,11 +122,7 @@ const getUserModulePreferences = async (req, res) => {
         label: "Items",
         description: "Manage your products and services",
       },
-      {
-        name: "customers",
-        label: "Customers",
-        description: "Manage customer information and relationships",
-      },
+
       {
         name: "sales",
         label: "Sales",
@@ -65,16 +158,7 @@ const getUserModulePreferences = async (req, res) => {
         label: "Documents",
         description: "Document management and storage",
       },
-      {
-        name: "vendors",
-        label: "Vendors",
-        description: "Manage vendor relationships",
-      },
-      {
-        name: "payroll",
-        label: "Payroll",
-        description: "Employee payroll management",
-      },
+
       {
         name: "help-support",
         label: "Help & Support",
@@ -113,24 +197,28 @@ const getUserModulePreferences = async (req, res) => {
 // Save user's module preferences
 const saveUserModulePreferences = async (req, res) => {
   try {
-    // Get user ID from authentication or request body
-    let userId = req.user?.id;
+    // Get user ID from JWT token (rb_session cookie)
+    let userId = null;
 
-    // If no authenticated user, try to get from request body
-    if (!userId && req.body.userId) {
-      userId = req.body.userId;
-    }
-
-    // If still no user ID, try to get from session
-    if (!userId && req.session?.userId) {
-      userId = req.session.userId;
+    // Try to get user ID from JWT token in cookies
+    if (req.cookies && req.cookies.rb_session) {
+      try {
+        const decoded = jwt.verify(
+          req.cookies.rb_session,
+          process.env.JWT_SECRET || "fallback-secret-key"
+        );
+        userId = decoded.uid; // JWT token mein uid field hai
+        console.log("✅ User ID extracted from JWT:", userId);
+      } catch (e) {
+        console.warn("Could not verify JWT token:", e.message);
+      }
     }
 
     // If still no user ID, return error
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "User ID is required. Please log in or provide user ID.",
+        message: "User ID not found in session. Please log in again.",
       });
     }
     const { preferences } = req.body;

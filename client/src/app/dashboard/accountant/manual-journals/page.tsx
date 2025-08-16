@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  BookOpen, 
-  Plus, 
-  Search, 
+import {
+  BookOpen,
+  Plus,
+  Search,
   Filter,
   Eye,
   Edit,
@@ -15,7 +15,7 @@ import {
   Play,
   Download,
   Settings,
-  Check
+  Check,
 } from "lucide-react";
 import { useToast } from "../../../../contexts/ToastContext";
 
@@ -36,7 +36,7 @@ interface ManualJournal {
   entries: JournalEntry[];
   totalDebit: number;
   totalCredit: number;
-  status: 'draft' | 'posted' | 'cancelled';
+  status: "draft" | "posted" | "cancelled";
   createdBy: string;
   postedBy?: string;
   postedAt?: string;
@@ -51,7 +51,9 @@ const ManualJournalsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedJournal, setSelectedJournal] = useState<ManualJournal | null>(null);
+  const [selectedJournal, setSelectedJournal] = useState<ManualJournal | null>(
+    null
+  );
   const { showToast } = useToast();
 
   // Fetch journals
@@ -59,13 +61,13 @@ const ManualJournalsPage = () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
+      if (searchTerm) params.append("search", searchTerm);
+      if (statusFilter) params.append("status", statusFilter);
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/manual-journals?${params}`,
         {
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -73,14 +75,14 @@ const ManualJournalsPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch journals');
+        throw new Error("Failed to fetch journals");
       }
 
       const data = await response.json();
       setJournals(data.data || []);
     } catch (error) {
-      console.error('Error fetching journals:', error);
-      showToast('Failed to fetch journals', 'error');
+      console.error("Error fetching journals:", error);
+      showToast("Failed to fetch journals", "error");
     } finally {
       setLoading(false);
     }
@@ -92,14 +94,14 @@ const ManualJournalsPage = () => {
 
   // Delete journal
   const handleDelete = async (journalId: string) => {
-    if (!confirm('Are you sure you want to delete this journal?')) return;
+    if (!confirm("Are you sure you want to delete this journal?")) return;
 
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/manual-journals/${journalId}`,
         {
-          method: 'DELETE',
-          credentials: 'include',
+          method: "DELETE",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -107,14 +109,14 @@ const ManualJournalsPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to delete journal');
+        throw new Error("Failed to delete journal");
       }
 
-      showToast('Journal deleted successfully', 'success');
+      showToast("Journal deleted successfully", "success");
       fetchJournals();
     } catch (error) {
-      console.error('Error deleting journal:', error);
-      showToast('Failed to delete journal', 'error');
+      console.error("Error deleting journal:", error);
+      showToast("Failed to delete journal", "error");
     }
   };
 
@@ -124,8 +126,8 @@ const ManualJournalsPage = () => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/manual-journals/${journalId}/post`,
         {
-          method: 'POST',
-          credentials: 'include',
+          method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -133,24 +135,24 @@ const ManualJournalsPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to post journal');
+        throw new Error("Failed to post journal");
       }
 
-      showToast('Journal posted successfully', 'success');
+      showToast("Journal posted successfully", "success");
       fetchJournals();
     } catch (error) {
-      console.error('Error posting journal:', error);
-      showToast('Failed to post journal', 'error');
+      console.error("Error posting journal:", error);
+      showToast("Failed to post journal", "error");
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'posted':
+      case "posted":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'draft':
+      case "draft":
         return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'cancelled':
+      case "cancelled":
         return <XCircle className="h-4 w-4 text-red-500" />;
       default:
         return <Clock className="h-4 w-4 text-gray-500" />;
@@ -159,14 +161,14 @@ const ManualJournalsPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'posted':
-        return 'bg-green-100 text-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "posted":
+        return "bg-green-100 text-green-800";
+      case "draft":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -180,14 +182,22 @@ const ManualJournalsPage = () => {
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center">
                 <BookOpen className="h-8 w-8 text-blue-600 mr-3" />
-                <h1 className="text-2xl font-bold text-gray-900">All Manual Journals</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  All Manual Journals
+                </h1>
               </div>
               <div className="flex items-center space-x-4">
                 <button className="text-sm text-gray-600 hover:text-gray-900">
                   Find Accountants
                 </button>
                 <div className="relative">
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center">
+                  <button
+                    onClick={() =>
+                      (window.location.href =
+                        "/dashboard/accountant/manual-journals/new")
+                    }
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     New
                   </button>
@@ -214,17 +224,20 @@ const ManualJournalsPage = () => {
                   Zoho Books How to create manual journals
                 </div>
               </div>
-              
+
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Start making journal entries.
               </h2>
               <p className="text-gray-600 mb-6">
                 You can transfer & adjust money between accounts.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button 
-                  onClick={() => setShowCreateModal(true)}
+                <button
+                  onClick={() =>
+                    (window.location.href =
+                      "/dashboard/accountant/manual-journals/new")
+                  }
                   className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium flex items-center justify-center"
                 >
                   <Plus className="h-5 w-5 mr-2" />
@@ -246,22 +259,44 @@ const ManualJournalsPage = () => {
               <div className="flex items-start">
                 <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div>
-                  <span className="text-gray-900">Create journals from the templates you create to save time.</span>
-                  <a href="#" className="text-blue-600 hover:text-blue-700 ml-1">Learn More</a>
+                  <span className="text-gray-900">
+                    Create journals from the templates you create to save time.
+                  </span>
+                  <a
+                    href="#"
+                    className="text-blue-600 hover:text-blue-700 ml-1"
+                  >
+                    Learn More
+                  </a>
                 </div>
               </div>
               <div className="flex items-start">
                 <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div>
-                  <span className="text-gray-900">Customize journals to suit your branding.</span>
-                  <a href="#" className="text-blue-600 hover:text-blue-700 ml-1">Learn More</a>
+                  <span className="text-gray-900">
+                    Customize journals to suit your branding.
+                  </span>
+                  <a
+                    href="#"
+                    className="text-blue-600 hover:text-blue-700 ml-1"
+                  >
+                    Learn More
+                  </a>
                 </div>
               </div>
               <div className="flex items-start">
                 <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div>
-                  <span className="text-gray-900">Control journal publishing by customizing roles and permissions.</span>
-                  <a href="#" className="text-blue-600 hover:text-blue-700 ml-1">Learn More</a>
+                  <span className="text-gray-900">
+                    Control journal publishing by customizing roles and
+                    permissions.
+                  </span>
+                  <a
+                    href="#"
+                    className="text-blue-600 hover:text-blue-700 ml-1"
+                  >
+                    Learn More
+                  </a>
                 </div>
               </div>
             </div>
@@ -279,15 +314,20 @@ const ManualJournalsPage = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <BookOpen className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">All Manual Journals</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                All Manual Journals
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <button className="text-sm text-gray-600 hover:text-gray-900">
                 Find Accountants
               </button>
               <div className="relative">
-                <button 
-                  onClick={() => setShowCreateModal(true)}
+                <button
+                  onClick={() =>
+                    (window.location.href =
+                      "/dashboard/accountant/manual-journals/new")
+                  }
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -345,7 +385,7 @@ const ManualJournalsPage = () => {
               Manual Journals ({journals.length})
             </h2>
           </div>
-          
+
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -361,13 +401,22 @@ const ManualJournalsPage = () => {
                         <h3 className="text-lg font-medium text-gray-900">
                           {journal.journalNumber}
                         </h3>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(journal.status)}`}>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            journal.status
+                          )}`}
+                        >
                           {journal.status}
                         </span>
                       </div>
-                      <p className="text-gray-600 mt-1">{journal.description}</p>
+                      <p className="text-gray-600 mt-1">
+                        {journal.description}
+                      </p>
                       <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
-                        <span>Date: {new Date(journal.journalDate).toLocaleDateString()}</span>
+                        <span>
+                          Date:{" "}
+                          {new Date(journal.journalDate).toLocaleDateString()}
+                        </span>
                         <span>Debit: ${journal.totalDebit.toFixed(2)}</span>
                         <span>Credit: ${journal.totalCredit.toFixed(2)}</span>
                       </div>
@@ -385,7 +434,7 @@ const ManualJournalsPage = () => {
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      {journal.status === 'draft' && (
+                      {journal.status === "draft" && (
                         <button
                           onClick={() => handlePost(journal._id)}
                           className="p-2 text-green-400 hover:text-green-600"

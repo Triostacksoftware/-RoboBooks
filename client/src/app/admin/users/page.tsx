@@ -12,6 +12,9 @@ import {
   PencilIcon,
   TrashIcon,
   UserIcon,
+  ArrowDownTrayIcon,
+  TableCellsIcon,
+  Squares2X2Icon,
 } from "@heroicons/react/24/outline";
 
 export default function AdminUsers() {
@@ -31,6 +34,9 @@ export default function AdminUsers() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("table");
+  const [sortField, setSortField] = useState<keyof AdminUser>("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     fetchUsers();
@@ -249,6 +255,86 @@ export default function AdminUsers() {
     }
   };
 
+  const handleSort = (field: keyof AdminUser) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const exportToExcel = () => {
+    try {
+      // Prepare data for export
+      const exportData = filteredUsers.map((user) => ({
+        "Company Name": user.companyName,
+        Email: user.email,
+        Phone: user.phone || "",
+        Country: user.country || "",
+        State: user.state || "",
+        Status: user.isActive ? "Active" : "Inactive",
+        "Created Date": new Date(user.createdAt).toLocaleDateString(),
+        "Last Login": user.lastLogin
+          ? new Date(user.lastLogin).toLocaleDateString()
+          : "",
+      }));
+
+      // Convert to CSV format
+      const headers = Object.keys(exportData[0]);
+      const csvContent = [
+        headers.join(","),
+        ...exportData.map((row) =>
+          headers
+            .map((header) => {
+              const value = row[header as keyof typeof row];
+              // Escape commas and quotes in CSV
+              return `"${String(value).replace(/"/g, '""')}"`;
+            })
+            .join(",")
+        ),
+      ].join("\n");
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `users_export_${new Date().toISOString().split("T")[0]}.csv`
+      );
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Show success toast
+      Swal.fire({
+        icon: "success",
+        title: "Export Successful!",
+        text: "Users data has been exported to Excel format.",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Export Failed!",
+        text: "Failed to export users data. Please try again.",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
+    }
+  };
+
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -256,6 +342,27 @@ export default function AdminUsers() {
     const matchesFilter =
       filterStatus === "all" || user.isActive === (filterStatus === "active");
     return matchesSearch && matchesFilter;
+  });
+
+  // Sort filtered users
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    const aValue = a[sortField];
+    const bValue = b[sortField];
+
+    if (aValue === bValue) return 0;
+
+    let comparison = 0;
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      comparison = aValue.localeCompare(bValue);
+    } else if (aValue instanceof Date && bValue instanceof Date) {
+      comparison = aValue.getTime() - bValue.getTime();
+    } else if (typeof aValue === "boolean" && typeof bValue === "boolean") {
+      comparison = aValue === bValue ? 0 : aValue ? 1 : -1;
+    } else {
+      comparison = String(aValue).localeCompare(String(bValue));
+    }
+
+    return sortDirection === "asc" ? comparison : -comparison;
   });
 
   const UserCard = ({ user }: { user: AdminUser }) => (
@@ -311,7 +418,10 @@ export default function AdminUsers() {
           <EyeIcon className="h-4 w-4" />
           <span>View</span>
         </button>
-        <button className="flex items-center justify-center px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-lg" title="Edit">
+        <button
+          className="flex items-center justify-center px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+          title="Edit"
+        >
           <PencilIcon className="h-4 w-4" />
         </button>
         <button
@@ -331,6 +441,169 @@ export default function AdminUsers() {
         >
           <TrashIcon className="h-4 w-4" />
         </button>
+      </div>
+    </div>
+  );
+
+  const UserTable = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden max-w-full">
+      <div className="overflow-x-auto max-w-full">
+        <table className="min-w-full divide-y divide-gray-200 max-w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                onClick={() => handleSort("companyName")}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 min-w-0"
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Company Name</span>
+                  {sortField === "companyName" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
+              </th>
+              <th
+                onClick={() => handleSort("email")}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Email</span>
+                  {sortField === "email" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Phone
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Country
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                State
+              </th>
+              <th
+                onClick={() => handleSort("isActive")}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Status</span>
+                  {sortField === "isActive" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
+              </th>
+              <th
+                onClick={() => handleSort("createdAt")}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+              >
+                <div className="flex items-center space-x-1">
+                  <span>Created Date</span>
+                  {sortField === "createdAt" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
+                  )}
+                </div>
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Last Login
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {sortedUsers.map((user) => (
+              <tr key={user.id} className="hover:bg-gray-50">
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                      <UserIcon className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {user.companyName}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {user.email}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.phone || "-"}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.country || "-"}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.state || "-"}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      user.isActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
+                  </span>
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.lastLogin
+                    ? new Date(user.lastLogin).toLocaleDateString()
+                    : "-"}
+                </td>
+                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      className="text-blue-600 hover:text-blue-900"
+                      title="View"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="text-gray-600 hover:text-gray-900"
+                      title="Edit"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleStatusToggle(user.id, user.isActive)}
+                      className={`${
+                        user.isActive
+                          ? "text-orange-600 hover:text-orange-900"
+                          : "text-green-600 hover:text-green-900"
+                      }`}
+                      title={user.isActive ? "Deactivate" : "Activate"}
+                    >
+                      <span className="text-xs">
+                        {user.isActive ? "Deactivate" : "Activate"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Delete"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -363,51 +636,92 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-gray-900 truncate">
+            Users Management
+          </h1>
           <p className="text-gray-600 mt-1">Manage all registered users</p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 flex-shrink-0">
           <span className="text-sm text-gray-500">
             {filteredUsers.length} of {users.length} users
           </span>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters and Controls */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search users by company name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search users by company name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 flex-shrink-0">
+              <FunnelIcon className="h-5 w-5 text-gray-400" />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">All Users</option>
+                <option value="active">Active Users</option>
+                <option value="inactive">Inactive Users</option>
+              </select>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <FunnelIcon className="h-5 w-5 text-gray-400" />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === "table"
+                    ? "bg-white text-purple-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+                title="Table View"
+              >
+                <TableCellsIcon className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === "cards"
+                    ? "bg-white text-purple-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+                title="Card View"
+              >
+                <Squares2X2Icon className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Export Button */}
+            <button
+              onClick={exportToExcel}
+              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             >
-              <option value="all">All Users</option>
-              <option value="active">Active Users</option>
-              <option value="inactive">Inactive Users</option>
-            </select>
+              <ArrowDownTrayIcon className="h-5 w-5" />
+              <span>Export Excel</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Users Grid */}
+      {/* Users Display */}
       {filteredUsers.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
           <UserIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -420,16 +734,18 @@ export default function AdminUsers() {
               : "No users have been registered yet"}
           </p>
         </div>
+      ) : viewMode === "table" ? (
+        <UserTable />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredUsers.map((user) => (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-full">
+          {sortedUsers.map((user) => (
             <UserCard key={user.id} user={user} />
           ))}
         </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-full">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
             <div className="p-3 bg-blue-500 rounded-lg">

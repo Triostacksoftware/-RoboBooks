@@ -4,9 +4,57 @@ import mongoose from "mongoose";
 import { ACCOUNT_CATEGORIES, ACCOUNT_SUBTYPES } from "../models/Account.js";
 
 export async function getAccounts(req, res) {
-  const accounts = await Account.find();
-  res.json(accounts);
+  try {
+    const { category, parent, is_active } = req.query;
+    const filter = {};
+
+    if (category) filter.category = category;
+    if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
+    if (is_active !== undefined) filter.is_active = is_active === "true";
+
+    const accounts = await Account.find(filter).sort({ code: 1, name: 1 });
+    res.json({ success: true, data: accounts });
+  } catch (error) {
+    console.error("Error fetching accounts:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch accounts" });
+  }
 }
+
+export const listAccounts = async (req, res) => {
+  try {
+    const { category, parent, is_active } = req.query;
+    const filter = {};
+
+    if (category) filter.category = category;
+    if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
+    if (is_active !== undefined) filter.is_active = is_active === "true";
+
+    const accounts = await Account.find(filter).sort({ code: 1, name: 1 });
+    res.json({ success: true, data: accounts });
+  } catch (error) {
+    console.error("Error fetching accounts:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch accounts" });
+  }
+};
+
+export const getAccountById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid account id" });
+    }
+
+    const account = await Account.findById(id);
+    if (!account) {
+      return res.status(404).json({ success: false, message: "Account not found" });
+    }
+
+    res.json({ success: true, data: account });
+  } catch (error) {
+    console.error("Error fetching account:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch account" });
+  }
+};
 
 // export async function createAccount(req, res) {
 //   const acct = new Account(req.body);
@@ -47,7 +95,7 @@ export async function getAccounts(req, res) {
 //     return res.status(400).json({ message: "Invalid account id" });
 
 //   const account = await Account.findById(id);
-//   if (!account) return res.status(404).json({ message: "Account not found" });
+//   if (!account) return res.status(404).json({ success: false, message: "Account not found" });
 
 //   res.json(account);
 // };
@@ -95,15 +143,15 @@ export const createAccount = async (req, res) => {
       gst_rate,
       description,
     });
-    res.status(201).json(account);
+    res.status(201).json({ success: true, data: account });
   } catch (err) {
     // Handle duplicate key errors (code or unique name index)
     if (err.code === 11000) {
       return res
         .status(400)
-        .json({ message: "Duplicate account code or name" });
+        .json({ success: false, message: "Duplicate account code or name" });
     }
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -123,15 +171,15 @@ export const updateAccount = async (req, res) => {
       new: true,
       runValidators: true,
     });
-    if (!updated) return res.status(404).json({ message: "Account not found" });
-    res.json(updated);
+    if (!updated) return res.status(404).json({ success: false, message: "Account not found" });
+    res.json({ success: true, data: updated });
   } catch (err) {
     if (err.code === 11000) {
       return res
         .status(400)
-        .json({ message: "Duplicate account code or name" });
+        .json({ success: false, message: "Duplicate account code or name" });
     }
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -145,14 +193,14 @@ export const deleteAccount = async (req, res) => {
   const { force } = req.query;
 
   const account = await Account.findById(id);
-  if (!account) return res.status(404).json({ message: "Account not found" });
+  if (!account) return res.status(404).json({ success: false, message: "Account not found" });
 
   // Hard delete requested
   if (force === "true") {
     if (account.balance !== 0) {
       return res
         .status(400)
-        .json({ message: "Cannot hard-delete: balance not zero" });
+        .json({ success: false, message: "Cannot hard-delete: balance not zero" });
     }
     await account.deleteOne();
     return res.status(204).end();

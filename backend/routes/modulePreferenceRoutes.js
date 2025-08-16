@@ -25,12 +25,7 @@ router.get("/test", (req, res) => {
         description: "Manage your products and services",
         isEnabled: true,
       },
-      {
-        name: "customers",
-        label: "Customers",
-        description: "Manage customer information and relationships",
-        isEnabled: true,
-      },
+
       {
         name: "sales",
         label: "Sales",
@@ -73,18 +68,7 @@ router.get("/test", (req, res) => {
         description: "Document management and storage",
         isEnabled: true,
       },
-      {
-        name: "vendors",
-        label: "Vendors",
-        description: "Manage vendor relationships",
-        isEnabled: true,
-      },
-      {
-        name: "payroll",
-        label: "Payroll",
-        description: "Employee payroll management",
-        isEnabled: true,
-      },
+
       {
         name: "help-support",
         label: "Help & Support",
@@ -101,10 +85,10 @@ router.get("/test", (req, res) => {
   });
 });
 
-// Get user's module preferences
-router.get("/preferences", authenticateToken, getUserModulePreferences);
+// Get user's module preferences (using cookies for user ID)
+router.get("/preferences", getUserModulePreferences);
 
-// Save user's module preferences (temporarily unauthenticated for testing)
+// Save user's module preferences (using cookies for user ID)
 router.post("/preferences", saveUserModulePreferences);
 
 export default router;

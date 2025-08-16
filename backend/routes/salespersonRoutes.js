@@ -1,17 +1,35 @@
 import express from "express";
 import {
-  listSalespersons,
-  createSalesperson,
-  updateSalesperson,
-  deleteSalesperson,
+  createSalespersonController,
+  getAllSalespersonsController,
+  getActiveSalespersonsController,
+  getSalespersonByIdController,
+  updateSalespersonController,
+  deleteSalespersonController,
+  updateSalespersonStatusController,
 } from "../controllers/salespersonController.js";
-// Auth temporarily disabled to unblock UI flow. TODO: protect with authenticate.
 
 const router = express.Router();
 
-router.get("/", listSalespersons);
-router.post("/", createSalesperson);
-router.put("/:id", updateSalesperson);
-router.delete("/:id", deleteSalesperson);
+// Create a new salesperson
+router.post("/", createSalespersonController);
+
+// Get all salespersons
+router.get("/", getAllSalespersonsController);
+
+// Get active salespersons
+router.get("/active", getActiveSalespersonsController);
+
+// Get salesperson by ID
+router.get("/:id", getSalespersonByIdController);
+
+// Update salesperson
+router.put("/:id", updateSalespersonController);
+
+// Delete salesperson
+router.delete("/:id", deleteSalespersonController);
+
+// Update salesperson status
+router.patch("/:id/status", updateSalespersonStatusController);
 
 export default router;

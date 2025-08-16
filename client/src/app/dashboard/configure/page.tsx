@@ -2,9 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import modulePreferenceService, { ModulePreference } from "../../../services/modulePreferenceService";
 import { useToast } from "../../../contexts/ToastContext";
 import { useModulePreferences } from "../../../contexts/ModulePreferenceContext";
+
+interface ModulePreference {
+  name: string;
+  label: string;
+  description: string;
+  isEnabled: boolean;
+}
 
 export default function ConfigurePage() {
   const [modulePreferences, setModulePreferences] = useState<ModulePreference[]>([]);
@@ -21,8 +27,23 @@ export default function ConfigurePage() {
   const loadModulePreferences = async () => {
     try {
       setLoading(true);
-      const preferences = await modulePreferenceService.getUserModulePreferences();
-      setModulePreferences(preferences);
+      
+      // Direct API call to get module preferences
+      const response = await fetch("http://localhost:5000/api/module-preferences/preferences", {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setModulePreferences(data.data);
     } catch (error) {
       console.error('Error loading module preferences:', error);
       showToast('Failed to load module preferences', 'error');
@@ -44,7 +65,26 @@ export default function ConfigurePage() {
   const handleSavePreferences = async () => {
     try {
       setSaving(true);
-      await modulePreferenceService.saveUserModulePreferences(modulePreferences);
+      
+      // Direct API call to save module preferences
+      const response = await fetch("http://localhost:5000/api/module-preferences/preferences", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          preferences: modulePreferences
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       await refreshPreferences(); // Refresh the global context
       showToast('Module preferences saved successfully!', 'success');
     } catch (error) {

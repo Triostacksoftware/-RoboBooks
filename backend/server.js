@@ -42,6 +42,7 @@ import salespersonRoutes from "./routes/salespersonRoutes.js";
 import recurringInvoiceRoutes from "./routes/recurringInvoiceRoutes.js";
 import uploadsRoutes from "./routes/uploadsRoutes.js";
 import quotesRoutes from "./routes/RoutesRoutes.js";
+import salesOrderRoutes from "./routes/salesOrderRoutes.js";
 import modulePreferenceRoutes from "./routes/modulePreferenceRoutes.js";
 
 const app = express();
@@ -119,6 +120,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/audit-trail", auditTrailRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/quotes", quotesRoutes);
+app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/module-preferences", modulePreferenceRoutes);
 
 // Health check and welcome routes

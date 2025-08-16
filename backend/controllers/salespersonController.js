@@ -1,87 +1,107 @@
-import Salesperson from "../models/Salesperson.js";
+import {
+  createSalesperson,
+  getAllSalespersons,
+  getActiveSalespersons,
+  getSalespersonById,
+  updateSalesperson,
+  deleteSalesperson,
+  updateSalespersonStatus,
+} from "../services/salespersonService.js";
 
-export const listSalespersons = async (req, res) => {
+// Create a new salesperson
+export const createSalespersonController = async (req, res) => {
   try {
-    const { search = "", limit = 50, page = 1 } = req.query;
-    const query = search
-      ? {
-          isActive: true,
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-          ],
-        }
-      : { isActive: true };
-
-    const perPage = Math.min(Number(limit) || 50, 100);
-    const skip = (Number(page) - 1) * perPage;
-
-    const [data, total] = await Promise.all([
-      Salesperson.find(query).sort({ name: 1 }).skip(skip).limit(perPage),
-      Salesperson.countDocuments(query),
-    ]);
-
-    res.json({
-      success: true,
-      data,
-      pagination: { total, page: Number(page), perPage },
-    });
-  } catch (err) {
-    console.error("listSalespersons error", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch salespersons" });
-  }
-};
-
-export const createSalesperson = async (req, res) => {
-  try {
-    const { name, email, phone } = req.body;
-    if (!name || !email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Name and email are required" });
+    const result = await createSalesperson(req.body);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
     }
-    const sp = await Salesperson.create({
-      name,
-      email: String(email).toLowerCase(),
-      phone,
-      createdBy: req.user?.id || null,
-    });
-    res.status(201).json({ success: true, data: sp });
-  } catch (err) {
-    console.error("createSalesperson error", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to create salesperson" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const updateSalesperson = async (req, res) => {
+// Get all salespersons
+export const getAllSalespersonsController = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, email, phone, isActive } = req.body;
-    const updated = await Salesperson.findByIdAndUpdate(
-      id,
-      { name, email, phone, isActive, updatedBy: req.user?.id || null },
-      { new: true }
-    );
-    if (!updated)
-      return res.status(404).json({ success: false, message: "Not found" });
-    res.json({ success: true, data: updated });
-  } catch (err) {
-    console.error("updateSalesperson error", err);
-    res.status(500).json({ success: false, message: "Failed to update" });
+    const result = await getAllSalespersons();
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const deleteSalesperson = async (req, res) => {
+// Get active salespersons
+export const getActiveSalespersonsController = async (req, res) => {
   try {
-    const { id } = req.params;
-    await Salesperson.findByIdAndDelete(id);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("deleteSalesperson error", err);
-    res.status(500).json({ success: false, message: "Failed to delete" });
+    const result = await getActiveSalespersons();
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Get salesperson by ID
+export const getSalespersonByIdController = async (req, res) => {
+  try {
+    const result = await getSalespersonById(req.params.id);
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(404).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Update salesperson
+export const updateSalespersonController = async (req, res) => {
+  try {
+    const result = await updateSalesperson(req.params.id, req.body);
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Delete salesperson
+export const deleteSalespersonController = async (req, res) => {
+  try {
+    const result = await deleteSalesperson(req.params.id);
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(404).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Update salesperson status
+export const updateSalespersonStatusController = async (req, res) => {
+  try {
+    const result = await updateSalespersonStatus(req.params.id, req.body.status);
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 };
