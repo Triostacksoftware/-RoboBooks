@@ -6,7 +6,6 @@ import dynamic from "next/dynamic";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
-import { ModulePreferenceProvider } from "../../contexts/ModulePreferenceContext";
 
 // Dynamic imports to prevent SSR issues with document references
 const Header = dynamic(() => import("./components/Header"), { ssr: false });
@@ -104,17 +103,15 @@ export default function DashboardLayout({
       <Head>
         <title>Dashboard – Robo Books</title>
       </Head>
-      <ModulePreferenceProvider>
-        <div className="flex flex-col h-screen bg-gray-50">
-          <Header />
-          <div className="flex flex-1 ">
-            <Sidebar />
-            {/* give the main a right margin equal to your RightSidebar's width (e.g. 80px) */}
-            <main className="flex-1 overflow-hidden">{children}</main>
-            {/* <RightSidebar /> */}
-          </div>
+      <div className="flex flex-col h-screen bg-gray-50">
+        <Header />
+        <div className="flex flex-1 ">
+          <Sidebar />
+          {/* give the main a right margin equal to your RightSidebar's width (e.g. 80px) */}
+          <main className="flex-1 overflow-hidden">{children}</main>
+          {/* <RightSidebar /> */}
         </div>
-      </ModulePreferenceProvider>
+      </div>
     </>
   );
 }

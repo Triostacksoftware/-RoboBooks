@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "../contexts/ToastContext";
+import { ModulePreferenceProvider } from "../contexts/ModulePreferenceContext";
 import GlobalErrorHandler from "../components/GlobalErrorHandler";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -48,7 +49,9 @@ export default function RootLayout({
       >
         <GlobalErrorHandler />
         <ToastProvider>
-          {children}
+          <ModulePreferenceProvider>
+            {children}
+          </ModulePreferenceProvider>
         </ToastProvider>
       </body>
     </html>
