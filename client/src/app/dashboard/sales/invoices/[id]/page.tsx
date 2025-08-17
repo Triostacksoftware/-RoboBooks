@@ -86,6 +86,11 @@ interface Invoice {
   customerNotes?: string;
   termsConditions?: string;
   internalNotes?: string;
+  signature?: {
+    fileName: string;
+    filePath: string;
+    fileSize: number;
+  };
   status: string;
   currency: string;
   exchangeRate: number;
@@ -987,7 +992,17 @@ const InvoiceDetailPage = () => {
                   <p className="text-sm text-gray-900 font-medium">
                     For: {invoice.sellerName || "ROBOBOOKS SOLUTIONS"}
                   </p>
-                  <div className="mt-16 border-t border-gray-900 w-40"></div>
+                  {invoice.signature ? (
+                    <div className="mt-8">
+                      <img
+                        src={invoice.signature.filePath}
+                        alt="Digital Signature"
+                        className="h-20 w-40 object-contain border border-gray-300 rounded"
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-16 border-t border-gray-900 w-40"></div>
+                  )}
                   <p className="text-sm text-gray-900 mt-2">
                     Authorized Signatory
                   </p>

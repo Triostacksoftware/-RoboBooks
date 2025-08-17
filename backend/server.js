@@ -36,6 +36,8 @@ import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
 import tdsRoutes from "./routes/tdsRoutes.js";
 import tcsRoutes from "./routes/tcsRoutes.js";
 import deliveryChallanRoutes from "./routes/deliveryChallanRoutes.js";
+import uploadsRoutes from "./routes/uploads.routes.js";
+import quotesRoutes from "./routes/quotes.routes.js";
 
 const app = express();
 
