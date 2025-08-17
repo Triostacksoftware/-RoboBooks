@@ -5,14 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
 import HomeTabs from "./home/HomeTabs";
-import MetricCard from "./home/MetricCard";
-import CashFlow from "./home/CashFlow";
-import IncomeExpense from "./home/IncomeExpense";
-import TopExpenses from "./home/TopExpenses";
-import Projects from "./home/Projects";
-import BankAndCards from "./home/BankAndCards";
-import Watchlist from "./home/Watchlist";
-import Footer from "./home/Footer";
 
 // Add type for API response
 interface AuthMeResponse {
@@ -30,9 +22,9 @@ export default function DashboardHome() {
   const [authError, setAuthError] = useState("");
   const [companyName, setCompanyName] = useState<string | undefined>(undefined);
   // LIFT activeTab state up
-  const [activeTab, setActiveTab] = useState<
-    "dashboard" | "getting-started" | "recent-updates"
-  >("dashboard");
+  const [activeTab, setActiveTab] = useState<"tabular" | "graphical">(
+    "tabular"
+  );
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -103,62 +95,11 @@ export default function DashboardHome() {
       {/* Header Tabs */}
       <HomeTabs
         companyName={companyName}
-        onTabChange={(tab) =>
-          setActiveTab(
-            tab as "dashboard" | "getting-started" | "recent-updates"
-          )
-        }
+        onTabChange={(tab) => setActiveTab(tab as "tabular" | "graphical")}
       />
 
-      {/* Dashboard Content - Only show when dashboard tab is active */}
-      {activeTab === "dashboard" && (
-        <>
-          {/* Row 1: Receivables & Payables */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <MetricCard
-              title="Total Receivables"
-              subtitle="Total unpaid bills: ₹0.00"
-              current="₹0.00"
-              overdue="₹0.00"
-            />
-            <MetricCard
-              title="Total Payables"
-              subtitle="Total unpaid bills: ₹0.00"
-              current="₹0.00"
-              overdue="₹0.00"
-            />
-          </div>
-
-          {/* Row 2: Cash Flow */}
-          <div className="mb-6">
-            <CashFlow />
-          </div>
-
-          {/* Row 3: Income and Expense */}
-          <div className="mb-6">
-            <IncomeExpense />
-          </div>
-
-          {/* Row 4: Top Expenses */}
-          <div className="mb-6">
-            <TopExpenses />
-          </div>
-
-          {/* Row 5: Projects & Bank and Credit Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <Projects />
-            <BankAndCards />
-          </div>
-
-          {/* Row 6: Account Watchlist */}
-          <div className="mb-8">
-            <Watchlist />
-          </div>
-
-          {/* Footer with info, links, QR, etc. */}
-          <Footer />
-        </>
-      )}
+      {/* Tab content is now handled by the HomeTabs component */}
+      {/* The TabularView and GraphicalView components are rendered within HomeTabs */}
     </div>
   );
 }

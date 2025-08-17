@@ -408,7 +408,7 @@ const TDSManagementModal: React.FC<TDSManagementModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center tds-tcs-modal">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b">
@@ -656,9 +656,9 @@ const TDSManagementModal: React.FC<TDSManagementModalProps> = ({
                             : "#dbeafe",
                         },
                       }),
-                      menu: (provided) => ({
-                        ...provided,
-                        zIndex: 50,
+                                             menu: (provided) => ({
+                         ...provided,
+                         zIndex: 1000,
                         border: "1px solid #e5e7eb",
                         borderRadius: "8px",
                         boxShadow:

@@ -43,6 +43,12 @@ export default function SignIn() {
       console.log("📡 Backend response:", response);
 
       if (response.success) {
+        // Store the access token in localStorage if available
+        if (response.accessToken) {
+          localStorage.setItem('token', response.accessToken);
+          console.log('✅ Access token stored in localStorage from Google OAuth');
+        }
+        
         console.log(
           "✅ Google sign-in successful, redirecting to dashboard..."
         );
@@ -98,6 +104,12 @@ export default function SignIn() {
       });
 
       if (response.success) {
+        // Store the access token in localStorage
+        if (response.accessToken) {
+          localStorage.setItem('token', response.accessToken);
+          console.log('✅ Access token stored in localStorage');
+        }
+        
         // Use full URL for production redirect
         const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
           ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"

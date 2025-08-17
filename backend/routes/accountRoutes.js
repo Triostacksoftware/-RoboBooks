@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authGuard } from '../utils/jwt.js';
+import { authorize } from '../middleware/auth.js';
 import {
   listAccounts,
   getAccountById,
@@ -10,7 +11,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate);                        // JWT required for all
+router.use(authGuard);                        // JWT required for all
 router.get('/',           authorize('admin','accountant'), listAccounts);
 router.get('/:id',        authorize('admin','accountant'), getAccountById);
 router.post('/',          authorize('admin'),                createAccount);

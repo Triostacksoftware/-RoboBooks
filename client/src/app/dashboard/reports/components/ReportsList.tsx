@@ -1,4 +1,5 @@
 import React from 'react';
+import { EyeIcon, PlayIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface Report {
   _id: string;
@@ -191,17 +192,18 @@ export default function ReportsList({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">
-                        View
+                      <button className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg" title="View">
+                        <EyeIcon className="h-4 w-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-900">
-                        Generate
+                      <button className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg" title="Generate">
+                        <PlayIcon className="h-4 w-4" />
                       </button>
                       <button 
                         onClick={() => onDeleteReport(report._id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg"
+                        title="Delete"
                       >
-                        Delete
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </td>

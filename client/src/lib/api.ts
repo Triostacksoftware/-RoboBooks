@@ -12,14 +12,36 @@ export async function api<T = unknown>(
   console.log("🌐 Request method:", init.method || "GET");
   console.log("🌐 Request body:", json);
 
+  // Get JWT token from localStorage
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  }
+
+  // Prepare headers with authentication
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+
+  // Add any additional headers from init
+  if (init.headers) {
+    Object.entries(init.headers).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        headers[key] = value;
+      }
+    });
+  }
+
+  // Add Authorization header if token exists
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${backendUrl}${path}`, {
     credentials: "include", // include cookies for cross-origin
     cache: "no-store", // avoid 304/etag cache confusing auth flows
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
+    headers,
     body: json ? JSON.stringify(json) : undefined,
     ...rest,
   });
@@ -38,11 +60,7 @@ export async function api<T = unknown>(
     const retry = await fetch(retryUrl, {
       credentials: "include",
       cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...(init.headers || {}),
-      },
+      headers,
       body: json ? JSON.stringify(json) : undefined,
       ...rest,
     });
@@ -81,6 +99,12 @@ export async function logout(): Promise<void> {
   } catch (error) {
     console.error("❌ Logout failed:", error);
     // Even if logout fails, we still want to clear the session
+  } finally {
+    // Always clear the token from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      console.log('🗑️ Token cleared from localStorage');
+    }
   }
 }
 

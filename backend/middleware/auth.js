@@ -1,4 +1,4 @@
-import { verifyAccessToken } from '../utils/token.js';
+import { verifyAccessToken } from "../utils/token.js";
 
 /**
  * Authenticate the request.
@@ -7,19 +7,21 @@ import { verifyAccessToken } from '../utils/token.js';
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Auth token missing' });
+  console.log("Hi");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Auth token missing" });
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
 
   try {
     // verifyAccessToken throws if the JWT is invalid/expired
     const payload = verifyAccessToken(token);
-    req.user = payload;          // { id, role, iat, exp }
+    req.user = payload; // { id, role, iat, exp }
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
 
@@ -30,10 +32,10 @@ export const authenticateToken = (req, res, next) => {
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthenticated' });
+      return res.status(401).json({ message: "Unauthenticated" });
     }
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Forbidden' });
+      return res.status(403).json({ message: "Forbidden" });
     }
     next();
   };

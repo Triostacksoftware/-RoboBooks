@@ -21,3 +21,27 @@ export const getVendorById = async (req, res, next) => {
     res.json({ success: true, data: v });
   } catch (err) { next(err); }
 };
+
+export const updateVendor = async (req, res, next) => {
+  try {
+    const v = await Svc.updateVendor(req.params.id, req.body);
+    if (!v) return res.status(404).json({ success: false, message: 'Vendor not found' });
+    res.json({ success: true, data: v });
+  } catch (err) { next(err); }
+};
+
+export const deleteVendor = async (req, res, next) => {
+  try {
+    const v = await Svc.deleteVendor(req.params.id);
+    if (!v) return res.status(404).json({ success: false, message: 'Vendor not found' });
+    res.json({ success: true, message: 'Vendor deleted successfully' });
+  } catch (err) { next(err); }
+};
+
+export const searchVendors = async (req, res, next) => {
+  try {
+    const { query } = req.query;
+    const vendors = await Svc.searchVendors(query);
+    res.json({ success: true, data: vendors });
+  } catch (err) { next(err); }
+};

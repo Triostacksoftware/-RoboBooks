@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { TrashIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import AuditTrailPanel from "./AuditTrailPanel";
 
 interface Document {
   _id: string;
@@ -33,6 +35,7 @@ export default function DocumentsList({
   onDelete,
   onDownload,
 }: DocumentsListProps) {
+  const [expandedAuditTrail, setExpandedAuditTrail] = useState<string | null>(null);
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -204,27 +207,51 @@ export default function DocumentsList({
                       ))}
                     </div>
                   )}
+                  
+                  {/* Audit Trail Toggle Button */}
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setExpandedAuditTrail(
+                        expandedAuditTrail === document._id ? null : document._id
+                      )}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {expandedAuditTrail === document._id ? "Hide" : "Show"} Activity History
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 {onDownload && (
                   <button
                     onClick={() => onDownload(document._id)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg"
+                    title="Download"
                   >
-                    Download
+                    <ArrowDownTrayIcon className="h-4 w-4" />
                   </button>
                 )}
                 {onDelete && (
                   <button
                     onClick={() => onDelete(document._id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg"
+                    title="Delete"
                   >
-                    Delete
+                    <TrashIcon className="h-4 w-4" />
                   </button>
                 )}
               </div>
             </div>
+            
+            {/* Audit Trail Panel */}
+            {expandedAuditTrail === document._id && (
+              <div className="mt-4">
+                <AuditTrailPanel 
+                  entityId={document._id} 
+                  entityType="document" 
+                />
+              </div>
+            )}
           </li>
         ))}
       </ul>

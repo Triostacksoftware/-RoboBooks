@@ -14,7 +14,7 @@ import "./config/passport.js";
 import authRoutes from "./routes/auth.js";
 import accountsRoutes from "./routes/accounts.js";
 // Removed legacy bankTransactions router to avoid conflicts
-import vendorsRoutes from "./routes/vendors.routes.js";
+import vendorsRoutes from "./routes/vendorsRoutes.js";
 import billsRoutes from "./routes/bills.routes.js";
 import expensesRoutes from "./routes/expenses.routes.js";
 import estimatesRoutes from "./routes/estimates.routes.js";
@@ -35,9 +35,15 @@ import budgetRoutes from "./routes/budgetRoutes.js";
 import bulkUpdateRoutes from "./routes/bulkUpdateRoutes.js";
 import tdsRoutes from "./routes/tdsRoutes.js";
 import tcsRoutes from "./routes/tcsRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import auditTrailRoutes from "./routes/auditTrailRoutes.js";
 import deliveryChallanRoutes from "./routes/deliveryChallanRoutes.js";
-import uploadsRoutes from "./routes/uploads.routes.js";
-import quotesRoutes from "./routes/quotes.routes.js";
+import salespersonRoutes from "./routes/salespersonRoutes.js";
+import recurringInvoiceRoutes from "./routes/recurringInvoiceRoutes.js";
+import uploadsRoutes from "./routes/uploadsRoutes.js";
+import quotesRoutes from "./routes/RoutesRoutes.js";
+import salesOrderRoutes from "./routes/salesOrderRoutes.js";
+import modulePreferenceRoutes from "./routes/modulePreferenceRoutes.js";
 
 const app = express();
 
@@ -108,8 +114,14 @@ app.use("/api/budgets", budgetRoutes);
 app.use("/api/bulk-updates", bulkUpdateRoutes);
 app.use("/api/tds", tdsRoutes);
 app.use("/api/tcs", tcsRoutes);
+app.use("/api/salespersons", salespersonRoutes);
+app.use("/api/recurring-invoices", recurringInvoiceRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/audit-trail", auditTrailRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/quotes", quotesRoutes);
+app.use("/api/sales-orders", salesOrderRoutes);
+app.use("/api/module-preferences", modulePreferenceRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {

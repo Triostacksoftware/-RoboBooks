@@ -142,7 +142,7 @@ export default function NewItemForm() {
   const showToast = (message: string, type: "success" | "error") => {
     // Create toast element
     const toast = document.createElement("div");
-    toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
+    toast.className = `fixed top-4 right-4 z-[9999] px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
       type === "success" ? "bg-green-500" : "bg-red-500"
     }`;
     toast.textContent = message;
@@ -185,7 +185,7 @@ export default function NewItemForm() {
         process.env.NEXT_PUBLIC_BACKEND_URL + "/api/items",
         {
           method: "POST",
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },

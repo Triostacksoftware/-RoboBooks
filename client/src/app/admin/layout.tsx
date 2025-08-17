@@ -161,7 +161,7 @@ export default function AdminLayout({
 
   // If authenticated, show full layout with sidebar
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex overflow-x-hidden">
       {/* Fixed Sidebar - Only visible when authenticated */}
       <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col z-50">
         <div className="flex h-16 items-center px-4 border-b">

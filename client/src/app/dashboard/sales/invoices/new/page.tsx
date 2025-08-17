@@ -8,6 +8,14 @@ import {
   CheckIcon,
   PaperClipIcon,
   ArrowPathIcon,
+  BuildingOfficeIcon,
+  MapPinIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  GlobeAltIcon,
+  ChevronUpIcon,
+  ChevronRightIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 
 import CustomerDetails from "./components/CustomerDetails";
@@ -16,31 +24,7 @@ import ItemsTable from "./components/ItemsTable";
 import InvoiceSummary from "./components/InvoiceSummary";
 import TDSManagementModal from "./components/TDSManagementModal";
 import TCSManagementModal from "./components/TCSManagementModal";
-
-interface Customer {
-  firstName: string;
-  _id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  lastName: string;
-  mobile?: string;
-  workPhone?: string;
-  billingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-  shippingAddress?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zipCode?: string;
-  };
-}
+import { Customer } from "@/services/customerService";
 
 interface TDSRecord {
   _id: string;
@@ -114,8 +98,8 @@ const NewInvoiceForm = () => {
         description: "",
         quantity: 1.0,
         unit: "pcs",
-        rate: 10000.0, // Set default amount for testing
-        amount: 100000.0, // 10 × 10000 = 100000
+        rate: 0.0,
+        amount: 0.0,
         taxMode: "IGST" as TaxMode, // Use IGST for inter-state
         taxRate: 18,
         taxAmount: 0,
@@ -205,19 +189,37 @@ const NewInvoiceForm = () => {
     pinCode: "560001",
   });
 
+  // Modal states
+  const [showInvoiceDetailsModal, setShowInvoiceDetailsModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [isHeaderMinimized, setIsHeaderMinimized] = useState(true);
+
   // Local toast notifications
   const [toasts, setToasts] = useState<
     { id: number; message: string; type: "success" | "error" | "info" }[]
   >([]);
+  const [lastToastMessage, setLastToastMessage] = useState<string>("");
+
   const showToast = (
     message: string,
     type: "success" | "error" | "info" = "info"
   ) => {
+    // Prevent duplicate toast messages
+    if (message === lastToastMessage) {
+      return;
+    }
+
+    setLastToastMessage(message);
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3200);
+
+    // Clear the last toast message after a delay to allow future toasts
+    setTimeout(() => {
+      setLastToastMessage("");
+    }, 1000);
   };
 
   const extractStateName = (value: string) => {
@@ -493,10 +495,7 @@ const NewInvoiceForm = () => {
                     foundCustomer.firstName + " " + foundCustomer.lastName,
                   buyerEmail: foundCustomer.email,
                   buyerPhone:
-                    foundCustomer.phone ||
-                    foundCustomer.mobile ||
-                    foundCustomer.workPhone ||
-                    "",
+                    foundCustomer.workPhone || foundCustomer.mobile || "",
                   buyerAddress: foundCustomer.billingAddress
                     ? `${foundCustomer.billingAddress.street || ""}, ${
                         foundCustomer.billingAddress.city || ""
@@ -894,40 +893,84 @@ const NewInvoiceForm = () => {
         customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleCustomerSelect = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowCustomerDropdown(false);
-    setSearchTerm(customer.firstName + " " + customer.lastName);
-    setFormData((prev) => ({
-      ...prev,
-      buyerName: customer.firstName + " " + customer.lastName,
-      buyerEmail: customer.email,
-      buyerPhone: customer.phone || customer.mobile || customer.workPhone || "",
-      buyerAddress: customer.billingAddress
-        ? `${customer.billingAddress.street || ""}, ${
-            customer.billingAddress.city || ""
-          }, ${customer.billingAddress.state || ""}`.trim()
-        : "",
-      billingAddress: {
-        street: customer.billingAddress?.street || "",
-        city: customer.billingAddress?.city || "",
-        state: customer.billingAddress?.state || "",
-        country: customer.billingAddress?.country || "India",
-        zipCode: customer.billingAddress?.zipCode || "",
-      },
-      shippingAddress: {
-        street: customer.shippingAddress?.street || "",
-        city: customer.shippingAddress?.city || "",
-        state: customer.shippingAddress?.state || "",
-        country: customer.shippingAddress?.country || "India",
-        zipCode: customer.shippingAddress?.zipCode || "",
-      },
-      placeOfSupplyState:
-        customer.shippingAddress?.state ||
-        extractStateName(companySettings.state), // Set to shipping state
-    }));
-    // Don't automatically recalculate - let user update items manually
-    // setTimeout(recalculateAllTotals, 0);
+  const handleCustomerSelect = (customer: Customer | null) => {
+    if (customer) {
+      setSelectedCustomer(customer);
+      setShowCustomerDropdown(false);
+      setSearchTerm(customer.firstName + " " + customer.lastName);
+
+      // Update form data with customer details
+      setFormData((prev) => ({
+        ...prev,
+        buyerName: customer.firstName + " " + customer.lastName,
+        buyerEmail: customer.email,
+        buyerPhone: customer.workPhone || customer.mobile || "",
+        buyerAddress: customer.billingAddress
+          ? `${customer.billingAddress.street || ""}, ${
+              customer.billingAddress.city || ""
+            }, ${customer.billingAddress.state || ""}`.trim()
+          : "",
+        billingAddress: {
+          street: customer.billingAddress?.street || "",
+          city: customer.billingAddress?.city || "",
+          state: customer.billingAddress?.state || "",
+          country: customer.billingAddress?.country || "India",
+          zipCode: customer.billingAddress?.zipCode || "",
+        },
+        shippingAddress: {
+          street: customer.shippingAddress?.street || "",
+          city: customer.shippingAddress?.city || "",
+          state: customer.shippingAddress?.state || "",
+          country: customer.shippingAddress?.country || "India",
+          zipCode: customer.shippingAddress?.zipCode || "",
+        },
+        placeOfSupplyState:
+          customer.shippingAddress?.state ||
+          extractStateName(companySettings.state), // Set to shipping state
+      }));
+
+      // Show toast notification about customer selection
+      showToast(
+        `Customer "${customer.firstName} ${customer.lastName}" selected successfully!`,
+        "success"
+      );
+
+      // Trigger GST recalculation after a short delay to ensure state updates
+      setTimeout(() => {
+        recalculateAllTotals();
+      }, 100);
+    } else {
+      // Clear customer selection
+      setSelectedCustomer(null);
+      setShowCustomerDropdown(false);
+      setSearchTerm("");
+
+      // Clear form data related to customer
+      setFormData((prev) => ({
+        ...prev,
+        buyerName: "",
+        buyerEmail: "",
+        buyerPhone: "",
+        buyerAddress: "",
+        billingAddress: {
+          street: "",
+          city: "",
+          state: "",
+          country: "India",
+          zipCode: "",
+        },
+        shippingAddress: {
+          street: "",
+          city: "",
+          state: "",
+          country: "India",
+          zipCode: "",
+        },
+        placeOfSupplyState: "",
+      }));
+
+      showToast("Customer selection cleared", "info");
+    }
   };
 
   const handleSaveInvoice = async (asDraft = false) => {
@@ -947,7 +990,8 @@ const NewInvoiceForm = () => {
         customerName:
           selectedCustomer.firstName + " " + selectedCustomer.lastName,
         customerEmail: selectedCustomer.email,
-        customerPhone: selectedCustomer.phone,
+        customerPhone:
+          selectedCustomer.workPhone || selectedCustomer.mobile || "",
         status: asDraft ? "Draft" : "Sent",
         invoiceDate: new Date(formData.invoiceDate),
         dueDate: new Date(formData.dueDate),
@@ -996,36 +1040,98 @@ const NewInvoiceForm = () => {
 
   return (
     <div className="flex-1 overflow-auto bg-gray-50">
-      {/* Ultra Compact Header */}
-      <div className="bg-white border-b border-gray-200 px-3 py-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900">New Invoice</h1>
-          <div className="flex items-center space-x-1">
+      {/* Company Header Section - Collapsible */}
+      <div className="bg-white border-b border-gray-200">
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            isHeaderMinimized ? "p-2" : "p-4"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => router.push("/dashboard/sales/invoices")}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+                title="Go back to Invoices"
+              >
+                <ArrowLeftIcon className="h-5 w-5" />
+              </button>
+              <BuildingOfficeIcon className="h-6 w-6 text-blue-600" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  {companySettings.companyName}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  GSTIN: {companySettings.gstin}
+                </p>
+              </div>
+            </div>
             <button
-              className="p-1 text-gray-400 hover:text-gray-600"
-              onClick={() => router.push("/dashboard/sales/invoices")}
+              onClick={() => setIsHeaderMinimized(!isHeaderMinimized)}
+              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              title={
+                isHeaderMinimized
+                  ? "Expand Company Details"
+                  : "Minimize Company Details"
+              }
             >
-              <XMarkIcon className="h-4 w-4" />
+              {isHeaderMinimized ? (
+                <ChevronDownIcon className="h-5 w-5" />
+              ) : (
+                <ChevronUpIcon className="h-5 w-5" />
+              )}
             </button>
           </div>
+
+          {!isHeaderMinimized && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="flex items-start space-x-2">
+                <MapPinIcon className="h-4 w-4 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-gray-900 font-medium">Address</p>
+                  <p className="text-gray-600">{companySettings.address}</p>
+                  <p className="text-gray-600">
+                    {companySettings.state} - {companySettings.pinCode}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <PhoneIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-600">{companySettings.phone}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <EnvelopeIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-600">{companySettings.email}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <GlobeAltIcon className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-600">
+                    {companySettings.website}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Compact Customer Pre-selected Notification */}
+      {/* Customer Pre-selected Notification */}
       {showCustomerPreSelected && (
-        <div className="bg-green-50 border border-green-200 px-3 py-1.5">
+        <div className="bg-green-50 border border-green-200 px-4 py-2">
           <div className="flex items-center">
-            <CheckIcon className="h-3 w-3 text-green-600 mr-1.5" />
-            <p className="text-green-800 text-xs">
+            <CheckIcon className="h-4 w-4 text-green-600 mr-2" />
+            <p className="text-green-800 text-sm">
               Customer has been pre-selected from the customer details page.
             </p>
           </div>
         </div>
       )}
 
-      {/* Ultra Compact Main Form */}
-      <div className="p-3 pb-16">
-        <div className="max-w-full space-y-3">
+      {/* Main Form Content */}
+      <div className="p-4 pb-20">
+        <div className="max-w-full space-y-4">
           {/* Customer Details */}
           <CustomerDetails
             customers={customers}
@@ -1040,8 +1146,11 @@ const NewInvoiceForm = () => {
               const isSameState =
                 companyState.toLowerCase() === selectedState.toLowerCase();
 
-              // Show toast notification about GST rule application
-              if (selectedState) {
+              // Only show toast if the state has actually changed
+              if (
+                selectedState &&
+                selectedState !== formData.placeOfSupplyState
+              ) {
                 if (isSameState) {
                   showToast(
                     `Same state: CGST + SGST will be applied (${companyState} → ${selectedState})`,
@@ -1054,9 +1163,6 @@ const NewInvoiceForm = () => {
                   );
                 }
               }
-
-              // Don't automatically recalculate - let user update items manually
-              // setTimeout(recalculateAllTotals, 0);
             }}
             companyState={extractStateName(companySettings.state)}
             formData={{
@@ -1069,15 +1175,16 @@ const NewInvoiceForm = () => {
                 ...prev,
                 billingAddress: data.billingAddress || prev.billingAddress,
                 shippingAddress: data.shippingAddress || prev.shippingAddress,
-                // Update place of supply based on shipping address
                 placeOfSupplyState:
-                  data.shippingAddress?.state || prev.placeOfSupplyState,
+                  data.placeOfSupplyState ||
+                  data.shippingAddress?.state ||
+                  prev.placeOfSupplyState,
               }));
 
-              // Trigger GST recalculation when shipping address changes
+              // Trigger GST recalculation when place of supply changes
               if (
-                data.shippingAddress?.state &&
-                data.shippingAddress.state !== formData.placeOfSupplyState
+                data.placeOfSupplyState &&
+                data.placeOfSupplyState !== formData.placeOfSupplyState
               ) {
                 setTimeout(recalculateAllTotals, 100);
               }
@@ -1085,7 +1192,27 @@ const NewInvoiceForm = () => {
           />
 
           {/* Invoice Details */}
-          <InvoiceDetails formData={formData} onFormDataChange={setFormData} />
+          <InvoiceDetails
+            formData={{
+              invoiceNumber: formData.invoiceNumber,
+              orderNumber: formData.orderNumber,
+              invoiceDate: formData.invoiceDate,
+              terms: formData.terms,
+              dueDate: formData.dueDate,
+              salesperson: formData.salesperson,
+            }}
+            onFormDataChange={(data) => {
+              setFormData((prev) => ({
+                ...prev,
+                invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
+                orderNumber: data.orderNumber || prev.orderNumber,
+                invoiceDate: data.invoiceDate || prev.invoiceDate,
+                terms: data.terms || prev.terms,
+                dueDate: data.dueDate || prev.dueDate,
+                salesperson: data.salesperson || prev.salesperson,
+              }));
+            }}
+          />
 
           {/* Items Table */}
           <ItemsTable
@@ -1093,27 +1220,121 @@ const NewInvoiceForm = () => {
             onAddItem={addItem}
             onRemoveItem={removeItem}
             onUpdateItem={updateItem}
+            onItemSelect={(id, itemId, itemDetails) => {
+              setFormData((prev) => {
+                const updatedItems = prev.items.map((item) => {
+                  if (item.id !== id) return item;
+
+                  return {
+                    ...item,
+                    itemId: itemId,
+                    details: itemDetails.name || "",
+                    description: itemDetails.description || "",
+                    rate: itemDetails.sellingPrice || 0,
+                    unit: itemDetails.unit || "pcs",
+                    amount:
+                      (item.quantity || 1) * (itemDetails.sellingPrice || 0),
+                    taxRate: itemDetails.gstRate || item.taxRate || 18,
+                  };
+                });
+
+                const subTotal = updatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.amount || 0),
+                  0
+                );
+                const discountAmount =
+                  prev.discountType === "percentage"
+                    ? (subTotal * prev.discount) / 100
+                    : prev.discount;
+
+                const finalUpdatedItems = updatedItems.map((item) => {
+                  let itemRate = 0;
+                  if (item.taxMode === "GST" || item.taxMode === "IGST") {
+                    itemRate = item.taxRate || 18;
+                  }
+
+                  const itemProportion =
+                    subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+                  const itemDiscountAmount = discountAmount * itemProportion;
+                  const itemTaxableAmount =
+                    (item.amount || 0) - itemDiscountAmount;
+
+                  const taxes = calculateItemTax(
+                    itemTaxableAmount,
+                    item.taxMode as TaxMode,
+                    itemRate
+                  );
+                  return { ...item, ...taxes };
+                });
+
+                const cgstTotal = finalUpdatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.cgst || 0),
+                  0
+                );
+                const sgstTotal = finalUpdatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.sgst || 0),
+                  0
+                );
+                const igstTotal = finalUpdatedItems.reduce(
+                  (sum: number, i: InvoiceItem) => sum + (i.igst || 0),
+                  0
+                );
+                const totalTax = cgstTotal + sgstTotal + igstTotal;
+                const total =
+                  subTotal - discountAmount + totalTax + (prev.adjustment || 0);
+
+                return {
+                  ...prev,
+                  items: finalUpdatedItems,
+                  subTotal,
+                  discountAmount,
+                  taxAmount: totalTax,
+                  cgstTotal,
+                  sgstTotal,
+                  igstTotal,
+                  total,
+                };
+              });
+            }}
             isIntraState={isIntraState}
           />
 
-          {/* Summary and Additional Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div className="lg:col-span-2 space-y-3">
-              {/* Customer Notes */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-                <h2 className="text-sm font-semibold text-gray-900 mb-2">
+          {/* Additional Details and Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Additional Details - Left Side */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Additional Details
                 </h2>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter invoice subject"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.subject}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          subject: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Customer Notes
                     </label>
                     <textarea
-                      rows={2}
+                      rows={3}
                       placeholder="Thanks for your business."
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       value={formData.customerNotes}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -1128,13 +1349,13 @@ const NewInvoiceForm = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Terms & Conditions
                     </label>
                     <textarea
-                      rows={2}
+                      rows={3}
                       placeholder="Enter the terms and conditions of your business to be displayed in your transaction"
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       value={formData.termsConditions}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -1146,13 +1367,13 @@ const NewInvoiceForm = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Attach File(s) to Invoice
                     </label>
-                    <button className="flex items-center px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                      <PaperClipIcon className="h-3 w-3 mr-1.5" />
+                    <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <PaperClipIcon className="h-4 w-4 mr-2" />
                       Upload File
-                      <ChevronDownIcon className="h-3 w-3 ml-1.5" />
+                      <ChevronDownIcon className="h-4 w-4 ml-2" />
                     </button>
                     <p className="text-xs text-gray-500 mt-1">
                       You can upload a maximum of 10 files, 10MB each
@@ -1386,25 +1607,25 @@ const NewInvoiceForm = () => {
               </div>
 
               {/* Payment Gateway Promotion */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-blue-900">
+                    <p className="text-sm font-medium text-blue-900">
                       Want to get paid faster?
                     </p>
-                    <p className="text-xs text-blue-700 mt-0.5">
+                    <p className="text-sm text-blue-700 mt-1">
                       Configure payment gateways and receive payments online.{" "}
                       <button className="text-blue-600 hover:text-blue-800 underline">
                         Set up Payment Gateway
                       </button>
                     </p>
                   </div>
-                  <div className="text-xs text-blue-600">WA</div>
+                  <div className="text-sm text-blue-600">WA</div>
                 </div>
               </div>
             </div>
 
-            {/* Summary Sidebar */}
+            {/* Bill Calculation - Right Side */}
             <div className="lg:col-span-1">
               <InvoiceSummary
                 formData={formData}
@@ -1426,31 +1647,31 @@ const NewInvoiceForm = () => {
         </div>
       </div>
 
-      {/* Ultra Compact Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 py-2 shadow-lg">
+      {/* Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-lg">
         <div className="max-w-full flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <button
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={() => handleSaveInvoice(true)}
             >
               Save as Draft
             </button>
             <button
-              className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
               onClick={() => handleSaveInvoice(false)}
             >
               Save and Send
             </button>
             <button
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={() => router.push("/dashboard/sales/invoices")}
             >
               Cancel
             </button>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <div className="text-sm text-gray-600">
               <span className="font-medium">
                 Total: ₹{(formData.total || 0).toFixed(2)}
@@ -1459,20 +1680,166 @@ const NewInvoiceForm = () => {
                 Items: {formData.items.length}
               </span>
             </div>
-            <button className="flex items-center px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="h-3 w-3 mr-1" />
+            <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <ArrowPathIcon className="h-4 w-4 mr-2" />
               Make Recurring
             </button>
           </div>
         </div>
       </div>
 
-      {/* Compact Toasts */}
-      <div className="fixed bottom-4 right-4 space-y-2 z-50">
+      {/* Invoice Details Modal */}
+      {showInvoiceDetailsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center invoice-details-modal">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => setShowInvoiceDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Invoice Details
+                </h3>
+                <div className="w-8"></div> {/* Spacer for centering */}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Invoice Number
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.invoiceNumber}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        invoiceNumber: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Order Number
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.orderNumber}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        orderNumber: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Invoice Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.invoiceDate}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        invoiceDate: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Terms
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.terms}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        terms: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="Due on Receipt">Due on Receipt</option>
+                    <option value="Net 15">Net 15</option>
+                    <option value="Net 30">Net 30</option>
+                    <option value="Net 45">Net 45</option>
+                    <option value="Net 60">Net 60</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Salesperson
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.salesperson}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        salesperson: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.dueDate}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dueDate: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowInvoiceDetailsModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setShowInvoiceDetailsModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 space-y-2 toast-notifications">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`px-3 py-2 rounded-lg shadow-lg text-white text-xs font-medium max-w-sm ${
+            className={`px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium max-w-sm ${
               t.type === "success"
                 ? "bg-emerald-600 border-l-4 border-emerald-500"
                 : t.type === "error"
