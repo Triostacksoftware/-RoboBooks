@@ -132,6 +132,7 @@ const NewInvoiceForm = () => {
     termsConditions: "",
     internalNotes: "",
     files: [],
+    signature: null as { fileName: string; filePath: string; fileSize: number } | null,
     currency: "INR",
     exchangeRate: 1,
     // Buyer Details
@@ -1001,6 +1002,9 @@ const NewInvoiceForm = () => {
         })),
       };
 
+      console.log('Saving invoice with data:', invoiceData);
+      console.log('Signature data:', formData.signature);
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
         {
@@ -1374,6 +1378,230 @@ const NewInvoiceForm = () => {
                     <p className="text-xs text-gray-500 mt-1">
                       You can upload a maximum of 10 files, 10MB each
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Upload Signature
+                    </label>
+                    {formData.signature ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg border">
+                          <img
+                            src={formData.signature.filePath}
+                            alt="Signature"
+                            className="h-8 w-16 object-contain"
+                          />
+                          <span className="text-sm text-gray-600">
+                            {formData.signature.fileName}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, signature: null }))}
+                          className="p-1 text-red-500 hover:text-red-700"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            console.log('File input change event triggered');
+                            console.log('Event target:', e.target);
+                            console.log('Files:', e.target.files);
+                            console.log('Files length:', e.target.files?.length);
+                            
+                            const file = e.target.files?.[0];
+                            console.log('File input change event:', e.target.files);
+                            console.log('Selected file:', file);
+                            
+                            if (file) {
+                              console.log('Starting signature upload for file:', file.name, file.size, file.type);
+                              
+                              // Validate file type
+                              if (!file.type.startsWith('image/')) {
+                                showToast('Please select an image file (PNG, JPG, GIF, WebP)', 'error');
+                                return;
+                              }
+                              
+                              // Validate file size (2MB limit)
+                              if (file.size > 2 * 1024 * 1024) {
+                                showToast('File size too large. Maximum size is 2MB.', 'error');
+                                return;
+                              }
+                              
+                              try {
+                                // Check if backend URL is available
+                                if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
+                                  showToast('Backend URL not configured. Please check environment variables.', 'error');
+                                  return;
+                                }
+                                
+                                // Create FormData for file upload
+                                const formData = new FormData();
+                                formData.append('signature', file);
+                                
+                                const uploadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/upload-signature`;
+                                console.log('Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+                                console.log('Uploading to URL:', uploadUrl);
+                                
+                                const response = await fetch(uploadUrl, {
+                                  method: 'POST',
+                                  credentials: 'include',
+                                  body: formData,
+                                });
+                                
+                                console.log('Upload response status:', response.status);
+                                console.log('Upload response headers:', response.headers);
+                                
+                                if (response.ok) {
+                                  const result = await response.json();
+                                  console.log('Signature upload result:', result);
+                                  
+                                  // Create a URL for the uploaded file
+                                  const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/${result.signatureUrl}`;
+                                  console.log('Constructed file URL:', fileUrl);
+                                  
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    signature: {
+                                      fileName: file.name,
+                                      filePath: fileUrl,
+                                      fileSize: file.size
+                                    }
+                                  }));
+                                  
+                                  showToast('Signature uploaded successfully!', 'success');
+                                } else {
+                                  const error = await response.json();
+                                  console.error('Signature upload error response:', error);
+                                  showToast(`Error uploading signature: ${error.message}`, 'error');
+                                }
+                              } catch (error) {
+                                console.error('Error uploading signature:', error);
+                                showToast('Error uploading signature. Please try again.', 'error');
+                              }
+                            } else {
+                              console.log('No file selected');
+                            }
+                          }}
+                          className="hidden"
+                          id="signature-upload"
+                        />
+                        <label
+                          htmlFor="signature-upload"
+                          onClick={() => {
+                            console.log('Label clicked, attempting to trigger file input');
+                            const fileInput = document.getElementById('signature-upload');
+                            console.log('File input element:', fileInput);
+                            if (fileInput) {
+                              fileInput.click();
+                            } else {
+                              console.error('File input not found');
+                            }
+                          }}
+                          className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                        >
+                          <PaperClipIcon className="h-3 w-3 mr-1.5" />
+                          Upload Signature
+                        </label>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Upload a digital signature for the invoice. Recommended: PNG or JPG format.
+                    </p>
+                    
+                    {/* Test button for debugging */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          // Create a simple test image
+                          const canvas = document.createElement('canvas');
+                          canvas.width = 100;
+                          canvas.height = 50;
+                          const ctx = canvas.getContext('2d');
+                          ctx.fillStyle = '#000000';
+                          ctx.fillRect(0, 0, 100, 50);
+                          ctx.fillStyle = '#ffffff';
+                          ctx.font = '12px Arial';
+                          ctx.fillText('Test Signature', 10, 30);
+                          
+                          canvas.toBlob(async (blob) => {
+                            if (blob) {
+                              const testFile = new File([blob], 'test-signature.png', { type: 'image/png' });
+                              console.log('Created test file:', testFile);
+                              
+                              // Test with the test endpoint first
+                              const formData = new FormData();
+                              formData.append('signature', testFile);
+                              
+                              const testUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/test-signature-upload`;
+                              console.log('Testing with URL:', testUrl);
+                              
+                              const response = await fetch(testUrl, {
+                                method: 'POST',
+                                body: formData,
+                              });
+                              
+                              console.log('Test response status:', response.status);
+                              const result = await response.json();
+                              console.log('Test response:', result);
+                              
+                              if (response.ok) {
+                                showToast('Test signature upload successful!', 'success');
+                                
+                                // Also test the authenticated endpoint
+                                const authResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/upload-signature`, {
+                                  method: 'POST',
+                                  credentials: 'include',
+                                  body: formData,
+                                });
+                                
+                                console.log('Auth test response status:', authResponse.status);
+                                const authResult = await authResponse.json();
+                                console.log('Auth test response:', authResult);
+                                
+                                if (authResponse.ok) {
+                                  showToast('Authenticated signature upload also successful!', 'success');
+                                } else {
+                                  showToast(`Auth test failed: ${authResult.message}`, 'error');
+                                }
+                              } else {
+                                showToast(`Test failed: ${result.message}`, 'error');
+                              }
+                            }
+                          });
+                        } catch (error) {
+                          console.error('Test signature creation failed:', error);
+                          showToast('Test signature creation failed', 'error');
+                        }
+                      }}
+                      className="mt-2 px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                    >
+                      Test Signature Upload
+                    </button>
+                    
+                    {/* Simple file input test */}
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            console.log('Simple file input test - file selected:', file.name, file.size, file.type);
+                            showToast(`File selected: ${file.name}`, 'success');
+                          }
+                        }}
+                        className="text-xs"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Simple file input test</p>
+                    </div>
                   </div>
                 </div>
               </div>

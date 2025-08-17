@@ -424,7 +424,12 @@ const generateInvoiceHTML = (invoice) => {
       <div class="signature-section">
         <div>
           <div>For: ${invoice.sellerName || "ROBOBOOKS SOLUTIONS"}</div>
-          <div class="signature-line"></div>
+          ${invoice.signature ? 
+            `<div style="margin-top: 20px;">
+              <img src="${invoice.signature.filePath}" alt="Digital Signature" style="height: 60px; width: 120px; object-fit: contain; border: 1px solid #ccc; border-radius: 4px;">
+            </div>` : 
+            `<div class="signature-line"></div>`
+          }
           <div class="signature-text">Authorized Signatory</div>
         </div>
         <div class="website">www.robobooks.com</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
@@ -9,6 +9,13 @@ import {
   PaperClipIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+
+import CustomerDetails from "./components/CustomerDetails";
+import QuoteDetails from "./components/QuoteDetails";
+import ItemsTable from "./components/ItemsTable";
+import QuoteSummary from "./components/QuoteSummary";
+import TDSManagementModal from "./components/TDSManagementModal";
+import TCSManagementModal from "./components/TCSManagementModal";
 
 interface Customer {
   firstName: string;
@@ -348,6 +355,115 @@ const NewQuoteForm = () => {
     });
   };
 
+  // Call recalculateAllTotals only once when component mounts
+  useEffect(() => {
+    // Initial calculation when component mounts
+    const initialCalculation = () => {
+      setFormData((prev) => {
+        // First calculate subtotal and discount
+        const subTotal = prev.items.reduce(
+          (sum, item) => sum + (item.amount || 0),
+          0
+        );
+        const discountAmount =
+          prev.discountType === "percentage"
+            ? (subTotal * prev.discount) / 100
+            : prev.discount;
+
+        // Update items with GST calculated on proportional discounted amounts
+        const updatedItems: QuoteItem[] = prev.items.map((item) => {
+          // Ensure all GST/IGST items have 18% tax rate
+          let rate = 0;
+          if (item.taxMode === "GST" || item.taxMode === "IGST") {
+            rate = item.taxRate || 18; // Default to 18% if not set
+          }
+
+          // Calculate proportional discount for this item
+          const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+          const itemDiscountAmount = discountAmount * itemProportion;
+          const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
+
+          const taxes = calculateItemTax(
+            itemTaxableAmount,
+            item.taxMode as TaxMode,
+            rate
+          );
+
+          return { ...(item as QuoteItem), taxRate: rate, ...taxes };
+        });
+
+        // Calculate GST totals
+        const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
+        const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
+        const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+        const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
+
+        // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
+        let additionalTaxAmount = 0;
+        if (prev.additionalTaxType && prev.additionalTaxRate > 0) {
+          const baseAmountForAdditionalTax = subTotal - discountAmount;
+          additionalTaxAmount =
+            (baseAmountForAdditionalTax * prev.additionalTaxRate) / 100;
+        }
+
+        // Calculate final total
+        // TDS is subtracted (negative), TCS is added (positive)
+        const adjustedAdditionalTax =
+          prev.additionalTaxType === "TDS"
+            ? -additionalTaxAmount
+            : additionalTaxAmount;
+
+        const total =
+          subTotal -
+          discountAmount +
+          totalGSTTax +
+          adjustedAdditionalTax +
+          (prev.adjustment || 0);
+
+        return {
+          ...prev,
+          items: updatedItems,
+          subTotal,
+          discountAmount,
+          taxAmount: totalGSTTax,
+          cgstTotal,
+          sgstTotal,
+          igstTotal,
+          additionalTaxAmount,
+          total,
+        };
+      });
+    };
+
+    initialCalculation();
+  }, []); // Empty dependency array - only run once on mount
+
+  // Handle recalculation when form values change (prevent infinite loops)
+  const isInitialMount = useRef(true);
+  const prevFormData = useRef(formData);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only recalculate if relevant values actually changed
+    const hasRelevantChanges = 
+      prevFormData.current.items !== formData.items ||
+      prevFormData.current.discount !== formData.discount ||
+      prevFormData.current.discountType !== formData.discountType ||
+      prevFormData.current.additionalTaxType !== formData.additionalTaxType ||
+      prevFormData.current.additionalTaxRate !== formData.additionalTaxRate ||
+      prevFormData.current.adjustment !== formData.adjustment ||
+      prevFormData.current.placeOfSupplyState !== formData.placeOfSupplyState;
+
+    if (hasRelevantChanges) {
+      recalculateAllTotals();
+      prevFormData.current = formData;
+    }
+  }, [formData.items, formData.discount, formData.discountType, formData.additionalTaxType, formData.additionalTaxRate, formData.adjustment, formData.placeOfSupplyState]);
+
   // Determine intra vs inter-state with enhanced logic
   const isIntraState = () => {
     const companyState = extractStateName(companySettings.state);
@@ -411,14 +527,10 @@ const NewQuoteForm = () => {
     };
 
     fetchCustomers();
-  }, []);
-
-  // Load TDS and TCS records on component mount
-  useEffect(() => {
     loadTdsRecords();
     loadTcsRecords();
-    // Trigger initial GST calculation
-    setTimeout(() => recalculateAllTotals(), 100);
+    // Remove the setTimeout call to prevent conflicts
+    // setTimeout(() => recalculateAllTotals(), 100);
   }, []);
 
   // Set default place of supply from company settings
@@ -431,11 +543,6 @@ const NewQuoteForm = () => {
       }));
     }
   }, [companySettings.state, formData.placeOfSupplyState]);
-
-  // Recalculate ALL totals INCLUDING GST when place of supply OR discount changes
-  useEffect(() => {
-    recalculateAllTotals();
-  }, [formData.placeOfSupplyState, formData.discount, formData.discountType]);
 
   // Load TDS records
   const loadTdsRecords = async () => {
@@ -776,6 +883,10 @@ const NewQuoteForm = () => {
         status: asDraft ? 'draft' : 'sent'
       };
 
+      // Debug: Log the data being sent
+      console.log("Sending quote data:", quoteData);
+      console.log("API URL:", process.env.NEXT_PUBLIC_BACKEND_URL + "/api/estimates");
+
       const response = await fetch(
         process.env.NEXT_PUBLIC_BACKEND_URL + "/api/estimates",
         {
@@ -788,7 +899,14 @@ const NewQuoteForm = () => {
         }
       );
 
+      // Debug: Log the response
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
       const result = await response.json();
+
+      // Debug: Log the result
+      console.log("Response result:", result);
 
       if (response.ok) {
         console.log("Quote saved successfully", result);
@@ -810,532 +928,225 @@ const NewQuoteForm = () => {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-gray-50">
-      {/* Ultra Compact Header */}
-      <div className="bg-white border-b border-gray-200 px-3 py-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900">New Quote</h1>
-          <div className="flex items-center space-x-1">
-            <button
-              className="p-1 text-gray-400 hover:text-gray-600"
-              onClick={() => router.push("/dashboard/sales/quotes")}
-            >
-              <XMarkIcon className="h-4 w-4" />
-            </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Back Button */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push("/dashboard/sales/quotes")}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                ← Back to Quotes
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">New Quote</h1>
+                <p className="text-sm text-gray-600">Create a new quote for your customer</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="p-3 pb-16">
-        <div className="max-w-full space-y-3">
-          {/* Quote Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">
-              Quote Information
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Quote Number
-                </label>
-                <input
-                  type="text"
-                  value={formData.quoteNumber}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      quoteNumber: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subject
-                </label>
-                <input
-                  type="text"
-                  value={formData.subject}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      subject: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  placeholder="Enter quote subject"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Quote Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.quoteDate}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      quoteDate: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Valid Until
-                </label>
-                <input
-                  type="date"
-                  value={formData.validUntil}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      validUntil: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Terms
-                </label>
-                <select
-                  value={formData.terms}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      terms: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                  <option value="Due on Receipt">Due on Receipt</option>
-                  <option value="Net 15">Net 15</option>
-                  <option value="Net 30">Net 30</option>
-                  <option value="Net 45">Net 45</option>
-                  <option value="Net 60">Net 60</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Salesperson
-                </label>
-                <input
-                  type="text"
-                  value={formData.salesperson}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      salesperson: e.target.value,
-                    }))
-                  }
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  placeholder="Enter salesperson name"
-                />
-              </div>
-            </div>
-          </div>
+      {/* Main Form Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="space-y-6">
+          {/* Customer Details */}
+          <CustomerDetails
+            customers={customers}
+            selectedCustomer={selectedCustomer}
+            searchTerm={searchTerm}
+            showCustomerDropdown={showCustomerDropdown}
+            onCustomerSelect={handleCustomerSelect}
+            onSearchChange={setSearchTerm}
+            onDropdownToggle={setShowCustomerDropdown}
+            onPlaceOfSupplyChange={(selectedState) => {
+              const companyState = extractStateName(companySettings.state);
+              const isSameState =
+                companyState.toLowerCase() === selectedState.toLowerCase();
 
-          {/* Customer Selection */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">
-              Customer Selection
-            </h2>
-            <div className="space-y-3">
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search Customer
-                </label>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setShowCustomerDropdown(true)}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  placeholder="Search by name or email"
-                />
-                
-                {/* Customer Dropdown */}
-                {showCustomerDropdown && searchTerm && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                    {filteredCustomers.length > 0 ? (
-                      filteredCustomers.map((customer) => (
-                        <div
-                          key={customer._id}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          onClick={() => handleCustomerSelect(customer)}
-                        >
-                          <div className="font-medium text-sm">
-                            {customer.firstName} {customer.lastName}
-                          </div>
-                          <div className="text-xs text-gray-600">{customer.email}</div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-3 py-2 text-sm text-gray-500">
-                        No customers found
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              {selectedCustomer && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-                  <p className="text-sm text-green-800">
-                    <strong>Selected:</strong> {selectedCustomer.firstName} {selectedCustomer.lastName} - {selectedCustomer.email}
-                  </p>
-                  <div className="mt-2 text-xs text-green-700">
-                    <div>Phone: {selectedCustomer.phone || selectedCustomer.mobile || 'N/A'}</div>
-                    <div>Address: {selectedCustomer.billingAddress?.street}, {selectedCustomer.billingAddress?.city}, {selectedCustomer.billingAddress?.state}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+              if (selectedState) {
+                if (isSameState) {
+                  showToast(
+                    `Same state: CGST + SGST will be applied (${companyState} → ${selectedState})`,
+                    "info"
+                  );
+                } else {
+                  showToast(
+                    `Different state: IGST will be applied (${companyState} → ${selectedState})`,
+                    "info"
+                  );
+                }
+              }
+            }}
+            companyState={extractStateName(companySettings.state)}
+            formData={{
+              billingAddress: formData.billingAddress,
+              shippingAddress: formData.shippingAddress,
+              placeOfSupplyState: formData.placeOfSupplyState,
+            }}
+            onFormDataChange={(data) => {
+              setFormData((prev) => ({
+                ...prev,
+                billingAddress: data.billingAddress || prev.billingAddress,
+                shippingAddress: data.shippingAddress || prev.shippingAddress,
+                placeOfSupplyState:
+                  data.shippingAddress?.state || prev.placeOfSupplyState,
+              }));
+
+              if (
+                data.shippingAddress?.state &&
+                data.shippingAddress.state !== formData.placeOfSupplyState
+              ) {
+                setTimeout(recalculateAllTotals, 100);
+              }
+            }}
+          />
+
+          {/* Quote Details */}
+          <QuoteDetails formData={formData} onFormDataChange={setFormData} />
 
           {/* Items Table */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">
-              Items & Services
-            </h2>
-            <div className="space-y-3">
-              {/* Table Header */}
-              <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-700 bg-gray-50 p-2 rounded">
-                <div className="col-span-3">Item Details</div>
-                <div className="col-span-1">Qty</div>
-                <div className="col-span-1">Unit</div>
-                <div className="col-span-2">Rate</div>
-                <div className="col-span-2">Amount</div>
-                <div className="col-span-2">Tax Mode</div>
-                <div className="col-span-1">Actions</div>
-              </div>
-              
-              {formData.items.map((item, index) => (
-                <div key={item.id} className="grid grid-cols-12 gap-2 p-2 border border-gray-200 rounded-lg items-center">
-                  <div className="col-span-3">
-                    <input
-                      type="text"
-                      value={item.details}
-                      onChange={(e) => updateItem(item.id, 'details', e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                      placeholder="Item details"
+          <ItemsTable
+            items={formData.items}
+            onAddItem={addItem}
+            onRemoveItem={removeItem}
+            onUpdateItem={updateItem}
+            isIntraState={isIntraState()}
+          />
+
+          {/* Summary and Additional Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Customer Notes */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Additional Details
+                </h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Customer Notes
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Thanks for your business."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      value={formData.customerNotes}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          customerNotes: e.target.value,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Will be displayed on the quote
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Terms & Conditions
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Enter the terms and conditions of your business to be displayed in your quote"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      value={formData.termsConditions}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          termsConditions: e.target.value,
+                        }))
+                      }
                     />
                   </div>
-                  <div className="col-span-1">
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                      placeholder="Qty"
-                    />
-                  </div>
-                  <div className="col-span-1">
-                    <select
-                      value={item.unit}
-                      onChange={(e) => updateItem(item.id, 'unit', e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                    >
-                      <option value="pcs">pcs</option>
-                      <option value="kg">kg</option>
-                      <option value="hrs">hrs</option>
-                      <option value="days">days</option>
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <input
-                      type="number"
-                      value={item.rate}
-                      onChange={(e) => updateItem(item.id, 'rate', Number(e.target.value))}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                      placeholder="Rate"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <div className="text-sm font-medium">₹{item.amount.toFixed(2)}</div>
-                    {item.taxAmount > 0 && (
-                      <div className="text-xs text-gray-500">
-                        Tax: ₹{item.taxAmount.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="col-span-2">
-                    <select
-                      value={item.taxMode}
-                      onChange={(e) => updateItem(item.id, 'taxMode', e.target.value as TaxMode)}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm"
-                    >
-                      <option value="GST">GST</option>
-                      <option value="IGST">IGST</option>
-                      <option value="NON_TAXABLE">Non-Taxable</option>
-                      <option value="NO_GST">No GST</option>
-                      <option value="EXPORT">Export</option>
-                    </select>
-                    {item.taxMode === 'GST' && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        CGST: ₹{item.cgst.toFixed(2)} | SGST: ₹{item.sgst.toFixed(2)}
-                      </div>
-                    )}
-                    {item.taxMode === 'IGST' && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        IGST: ₹{item.igst.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="col-span-1">
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded hover:bg-red-50"
-                    >
-                      Remove
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Attach File(s) to Quote
+                    </label>
+                    <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <PaperClipIcon className="h-4 w-4 mr-2" />
+                      Upload File
+                      <ChevronDownIcon className="h-4 w-4 ml-2" />
                     </button>
+                    <p className="text-xs text-gray-500 mt-1">
+                      You can upload a maximum of 10 files, 10MB each
+                    </p>
                   </div>
                 </div>
-              ))}
-              
-              <button
-                onClick={addItem}
-                className="w-full px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100"
-              >
-                + Add Item
-              </button>
-            </div>
-          </div>
-
-          {/* Summary */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">
-              Additional Information
-            </h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Customer Notes
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Thanks for your business."
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  value={formData.customerNotes}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      customerNotes: e.target.value,
-                    }))
-                  }
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Will be displayed on the quote
-                </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Terms & Conditions
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Enter the terms and conditions of your business to be displayed in your quote"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  value={formData.termsConditions}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      termsConditions: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Internal Notes
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Internal notes (not visible to customer)"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  value={formData.internalNotes}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      internalNotes: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Attach File(s) to Quote
-                </label>
-                <button className="flex items-center px-2 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                  <PaperClipIcon className="h-3 w-3 mr-1.5" />
-                  Upload File
-                  <ChevronDownIcon className="h-3 w-3 ml-1.5" />
-                </button>
-                <p className="text-xs text-gray-500 mt-1">
-                  You can upload a maximum of 10 files, 10MB each
-                </p>
+              {/* Payment Gateway Promotion */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">
+                      Want to get paid faster?
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Configure payment gateways and receive payments online.{" "}
+                      <button className="text-blue-600 hover:text-blue-800 underline">
+                        Set up Payment Gateway
+                      </button>
+                    </p>
+                  </div>
+                  <div className="text-sm text-blue-600">WA</div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Summary */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">
-              Summary & Totals
-            </h2>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Sub Total:</span>
-                <span className="text-sm font-medium">₹{formData.subTotal.toFixed(2)}</span>
-              </div>
-              
-              {/* Discount Section */}
-              <div className="border-t pt-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Discount Type</label>
-                    <select
-                      value={formData.discountType}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discountType: e.target.value as "percentage" | "amount" }))}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    >
-                      <option value="percentage">Percentage (%)</option>
-                      <option value="amount">Amount (₹)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Discount Value</label>
-                    <input
-                      type="number"
-                      value={formData.discount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discount: Number(e.target.value) }))}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      placeholder={formData.discountType === "percentage" ? "0" : "0"}
-                    />
-                  </div>
-                </div>
-                {formData.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Discount Amount:</span>
-                    <span className="font-medium text-red-600">-₹{formData.discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* GST Breakdown */}
-              {(formData.cgstTotal > 0 || formData.sgstTotal > 0 || formData.igstTotal > 0) && (
-                <div className="border-t pt-2">
-                  <div className="text-xs font-medium text-gray-700 mb-2">GST Breakdown:</div>
-                  {formData.cgstTotal > 0 && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">CGST:</span>
-                      <span className="font-medium">₹{formData.cgstTotal.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {formData.sgstTotal > 0 && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">SGST:</span>
-                      <span className="font-medium">₹{formData.sgstTotal.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {formData.igstTotal > 0 && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">IGST:</span>
-                      <span className="font-medium">₹{formData.igstTotal.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm font-medium border-t pt-1 mt-1">
-                    <span className="text-gray-700">Total GST:</span>
-                    <span className="text-blue-600">₹{formData.taxAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* TDS/TCS Section */}
-              <div className="border-t pt-2">
-                <div className="text-xs font-medium text-gray-700 mb-2">Additional Taxes:</div>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Tax Type</label>
-                    <select
-                      value={formData.additionalTaxType || ""}
-                      onChange={(e) => setFormData(prev => ({ ...prev, additionalTaxType: e.target.value as "TDS" | "TCS" | null }))}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    >
-                      <option value="">None</option>
-                      <option value="TDS">TDS</option>
-                      <option value="TCS">TCS</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Rate (%)</label>
-                    <input
-                      type="number"
-                      value={formData.additionalTaxRate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, additionalTaxRate: Number(e.target.value) }))}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                {formData.additionalTaxAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">
-                      {formData.additionalTaxType} Amount:
-                    </span>
-                    <span className={`font-medium ${formData.additionalTaxType === 'TDS' ? 'text-red-600' : 'text-blue-600'}`}>
-                      {formData.additionalTaxType === 'TDS' ? '-' : '+'}₹{formData.additionalTaxAmount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Final Total */}
-              <div className="border-t pt-2">
-                <div className="flex justify-between text-lg font-bold">
-                  <span className="text-gray-900">Total:</span>
-                  <span className="text-blue-600">₹{formData.total.toFixed(2)}</span>
-                </div>
-              </div>
+            {/* Summary Sidebar */}
+            <div className="lg:col-span-1">
+              <QuoteSummary
+                formData={formData}
+                onFormDataChange={(data) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    ...data,
+                  }))
+                }
+                isIntraState={isIntraState()}
+                tdsRecords={tdsRecords}
+                tcsRecords={tcsRecords}
+                isLoadingTaxes={isLoadingTaxes}
+                onManageTDS={() => setShowTDSModal(true)}
+                onManageTCS={() => setShowTCSModal(true)}
+              />
             </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 py-2 shadow-lg">
-        <div className="max-w-full flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+      <div className="bg-white border-t border-gray-200 px-4 py-4 mt-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3">
             <button
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={() => handleSaveQuote(true)}
             >
               Save as Draft
             </button>
             <button
-              className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
               onClick={() => handleSaveQuote(false)}
             >
               Save and Send
             </button>
             <button
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               onClick={() => router.push("/dashboard/sales/quotes")}
             >
               Cancel
             </button>
           </div>
-          
-          <div className="flex items-center space-x-2">
+
+          <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-600">
               <span className="font-medium">
                 Total: ₹{(formData.total || 0).toFixed(2)}
@@ -1344,19 +1155,15 @@ const NewQuoteForm = () => {
                 Items: {formData.items.length}
               </span>
             </div>
+            <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <ArrowPathIcon className="h-4 w-4 mr-2" />
+              Make Recurring
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Click outside handler for customer dropdown */}
-      {showCustomerDropdown && (
-        <div
-          className="fixed inset-0 z-0"
-          onClick={() => setShowCustomerDropdown(false)}
-        />
-      )}
-
-      {/* Toasts */}
+      {/* Compact Toasts */}
       <div className="fixed bottom-4 right-4 space-y-2 z-50">
         {toasts.map((t) => (
           <div
@@ -1373,6 +1180,23 @@ const NewQuoteForm = () => {
           </div>
         ))}
       </div>
+
+      {/* Management Modals */}
+      <TDSManagementModal
+        isOpen={showTDSModal}
+        onClose={() => setShowTDSModal(false)}
+        onUpdate={() => {
+          loadTdsRecords();
+        }}
+      />
+
+      <TCSManagementModal
+        isOpen={showTCSModal}
+        onClose={() => setShowTCSModal(false)}
+        onUpdate={() => {
+          loadTcsRecords();
+        }}
+      />
     </div>
   );
 };

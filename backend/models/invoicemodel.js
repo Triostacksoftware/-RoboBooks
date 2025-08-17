@@ -105,6 +105,14 @@ const schema = new mongoose.Schema({
     },
   ],
 
+  // Signature
+  signature: {
+    fileName: String,
+    filePath: String,
+    fileSize: Number,
+    uploadedAt: { type: Date, default: Date.now },
+  },
+
   // Status and Tracking
   status: {
     type: String,
