@@ -46,6 +46,7 @@ import salesOrderRoutes from "./routes/salesOrderRoutes.js";
 import modulePreferenceRoutes from "./routes/modulePreferenceRoutes.js";
 import accountingReportsRoutes from "./routes/accountingReportsRoutes.js";
 import invoicePaymentRoutes from "./routes/invoicePaymentRoutes.js";
+import chartOfAccountsRoutes from "./routes/chartOfAccountsRoutes.js";
 
 const app = express();
 
@@ -126,6 +127,7 @@ app.use("/api/sales-orders", salesOrderRoutes);
 app.use("/api/module-preferences", modulePreferenceRoutes);
 app.use("/api/accounting-reports", accountingReportsRoutes);
 app.use("/api/invoice-payments", invoicePaymentRoutes);
+app.use("/api/chart-of-accounts", chartOfAccountsRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {

@@ -316,33 +316,61 @@ const ChartOfAccountsPage = () => {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const { showToast } = useToast();
 
-  const categories = ["asset", "liability", "equity", "income", "expense"];
-  const subtypes = [
-    "bank",
-    "cash",
-    "accounts_receivable",
-    "fixed_asset",
-    "inventory",
-    "other_asset",
-    "accounts_payable",
-    "credit_card",
-    "current_liability",
-    "long_term_liability",
-    "owner_equity",
-    "retained_earnings",
-    "sales",
-    "other_income",
-    "cost_of_goods_sold",
-    "operating_expense",
-    "other_expense",
-  ];
+  const [categories, setCategories] = useState<string[]>([]);
+  const [subtypes, setSubtypes] = useState<string[]>([]);
+
+  // Fetch categories and subtypes
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chart-of-accounts/categories`,
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories");
+      }
+
+      const data = await response.json();
+      setCategories(data.data.categories || []);
+      setSubtypes(data.data.subtypes || []);
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      // Fallback to default categories
+      setCategories(["asset", "liability", "equity", "income", "expense"]);
+      setSubtypes([
+        "bank",
+        "cash",
+        "accounts_receivable",
+        "fixed_asset",
+        "inventory",
+        "other_asset",
+        "accounts_payable",
+        "credit_card",
+        "current_liability",
+        "long_term_liability",
+        "owner_equity",
+        "retained_earnings",
+        "sales",
+        "other_income",
+        "cost_of_goods_sold",
+        "operating_expense",
+        "other_expense",
+      ]);
+    }
+  };
 
   // Fetch accounts
   const fetchAccounts = async () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/accounts`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chart-of-accounts`,
         {
           credentials: "include",
           headers: {
@@ -366,6 +394,7 @@ const ChartOfAccountsPage = () => {
   };
 
   useEffect(() => {
+    fetchCategories();
     fetchAccounts();
   }, []);
 
@@ -373,8 +402,8 @@ const ChartOfAccountsPage = () => {
   const handleSaveAccount = async (accountData: Partial<Account>) => {
     try {
       const url = selectedAccount
-        ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/accounts/${selectedAccount._id}`
-        : `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/accounts`;
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chart-of-accounts/${selectedAccount._id}`
+        : `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chart-of-accounts`;
 
       const method = selectedAccount ? "PUT" : "POST";
 
@@ -415,7 +444,7 @@ const ChartOfAccountsPage = () => {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/accounts/${accountId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chart-of-accounts/${accountId}`,
         {
           method: "DELETE",
           credentials: "include",
