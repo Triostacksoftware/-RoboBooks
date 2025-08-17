@@ -12,12 +12,6 @@ export async function api<T = unknown>(
   console.log("🌐 Request method:", init.method || "GET");
   console.log("🌐 Request body:", json);
 
-  // Get JWT token from localStorage
-  let token = null;
-  if (typeof window !== 'undefined') {
-    token = localStorage.getItem('token');
-  }
-
   // Prepare headers with authentication
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -33,7 +27,13 @@ export async function api<T = unknown>(
     });
   }
 
-  // Add Authorization header if token exists
+  // Get JWT token from localStorage as fallback (for backward compatibility)
+  let token = null;
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('token');
+  }
+
+  // Add Authorization header if token exists (fallback for non-cookie auth)
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }

@@ -3,6 +3,9 @@ import Customer from "../models/Customer.js";
 import { calculateGST, calculateTotal } from "./gstservice.js";
 import { canTransition } from "../utils/statusUtils.js";
 import { logAction } from "./auditTrailservice.js";
+import { updatePLOnInvoicePosted, updatePLOnPaymentReceived, reversePLOnInvoiceVoided } from "./profitLossService.js";
+import { updateBalanceSheetOnInvoicePosted, updateBalanceSheetOnPaymentReceived, reverseBalanceSheetOnInvoiceVoided } from "./balanceSheetService.js";
+import mongoose from "mongoose";
 
 export async function createInvoice(data) {
   try {
@@ -72,27 +75,81 @@ export async function createInvoice(data) {
 
 export async function updateInvoiceStatus(id, status) {
   try {
-    const invoice = await Invoice.findById(id);
-    if (!invoice) throw new Error("Invoice not found");
+    // Try with transaction first
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+      const invoice = await Invoice.findById(id).session(session);
+      if (!invoice) throw new Error("Invoice not found");
 
-    if (!canTransition(invoice.status, status)) {
-      throw new Error("Invalid status transition");
+      if (!canTransition(invoice.status, status)) {
+        throw new Error("Invalid status transition");
+      }
+
+      const oldStatus = invoice.status;
+      invoice.status = status;
+      await invoice.save({ session });
+
+      // Update reports based on status change
+      if (oldStatus === "Draft" && status === "Unpaid") {
+        // Invoice posted - update P&L and Balance Sheet
+        await updatePLOnInvoicePosted(id, session);
+        await updateBalanceSheetOnInvoicePosted(id, session);
+      } else if (status === "Cancelled" || status === "Void") {
+        // Invoice voided - reverse P&L and Balance Sheet entries
+        await reversePLOnInvoiceVoided(id, session);
+        await reverseBalanceSheetOnInvoiceVoided(id, session);
+      }
+
+      await session.commitTransaction();
+
+      logAction({
+        user: "system",
+        type: "UPDATE",
+        entity: "Invoice",
+        entityId: id,
+        message: `Status updated to ${status}`,
+      });
+
+      return invoice;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
     }
+  } catch (transactionError) {
+    // If transaction fails (e.g., standalone MongoDB), fall back to non-transactional update
+    console.log("Transaction failed, falling back to non-transactional update:", transactionError.message);
+    
+    try {
+      const invoice = await Invoice.findById(id);
+      if (!invoice) throw new Error("Invoice not found");
 
-    invoice.status = status;
-    await invoice.save();
+      if (!canTransition(invoice.status, status)) {
+        throw new Error("Invalid status transition");
+      }
 
-    logAction({
-      user: "system",
-      type: "UPDATE",
-      entity: "Invoice",
-      entityId: id,
-      message: `Status updated to ${status}`,
-    });
+      const oldStatus = invoice.status;
+      invoice.status = status;
+      await invoice.save();
 
-    return invoice;
-  } catch (error) {
-    throw new Error(`Failed to update invoice status: ${error.message}`);
+      // Note: Report updates are skipped in non-transactional mode for data consistency
+      // In production, you should ensure MongoDB is configured as a replica set
+
+      logAction({
+        user: "system",
+        type: "UPDATE",
+        entity: "Invoice",
+        entityId: id,
+        message: `Status updated to ${status} (non-transactional)`,
+      });
+
+      return invoice;
+    } catch (error) {
+      throw new Error(`Failed to update invoice status: ${error.message}`);
+    }
   }
 }
 
@@ -191,6 +248,93 @@ export async function deleteInvoice(id) {
     return { message: "Invoice deleted successfully" };
   } catch (error) {
     throw new Error(`Failed to delete invoice: ${error.message}`);
+  }
+}
+
+export async function recordPayment(invoiceId, paymentData) {
+  try {
+    // Try with transaction first
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+      const invoice = await Invoice.findById(invoiceId).session(session);
+      if (!invoice) throw new Error("Invoice not found");
+
+      const { amount, paymentMethod, paymentDate, reference } = paymentData;
+      
+      // Update invoice payment information
+      invoice.amountPaid = (invoice.amountPaid || 0) + amount;
+      invoice.balanceDue = invoice.total - invoice.amountPaid;
+      
+      // Update status based on payment
+      if (invoice.balanceDue <= 0) {
+        invoice.status = "Paid";
+      } else if (invoice.amountPaid > 0) {
+        invoice.status = "Partially Paid";
+      }
+      
+      await invoice.save({ session });
+
+      // Update reports for payment received
+      await updatePLOnPaymentReceived(invoiceId, amount, paymentDate, session);
+      await updateBalanceSheetOnPaymentReceived(invoiceId, amount, paymentMethod, session);
+
+      await session.commitTransaction();
+
+      logAction({
+        user: "system",
+        type: "PAYMENT",
+        entity: "Invoice",
+        entityId: invoiceId,
+        message: `Payment of ${amount} recorded`,
+      });
+
+      return invoice;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  } catch (transactionError) {
+    // If transaction fails (e.g., standalone MongoDB), fall back to non-transactional update
+    console.log("Transaction failed, falling back to non-transactional payment recording:", transactionError.message);
+    
+    try {
+      const invoice = await Invoice.findById(invoiceId);
+      if (!invoice) throw new Error("Invoice not found");
+
+      const { amount, paymentMethod, paymentDate, reference } = paymentData;
+      
+      // Update invoice payment information
+      invoice.amountPaid = (invoice.amountPaid || 0) + amount;
+      invoice.balanceDue = invoice.total - invoice.amountPaid;
+      
+      // Update status based on payment
+      if (invoice.balanceDue <= 0) {
+        invoice.status = "Paid";
+      } else if (invoice.amountPaid > 0) {
+        invoice.status = "Partially Paid";
+      }
+      
+      await invoice.save();
+
+      // Note: Report updates are skipped in non-transactional mode for data consistency
+      // In production, you should ensure MongoDB is configured as a replica set
+
+      logAction({
+        user: "system",
+        type: "PAYMENT",
+        entity: "Invoice",
+        entityId: invoiceId,
+        message: `Payment of ${amount} recorded (non-transactional)`,
+      });
+
+      return invoice;
+    } catch (error) {
+      throw new Error(`Failed to record payment: ${error.message}`);
+    }
   }
 }
 

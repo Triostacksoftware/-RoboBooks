@@ -10,17 +10,44 @@ import {
   FileText,
   Settings,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Scale
 } from "lucide-react";
 
 const AccountantPage = () => {
   const accountantModules = [
     {
+      title: "Profit & Loss Report",
+      description: "View and analyze your profit and loss statement",
+      icon: TrendingUp,
+      href: "/dashboard/accountant/profit-loss",
+      color: "bg-green-500",
+      features: [
+        "Real-time P&L calculations",
+        "Date range filtering",
+        "Cash vs accrual basis",
+        "Export capabilities"
+      ]
+    },
+    {
+      title: "Balance Sheet",
+      description: "View your financial position at any point in time",
+      icon: Scale,
+      href: "/dashboard/accountant/balance-sheet",
+      color: "bg-blue-500",
+      features: [
+        "Assets, liabilities & equity",
+        "As-of-date reporting",
+        "Account balance tracking",
+        "Financial position analysis"
+      ]
+    },
+    {
       title: "Manual Journals",
       description: "Create and manage manual journal entries",
       icon: BookOpen,
       href: "/dashboard/accountant/manual-journals",
-      color: "bg-blue-500",
+      color: "bg-purple-500",
       features: [
         "Create journal entries",
         "Post and manage entries",
@@ -33,7 +60,7 @@ const AccountantPage = () => {
       description: "Update account information across multiple transactions",
       icon: RefreshCw,
       href: "/dashboard/accountant/bulk-update",
-      color: "bg-green-500",
+      color: "bg-orange-500",
       features: [
         "Filter transactions by criteria",
         "Bulk update account assignments",
@@ -46,7 +73,7 @@ const AccountantPage = () => {
       description: "Create and manage business budgets",
       icon: PieChart,
       href: "/dashboard/accountant/budgets",
-      color: "bg-purple-500",
+      color: "bg-indigo-500",
       features: [
         "Set budget targets",
         "Track actual vs budgeted amounts",
@@ -59,7 +86,7 @@ const AccountantPage = () => {
       description: "Manage your chart of accounts structure",
       icon: BarChart3,
       href: "/dashboard/accountant/chart-of-accounts",
-      color: "bg-orange-500",
+      color: "bg-red-500",
       features: [
         "Organize account hierarchy",
         "Set account types and categories",

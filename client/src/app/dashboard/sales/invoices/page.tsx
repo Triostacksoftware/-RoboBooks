@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
+import { useToast } from "../../../../contexts/ToastContext";
 import {
   ChevronDownIcon,
   PlusIcon,
@@ -49,15 +50,14 @@ interface Invoice {
 
 const AllInvoicesPage = () => {
   const router = useRouter();
+  const { showToast } = useToast();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     fetchInvoices();
@@ -69,7 +69,7 @@ const AllInvoicesPage = () => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
         {
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -142,33 +142,53 @@ const AllInvoicesPage = () => {
   };
 
   const getNextStatus = (currentStatus: string) => {
-    // Define the status cycle: Sent -> Paid -> Unpaid -> Sent
-    const statusCycle: { [key: string]: string } = {
-      Sent: "Paid",
-      Paid: "Unpaid",
-      Unpaid: "Sent",
-      Draft: "Sent",
-      Overdue: "Paid",
-      "Partially Paid": "Paid",
+    // Define valid status transitions based on backend rules
+    const validTransitions: { [key: string]: string[] } = {
+      Draft: ["Sent", "Cancelled"],
+      Sent: ["Paid", "Unpaid", "Overdue", "Partially Paid"],
+      Unpaid: ["Paid", "Overdue", "Partially Paid", "Sent"],
+      Overdue: ["Paid", "Unpaid", "Partially Paid"],
+      Paid: ["Unpaid", "Partially Paid"],
+      "Partially Paid": ["Paid", "Unpaid"],
+      Cancelled: [],
     };
 
-    return statusCycle[currentStatus] || "Sent";
-  };
+    const transitions = validTransitions[currentStatus] || [];
 
-  const showToastMessage = (message: string, type: "success" | "error") => {
-    setToastMessage(message);
-    setToastType(type);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    // Return the first available transition, or cycle through them
+    if (transitions.length > 0) {
+      // For better UX, cycle through common transitions
+      const commonCycle = [
+        "Sent",
+        "Paid",
+        "Unpaid",
+        "Overdue",
+        "Partially Paid",
+      ];
+      const currentIndex = commonCycle.indexOf(currentStatus);
+      const nextIndex = (currentIndex + 1) % commonCycle.length;
+      const nextStatus = commonCycle[nextIndex];
+
+      // Check if the next status is valid for current status
+      if (transitions.includes(nextStatus)) {
+        return nextStatus;
+      }
+
+      // If not, return the first valid transition
+      return transitions[0];
+    }
+
+    return "Sent"; // Default fallback
   };
 
   const handleStatusUpdate = async (invoiceId: string, newStatus: string) => {
     try {
+      setUpdatingStatus(invoiceId);
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${invoiceId}/status`,
         {
           method: "PATCH",
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -179,15 +199,17 @@ const AllInvoicesPage = () => {
       const result = await response.json();
 
       if (result.success) {
-        showToastMessage(`Invoice status updated to ${newStatus}`, "success");
+        showToast(`Invoice status updated to ${newStatus}`, "success");
         // Refresh the invoices list
         fetchInvoices();
       } else {
-        showToastMessage(result.error || "Failed to update status", "error");
+        showToast(result.error || "Failed to update status", "error");
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      showToastMessage("Failed to update status. Please try again.", "error");
+      showToast("Failed to update status. Please try again.", "error");
+    } finally {
+      setUpdatingStatus(null);
     }
   };
 
@@ -210,7 +232,7 @@ const AllInvoicesPage = () => {
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices/${invoiceId}`,
           {
             method: "DELETE",
-            credentials: 'include',
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
             },
@@ -446,15 +468,27 @@ const AllInvoicesPage = () => {
                                   getNextStatus(invoice.status)
                                 )
                               }
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-105 ${getStatusColor(
-                                invoice.status
-                              )}`}
+                              disabled={updatingStatus === invoice._id}
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                updatingStatus === invoice._id
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : "cursor-pointer hover:opacity-80 hover:scale-105"
+                              } ${getStatusColor(invoice.status)}`}
                               title={`Click to toggle status. Next: ${getNextStatus(
                                 invoice.status
                               )}`}
                             >
-                              {invoice.status}
-                              <ArrowPathIcon className="h-3 w-3 opacity-60" />
+                              {updatingStatus === invoice._id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                  Updating...
+                                </>
+                              ) : (
+                                <>
+                                  {invoice.status}
+                                  <ArrowPathIcon className="h-3 w-3 opacity-60" />
+                                </>
+                              )}
                             </button>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -666,24 +700,6 @@ const AllInvoicesPage = () => {
           )}
         </div>
       </div>
-
-      {/* Toast Notification */}
-      {showToast && (
-        <div
-          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform ${
-            toastType === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
-        >
-          <div className="flex items-center">
-            {toastType === "success" ? (
-              <CheckIcon className="h-5 w-5 mr-2" />
-            ) : (
-              <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
-            )}
-            <span className="font-medium">{toastMessage}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

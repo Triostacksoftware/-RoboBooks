@@ -199,6 +199,18 @@ const NAV: Node[] = [
     icon: UserCircleIcon,
     children: [
       {
+        id: "profit-loss",
+        label: "Profit & Loss Report",
+        href: "/dashboard/accountant/profit-loss",
+        icon: ChartBarIcon,
+      },
+      {
+        id: "balance-sheet",
+        label: "Balance Sheet",
+        href: "/dashboard/accountant/balance-sheet",
+        icon: ChartBarIcon,
+      },
+      {
         id: "manual-journals",
         label: "Manual Journals",
         href: "/dashboard/accountant/manual-journals",
@@ -428,39 +440,41 @@ export default function Sidebar() {
                     )}
                   >
                     <ul className="py-1">
-                      {node.children!.filter((leaf) => isModuleEnabled(leaf.id)).map((leaf) => {
-                        const selected = pathname?.startsWith(leaf.href);
-                        const LeafIcon = leaf.icon;
-                        return (
-                          <li key={leaf.id}>
-                            <button
-                              onClick={() => handleNavigation(leaf.href)}
-                              className={cn(
-                                "group w-full flex items-center justify-between pr-3 py-2 rounded-md",
-                                selected
-                                  ? "text-sky-800"
-                                  : "text-gray-700 hover:text-gray-900"
-                              )}
-                            >
-                              <span className="flex items-center">
-                                <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0" />
-                                {leaf.label}
-                              </span>
-                              <div
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  onPlus(leaf.label);
-                                }}
-                                className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
-                                aria-label={`Create new ${leaf.label}`}
+                      {node
+                        .children!.filter((leaf) => isModuleEnabled(leaf.id))
+                        .map((leaf) => {
+                          const selected = pathname?.startsWith(leaf.href);
+                          const LeafIcon = leaf.icon;
+                          return (
+                            <li key={leaf.id}>
+                              <button
+                                onClick={() => handleNavigation(leaf.href)}
+                                className={cn(
+                                  "group w-full flex items-center justify-between pr-3 py-2 rounded-md",
+                                  selected
+                                    ? "text-sky-800"
+                                    : "text-gray-700 hover:text-gray-900"
+                                )}
                               >
-                                <PlusIcon className="h-3 w-3" />
-                              </div>
-                            </button>
-                          </li>
-                        );
-                      })}
+                                <span className="flex items-center">
+                                  <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0" />
+                                  {leaf.label}
+                                </span>
+                                <div
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onPlus(leaf.label);
+                                  }}
+                                  className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
+                                  aria-label={`Create new ${leaf.label}`}
+                                >
+                                  <PlusIcon className="h-3 w-3" />
+                                </div>
+                              </button>
+                            </li>
+                          );
+                        })}
                     </ul>
                   </div>
                 )}
