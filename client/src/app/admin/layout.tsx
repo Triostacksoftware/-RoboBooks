@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
@@ -32,8 +32,14 @@ export default function AdminLayout({
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const authCheckRef = useRef(false);
+  const redirectAttemptsRef = useRef(0);
 
   useEffect(() => {
+    // Prevent multiple auth checks
+    if (authCheckRef.current) return;
+    authCheckRef.current = true;
+
     if (pathname === "/admin/login") {
       setIsAuthenticated(false);
       setAdmin(null);
@@ -45,8 +51,15 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!loading && !isAuthenticated && pathname !== "/admin/login") {
-      // Use window.location to avoid router conflicts
-      window.location.href = "/admin/login";
+      // Only redirect if we haven't tried too many times
+      if (redirectAttemptsRef.current < 1) {
+        redirectAttemptsRef.current++;
+        console.log(
+          `🔄 Admin auth failed, redirect attempt ${redirectAttemptsRef.current}/1`
+        );
+        // Use window.location to avoid router conflicts
+        window.location.href = "/admin/login";
+      }
     }
   }, [loading, isAuthenticated, pathname]);
 
@@ -61,12 +74,16 @@ export default function AdminLayout({
       if (response.success) {
         setAdmin(response.admin || null);
         setIsAuthenticated(true);
+        redirectAttemptsRef.current = 0; // Reset attempts on success
       } else {
         setIsAuthenticated(false);
         setAdmin(null);
         // Only redirect if not already on login page
         if (pathname !== "/admin/login") {
-          window.location.href = "/admin/login";
+          if (redirectAttemptsRef.current < 1) {
+            redirectAttemptsRef.current++;
+            window.location.href = "/admin/login";
+          }
         }
       }
     } catch (error) {
@@ -74,7 +91,10 @@ export default function AdminLayout({
       setAdmin(null);
       // Only redirect if not already on login page
       if (pathname !== "/admin/login") {
-        window.location.href = "/admin/login";
+        if (redirectAttemptsRef.current < 1) {
+          redirectAttemptsRef.current++;
+          window.location.href = "/admin/login";
+        }
       }
     } finally {
       setLoading(false);
@@ -86,7 +106,7 @@ export default function AdminLayout({
       await api<unknown>("/api/admin/logout", { method: "POST" });
       setIsAuthenticated(false);
       setAdmin(null);
-      router.push("/admin/login");
+      window.location.href = "/admin/login";
     } catch (error) {
       console.error("Logout error:", error);
     }

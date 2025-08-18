@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
@@ -10,9 +10,6 @@ import { api } from "../../lib/api";
 // Dynamic imports to prevent SSR issues with document references
 const Header = dynamic(() => import("./components/Header"), { ssr: false });
 const Sidebar = dynamic(() => import("./components/Sidebar"), { ssr: false });
-// const RightSidebar = dynamic(() => import("./components/RightSidebar"), {
-//   ssr: false,
-// });
 
 export default function DashboardLayout({
   children,
@@ -23,15 +20,23 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [retryCount, setRetryCount] = useState(0);
+  const authCheckRef = useRef(false);
+  const redirectAttemptsRef = useRef(0);
 
   useEffect(() => {
+    // Prevent multiple auth checks
+    if (authCheckRef.current) return;
+    authCheckRef.current = true;
+
     const checkAuth = async () => {
       try {
         console.log("🔐 Checking authentication in layout...");
 
         // Check if we're already on the signin page to prevent loops
-        if (window.location.pathname === "/signin") {
+        if (
+          window.location.pathname === "/signin" ||
+          window.location.pathname === "/admin/login"
+        ) {
           console.log("🔄 Already on signin page, skipping auth check");
           setIsLoading(false);
           return;
@@ -46,7 +51,7 @@ export default function DashboardLayout({
         if (response.success) {
           setIsAuthenticated(true);
           setAuthError("");
-          setRetryCount(0); // Reset retry count on success
+          redirectAttemptsRef.current = 0; // Reset attempts on success
         } else {
           console.log("❌ Layout authentication failed - no success");
           setAuthError("Authentication failed");
@@ -77,22 +82,26 @@ export default function DashboardLayout({
         console.log("🗑️ Cleared invalid token from localStorage");
       }
 
-      // Only redirect if we're not already on signin page and haven't retried too many times
-      if (window.location.pathname !== "/signin" && retryCount < 2) {
-        setRetryCount((prev) => prev + 1);
-        console.log(`🔄 Auth failed, retry ${retryCount + 1}/2`);
-        // Small delay before redirect to prevent rapid loops
-        setTimeout(() => {
-          router.push("/signin");
-        }, 1000);
-      } else if (retryCount >= 2) {
-        console.log("❌ Max retries reached, staying on current page");
+      // Only redirect if we haven't tried too many times
+      if (redirectAttemptsRef.current < 1) {
+        redirectAttemptsRef.current++;
+        console.log(
+          `🔄 Auth failed, redirect attempt ${redirectAttemptsRef.current}/1`
+        );
+
+        // Use window.location.href instead of router.push to force a full page reload
+        // This prevents the loop by clearing the React state
+        window.location.href = "/signin";
+      } else {
+        console.log(
+          "❌ Max redirect attempts reached, staying on current page"
+        );
         // Don't redirect anymore to prevent infinite loops
       }
     };
 
     checkAuth();
-  }, [router, retryCount]);
+  }, []);
 
   // Show loading while checking authentication
   if (isLoading) {
@@ -107,7 +116,7 @@ export default function DashboardLayout({
   }
 
   // Show error if authentication failed and we've exhausted retries
-  if (authError && retryCount >= 2) {
+  if (authError && redirectAttemptsRef.current >= 1) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -115,9 +124,10 @@ export default function DashboardLayout({
           <p className="text-gray-600 mb-4">{authError}</p>
           <button
             onClick={() => {
-              setRetryCount(0);
+              redirectAttemptsRef.current = 0;
               setAuthError("");
               setIsLoading(true);
+              authCheckRef.current = false;
               // Force a fresh auth check
               window.location.reload();
             }}
@@ -126,7 +136,7 @@ export default function DashboardLayout({
             Retry
           </button>
           <button
-            onClick={() => router.push("/signin")}
+            onClick={() => (window.location.href = "/signin")}
             className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
           >
             Go to Sign In
@@ -157,9 +167,7 @@ export default function DashboardLayout({
         <Header />
         <div className="flex flex-1 ">
           <Sidebar />
-          {/* give the main a right margin equal to your RightSidebar's width (e.g. 80px) */}
           <main className="flex-1 overflow-hidden">{children}</main>
-          {/* <RightSidebar /> */}
         </div>
       </div>
     </>

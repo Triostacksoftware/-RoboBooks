@@ -232,6 +232,26 @@ export async function logout(): Promise<void> {
   }
 }
 
+// Clear all authentication state utility
+export function clearAuthState(): void {
+  if (typeof window !== "undefined") {
+    // Clear localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("admin_token");
+
+    // Clear sessionStorage
+    sessionStorage.clear();
+
+    // Clear cookies by setting them to expire in the past
+    document.cookie =
+      "rb_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie =
+      "admin_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+    console.log("🧹 All authentication state cleared");
+  }
+}
+
 // Project API Types
 export interface Project {
   _id: string;

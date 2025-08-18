@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, type FormEvent, useEffect } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { api } from "@/lib/api";
@@ -20,31 +20,6 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-  useEffect(() => {
-    // Check if already logged in
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      setIsCheckingAuth(true);
-      const response = await api<{ success: boolean; admin?: any }>(
-        "/api/admin/profile"
-      );
-      if (response.success && response.admin) {
-        // Already authenticated, redirect to dashboard
-        router.push("/admin/dashboard");
-        return;
-      }
-    } catch (error) {
-      // Not authenticated, stay on login page
-      console.log("Not authenticated, staying on login page");
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -61,8 +36,17 @@ export default function AdminLogin() {
       );
 
       if (response.success) {
+        // Show success toast
+        if (typeof window !== "undefined" && (window as any).showToast) {
+          (window as any).showToast(
+            "Admin login successful! Welcome to Robo Books.",
+            "success"
+          );
+        }
         // Login successful, redirect to dashboard
-        router.push("/admin/dashboard");
+        setTimeout(() => {
+          window.location.href = "/admin/dashboard";
+        }, 500);
       } else {
         setErr("Login failed. Please check your credentials.");
       }
@@ -73,17 +57,6 @@ export default function AdminLogin() {
       setLoading(false);
     }
   };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center p-6">

@@ -14,50 +14,9 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Check if user is already authenticated on component mount
+  // Handle Google OAuth callback only
   useEffect(() => {
-    const checkExistingAuth = async () => {
-      try {
-        console.log("🔐 Checking existing authentication in signin...");
-        const response = await api("/api/auth/me");
-
-        if (response.success) {
-          console.log(
-            "✅ User already authenticated, redirecting to dashboard"
-          );
-          // Show success toast before redirecting
-          if (typeof window !== "undefined" && window.showToast) {
-            window.showToast(
-              "Welcome back! Redirecting to dashboard...",
-              "success"
-            );
-          }
-          // User is already authenticated, redirect to dashboard
-          const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
-            ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
-            : "/dashboard";
-          window.location.href = dashboardUrl;
-          return;
-        }
-      } catch (error) {
-        console.log(
-          "❌ No existing authentication found, user needs to sign in"
-        );
-        // User is not authenticated, which is expected on signin page
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-
-    checkExistingAuth();
-  }, []);
-
-  // Handle Google OAuth callback
-  useEffect(() => {
-    if (isCheckingAuth) return; // Wait for auth check to complete
-
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
     const state = urlParams.get("state");
@@ -66,7 +25,7 @@ export default function SignIn() {
       console.log("🔄 Processing Google OAuth callback...");
       handleGoogleCallback(code);
     }
-  }, [isCheckingAuth]);
+  }, []);
 
   const handleGoogleCallback = async (code) => {
     setLoading(true);
@@ -173,18 +132,6 @@ export default function SignIn() {
       setLoading(false);
     }
   };
-
-  // Show loading while checking existing authentication
-  if (isCheckingAuth) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
