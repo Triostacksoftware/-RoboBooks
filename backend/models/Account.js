@@ -17,31 +17,45 @@ export const ACCOUNT_CATEGORIES = [
 
 /**
  * Optional detailed sub-types (used in Zoho Books UI):
- * e.g. “Bank”, “Accounts Receivable”, “Fixed Asset”, etc.
+ * e.g. "Bank", "Accounts Receivable", "Fixed Asset", etc.
  * You can extend / localize this list anytime.
  */
 export const ACCOUNT_SUBTYPES = [
-  // Assets
-  'bank', 'cash', 'accounts_receivable', 'fixed_asset', 'inventory', 'other_asset',
-  // Liabilities
-  'accounts_payable', 'credit_card', 'current_liability', 'long_term_liability',
-  // Equity
-  'owner_equity', 'retained_earnings',
-  // Income
-  'sales', 'other_income',
-  // Expenses
-  'cost_of_goods_sold', 'operating_expense', 'other_expense',
+  'bank',
+  'cash',
+  'accounts_receivable',
+  'fixed_asset',
+  'inventory',
+  'other_asset',
+  'current_asset',
+  'investment',
+  'accounts_payable',
+  'credit_card',
+  'current_liability',
+  'long_term_liability',
+  'provisions',
+  'owner_equity',
+  'retained_earnings',
+  'sales',
+  'other_income',
+  'direct_income',
+  'indirect_income',
+  'cost_of_goods_sold',
+  'operating_expense',
+  'other_expense',
+  'direct_expense',
+  'indirect_expense',
 ];
 
 const accountSchema = new Schema(
   {
     /**
-     * Short code / number shown in COA (e.g. “1001”).
+     * Short code / number shown in COA (e.g. "1001").
      * Make unique among leaf nodes for easier look-ups.
      */
     code: { type: String, trim: true },
 
-    /** Human-readable name (“Cash”, “Sales Revenue”, …) */
+    /** Human-readable name ("Cash", "Sales Revenue", …) */
     name: { type: String, required: true, trim: true },
 
     /** Top-level category (asset, liability, …) */
@@ -56,7 +70,7 @@ const accountSchema = new Schema(
 
     /**
      * Hierarchical parent; null for top-level accounts.
-     * Enables “Cash” inside “Current Assets” for example.
+     * Enables "Cash" inside "Current Assets" for example.
      */
     parent: { type: Schema.Types.ObjectId, ref: 'Account', default: null },
 
@@ -92,21 +106,79 @@ accountSchema.index({ parent: 1, name: 1 }, { unique: true });
 // Optionally ensure code is unique across the tenant
 accountSchema.index({ code: 1 }, { unique: true, sparse: true });
 
-/* ── Helpers ──────────────────────────────────────────────── */
-
-// Whether this account has children (i.e. is a group header)
-accountSchema.virtual('is_group').get(function () {
-  return this.subtype === undefined && this.opening_balance === 0 && this.balance === 0;
+/* ── Virtuals ──────────────────────────────────────────────── */
+// Virtual for account type display
+accountSchema.virtual('accountType').get(function() {
+  return this.category.charAt(0).toUpperCase() + this.category.slice(1);
 });
 
-/* ── Pre-save ─────────────────────────────────────────────── */
+// Virtual for account group (parent name or subtype)
+accountSchema.virtual('accountGroup').get(function() {
+  return this.parent ? this.parent.name : (this.subtype || 'Other');
+});
 
-// If creating the account, initialise running balance = opening_balance
-accountSchema.pre('save', function (next) {
-  if (this.isNew) {
-    this.balance = this.opening_balance;
+// Virtual for balance type (credit/debit)
+accountSchema.virtual('balanceType').get(function() {
+  return this.balance >= 0 ? 'debit' : 'credit';
+});
+
+// Virtual for sub-account count
+accountSchema.virtual('subAccountCount').get(async function() {
+  const count = await this.constructor.countDocuments({ parent: this._id, is_active: true });
+  return count;
+});
+
+/* ── Methods ──────────────────────────────────────────────── */
+// Method to get full account path
+accountSchema.methods.getFullPath = async function() {
+  const path = [this.name];
+  let current = this;
+  
+  while (current.parent) {
+    current = await this.constructor.findById(current.parent);
+    if (current) {
+      path.unshift(current.name);
+    } else {
+      break;
+    }
   }
-  next();
-});
+  
+  return path.join(' > ');
+};
+
+// Method to check if account can be deleted
+accountSchema.methods.canDelete = async function() {
+  // Check if has children
+  const hasChildren = await this.constructor.exists({ parent: this._id, is_active: true });
+  if (hasChildren) return false;
+  
+  // Check if has balance
+  if (this.balance !== 0) return false;
+  
+  return true;
+};
+
+/* ── Statics ──────────────────────────────────────────────── */
+// Static method to get accounts by category
+accountSchema.statics.getByCategory = function(category) {
+  return this.find({ category, is_active: true }).sort({ name: 1 });
+};
+
+// Static method to get account hierarchy
+accountSchema.statics.getHierarchy = function() {
+  return this.find({ is_active: true })
+    .populate('parent', 'name')
+    .sort({ category: 1, name: 1 });
+};
+
+// Static method to get parent accounts
+accountSchema.statics.getParentAccounts = function() {
+  return this.find({ parent: null, is_active: true }).sort({ name: 1 });
+};
+
+// Static method to get sub-accounts
+accountSchema.statics.getSubAccounts = function(parentId) {
+  return this.find({ parent: parentId, is_active: true }).sort({ name: 1 });
+};
 
 export default mongoose.model('Account', accountSchema);

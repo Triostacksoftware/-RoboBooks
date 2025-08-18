@@ -51,6 +51,47 @@ function validatePhone(phone) {
   return cleanPhone.length >= 10 && cleanPhone.length <= 15;
 }
 
+// AUTH STATUS - Check if user is authenticated
+router.get("/status", authGuard, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.uid).select('-passwordHash');
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "User not found" 
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Account is deactivated" 
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        companyName: user.companyName,
+        email: user.email,
+        phone: user.phone,
+        country: user.country,
+        state: user.state,
+        role: user.role,
+        approvalStatus: user.approvalStatus,
+      },
+    });
+  } catch (err) {
+    console.error("Auth status error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error" 
+    });
+  }
+});
+
 // REGISTER
 router.post("/register", async (req, res, next) => {
   try {

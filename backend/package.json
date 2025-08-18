@@ -28,7 +28,8 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pdf-lib": "^1.17.1",
-    "uid-safe": "^2.1.5"
+    "uid-safe": "^2.1.5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "chai": "^5.2.1",

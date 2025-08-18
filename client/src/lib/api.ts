@@ -15,7 +15,7 @@ async function refreshAccessToken(): Promise<string | null> {
       console.log("🔄 Attempting to refresh access token...");
       const response = await fetch(
         `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001"
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
         }/api/auth/refresh-token`,
         {
           method: "POST",
@@ -58,9 +58,9 @@ export async function api<T = unknown>(
 ): Promise<T> {
   const { json, ...rest } = init;
 
-  // Use hardcoded backend URL for now
+  // Use environment variable for backend URL
   const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   console.log("🌐 Making request to:", `${backendUrl}${path}`);
   console.log("🌐 Request method:", init.method || "GET");
   console.log("🌐 Request body:", json);
@@ -433,4 +433,111 @@ export const projectApi = {
     api(`/api/projects/${projectId}/expenses/${expenseId}`, {
       method: "DELETE",
     }),
+};
+
+// API utility functions
+export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
+// Chart of Accounts API endpoints
+export const CHART_OF_ACCOUNTS_API = {
+  BASE: `${API_BASE_URL}/api/chart-of-accounts`,
+  UPLOAD_EXCEL: `${API_BASE_URL}/api/chart-of-accounts/upload-excel`,
+  CATEGORIES: `${API_BASE_URL}/api/chart-of-accounts/categories`,
+  HIERARCHY: `${API_BASE_URL}/api/chart-of-accounts/hierarchy`,
+  EXPORT: `${API_BASE_URL}/api/chart-of-accounts/export-excel`,
+};
+
+// Generic API request helper
+export const apiRequest = async (url: string, options: RequestInit = {}) => {
+  const defaultOptions: RequestInit = {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  };
+
+  const response = await fetch(url, defaultOptions);
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+  }
+
+  return response.json();
+};
+
+// Chart of Accounts specific API functions
+export const chartOfAccountsAPI = {
+  // Get all accounts
+  getAll: (params?: Record<string, any>) => {
+    const searchParams = params ? new URLSearchParams(params).toString() : '';
+    const url = searchParams ? `${CHART_OF_ACCOUNTS_API.BASE}?${searchParams}` : CHART_OF_ACCOUNTS_API.BASE;
+    return apiRequest(url);
+  },
+
+  // Create account
+  create: (accountData: any) => {
+    return apiRequest(CHART_OF_ACCOUNTS_API.BASE, {
+      method: 'POST',
+      body: JSON.stringify(accountData),
+    });
+  },
+
+  // Update account
+  update: (id: string, accountData: any) => {
+    return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(accountData),
+    });
+  },
+
+  // Delete account
+  delete: (id: string) => {
+    return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Get categories
+  getCategories: () => {
+    return apiRequest(CHART_OF_ACCOUNTS_API.CATEGORIES);
+  },
+
+  // Get hierarchy
+  getHierarchy: () => {
+    return apiRequest(CHART_OF_ACCOUNTS_API.HIERARCHY);
+  },
+
+  // Upload Excel
+  uploadExcel: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    return fetch(CHART_OF_ACCOUNTS_API.UPLOAD_EXCEL, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    }).then(response => {
+      if (!response.ok) {
+        return response.json().then(error => {
+          throw new Error(error.message || 'Upload failed');
+        });
+      }
+      return response.json();
+    });
+  },
+
+  // Export Excel
+  exportExcel: () => {
+    return fetch(CHART_OF_ACCOUNTS_API.EXPORT, {
+      credentials: 'include',
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      return response.blob();
+    });
+  },
 };

@@ -1,5 +1,6 @@
 import Account from "../models/Account.js";
 import { ACCOUNT_CATEGORIES, ACCOUNT_SUBTYPES } from "../models/Account.js";
+import { ExcelImportService } from "../services/excelImportService.js";
 
 /**
  * GET /api/chart-of-accounts
@@ -13,7 +14,7 @@ export const getAllAccounts = async (req, res) => {
       search,
       is_active,
       page = 1,
-      limit = 50,
+      limit = 1000, // Increased from 50 to 1000 to return all accounts
       sortBy = "code",
       sortOrder = "asc",
     } = req.query;
@@ -126,13 +127,13 @@ export const createAccount = async (req, res) => {
   try {
     const {
       name,
-      code,
       category,
       subtype,
       parent,
+      code,
       opening_balance = 0,
       currency = "INR",
-      gst_treatment = "taxable",
+      gst_treatment,
       gst_rate = 0,
       description,
     } = req.body;
@@ -145,34 +146,44 @@ export const createAccount = async (req, res) => {
       });
     }
 
-    // Check if account with same name already exists
-    const existingAccount = await Account.findOne({ name });
-    if (existingAccount) {
+    // Validate category
+    if (!ACCOUNT_CATEGORIES.includes(category)) {
       return res.status(400).json({
         success: false,
-        message: "Account with this name already exists",
+        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(", ")}`,
       });
     }
 
-    // Check if code is unique (if provided)
-    if (code) {
-      const existingCode = await Account.findOne({ code });
-      if (existingCode) {
-        return res.status(400).json({
-          success: false,
-          message: "Account with this code already exists",
-        });
-      }
+    // Validate subtype if provided
+    if (subtype && !ACCOUNT_SUBTYPES.includes(subtype)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(", ")}`,
+      });
     }
 
-    // Create the account
+    // Check if account with same name and parent already exists
+    const existingAccount = await Account.findOne({
+      name,
+      parent: parent || null,
+    });
+
+    if (existingAccount) {
+      return res.status(400).json({
+        success: false,
+        message: "An account with this name already exists at this level",
+      });
+    }
+
+    // Create new account
     const account = new Account({
       name,
-      code,
       category,
       subtype,
-      parent: parent || null,
+      parent,
+      code,
       opening_balance,
+      balance: opening_balance,
       currency,
       gst_treatment,
       gst_rate,
@@ -204,11 +215,10 @@ export const updateAccount = async (req, res) => {
   try {
     const {
       name,
-      code,
       category,
       subtype,
       parent,
-      opening_balance,
+      code,
       currency,
       gst_treatment,
       gst_rate,
@@ -216,52 +226,56 @@ export const updateAccount = async (req, res) => {
       is_active,
     } = req.body;
 
-    const account = await Account.findById(req.params.id);
-    if (!account) {
+    // Validate category if provided
+    if (category && !ACCOUNT_CATEGORIES.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(", ")}`,
+      });
+    }
+
+    // Validate subtype if provided
+    if (subtype && !ACCOUNT_SUBTYPES.includes(subtype)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(", ")}`,
+      });
+    }
+
+    // Check if account exists
+    const existingAccount = await Account.findById(req.params.id);
+    if (!existingAccount) {
       return res.status(404).json({
         success: false,
         message: "Account not found",
       });
     }
 
-    // Check if name is being changed and if it conflicts
-    if (name && name !== account.name) {
-      const existingAccount = await Account.findOne({
+    // Check for name conflicts if name is being changed
+    if (name && name !== existingAccount.name) {
+      const nameConflict = await Account.findOne({
         name,
+        parent: parent || existingAccount.parent,
         _id: { $ne: req.params.id },
       });
-      if (existingAccount) {
+
+      if (nameConflict) {
         return res.status(400).json({
           success: false,
-          message: "Account with this name already exists",
+          message: "An account with this name already exists at this level",
         });
       }
     }
 
-    // Check if code is being changed and if it conflicts
-    if (code && code !== account.code) {
-      const existingCode = await Account.findOne({
-        code,
-        _id: { $ne: req.params.id },
-      });
-      if (existingCode) {
-        return res.status(400).json({
-          success: false,
-          message: "Account with this code already exists",
-        });
-      }
-    }
-
-    // Update the account
+    // Update account
     const updatedAccount = await Account.findByIdAndUpdate(
       req.params.id,
       {
         name,
-        code,
         category,
         subtype,
-        parent: parent || null,
-        opening_balance,
+        parent,
+        code,
         currency,
         gst_treatment,
         gst_rate,
@@ -269,7 +283,7 @@ export const updateAccount = async (req, res) => {
         is_active,
       },
       { new: true, runValidators: true }
-    ).populate("parent", "name code");
+    );
 
     res.json({
       success: true,
@@ -288,11 +302,12 @@ export const updateAccount = async (req, res) => {
 
 /**
  * DELETE /api/chart-of-accounts/:id
- * Delete an account (soft delete by setting is_active to false)
+ * Delete an account (soft delete)
  */
 export const deleteAccount = async (req, res) => {
   try {
     const account = await Account.findById(req.params.id);
+
     if (!account) {
       return res.status(404).json({
         success: false,
@@ -301,11 +316,11 @@ export const deleteAccount = async (req, res) => {
     }
 
     // Check if account has children
-    const hasChildren = await Account.findOne({ parent: req.params.id });
+    const hasChildren = await Account.exists({ parent: req.params.id });
     if (hasChildren) {
       return res.status(400).json({
         success: false,
-        message: "Cannot delete account with child accounts",
+        message: "Cannot delete account with sub-accounts. Please delete sub-accounts first.",
       });
     }
 
@@ -317,7 +332,7 @@ export const deleteAccount = async (req, res) => {
       });
     }
 
-    // Soft delete by setting is_active to false
+    // Soft delete
     await Account.findByIdAndUpdate(req.params.id, { is_active: false });
 
     res.json({
@@ -364,24 +379,27 @@ export const getCategories = async (req, res) => {
 export const getAccountHierarchy = async (req, res) => {
   try {
     const accounts = await Account.find({ is_active: true })
-      .sort({ code: 1 })
-      .populate("parent", "name code");
+      .populate("parent", "name")
+      .sort({ category: 1, name: 1 });
 
-    // Build hierarchy
-    const buildHierarchy = (accounts, parentId = null) => {
-      return accounts
-        .filter((account) =>
-          parentId === null
-            ? !account.parent
-            : account.parent && account.parent._id.toString() === parentId
-        )
-        .map((account) => ({
-          ...account.toObject(),
-          children: buildHierarchy(accounts, account._id.toString()),
-        }));
-    };
+    // Group accounts by category and parent
+    const hierarchy = {};
+    
+    for (const category of ACCOUNT_CATEGORIES) {
+      hierarchy[category] = {
+        name: category.charAt(0).toUpperCase() + category.slice(1),
+        accounts: []
+      };
+    }
 
-    const hierarchy = buildHierarchy(accounts);
+    for (const account of accounts) {
+      const category = account.category;
+      if (!hierarchy[category]) {
+        hierarchy[category] = { name: category, accounts: [] };
+      }
+      
+      hierarchy[category].accounts.push(account);
+    }
 
     res.json({
       success: true,
@@ -492,6 +510,91 @@ export const bulkImportAccounts = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error bulk importing accounts",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/chart-of-accounts/upload-excel
+ * Upload Excel file and import accounts
+ */
+export const uploadExcelAccounts = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
+    const { createHierarchy = true, overwriteExisting = false } = req.body;
+
+    // Parse Excel file
+    const rows = await ExcelImportService.parseExcelFile(req.file.buffer);
+
+    // Build account hierarchy
+    const result = await ExcelImportService.buildAccountHierarchy(rows, {
+      createHierarchy,
+      overwriteExisting,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        created: result.data.created,
+        updated: result.data.updated,
+        errors: result.data.errors,
+        totalProcessed: result.totalProcessed
+      },
+      message: `Successfully imported ${result.data.created} accounts, updated ${result.data.updated} accounts`,
+    });
+  } catch (error) {
+    console.error("Error uploading Excel:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/chart-of-accounts/export-excel
+ * Export accounts to Excel file
+ */
+export const exportAccountsToExcel = async (req, res) => {
+  try {
+    const { category, search } = req.query;
+
+    // Build filter
+    const filter = { is_active: true };
+    if (category) filter.category = category;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { code: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Get accounts
+    const accounts = await Account.find(filter)
+      .populate("parent", "name")
+      .sort({ category: 1, name: 1 });
+
+    // Generate Excel file
+    const buffer = await ExcelImportService.exportAccountsToExcel(accounts);
+
+    // Set response headers
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", "attachment; filename=chart-of-accounts.xlsx");
+    res.setHeader("Content-Length", buffer.length);
+
+    res.send(buffer);
+  } catch (error) {
+    console.error("Error exporting accounts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error exporting accounts",
       error: error.message,
     });
   }

@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   getAllAccounts,
   getAccountById,
@@ -9,38 +10,77 @@ import {
   getAccountHierarchy,
   bulkUpdateAccounts,
   bulkImportAccounts,
+  uploadExcelAccounts,
+  exportAccountsToExcel,
 } from "../controllers/chartOfAccountsController.js";
 import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Apply authentication middleware to all routes
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (
+      file.mimetype ===
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.mimetype === "application/vnd.ms-excel" ||
+      file.originalname.endsWith(".xlsx") ||
+      file.originalname.endsWith(".xls")
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only Excel files (.xlsx, .xls) are allowed"));
+    }
+  },
+});
+
+// Test endpoint (no authentication required)
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Chart of Accounts API is working",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Apply authentication middleware to all routes except test
+router.use(authenticateToken);
 
 // GET /api/chart-of-accounts - Get all accounts with filtering and pagination
-router.get("/", authenticateToken, getAllAccounts);
+router.get("/", getAllAccounts);
 
 // GET /api/chart-of-accounts/categories - Get available categories and subtypes
-router.get("/categories", authenticateToken, getCategories);
+router.get("/categories", getCategories);
 
 // GET /api/chart-of-accounts/hierarchy - Get accounts organized in hierarchy
-router.get("/hierarchy", authenticateToken, getAccountHierarchy);
+router.get("/hierarchy", getAccountHierarchy);
 
 // GET /api/chart-of-accounts/:id - Get a specific account by ID
-router.get("/:id", authenticateToken, getAccountById);
+router.get("/:id", getAccountById);
 
 // POST /api/chart-of-accounts - Create a new account
 router.post("/", createAccount);
 
 // PUT /api/chart-of-accounts/:id - Update an existing account
-router.put("/:id", authenticateToken, updateAccount);
+router.put("/:id", updateAccount);
 
 // DELETE /api/chart-of-accounts/:id - Delete an account (soft delete)
-router.delete("/:id", authenticateToken, deleteAccount);
+router.delete("/:id", deleteAccount);
 
 // POST /api/chart-of-accounts/bulk-update - Bulk update multiple accounts
 router.post("/bulk-update", bulkUpdateAccounts);
 
 // POST /api/chart-of-accounts/bulk-import - Bulk import multiple accounts
 router.post("/bulk-import", bulkImportAccounts);
+
+// POST /api/chart-of-accounts/upload-excel - Upload Excel file and import accounts
+router.post("/upload-excel", upload.single("file"), uploadExcelAccounts);
+
+// GET /api/chart-of-accounts/export-excel - Export accounts to Excel file
+router.get("/export-excel", exportAccountsToExcel);
 
 export default router;

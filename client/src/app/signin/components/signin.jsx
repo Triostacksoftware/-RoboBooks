@@ -4,16 +4,24 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
-import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignIn() {
   const router = useRouter();
+  const { login, isAuthenticated } = useAuth();
 
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   // Handle Google OAuth callback only
   useEffect(() => {
@@ -32,18 +40,23 @@ export default function SignIn() {
     setErr("");
     try {
       console.log("🔄 Making request to backend with code:", code);
-      const response = await api("/api/auth/google/callback", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/google/callback`, {
         method: "POST",
-        json: {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           code,
           redirectUri: `${window.location.origin}/signin`,
           type: "signin",
-        },
+        }),
       });
 
-      console.log("📡 Backend response:", response);
+      const data = await response.json();
+      console.log("📡 Backend response:", data);
 
-      if (response.success) {
+      if (data.success) {
         console.log(
           "✅ Google sign-in successful, redirecting to dashboard..."
         );
@@ -61,15 +74,8 @@ export default function SignIn() {
           window.location.pathname
         );
 
-        // Use full URL for production redirect
-        const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
-          ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
-          : "/dashboard";
-
-        // Add a small delay to ensure the token is properly set
-        setTimeout(() => {
-          window.location.href = dashboardUrl;
-        }, 500);
+        // Redirect to dashboard
+        router.push('/dashboard');
       } else {
         console.log("❌ Backend returned success: false");
         setErr("Google sign-in failed. Please try again.");
@@ -95,12 +101,13 @@ export default function SignIn() {
     setLoading(true);
 
     try {
-      const response = await api("/api/auth/login", {
-        method: "POST",
-        json: { emailOrPhone, password },
-      });
+      console.log("🔐 Attempting login with:", { emailOrPhone });
+      
+      const success = await login(emailOrPhone, password);
 
-      if (response.success) {
+      if (success) {
+        console.log("✅ Login successful");
+        
         // Show success toast
         if (typeof window !== "undefined" && window.showToast) {
           window.showToast(
@@ -108,26 +115,28 @@ export default function SignIn() {
             "success"
           );
         }
-        // Store the access token in localStorage for backward compatibility
-        if (response.accessToken) {
-          localStorage.setItem("token", response.accessToken);
-          console.log("✅ Access token stored in localStorage");
-        }
 
-        // Use full URL for production redirect
-        const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
-          ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
-          : "/dashboard";
-
-        // Add a small delay to ensure the token is properly set
-        setTimeout(() => {
-          window.location.href = dashboardUrl;
-        }, 500);
+        // Redirect to dashboard
+        router.push('/dashboard');
       } else {
-        setErr("Login failed. Please try again.");
+        console.log("❌ Login failed");
+        setErr("Invalid email/phone or password. Please try again.");
       }
-    } catch (e) {
-      setErr(e.message || "Login failed. Please try again.");
+    } catch (error) {
+      console.error("❌ Login error:", error);
+      
+      // Handle specific error messages
+      if (error.message.includes("Invalid email/phone or password")) {
+        setErr("Invalid email/phone or password. Please try again.");
+      } else if (error.message.includes("Account is deactivated")) {
+        setErr("Your account has been deactivated. Please contact support.");
+      } else if (error.message.includes("pending approval")) {
+        setErr("Your account is pending approval. Please wait for admin approval.");
+      } else if (error.message.includes("rejected")) {
+        setErr("Your registration has been rejected. Please contact support.");
+      } else {
+        setErr(error.message || "Login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -217,15 +226,26 @@ export default function SignIn() {
           </button>
         </div>
 
-        {err && <p className="text-red-600 text-sm">{err}</p>}
+        {err && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">{err}</p>
+          </div>
+        )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Signing in..." : "Sign in"}
         </button>
+
+        {/* Test credentials hint */}
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-600 text-sm font-medium">Test Credentials:</p>
+          <p className="text-blue-600 text-xs">Email: test@example.com</p>
+          <p className="text-blue-600 text-xs">Password: password123</p>
+        </div>
 
         {/* Sign up link */}
         <p className="text-center text-sm text-slate-600">

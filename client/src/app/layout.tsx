@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "../contexts/ToastContext";
 import { ModulePreferenceProvider } from "../contexts/ModulePreferenceContext";
+import { AuthProvider } from "../contexts/AuthContext";
 import GlobalErrorHandler from "../components/GlobalErrorHandler";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -48,11 +49,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50`}
       >
         <GlobalErrorHandler />
-        <ToastProvider>
-          <ModulePreferenceProvider>
-            {children}
-          </ModulePreferenceProvider>
-        </ToastProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <ModulePreferenceProvider>{children}</ModulePreferenceProvider>
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );
