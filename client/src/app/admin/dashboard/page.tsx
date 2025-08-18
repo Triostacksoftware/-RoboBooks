@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect, type ComponentType } from "react";
 import { api } from "@/lib/api";
@@ -14,6 +15,9 @@ import {
   ClockIcon,
   FolderIcon,
   CalendarIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 export default function AdminDashboard() {
@@ -27,6 +31,14 @@ export default function AdminDashboard() {
     totalHours: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [approvalStats, setApprovalStats] = useState({
+    pendingApprovals: 0,
+    approvedUsers: 0,
+    rejectedUsers: 0,
+  });
+  const [approvalLoading, setApprovalLoading] = useState(false);
+
   interface ActivityItem {
     id: number;
     action: string;
@@ -41,6 +53,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats();
     fetchRecentActivity();
+    fetchPendingUsers();
+    fetchApprovalStats();
   }, []);
 
   const fetchStats = async () => {
@@ -67,6 +81,108 @@ export default function AdminDashboard() {
       console.error("Error fetching stats:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingUsers = async () => {
+    try {
+      const response = (await api(
+        "/api/admin/user-approval/pending-users"
+      )) as {
+        success: boolean;
+        pendingUsers: any[];
+      };
+      if (response.success) {
+        setPendingUsers(response.pendingUsers || []);
+      }
+    } catch (error) {
+      console.error("Error fetching pending users:", error);
+    }
+  };
+
+  const fetchApprovalStats = async () => {
+    try {
+      const response = (await api(
+        "/api/admin/user-approval/approval-stats"
+      )) as {
+        success: boolean;
+        stats: {
+          pendingApprovals: number;
+          approvedUsers: number;
+          rejectedUsers: number;
+        };
+      };
+      if (response.success) {
+        setApprovalStats(response.stats);
+      }
+    } catch (error) {
+      console.error("Error fetching approval stats:", error);
+    }
+  };
+
+  const handleApproveUser = async (pendingUserId: string) => {
+    setApprovalLoading(true);
+    try {
+      const response = (await api(
+        `/api/admin/user-approval/approve-user/${pendingUserId}`,
+        {
+          method: "POST",
+          json: {},
+        }
+      )) as { success: boolean; message?: string };
+
+      if (response.success) {
+        // Refresh the data
+        await Promise.all([
+          fetchPendingUsers(),
+          fetchApprovalStats(),
+          fetchStats(),
+        ]);
+        alert("User approved successfully!");
+      } else {
+        alert("Failed to approve user: " + response.message);
+      }
+    } catch (error) {
+      console.error("Error approving user:", error);
+      alert("Error approving user. Please try again.");
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
+
+  const handleRejectUser = async (pendingUserId: string) => {
+    const reason = prompt("Please provide a reason for rejection:");
+    if (!reason?.trim()) {
+      alert("Rejection reason is required");
+      return;
+    }
+
+    setApprovalLoading(true);
+    try {
+      const response = (await api(
+        `/api/admin/user-approval/reject-user/${pendingUserId}`,
+        {
+          method: "POST",
+          json: { rejectionReason: reason },
+        }
+      )) as { success: boolean; message?: string };
+
+      if (response.success) {
+        // Refresh the data
+        await Promise.all([
+          fetchPendingUsers(),
+          fetchApprovalStats(),
+          fetchStats(),
+        ]);
+        alert("User rejected successfully!");
+      } else {
+        alert("Failed to reject user: " + response.message);
+      }
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+      alert("Error rejecting user. Please try again.");
+    } finally {
+      setApprovalLoading(false);
     }
   };
 
@@ -176,6 +292,96 @@ export default function AdminDashboard() {
         </div>
         <div className={`p-3 rounded-lg ${color}`}>
           <Icon className="h-6 w-6 text-white" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const PendingApprovals = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          Pending User Approvals
+        </h3>
+        <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+          {pendingUsers.length} pending
+        </span>
+      </div>
+
+      {pendingUsers.length === 0 ? (
+        <div className="text-center py-8">
+          <CheckCircleIcon className="h-12 w-12 text-green-400 mx-auto mb-2" />
+          <p className="text-gray-500">No pending approvals</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pendingUsers.map((user: any) => (
+            <div
+              key={user._id}
+              className="border border-gray-200 rounded-lg p-4"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="font-medium text-gray-900">
+                    {user.companyName}
+                  </h4>
+                  <p className="text-sm text-gray-500">{user.email}</p>
+                  <p className="text-sm text-gray-500">{user.phone}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-400">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleApproveUser(user._id)}
+                  disabled={approvalLoading}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  <CheckCircleIcon className="h-4 w-4" />
+                  Approve
+                </button>
+                <button
+                  onClick={() => handleRejectUser(user._id)}
+                  disabled={approvalLoading}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 disabled:opacity-50"
+                >
+                  <XCircleIcon className="h-4 w-4" />
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const ApprovalStats = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        User Approval Statistics
+      </h3>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-yellow-600">
+            {approvalStats.pendingApprovals}
+          </div>
+          <div className="text-sm text-gray-500">Pending</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-green-600">
+            {approvalStats.approvedUsers}
+          </div>
+          <div className="text-sm text-gray-500">Approved</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-red-600">
+            {approvalStats.rejectedUsers}
+          </div>
+          <div className="text-sm text-gray-500">Rejected</div>
         </div>
       </div>
     </div>
@@ -347,6 +553,12 @@ export default function AdminDashboard() {
           color="bg-orange-500"
           subtitle="User growth rate"
         />
+      </div>
+
+      {/* User Approval Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PendingApprovals />
+        <ApprovalStats />
       </div>
 
       {/* Additional Stats */}

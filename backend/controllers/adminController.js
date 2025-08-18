@@ -5,12 +5,28 @@ import bcrypt from "bcryptjs";
 // Helper function to issue admin cookie
 function issueAdminCookie(res, token) {
   const isProd = process.env.NODE_ENV === "production";
+  const clientOrigin =
+    process.env.CLIENT_ORIGIN || process.env.FRONTEND_URL || "";
+  const isLocalhost = clientOrigin.includes("localhost");
+
+  // For localhost development, use 'lax' to avoid secure requirement
+  const sameSite = isProd ? "strict" : isLocalhost ? "lax" : "none";
+  const secure = isProd || (!isLocalhost && sameSite === "none");
+
   res.cookie("admin_session", token, {
     httpOnly: true,
-    sameSite: isProd ? "strict" : "lax",
-    secure: isProd,
+    sameSite,
+    secure,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     path: "/",
+  });
+
+  // Optional debug
+  console.log("🍪 Admin cookie set:", {
+    sameSite,
+    secure,
+    isProd,
+    clientOrigin,
   });
 }
 

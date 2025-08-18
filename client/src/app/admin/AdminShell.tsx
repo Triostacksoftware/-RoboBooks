@@ -21,7 +21,11 @@ interface Admin {
   email?: string;
 }
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+export default function AdminShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [admin, setAdmin] = useState<Admin | null>(null);
@@ -73,9 +77,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   const navigation = [
     { name: "Dashboard", href: "/admin/dashboard", icon: ChartBarIcon },
+    { name: "Mock Dashboard", href: "/admin/mock-dashboard", icon: ChartBarIcon },
     { name: "Users", href: "/admin/users", icon: UsersIcon },
     { name: "Reports", href: "/admin/reports", icon: DocumentTextIcon },
     { name: "Billing", href: "/admin/billing", icon: CurrencyDollarIcon },
+    { name: "Create Admin", href: "/admin/create-admin", icon: UsersIcon },
     { name: "Settings", href: "/admin/settings", icon: CogIcon },
   ];
 
@@ -98,7 +104,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       >
         <Icon
           className={`mr-3 h-5 w-5 ${
-            isActive ? "text-purple-600" : "text-gray-400 group-hover:text-gray-500"
+            isActive
+              ? "text-purple-600"
+              : "text-gray-400 group-hover:text-gray-500"
           }`}
         />
         {item.name}
@@ -150,7 +158,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <div className="flex items-center space-x-3 mb-3">
             <UserCircleIcon className="h-8 w-8 text-gray-400" />
             <div>
-              <p className="text-sm font-medium text-gray-900">{admin?.fullName || "Admin"}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {admin?.fullName || "Admin"}
+              </p>
               <p className="text-xs text-gray-500">{admin?.role || "Admin"}</p>
             </div>
           </div>
@@ -180,7 +190,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
         {/* Page content */}
         <main className="py-6">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

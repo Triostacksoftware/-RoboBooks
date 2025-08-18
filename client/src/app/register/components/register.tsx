@@ -358,8 +358,10 @@ export default function Register() {
       });
 
       if (response.success) {
-        // Registration successful, redirect to dashboard
-        router.push("/dashboard");
+        // Registration submitted successfully, show approval message
+        setError(""); // Clear any existing errors
+        alert("Registration submitted successfully! Your account will be activated after admin approval. You will be able to login once approved.");
+        router.push("/signin");
       } else {
         setError("Registration failed. Please try again.");
       }

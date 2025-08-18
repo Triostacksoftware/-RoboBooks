@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
+import PendingUser from "../models/PendingUser.js";
 import { signToken, authGuard } from "../utils/jwt.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -98,13 +99,20 @@ router.post("/register", async (req, res, next) => {
     // Clean phone number for consistent comparison
     const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
     console.log(cleanPhoneNumber);
-    // Check if user already exists
+    // Check if user already exists (approved or pending)
     const existingUser = await User.findOne({
       $or: [{ email: email.toLowerCase() }, { phone: cleanPhoneNumber }],
     });
 
-    if (existingUser) {
-      if (existingUser.email === email.toLowerCase()) {
+    const existingPendingUser = await PendingUser.findOne({
+      $or: [{ email: email.toLowerCase() }, { phone: cleanPhoneNumber }],
+    });
+
+    if (existingUser || existingPendingUser) {
+      if (
+        existingUser?.email === email.toLowerCase() ||
+        existingPendingUser?.email === email.toLowerCase()
+      ) {
         return res.status(409).json({ message: "Email already registered" });
       } else {
         return res
@@ -116,8 +124,8 @@ router.post("/register", async (req, res, next) => {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // Create user
-    const user = await User.create({
+    // Create pending user
+    const pendingUser = await PendingUser.create({
       companyName: companyName.trim(),
       email: email.toLowerCase().trim(),
       phone: cleanPhoneNumber,
@@ -129,27 +137,20 @@ router.post("/register", async (req, res, next) => {
     });
 
     // Generate token and set cookie
-    const token = signToken({ 
-      uid: user._id, 
-      role: 'user', // Default role for regular users
-      email: user.email 
+    const token = signToken({
+      uid: user._id,
+      role: "user", // Default role for regular users
+      email: user.email,
     });
     console.log("🔐 Generated token for user:", user.email);
+    console.log("📝 Pending user created:", pendingUser.email);
 
-    issueCookie(res, token);
-    console.log("🍪 Cookie issued for registration");
-
-    // Return user data (without sensitive info)
+    // Return success message indicating approval is required
     res.status(201).json({
       success: true,
-      user: {
-        id: user._id,
-        companyName: user.companyName,
-        email: user.email,
-        phone: user.phone,
-        country: user.country,
-        state: user.state,
-      },
+      message:
+        "Registration submitted successfully. Your account will be activated after admin approval.",
+      pendingUserId: pendingUser._id,
     });
   } catch (err) {
     console.error("Registration error:", err);
@@ -192,6 +193,24 @@ router.post("/login", async (req, res, next) => {
     // Check if user is active
     if (!user.isActive) {
       return res.status(401).json({ message: "Account is deactivated" });
+    }
+
+    // Check if user is approved
+    if (user.approvalStatus === "pending") {
+      return res.status(401).json({
+        message:
+          "Your account is pending approval. Please wait for admin approval before logging in.",
+        status: "pending_approval",
+      });
+    }
+
+    if (user.approvalStatus === "rejected") {
+      return res.status(401).json({
+        message:
+          user.rejectionReason ||
+          "Your registration has been rejected. Please contact support for more information.",
+        status: "rejected",
+      });
     }
 
     // Verify password
@@ -275,10 +294,10 @@ router.post("/login/google", async (req, res, next) => {
     user.lastLogin = new Date();
     await user.save();
 
-    const token = signToken({ 
-      uid: user._id, 
-      role: 'user', // Default role for regular users
-      email: user.email 
+    const token = signToken({
+      uid: user._id,
+      role: "user", // Default role for regular users
+      email: user.email,
     });
     issueCookie(res, token);
 
@@ -397,10 +416,10 @@ router.post("/google/callback", async (req, res, next) => {
     user.lastLogin = new Date();
     await user.save();
 
-    const token = signToken({ 
-      uid: user._id, 
-      role: 'user', // Default role for regular users
-      email: user.email 
+    const token = signToken({
+      uid: user._id,
+      role: "user", // Default role for regular users
+      email: user.email,
     });
     console.log("🔐 Generated token for Google user:", user.email);
 

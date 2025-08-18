@@ -47,6 +47,7 @@ import modulePreferenceRoutes from "./routes/modulePreferenceRoutes.js";
 import accountingReportsRoutes from "./routes/accountingReportsRoutes.js";
 import invoicePaymentRoutes from "./routes/invoicePaymentRoutes.js";
 import chartOfAccountsRoutes from "./routes/chartOfAccountsRoutes.js";
+import adminUserApprovalRoutes from "./routes/adminUserApproval.js";
 
 const app = express();
 
@@ -110,6 +111,7 @@ app.use("/api/items", itemRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/delivery-challans", deliveryChallanRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/user-approval", adminUserApprovalRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/manual-journals", manualJournalRoutes);

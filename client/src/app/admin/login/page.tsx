@@ -9,155 +9,209 @@ import {
   EyeIcon,
   EyeSlashIcon,
   ShieldCheckIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 export default function AdminLogin() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("mockadmin@robobooks.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // If already logged in (cookie present), skip login screen
-    (async () => {
-      try {
-        const res = await api<{ success: boolean }>("/api/admin/profile");
-        if (
-          res &&
-          typeof res === "object" &&
-          "success" in res &&
-          (res as any).success
-        ) {
-          // Use window.location to force a full page redirect
-          window.location.href = "/admin/dashboard";
-        }
-      } catch {
-        // ignore, stay on login
-      }
-    })();
-  }, [router]);
+    // Check if already logged in
+    checkAuthStatus();
+  }, []);
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const checkAuthStatus = async () => {
+    try {
+      setIsCheckingAuth(true);
+      const response = await api<{ success: boolean; admin?: any }>(
+        "/api/admin/profile"
+      );
+      if (response.success && response.admin) {
+        // Already authenticated, redirect to dashboard
+        router.push("/admin/dashboard");
+        return;
+      }
+    } catch (error) {
+      // Not authenticated, stay on login page
+      console.log("Not authenticated, staying on login page");
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setErr("");
     setLoading(true);
 
-    console.log("response", email, password);
-
     try {
-      const response = await api<{ success: boolean }>("/api/admin/login", {
-        method: "POST",
-        json: { email, password },
-      });
+      const response = await api<{ success: boolean; admin?: any }>(
+        "/api/admin/login",
+        {
+          method: "POST",
+          json: { email, password },
+        }
+      );
 
-      if (
-        response &&
-        typeof response === "object" &&
-        "success" in response &&
-        (response as any).success
-      ) {
-        // Use window.location to force a full page redirect and break the loop
-        window.location.href = "/admin/dashboard";
-        return;
+      if (response.success) {
+        // Login successful, redirect to dashboard
+        router.push("/admin/dashboard");
       } else {
-        setErr("Login failed. Please try again.");
+        setErr("Login failed. Please check your credentials.");
       }
-    } catch (e) {
-      if (e && typeof e === "object" && "message" in e) {
-        setErr(
-          (e as { message?: string }).message ||
-            "Login failed. Please try again."
-        );
-      } else {
-        setErr("Login failed. Please try again.");
-      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      setErr(error.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md space-y-4 rounded-3xl bg-white p-8 shadow-xl"
-      >
-        {/* brand */}
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-purple-100 rounded-xl">
-            <ShieldCheckIcon className="h-6 w-6 text-purple-600" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        {/* Logo and Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-2xl mb-4">
+            <ShieldCheckIcon className="h-8 w-8 text-purple-600" />
           </div>
-          <div>
-            <h1 className="text-xl font-semibold text-slate-900">Robo Books</h1>
-            <p className="text-sm text-slate-500">Admin Panel</p>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Robo Books</h1>
+          <p className="text-gray-600">Administrator Access</p>
         </div>
 
-        <h2 className="text-lg font-medium text-slate-900">Admin Sign in</h2>
+        {/* Login Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Admin Sign In
+            </h2>
+            <p className="text-sm text-gray-600">
+              Enter your credentials to access the admin panel
+            </p>
+          </div>
 
-        <input
-          required
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="admin@robobooks.com"
-          className="w-full rounded-xl border p-3"
-          disabled={loading}
-        />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email Field */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Email Address
+              </label>
+              <input
+                id="email"
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@robobooks.com"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                disabled={loading}
+              />
+            </div>
 
-        <div className="relative">
-          <input
-            required
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full rounded-xl border p-3 pr-10"
-            disabled={loading}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            disabled={loading}
-          >
-            {showPassword ? (
-              <EyeSlashIcon className="h-5 w-5 text-slate-500" />
-            ) : (
-              <EyeIcon className="h-5 w-5 text-slate-500" />
+            {/* Password Field */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  required
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  disabled={loading}
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {err && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-500 flex-shrink-0" />
+                <p className="text-red-700 text-sm">{err}</p>
+              </div>
             )}
-          </button>
-        </div>
 
-        {err && <p className="text-red-600 text-sm">{err}</p>}
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-purple-600 text-white py-3 px-4 rounded-xl font-semibold hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Signing in...
+                </div>
+              ) : (
+                "Sign in to Admin Panel"
+              )}
+            </button>
+          </form>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-purple-600 py-3 font-semibold text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? "Signing in..." : "Sign in to Admin Panel"}
-        </button>
-
-        {/* Demo Credentials */}
-        <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-          <h3 className="text-slate-700 font-medium text-sm mb-2">
-            Demo Credentials:
-          </h3>
-          <div className="space-y-1 text-xs text-slate-600">
-            <p>Email: mockadmin@robobooks.com</p>
-            <p>Password: admin123</p>
+          {/* Security Notice */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <div className="flex items-start gap-3">
+              <ShieldCheckIcon className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-medium text-blue-900 mb-1">
+                  Secure Access
+                </h3>
+                <p className="text-xs text-blue-700">
+                  This is a secure admin panel. Only authorized administrators
+                  can access this area.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-sm text-slate-600">
-          Secure access to RoboBooks administration
-        </p>
-      </form>
-    </main>
+        <div className="text-center mt-6">
+          <p className="text-sm text-gray-500">
+            © 2024 Robo Books. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
