@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef, FormEvent } from "react";
+import React, { useMemo, useState, useEffect, useRef, FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,50 @@ import {
   shortLabel,
   flagEmoji,
 } from "../../../lib/phone-codes";
+
+// Error boundary component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Registration component error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">
+              Something went wrong
+            </h1>
+            <p className="text-gray-600 mb-4">
+              There was an error loading the registration form.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // Google OAuth types (for reference)
 
@@ -229,6 +273,7 @@ export default function Register() {
         const response = await api<{
           success: boolean;
           user?: { id: string; email: string; companyName: string };
+          message?: string;
         }>("/api/auth/google/callback", {
           method: "POST",
           json: {
@@ -240,15 +285,30 @@ export default function Register() {
 
         if (response.success) {
           console.log("✅ Google registration successful");
+
+          // Show success toast if available
+          if (typeof window !== "undefined" && (window as any).showToast) {
+            (window as any).showToast(
+              "Google registration successful! Welcome to Robo Books.",
+              "success"
+            );
+          }
+
           // Clear URL parameters
           window.history.replaceState(
             {},
             document.title,
             window.location.pathname
           );
-          router.push("/dashboard");
+
+          // Redirect to dashboard
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 500);
         } else {
-          setError("Google registration failed. Please try again.");
+          setError(
+            response.message || "Google registration failed. Please try again."
+          );
           // Clear URL parameters
           window.history.replaceState(
             {},
@@ -258,10 +318,18 @@ export default function Register() {
         }
       } catch (err: unknown) {
         console.error("❌ Google OAuth callback error:", err);
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : "Google registration failed. Please try again.";
+        let errorMessage = "Google registration failed. Please try again.";
+
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        } else if (
+          typeof err === "object" &&
+          err !== null &&
+          "message" in err
+        ) {
+          errorMessage = String(err.message);
+        }
+
         setError(errorMessage);
         // Clear URL parameters
         window.history.replaceState(
@@ -273,6 +341,7 @@ export default function Register() {
         setLoading(false);
       }
     };
+
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
     const state = urlParams.get("state");
@@ -337,12 +406,18 @@ export default function Register() {
       return;
     }
 
+    // Prevent multiple submissions
+    if (loading) {
+      return;
+    }
+
     try {
       setLoading(true);
 
       const response = await api<{
         success: boolean;
         user?: { id: string; email: string; companyName: string };
+        message?: string;
       }>("/api/auth/register", {
         method: "POST",
         json: {
@@ -358,19 +433,33 @@ export default function Register() {
       });
 
       if (response.success) {
+        // Show success toast if available
+        if (typeof window !== "undefined" && (window as any).showToast) {
+          (window as any).showToast(
+            "Registration submitted successfully! Please wait for admin approval.",
+            "success"
+          );
+        }
+
         // Registration submitted successfully, show approval message
         setError(""); // Clear any existing errors
-        alert("Registration submitted successfully! Your account will be activated after admin approval. You will be able to login once approved.");
+        alert(
+          "Registration submitted successfully! Your account will be activated after admin approval. You will be able to login once approved."
+        );
         router.push("/signin");
       } else {
-        setError("Registration failed. Please try again.");
+        setError(response.message || "Registration failed. Please try again.");
       }
     } catch (err: unknown) {
       console.error("Registration error:", err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.";
+      let errorMessage = "Something went wrong. Please try again.";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        errorMessage = String(err.message);
+      }
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -385,7 +474,7 @@ export default function Register() {
     }
 
     // Debug logging
-    console.log("🔍 Debug info:");
+    console.log("�� Debug info:");
     console.log("window.location.origin:", window.location.origin);
     console.log("window.location.href:", window.location.href);
     console.log(

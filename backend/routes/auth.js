@@ -139,19 +139,29 @@ router.post("/register", async (req, res, next) => {
 
     // Generate token and set cookie
     const token = signToken({
-      uid: user._id,
+      uid: pendingUser._id,
       role: "user", // Default role for regular users
-      email: user.email,
+      email: pendingUser.email,
     });
-    console.log("🔐 Generated token for user:", user.email);
+    console.log("🔐 Generated token for pending user:", pendingUser.email);
     console.log("📝 Pending user created:", pendingUser.email);
+
+    // Issue cookie
+    issueCookie(res, token);
 
     // Return success message indicating approval is required
     res.status(201).json({
       success: true,
       message:
         "Registration submitted successfully. Your account will be activated after admin approval.",
-      pendingUserId: pendingUser._id,
+      user: {
+        id: pendingUser._id,
+        companyName: pendingUser.companyName,
+        email: pendingUser.email,
+        phone: pendingUser.phone,
+        country: pendingUser.country,
+        state: pendingUser.state,
+      },
     });
   } catch (err) {
     console.error("Registration error:", err);
