@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import Toast from "../components/Toast";
 
 interface ToastMessage {
@@ -26,6 +26,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
+
+  // Expose showToast globally for use outside of React components
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).showToast = showToast;
+    }
+    
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).showToast;
+      }
+    };
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>

@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
 import PendingUser from "../models/PendingUser.js";
 import { signToken, authGuard } from "../utils/jwt.js";
+import { handleRefreshToken } from "../controllers/authController.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -478,6 +479,9 @@ router.get("/me", authGuard, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// REFRESH TOKEN
+router.post("/refresh-token", handleRefreshToken);
 
 // LOGOUT
 router.post("/logout", (_req, res) => {

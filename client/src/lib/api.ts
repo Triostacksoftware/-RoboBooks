@@ -1,4 +1,57 @@
 // src/lib/api.ts
+
+// Track if we're currently refreshing a token to prevent multiple refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      console.log("🔄 Attempting to refresh access token...");
+      const response = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001"
+        }/api/auth/refresh-token`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.accessToken) {
+          // Store the new token in localStorage for backward compatibility
+          if (typeof window !== "undefined") {
+            localStorage.setItem("token", data.accessToken);
+          }
+          console.log("✅ Access token refreshed successfully");
+          return data.accessToken;
+        }
+      }
+
+      console.log("❌ Token refresh failed");
+      return null;
+    } catch (error) {
+      console.error("❌ Token refresh error:", error);
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 export async function api<T = unknown>(
   path: string,
   init: RequestInit & { json?: unknown } = {}
@@ -21,7 +74,7 @@ export async function api<T = unknown>(
   // Add any additional headers from init
   if (init.headers) {
     Object.entries(init.headers).forEach(([key, value]) => {
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         headers[key] = value;
       }
     });
@@ -29,8 +82,8 @@ export async function api<T = unknown>(
 
   // Get JWT token from localStorage as fallback (for backward compatibility)
   let token = null;
-  if (typeof window !== 'undefined') {
-    token = localStorage.getItem('token');
+  if (typeof window !== "undefined") {
+    token = localStorage.getItem("token");
   }
 
   // Add Authorization header if token exists (fallback for non-cookie auth)
@@ -51,6 +104,77 @@ export async function api<T = unknown>(
     "🌐 Response headers:",
     Object.fromEntries(res.headers.entries())
   );
+
+  // Handle authentication errors specifically
+  if (res.status === 401) {
+    console.log("🔐 Authentication error (401) - attempting token refresh");
+
+    // Don't try to refresh for auth endpoints to prevent infinite loops
+    if (
+      path.includes("/auth/login") ||
+      path.includes("/auth/register") ||
+      path.includes("/auth/refresh-token")
+    ) {
+      console.log("🔐 Auth endpoint - not attempting refresh");
+      // Clear invalid tokens
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+      }
+
+      const errorData = await res
+        .json()
+        .catch(() => ({ message: "Authentication failed" }));
+
+      throw new Error(errorData.message || "Authentication failed");
+    }
+
+    // Try to refresh the token
+    const newToken = await refreshAccessToken();
+
+    if (newToken) {
+      // Retry the original request with the new token
+      console.log("🔄 Retrying request with refreshed token");
+      headers.Authorization = `Bearer ${newToken}`;
+
+      const retryRes = await fetch(`${backendUrl}${path}`, {
+        credentials: "include",
+        cache: "no-store",
+        headers,
+        body: json ? JSON.stringify(json) : undefined,
+        ...rest,
+      });
+
+      if (retryRes.ok) {
+        const data = await retryRes.json();
+        console.log("✅ Request succeeded after token refresh");
+        return data as T;
+      } else {
+        console.log("❌ Request failed even after token refresh");
+        // Clear tokens and throw error
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("token");
+        }
+
+        const errorData = await retryRes
+          .json()
+          .catch(() => ({ message: "Authentication failed" }));
+
+        throw new Error(errorData.message || "Authentication failed");
+      }
+    } else {
+      console.log("🔐 Token refresh failed - clearing invalid tokens");
+      // Clear invalid tokens
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+      }
+
+      const errorData = await res
+        .json()
+        .catch(() => ({ message: "Authentication failed" }));
+
+      throw new Error(errorData.message || "Authentication failed");
+    }
+  }
 
   // Treat 304 as a cache issue and retry once with a cache-buster
   if (res.status === 304) {
@@ -101,9 +225,9 @@ export async function logout(): Promise<void> {
     // Even if logout fails, we still want to clear the session
   } finally {
     // Always clear the token from localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      console.log('🗑️ Token cleared from localStorage');
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      console.log("🗑️ Token cleared from localStorage");
     }
   }
 }

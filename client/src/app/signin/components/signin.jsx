@@ -14,9 +14,50 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check if user is already authenticated on component mount
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        console.log("🔐 Checking existing authentication in signin...");
+        const response = await api("/api/auth/me");
+
+        if (response.success) {
+          console.log(
+            "✅ User already authenticated, redirecting to dashboard"
+          );
+          // Show success toast before redirecting
+          if (typeof window !== "undefined" && window.showToast) {
+            window.showToast(
+              "Welcome back! Redirecting to dashboard...",
+              "success"
+            );
+          }
+          // User is already authenticated, redirect to dashboard
+          const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
+            ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
+            : "/dashboard";
+          window.location.href = dashboardUrl;
+          return;
+        }
+      } catch (error) {
+        console.log(
+          "❌ No existing authentication found, user needs to sign in"
+        );
+        // User is not authenticated, which is expected on signin page
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkExistingAuth();
+  }, []);
 
   // Handle Google OAuth callback
   useEffect(() => {
+    if (isCheckingAuth) return; // Wait for auth check to complete
+
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
     const state = urlParams.get("state");
@@ -25,7 +66,7 @@ export default function SignIn() {
       console.log("🔄 Processing Google OAuth callback...");
       handleGoogleCallback(code);
     }
-  }, []);
+  }, [isCheckingAuth]);
 
   const handleGoogleCallback = async (code) => {
     setLoading(true);
@@ -47,27 +88,29 @@ export default function SignIn() {
         console.log(
           "✅ Google sign-in successful, redirecting to dashboard..."
         );
+        // Show success toast
+        if (typeof window !== "undefined" && window.showToast) {
+          window.showToast(
+            "Google sign-in successful! Welcome to Robo Books.",
+            "success"
+          );
+        }
+        // Clear URL parameters to prevent re-processing
         window.history.replaceState(
           {},
           document.title,
           window.location.pathname
         );
-        console.log("🔄 About to redirect to dashboard");
+
         // Use full URL for production redirect
         const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
           ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
           : "/dashboard";
-        window.location.href = dashboardUrl;
-        console.log("✅ Redirect completed");
 
-        // Fallback redirect after a short delay using NEXT_PUBLIC_MAIN_URL
+        // Add a small delay to ensure the token is properly set
         setTimeout(() => {
-          console.log(
-            "🔄 Fallback redirect to dashboard using NEXT_PUBLIC_MAIN_URL"
-          );
-          window.location.href =
-            process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard";
-        }, 1000);
+          window.location.href = dashboardUrl;
+        }, 500);
       } else {
         console.log("❌ Backend returned success: false");
         setErr("Google sign-in failed. Please try again.");
@@ -99,7 +142,14 @@ export default function SignIn() {
       });
 
       if (response.success) {
-        // Store the access token in localStorage
+        // Show success toast
+        if (typeof window !== "undefined" && window.showToast) {
+          window.showToast(
+            "Login successful! Welcome to Robo Books.",
+            "success"
+          );
+        }
+        // Store the access token in localStorage for backward compatibility
         if (response.accessToken) {
           localStorage.setItem("token", response.accessToken);
           console.log("✅ Access token stored in localStorage");
@@ -109,7 +159,11 @@ export default function SignIn() {
         const dashboardUrl = process.env.NEXT_PUBLIC_MAIN_URL
           ? process.env.NEXT_PUBLIC_MAIN_URL + "/dashboard"
           : "/dashboard";
-        window.location.href = dashboardUrl;
+
+        // Add a small delay to ensure the token is properly set
+        setTimeout(() => {
+          window.location.href = dashboardUrl;
+        }, 500);
       } else {
         setErr("Login failed. Please try again.");
       }
@@ -119,6 +173,18 @@ export default function SignIn() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking existing authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
@@ -211,7 +277,7 @@ export default function SignIn() {
           disabled={loading}
           className="w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign in
+          {loading ? "Signing in..." : "Sign in"}
         </button>
 
         {/* Sign up link */}
