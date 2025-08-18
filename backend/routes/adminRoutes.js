@@ -41,6 +41,9 @@ router.post("/create-simple", async (req, res) => {
       password,
       role = "admin",
       permissions = ["view_analytics"],
+      department,
+      phone,
+      isActive = true,
     } = req.body;
 
     // Basic validation
@@ -59,6 +62,40 @@ router.post("/create-simple", async (req, res) => {
       });
     }
 
+    // Validate role
+    const validRoles = ["super_admin", "admin", "moderator"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
+      });
+    }
+
+    // Validate permissions
+    const validPermissions = [
+      "manage_users",
+      "manage_admins",
+      "view_analytics",
+      "manage_content",
+      "manage_settings",
+      "view_reports",
+      "manage_billing",
+    ];
+
+    if (permissions && Array.isArray(permissions)) {
+      const invalidPermissions = permissions.filter(
+        (p) => !validPermissions.includes(p)
+      );
+      if (invalidPermissions.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid permissions: ${invalidPermissions.join(
+            ", "
+          )}. Valid permissions: ${validPermissions.join(", ")}`,
+        });
+      }
+    }
+
     // Check if admin already exists
     const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
     if (existingAdmin) {
@@ -74,8 +111,10 @@ router.post("/create-simple", async (req, res) => {
       lastName: lastName.trim(),
       email: email.toLowerCase().trim(),
       role: role,
-      permissions: permissions,
-      isActive: true,
+      permissions: permissions || [],
+      department: department?.trim(),
+      phone: phone?.trim(),
+      isActive: isActive,
     });
 
     // Hash password
@@ -93,6 +132,9 @@ router.post("/create-simple", async (req, res) => {
         email: admin.email,
         role: admin.role,
         permissions: admin.permissions,
+        department: admin.department,
+        phone: admin.phone,
+        isActive: admin.isActive,
         createdAt: admin.createdAt,
       },
     });
@@ -101,6 +143,123 @@ router.post("/create-simple", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create admin",
+      error: err.message,
+    });
+  }
+});
+
+// Bulk admin creation endpoint
+router.post("/create-bulk", async (req, res) => {
+  try {
+    const { admins } = req.body;
+
+    if (!Array.isArray(admins) || admins.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Admins array is required and must not be empty",
+      });
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (let i = 0; i < admins.length; i++) {
+      const adminData = admins[i];
+      try {
+        const {
+          firstName,
+          lastName,
+          email,
+          password,
+          role = "admin",
+          permissions = ["view_analytics"],
+          department,
+          phone,
+          isActive = true,
+        } = adminData;
+
+        // Basic validation
+        if (!firstName || !lastName || !email || !password) {
+          errors.push({
+            index: i,
+            error:
+              "All fields are required: firstName, lastName, email, password",
+          });
+          continue;
+        }
+
+        if (password.length < 6) {
+          errors.push({
+            index: i,
+            error: "Password must be at least 6 characters",
+          });
+          continue;
+        }
+
+        // Check if admin already exists
+        const existingAdmin = await Admin.findOne({
+          email: email.toLowerCase(),
+        });
+        if (existingAdmin) {
+          errors.push({
+            index: i,
+            error: "Admin with this email already exists",
+          });
+          continue;
+        }
+
+        // Create new admin
+        const admin = new Admin({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.toLowerCase().trim(),
+          role: role,
+          permissions: permissions || [],
+          department: department?.trim(),
+          phone: phone?.trim(),
+          isActive: isActive,
+        });
+
+        // Hash password
+        await admin.hashPassword(password);
+        await admin.save();
+
+        results.push({
+          index: i,
+          success: true,
+          admin: {
+            id: admin._id,
+            firstName: admin.firstName,
+            lastName: admin.lastName,
+            fullName: admin.fullName,
+            email: admin.email,
+            role: admin.role,
+            permissions: admin.permissions,
+            department: admin.department,
+            phone: admin.phone,
+            isActive: admin.isActive,
+            createdAt: admin.createdAt,
+          },
+        });
+      } catch (err) {
+        errors.push({
+          index: i,
+          error: err.message,
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Processed ${admins.length} admins. ${results.length} created successfully, ${errors.length} failed.`,
+      results,
+      errors,
+    });
+  } catch (err) {
+    console.error("Bulk create admin error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process bulk admin creation",
       error: err.message,
     });
   }
