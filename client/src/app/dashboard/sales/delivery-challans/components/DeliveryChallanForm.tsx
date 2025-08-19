@@ -9,7 +9,7 @@ import {
   XMarkIcon,
   ClipboardDocumentIcon,
 } from "@heroicons/react/24/outline";
-import { deliveryChallanService } from "@/services/deliveryChallanService";
+import { deliveryChallanService } from "../services/deliveryChallanService";
 import CustomerSelector from "./CustomerSelector";
 import toast, { Toaster } from "react-hot-toast";
 import { api } from "@/lib/api";
@@ -18,7 +18,7 @@ import {
   generateCurrentYearChallanId,
   formatChallanIdForDisplay,
 } from "../utils/challanIdGenerator";
-import { Customer as CustomerType } from "@/services/customerService";
+import { Customer as CustomerType } from "../services/customerService";
 
 //import { useToast } from '../../../../contexts/ToastContext';
 

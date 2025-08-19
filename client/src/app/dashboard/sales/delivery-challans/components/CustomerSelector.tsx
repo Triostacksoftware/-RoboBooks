@@ -6,7 +6,7 @@ import {
   ChevronDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { customerService, Customer } from "@/services/customerService";
+import { customerService, Customer } from "../services/customerService";
 
 interface CustomerSelectorProps {
   value: string;

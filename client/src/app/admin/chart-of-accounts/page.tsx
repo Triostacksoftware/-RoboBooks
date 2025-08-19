@@ -11,7 +11,7 @@ import {
   TrashIcon,
   PencilIcon,
 } from "@heroicons/react/24/outline";
-import AdminExcelUploadModal from "./components/AdminExcelUploadModal.tsx";
+import AdminExcelUploadModal from "./components/AdminExcelUploadModal";
 
 interface Account {
   _id: string;
