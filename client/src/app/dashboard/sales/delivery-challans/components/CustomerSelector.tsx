@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { MagnifyingGlassIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { customerService, Customer } from '../services/customerService';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  MagnifyingGlassIcon,
+  ChevronDownIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import { customerService, Customer } from "@/services/customerService";
 
 interface CustomerSelectorProps {
   value: string;
@@ -17,16 +21,18 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   onChange,
   placeholder = "Search customers...",
   className = "",
-  disabled = false
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
-  
+
   const wrapperRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,11 +46,19 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     if (!searchTerm.trim()) {
       setFilteredCustomers(customers);
     } else {
-      const filtered = customers.filter(customer =>
-        customer.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (customer.companyName && customer.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        `${customer.firstName} ${customer.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+      const filtered = customers.filter(
+        (customer) =>
+          customer.displayName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (customer.companyName &&
+            customer.companyName
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())) ||
+          `${customer.firstName} ${customer.lastName}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
       setFilteredCustomers(filtered);
     }
@@ -53,7 +67,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   // Set selected customer when value changes
   useEffect(() => {
     if (value && customers.length > 0) {
-      const customer = customers.find(c => c._id === value);
+      const customer = customers.find((c) => c._id === value);
       setSelectedCustomer(customer || null);
     } else {
       setSelectedCustomer(null);
@@ -63,13 +77,16 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const loadCustomers = async () => {
@@ -77,15 +94,15 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
       setLoading(true);
       setError(null);
       const response = await customerService.getActiveCustomers();
-      
+
       if (response.success && response.data) {
         setCustomers(response.data);
       } else {
-        setError('Failed to load customers');
+        setError("Failed to load customers");
       }
     } catch (err) {
-      setError('Error loading customers');
-      console.error('Error loading customers:', err);
+      setError("Error loading customers");
+      console.error("Error loading customers:", err);
     } finally {
       setLoading(false);
     }
@@ -103,13 +120,13 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
     setSelectedCustomer(customer);
     onChange(customer._id, customer);
     setIsOpen(false);
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   const handleClear = () => {
     setSelectedCustomer(null);
-    onChange('', undefined);
-    setSearchTerm('');
+    onChange("", undefined);
+    setSearchTerm("");
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +134,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   };
 
   const getDisplayText = (customer: Customer) => {
-    if (customer.customerType === 'Business' && customer.companyName) {
+    if (customer.customerType === "Business" && customer.companyName) {
       return `${customer.companyName} (${customer.email})`;
     }
     return `${customer.firstName} ${customer.lastName} (${customer.email})`;
@@ -152,11 +169,15 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           onClick={handleToggle}
           disabled={disabled}
           className={`w-full flex items-center justify-between p-3 border border-gray-300 rounded-md bg-white text-left hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-            disabled ? 'bg-gray-50 cursor-not-allowed' : 'cursor-pointer'
+            disabled ? "bg-gray-50 cursor-not-allowed" : "cursor-pointer"
           }`}
         >
           <span className="text-gray-500">{placeholder}</span>
-          <ChevronDownIcon className={`h-5 w-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDownIcon
+            className={`h-5 w-5 text-gray-400 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
         </button>
       )}
 
@@ -197,7 +218,7 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
               </div>
             ) : filteredCustomers.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
-                {searchTerm ? 'No customers found' : 'No customers available'}
+                {searchTerm ? "No customers found" : "No customers available"}
               </div>
             ) : (
               filteredCustomers.map((customer) => (
@@ -215,11 +236,12 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                       <div className="text-xs text-gray-500 truncate">
                         {customer.email}
                       </div>
-                      {customer.customerType === 'Business' && customer.companyName && (
-                        <div className="text-xs text-gray-400 truncate">
-                          {customer.companyName}
-                        </div>
-                      )}
+                      {customer.customerType === "Business" &&
+                        customer.companyName && (
+                          <div className="text-xs text-gray-400 truncate">
+                            {customer.companyName}
+                          </div>
+                        )}
                     </div>
                     <div className="ml-2 text-xs text-gray-400">
                       {customer.customerType}
@@ -233,7 +255,8 @@ const CustomerSelector: React.FC<CustomerSelectorProps> = ({
           {/* Footer */}
           <div className="p-3 border-t border-gray-200 bg-gray-50">
             <div className="text-xs text-gray-500 text-center">
-              {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+              {filteredCustomers.length} customer
+              {filteredCustomers.length !== 1 ? "s" : ""} found
             </div>
           </div>
         </div>

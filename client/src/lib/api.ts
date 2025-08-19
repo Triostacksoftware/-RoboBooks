@@ -1,4 +1,5 @@
 // src/lib/api.ts
+import { ExcelAccountData } from "../services/excelParserService";
 
 // Track if we're currently refreshing a token to prevent multiple refresh attempts
 let isRefreshing = false;
@@ -436,7 +437,8 @@ export const projectApi = {
 };
 
 // API utility functions
-export const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
 
 // Chart of Accounts API endpoints
 export const CHART_OF_ACCOUNTS_API = {
@@ -450,19 +452,21 @@ export const CHART_OF_ACCOUNTS_API = {
 // Generic API request helper
 export const apiRequest = async (url: string, options: RequestInit = {}) => {
   const defaultOptions: RequestInit = {
-    credentials: 'include',
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
     ...options,
   };
 
   const response = await fetch(url, defaultOptions);
-  
+
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(
+      `API request failed: ${response.status} ${response.statusText} - ${errorText}`
+    );
   }
 
   return response.json();
@@ -471,24 +475,26 @@ export const apiRequest = async (url: string, options: RequestInit = {}) => {
 // Chart of Accounts specific API functions
 export const chartOfAccountsAPI = {
   // Get all accounts
-  getAll: (params?: Record<string, any>) => {
-    const searchParams = params ? new URLSearchParams(params).toString() : '';
-    const url = searchParams ? `${CHART_OF_ACCOUNTS_API.BASE}?${searchParams}` : CHART_OF_ACCOUNTS_API.BASE;
+  getAll: (params?: Record<string, string>) => {
+    const searchParams = params ? new URLSearchParams(params).toString() : "";
+    const url = searchParams
+      ? `${CHART_OF_ACCOUNTS_API.BASE}?${searchParams}`
+      : CHART_OF_ACCOUNTS_API.BASE;
     return apiRequest(url);
   },
 
   // Create account
-  create: (accountData: any) => {
+  create: (accountData: Record<string, unknown>) => {
     return apiRequest(CHART_OF_ACCOUNTS_API.BASE, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(accountData),
     });
   },
 
   // Update account
-  update: (id: string, accountData: any) => {
+  update: (id: string, accountData: Record<string, unknown>) => {
     return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(accountData),
     });
   },
@@ -496,7 +502,7 @@ export const chartOfAccountsAPI = {
   // Delete account
   delete: (id: string) => {
     return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   },
 
@@ -510,32 +516,21 @@ export const chartOfAccountsAPI = {
     return apiRequest(CHART_OF_ACCOUNTS_API.HIERARCHY);
   },
 
-  // Upload Excel
-  uploadExcel: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    return fetch(CHART_OF_ACCOUNTS_API.UPLOAD_EXCEL, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    }).then(response => {
-      if (!response.ok) {
-        return response.json().then(error => {
-          throw new Error(error.message || 'Upload failed');
-        });
-      }
-      return response.json();
+  // Upload parsed Excel data
+  uploadExcelData: (accountsData: ExcelAccountData[]) => {
+    return apiRequest(CHART_OF_ACCOUNTS_API.UPLOAD_EXCEL, {
+      method: "POST",
+      body: JSON.stringify({ accounts: accountsData }),
     });
   },
 
   // Export Excel
   exportExcel: () => {
     return fetch(CHART_OF_ACCOUNTS_API.EXPORT, {
-      credentials: 'include',
-    }).then(response => {
+      credentials: "include",
+    }).then((response) => {
       if (!response.ok) {
-        throw new Error('Export failed');
+        throw new Error("Export failed");
       }
       return response.blob();
     });

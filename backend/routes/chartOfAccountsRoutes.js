@@ -77,8 +77,8 @@ router.post("/bulk-update", bulkUpdateAccounts);
 // POST /api/chart-of-accounts/bulk-import - Bulk import multiple accounts
 router.post("/bulk-import", bulkImportAccounts);
 
-// POST /api/chart-of-accounts/upload-excel - Upload Excel file and import accounts
-router.post("/upload-excel", upload.single("file"), uploadExcelAccounts);
+// POST /api/chart-of-accounts/upload-excel - Upload parsed Excel data and import accounts
+router.post("/upload-excel", uploadExcelAccounts);
 
 // GET /api/chart-of-accounts/export-excel - Export accounts to Excel file
 router.get("/export-excel", exportAccountsToExcel);

@@ -53,10 +53,17 @@ Supports hierarchical groups, opening balances, and GST metadata.
 ### Valid `subtype` values
 ```
 bank, cash, accounts_receivable, fixed_asset, inventory, other_asset,
+current_asset, investment, loans, advances, prepaid_expenses,
 accounts_payable, credit_card, current_liability, long_term_liability,
-owner_equity, retained_earnings, sales, other_income,
-cost_of_goods_sold, operating_expense, other_expense
+non_current_liability, provisions, loans_payable, bonds_payable, 
+owner_equity, retained_earnings, capital, drawings, sales, service_revenue, 
+other_income, direct_income, indirect_income, interest_income, commission_income, 
+cost_of_goods_sold, operating_expense, other_expense, direct_expense, 
+indirect_expense, salary_expense, rent_expense, utilities_expense, 
+advertising_expense, depreciation_expense, interest_expense, tax_expense
 ```
+
+**Note**: The system automatically handles common variations like "Non-Current Liability" → "long_term_liability", "Fixed Assets" → "fixed_asset", etc.
 
 ---
 

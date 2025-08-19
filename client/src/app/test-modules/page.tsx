@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import modulePreferenceService, {
   ModulePreference,
-} from "../../services/modulePreferenceService";
+} from "@/services/modulePreferenceService";
 
 export default function TestModulesPage() {
   const [modules, setModules] = useState<ModulePreference[]>([]);

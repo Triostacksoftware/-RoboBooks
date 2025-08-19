@@ -12,13 +12,14 @@ import {
   Building2,
   ChevronDown,
 } from "lucide-react";
-import { useToast } from "../../../../contexts/ToastContext";
-import { chartOfAccountsAPI } from "../../../../lib/api";
+import { useToast } from "@/contexts/ToastContext";
+import { chartOfAccountsAPI } from "@/lib/api";
 import AccountTable from "./components/AccountTable";
 import AccountTabs from "./components/AccountTabs";
 import SearchAndActions from "./components/SearchAndActions";
 import CreateAccountModal from "./components/CreateAccountModal";
 import ExcelUploadModal from "./components/ExcelUploadModal";
+import { ParsedExcelResult } from "@/services/excelParserService";
 
 interface Account {
   _id: string;
@@ -110,12 +111,12 @@ const ChartOfAccountsPage = () => {
     }
   };
 
-  // Upload Excel file
-  const handleExcelUpload = async (file: File) => {
+  // Upload parsed Excel data
+  const handleExcelUpload = async (parsedData: ParsedExcelResult) => {
     try {
-      console.log("Uploading file:", file.name, file.size);
+      console.log("Uploading parsed data:", parsedData.validRows, "valid rows");
 
-      const result = await chartOfAccountsAPI.uploadExcel(file);
+      const result = await chartOfAccountsAPI.uploadExcelData(parsedData.data);
       console.log("Upload result:", result);
 
       // Create a more detailed success message
@@ -135,9 +136,9 @@ const ChartOfAccountsPage = () => {
       await fetchAccounts();
       setShowUploadModal(false);
     } catch (error) {
-      console.error("Error uploading Excel:", error);
+      console.error("Error uploading Excel data:", error);
       showToast(
-        error instanceof Error ? error.message : "Failed to upload Excel file",
+        error instanceof Error ? error.message : "Failed to upload Excel data",
         "error"
       );
     }

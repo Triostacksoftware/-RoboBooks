@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useToast } from '../../../../../../contexts/ToastContext';
+import { useToast } from '@/contexts/ToastContext';
 import DeliveryChallanForm from '../../components/DeliveryChallanForm';
-import { deliveryChallanService } from '../../services/deliveryChallanService';
+import { deliveryChallanService } from '@/services/deliveryChallanService';
 
 // Define the DeliveryChallan interface based on the service
 interface DeliveryChallan {

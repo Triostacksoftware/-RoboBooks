@@ -150,7 +150,9 @@ export const createAccount = async (req, res) => {
     if (!ACCOUNT_CATEGORIES.includes(category)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(", ")}`,
+        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(
+          ", "
+        )}`,
       });
     }
 
@@ -158,7 +160,9 @@ export const createAccount = async (req, res) => {
     if (subtype && !ACCOUNT_SUBTYPES.includes(subtype)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(", ")}`,
+        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(
+          ", "
+        )}`,
       });
     }
 
@@ -230,7 +234,9 @@ export const updateAccount = async (req, res) => {
     if (category && !ACCOUNT_CATEGORIES.includes(category)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(", ")}`,
+        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(
+          ", "
+        )}`,
       });
     }
 
@@ -238,7 +244,9 @@ export const updateAccount = async (req, res) => {
     if (subtype && !ACCOUNT_SUBTYPES.includes(subtype)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(", ")}`,
+        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(
+          ", "
+        )}`,
       });
     }
 
@@ -320,7 +328,8 @@ export const deleteAccount = async (req, res) => {
     if (hasChildren) {
       return res.status(400).json({
         success: false,
-        message: "Cannot delete account with sub-accounts. Please delete sub-accounts first.",
+        message:
+          "Cannot delete account with sub-accounts. Please delete sub-accounts first.",
       });
     }
 
@@ -384,11 +393,11 @@ export const getAccountHierarchy = async (req, res) => {
 
     // Group accounts by category and parent
     const hierarchy = {};
-    
+
     for (const category of ACCOUNT_CATEGORIES) {
       hierarchy[category] = {
         name: category.charAt(0).toUpperCase() + category.slice(1),
-        accounts: []
+        accounts: [],
       };
     }
 
@@ -397,7 +406,7 @@ export const getAccountHierarchy = async (req, res) => {
       if (!hierarchy[category]) {
         hierarchy[category] = { name: category, accounts: [] };
       }
-      
+
       hierarchy[category].accounts.push(account);
     }
 
@@ -517,21 +526,42 @@ export const bulkImportAccounts = async (req, res) => {
 
 /**
  * POST /api/chart-of-accounts/upload-excel
- * Upload Excel file and import accounts
+ * Upload parsed Excel data and import accounts
  */
 export const uploadExcelAccounts = async (req, res) => {
   try {
-    if (!req.file) {
+    const {
+      accounts,
+      createHierarchy = true,
+      overwriteExisting = false,
+    } = req.body;
+
+    if (!accounts || !Array.isArray(accounts)) {
       return res.status(400).json({
         success: false,
-        message: "No file uploaded",
+        message: "No accounts data provided or invalid format",
       });
     }
 
-    const { createHierarchy = true, overwriteExisting = false } = req.body;
+    console.log(`Processing ${accounts.length} accounts from frontend`);
 
-    // Parse Excel file
-    const rows = await ExcelImportService.parseExcelFile(req.file.buffer);
+    // Convert frontend data format to backend format
+    const rows = [
+      [
+        "Account Name",
+        "Account Head",
+        "Account Group",
+        "Balance",
+        "Balance Type",
+      ], // Header
+      ...accounts.map((account) => [
+        account.name,
+        account.accountType,
+        account.accountGroup,
+        account.balance,
+        account.balanceType,
+      ]),
+    ];
 
     // Build account hierarchy
     const result = await ExcelImportService.buildAccountHierarchy(rows, {
@@ -545,12 +575,12 @@ export const uploadExcelAccounts = async (req, res) => {
         created: result.data.created,
         updated: result.data.updated,
         errors: result.data.errors,
-        totalProcessed: result.totalProcessed
+        totalProcessed: result.totalProcessed,
       },
       message: `Successfully imported ${result.data.created} accounts, updated ${result.data.updated} accounts`,
     });
   } catch (error) {
-    console.error("Error uploading Excel:", error);
+    console.error("Error uploading Excel data:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -585,8 +615,14 @@ export const exportAccountsToExcel = async (req, res) => {
     const buffer = await ExcelImportService.exportAccountsToExcel(accounts);
 
     // Set response headers
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", "attachment; filename=chart-of-accounts.xlsx");
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=chart-of-accounts.xlsx"
+    );
     res.setHeader("Content-Length", buffer.length);
 
     res.send(buffer);

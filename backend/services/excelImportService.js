@@ -1,5 +1,5 @@
 import XLSX from "xlsx";
-import Account from "../models/Account.js";
+import Account, { ACCOUNT_SUBTYPES } from "../models/Account.js";
 
 export class ExcelImportService {
   /**
@@ -43,6 +43,14 @@ export class ExcelImportService {
       isNaN(parseFloat(accountData.balance))
     ) {
       errors.push(`Row ${rowNumber}: Balance must be a valid number`);
+    }
+
+    // Validate account group - more flexible validation
+    const accountGroup = accountData.accountGroup.trim();
+    if (accountGroup.length > 100) {
+      errors.push(
+        `Row ${rowNumber}: Account group is too long (max 100 characters)`
+      );
     }
 
     return errors;
@@ -91,11 +99,12 @@ export class ExcelImportService {
         });
 
         if (!parentAccount) {
-          // Create parent account for this group using Excel data only
+          // Create parent account for this group using validated mapping
+          const subtype = this.mapAccountGroupToSubtype(account.accountGroup);
           parentAccount = new Account({
             name: account.accountGroup,
             category: account.accountType.toLowerCase(),
-            subtype: account.accountGroup.toLowerCase().replace(/\s+/g, "_"),
+            subtype: subtype,
             opening_balance: 0,
             balance: 0,
             is_active: true,
@@ -114,12 +123,11 @@ export class ExcelImportService {
   }
 
   /**
-   * Map account group to subtype - removed fallback mapping
-   * Now uses exact Excel data only
+   * Map account group to subtype - flexible validation
    */
   static mapAccountGroupToSubtype(accountGroup) {
-    // Use exact Excel data, no fallback mapping
-    return accountGroup.toLowerCase().replace(/\s+/g, "_");
+    // Simply return the account group as-is, with basic normalization
+    return accountGroup.trim();
   }
 
   /**
@@ -148,11 +156,12 @@ export class ExcelImportService {
         const excelBalance = parseFloat(accountData.balance);
         const balanceType = accountData.balanceType?.toLowerCase() || "debit";
 
-        // Create account document using ONLY Excel data, no fallbacks
+        // Create account document using validated mapping
+        const subtype = this.mapAccountGroupToSubtype(accountData.accountGroup);
         const accountDoc = {
           name: accountData.name,
           category: accountData.accountType.toLowerCase(),
-          subtype: accountData.accountGroup.toLowerCase().replace(/\s+/g, "_"),
+          subtype: subtype,
           parent: parentId,
           opening_balance: excelBalance,
           balance: excelBalance,

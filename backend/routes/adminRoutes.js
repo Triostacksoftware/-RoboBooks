@@ -10,6 +10,7 @@ import {
   createAdmin,
   updateAdmin,
   deleteAdmin,
+  getChartOfAccountsStats,
 } from "../controllers/adminController.js";
 import {
   getAllUsers,
@@ -346,6 +347,14 @@ router.get(
         .json({ success: false, message: "Failed to fetch dashboard stats" });
     }
   }
+);
+
+// Chart of Accounts stats route
+router.get(
+  "/chart-of-accounts/stats",
+  adminAuthGuard,
+  requirePermission("view_analytics"),
+  getChartOfAccountsStats
 );
 
 // User management routes

@@ -2,10 +2,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useToast } from "../../../../../contexts/ToastContext";
+import { useToast } from "@/contexts/ToastContext";
 import DeliveryChallanDetail from "../components/DeliveryChallanDetail";
 import DeliveryChallanPreview from "../components/DeliveryChallanPreview";
-import { deliveryChallanService } from "../services/deliveryChallanService";
+import { deliveryChallanService } from "@/services/deliveryChallanService";
 
 interface DeliveryChallan {
   _id: string;

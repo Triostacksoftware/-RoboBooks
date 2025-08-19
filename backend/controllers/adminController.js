@@ -1,6 +1,7 @@
 import Admin from "../models/Admin.js";
 import { signToken } from "../utils/jwt.js";
 import bcrypt from "bcryptjs";
+import Account from "../models/Account.js"; // Added import for Account
 
 // Helper function to issue admin cookie
 function issueAdminCookie(res, token) {
@@ -407,5 +408,41 @@ export const deleteAdmin = async (req, res, next) => {
   } catch (err) {
     console.error("Delete admin error:", err);
     next(err);
+  }
+};
+
+/**
+ * GET /api/admin/chart-of-accounts/stats
+ * Get chart of accounts statistics for admin dashboard
+ */
+export const getChartOfAccountsStats = async (req, res) => {
+  try {
+    // Get total accounts
+    const totalAccounts = await Account.countDocuments();
+
+    // Get active accounts
+    const activeAccounts = await Account.countDocuments({ is_active: true });
+
+    // Get total balance (sum of all account balances)
+    const accounts = await Account.find({ is_active: true });
+    const totalBalance = accounts.reduce(
+      (sum, account) => sum + (account.balance || 0),
+      0
+    );
+
+    res.json({
+      success: true,
+      stats: {
+        totalAccounts,
+        activeAccounts,
+        totalBalance,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching chart of accounts stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch chart of accounts statistics",
+    });
   }
 };
