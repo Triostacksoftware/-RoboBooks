@@ -4,7 +4,7 @@
  * Test script to verify Excel upload fix for problematic subtypes
  */
 
-import { ACCOUNT_SUBTYPES } from "./models/Account.js";
+import { ACCOUNT_HEADS, ACCOUNT_GROUPS } from "./models/Account.js";
 import { ExcelImportService } from "./services/excelImportService.js";
 
 console.log("🧪 Testing Excel upload fix for problematic subtypes...\n");
@@ -53,8 +53,12 @@ if (allPassed) {
   console.log("❌ Some tests failed. Please check the implementation.");
 }
 
-console.log("\n📋 Current valid subtypes:");
-console.log(ACCOUNT_SUBTYPES.join(", "));
+console.log("\n📋 Current valid account heads:");
+console.log(ACCOUNT_HEADS.join(", "));
+console.log("\n📋 Current valid account groups:");
+Object.entries(ACCOUNT_GROUPS).forEach(([head, groups]) => {
+  console.log(`${head}: ${groups.join(", ")}`);
+});
 
 // Test validation function
 console.log("\n🧪 Testing validation function:");

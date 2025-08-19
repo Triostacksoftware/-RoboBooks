@@ -1,63 +1,46 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Search,
-  Filter,
-  ArrowUpDown,
-  Download,
   Plus,
   Upload,
+  Download,
+  Filter,
+  ArrowUpDown,
 } from "lucide-react";
-import { chartOfAccountsAPI } from "../../../../../lib/api";
 
 interface SearchAndActionsProps {
   searchTerm: string;
-  onSearch: (term: string) => void;
+  onSearchChange: (value: string) => void;
   onCreateAccount: () => void;
-  onUploadExcel: () => void;
+  onImportExcel: () => void;
+  onExportExcel: () => void;
 }
 
 const SearchAndActions: React.FC<SearchAndActionsProps> = ({
   searchTerm,
-  onSearch,
+  onSearchChange,
   onCreateAccount,
-  onUploadExcel,
+  onImportExcel,
+  onExportExcel,
 }) => {
-  const handleExport = async () => {
-    try {
-      const blob = await chartOfAccountsAPI.exportExcel();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `chart-of-accounts-${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error("Export failed:", error);
-    }
-  };
-
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-6">
+    <div className="flex items-center justify-between mb-6">
       {/* Search Bar */}
-      <div className="flex-1">
+      <div className="flex-1 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search accounts..."
             value={searchTerm}
-            onChange={(e) => onSearch(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-3">
         <button
           onClick={onCreateAccount}
           className="flex items-center gap-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
@@ -67,7 +50,7 @@ const SearchAndActions: React.FC<SearchAndActionsProps> = ({
         </button>
 
         <button
-          onClick={onUploadExcel}
+          onClick={onImportExcel}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Upload className="h-4 w-4" />
@@ -75,19 +58,19 @@ const SearchAndActions: React.FC<SearchAndActionsProps> = ({
         </button>
 
         <button
-          onClick={handleExport}
+          onClick={onExportExcel}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Download className="h-4 w-4" />
           Export (csv)
         </button>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
           <Filter className="h-4 w-4" />
           Filters
         </button>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
           <ArrowUpDown className="h-4 w-4" />
           Sort By
         </button>

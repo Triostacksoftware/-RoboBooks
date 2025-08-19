@@ -1,16 +1,16 @@
 import Account from "../models/Account.js";
 // backend/controllers/accountController.js
 import mongoose from "mongoose";
-import { ACCOUNT_CATEGORIES, ACCOUNT_SUBTYPES } from "../models/Account.js";
+import { ACCOUNT_HEADS, ACCOUNT_GROUPS } from "../models/Account.js";
 
 export async function getAccounts(req, res) {
   try {
-    const { category, parent, is_active } = req.query;
+    const { accountHead, parent, isActive } = req.query;
     const filter = {};
 
-    if (category) filter.category = category;
+    if (accountHead) filter.accountHead = accountHead;
     if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
-    if (is_active !== undefined) filter.is_active = is_active === "true";
+    if (isActive !== undefined) filter.isActive = isActive === "true";
 
     const accounts = await Account.find(filter).sort({ code: 1, name: 1 });
     res.json({ success: true, data: accounts });
@@ -24,12 +24,12 @@ export async function getAccounts(req, res) {
 
 export const listAccounts = async (req, res) => {
   try {
-    const { category, parent, is_active } = req.query;
+    const { accountHead, parent, isActive } = req.query;
     const filter = {};
 
-    if (category) filter.category = category;
+    if (accountHead) filter.accountHead = accountHead;
     if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
-    if (is_active !== undefined) filter.is_active = is_active === "true";
+    if (isActive !== undefined) filter.isActive = isActive === "true";
 
     const accounts = await Account.find(filter).sort({ code: 1, name: 1 });
     res.json({ success: true, data: accounts });
@@ -112,47 +112,43 @@ export const getAccountById = async (req, res) => {
 
 /**
  * POST /api/accounts
- * Body: { code?, name, category, subtype?, parent?, opening_balance?, currency? }
+ * Body: { code?, name, accountHead, accountGroup?, parent?, openingBalance?, currency? }
  */
 export const createAccount = async (req, res) => {
   const {
     name,
-    category,
-    subtype,
+    accountHead,
+    accountGroup,
     parent,
     code,
-    opening_balance = 0,
+    openingBalance = 0,
     currency = "INR",
-    gst_treatment,
-    gst_rate = 0,
     description,
   } = req.body;
 
   // Basic validations
-  if (!name || !category) {
-    return res.status(400).json({ message: "name and category are required" });
+  if (!name || !accountHead) {
+    return res.status(400).json({ message: "name and accountHead are required" });
   }
-  if (!ACCOUNT_CATEGORIES.includes(category)) {
-    return res.status(400).json({ message: "Invalid category" });
+  if (!ACCOUNT_HEADS.includes(accountHead)) {
+    return res.status(400).json({ message: "Invalid account head" });
   }
-  if (subtype && subtype.length > 100) {
+  if (accountGroup && accountGroup.length > 100) {
     return res
       .status(400)
-      .json({ message: "Subtype is too long (max 100 characters)" });
+      .json({ message: "Account group is too long (max 100 characters)" });
   }
 
   try {
     const account = await Account.create({
       name,
-      category,
-      subtype,
+      accountHead,
+      accountGroup,
       parent: parent || null,
       code,
-      opening_balance,
-      balance: opening_balance, // initialise running balance
+      openingBalance,
+      balance: openingBalance, // initialise running balance
       currency,
-      gst_treatment,
-      gst_rate,
       description,
     });
     res.status(201).json({ success: true, data: account });

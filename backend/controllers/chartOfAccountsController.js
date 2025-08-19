@@ -1,5 +1,8 @@
-import Account from "../models/Account.js";
-import { ACCOUNT_CATEGORIES, ACCOUNT_SUBTYPES } from "../models/Account.js";
+import Account, {
+  ACCOUNT_HEADS,
+  ACCOUNT_GROUPS,
+  BALANCE_TYPE_RULES,
+} from "../models/Account.js";
 import { ExcelImportService } from "../services/excelImportService.js";
 
 /**
@@ -10,12 +13,12 @@ export const getAllAccounts = async (req, res) => {
   try {
     console.log("🔍 getAllAccounts - Query params:", req.query);
     const {
-      category,
-      subtype,
+      accountHead,
+      accountGroup,
       search,
-      is_active,
+      isActive,
       page = 1,
-      limit = 1000, // Increased from 50 to 1000 to return all accounts
+      limit = 1000,
       sortBy = "code",
       sortOrder = "asc",
     } = req.query;
@@ -23,9 +26,9 @@ export const getAllAccounts = async (req, res) => {
     // Build filter object
     const filter = {};
 
-    if (category) filter.category = category;
-    if (subtype) filter.subtype = subtype;
-    if (is_active !== undefined) filter.is_active = is_active === "true";
+    if (accountHead) filter.accountHead = accountHead;
+    if (accountGroup) filter.accountGroup = accountGroup;
+    if (isActive !== undefined) filter.isActive = isActive === "true";
 
     console.log("🔍 getAllAccounts - Built filter:", filter);
 
@@ -63,10 +66,10 @@ export const getAllAccounts = async (req, res) => {
 
     // Get account statistics
     const stats = await Account.aggregate([
-      { $match: { is_active: true } },
+      { $match: { isActive: true } },
       {
         $group: {
-          _id: "$category",
+          _id: "$accountHead",
           count: { $sum: 1 },
           totalBalance: { $sum: "$balance" },
         },
@@ -160,7 +163,7 @@ export const getSubAccounts = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Get sub-accounts with pagination
-    const subAccounts = await Account.find({ parent: id, is_active: true })
+    const subAccounts = await Account.find({ parent: id, isActive: true })
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
@@ -169,19 +172,19 @@ export const getSubAccounts = async (req, res) => {
     // Add isParent field to each account
     const subAccountsWithParentInfo = subAccounts.map((account) => {
       const accountObj = account.toObject();
-      accountObj.isParent = account.parent === null; // Top-level accounts are parent accounts
+      accountObj.isParent = account.parent === null;
       return accountObj;
     });
 
     // Get total count for pagination
-    const total = await Account.countDocuments({ parent: id, is_active: true });
+    const total = await Account.countDocuments({ parent: id, isActive: true });
 
     // Get sub-account statistics
     const stats = await Account.aggregate([
-      { $match: { parent: id, is_active: true } },
+      { $match: { parent: id, isActive: true } },
       {
         $group: {
-          _id: "$category",
+          _id: "$accountHead",
           count: { $sum: 1 },
           totalBalance: { $sum: "$balance" },
         },
@@ -220,41 +223,40 @@ export const createAccount = async (req, res) => {
   try {
     const {
       name,
-      category,
-      subtype,
+      accountHead,
+      accountGroup,
       parent,
       code,
-      opening_balance = 0,
+      openingBalance = 0,
       currency = "INR",
-      gst_treatment,
-      gst_rate = 0,
       description,
-      is_sub_account = false,
+      isSubAccount = false,
     } = req.body;
 
     // Validate required fields
-    if (!name || !category) {
+    if (!name || !accountHead) {
       return res.status(400).json({
         success: false,
-        message: "Name and category are required",
+        message: "Name and account head are required",
       });
     }
 
-    // Validate category
-    if (!ACCOUNT_CATEGORIES.includes(category)) {
+    // Validate account head
+    if (!ACCOUNT_HEADS.includes(accountHead)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(
+        message: `Invalid account head. Must be one of: ${ACCOUNT_HEADS.join(
           ", "
         )}`,
       });
     }
 
-    // Validate subtype if provided
-    if (subtype && !ACCOUNT_SUBTYPES.includes(subtype)) {
+    // Validate account group
+    const validGroups = ACCOUNT_GROUPS[accountHead] || [];
+    if (!validGroups.includes(accountGroup)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(
+        message: `Invalid account group for ${accountHead}. Must be one of: ${validGroups.join(
           ", "
         )}`,
       });
@@ -276,15 +278,13 @@ export const createAccount = async (req, res) => {
     // Create new account
     const account = new Account({
       name,
-      category,
-      subtype,
+      accountHead,
+      accountGroup,
       parent,
       code,
-      opening_balance,
-      balance: opening_balance,
+      openingBalance,
+      balance: openingBalance,
       currency,
-      gst_treatment,
-      gst_rate,
       description,
     });
 
@@ -313,35 +313,39 @@ export const updateAccount = async (req, res) => {
   try {
     const {
       name,
-      category,
-      subtype,
+      accountHead,
+      accountGroup,
       parent,
       code,
       currency,
-      gst_treatment,
-      gst_rate,
       description,
-      is_active,
+      isActive,
     } = req.body;
 
-    // Validate category if provided
-    if (category && !ACCOUNT_CATEGORIES.includes(category)) {
+    // Validate account head if provided
+    if (accountHead && !ACCOUNT_HEADS.includes(accountHead)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid category. Must be one of: ${ACCOUNT_CATEGORIES.join(
+        message: `Invalid account head. Must be one of: ${ACCOUNT_HEADS.join(
           ", "
         )}`,
       });
     }
 
-    // Validate subtype if provided
-    if (subtype && !ACCOUNT_SUBTYPES.includes(subtype)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid subtype. Must be one of: ${ACCOUNT_SUBTYPES.join(
-          ", "
-        )}`,
-      });
+    // Validate account group if provided
+    if (accountGroup) {
+      const currentAccount = await Account.findById(req.params.id);
+      const accountHeadToUse = accountHead || currentAccount.accountHead;
+      const validGroups = ACCOUNT_GROUPS[accountHeadToUse] || [];
+
+      if (!validGroups.includes(accountGroup)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid account group for ${accountHeadToUse}. Must be one of: ${validGroups.join(
+            ", "
+          )}`,
+        });
+      }
     }
 
     // Check if account exists
@@ -374,15 +378,13 @@ export const updateAccount = async (req, res) => {
       req.params.id,
       {
         name,
-        category,
-        subtype,
+        accountHead,
+        accountGroup,
         parent,
         code,
         currency,
-        gst_treatment,
-        gst_rate,
         description,
-        is_active,
+        isActive,
       },
       { new: true, runValidators: true }
     );
@@ -436,7 +438,7 @@ export const deleteAccount = async (req, res) => {
     }
 
     // Soft delete
-    await Account.findByIdAndUpdate(req.params.id, { is_active: false });
+    await Account.findByIdAndUpdate(req.params.id, { isActive: false });
 
     res.json({
       success: true,
@@ -454,15 +456,16 @@ export const deleteAccount = async (req, res) => {
 
 /**
  * GET /api/chart-of-accounts/categories
- * Get available categories and subtypes
+ * Get available account heads and groups
  */
 export const getCategories = async (req, res) => {
   try {
     res.json({
       success: true,
       data: {
-        categories: ACCOUNT_CATEGORIES,
-        subtypes: ACCOUNT_SUBTYPES,
+        accountHeads: ACCOUNT_HEADS,
+        accountGroups: ACCOUNT_GROUPS,
+        balanceTypeRules: BALANCE_TYPE_RULES,
       },
     });
   } catch (error) {
@@ -481,27 +484,27 @@ export const getCategories = async (req, res) => {
  */
 export const getAccountHierarchy = async (req, res) => {
   try {
-    const accounts = await Account.find({ is_active: true })
+    const accounts = await Account.find({ isActive: true })
       .populate("parent", "name")
-      .sort({ category: 1, name: 1 });
+      .sort({ accountHead: 1, name: 1 });
 
-    // Group accounts by category and parent
+    // Group accounts by account head and parent
     const hierarchy = {};
 
-    for (const category of ACCOUNT_CATEGORIES) {
-      hierarchy[category] = {
-        name: category.charAt(0).toUpperCase() + category.slice(1),
+    for (const accountHead of ACCOUNT_HEADS) {
+      hierarchy[accountHead] = {
+        name: accountHead.charAt(0).toUpperCase() + accountHead.slice(1),
         accounts: [],
       };
     }
 
     for (const account of accounts) {
-      const category = account.category;
-      if (!hierarchy[category]) {
-        hierarchy[category] = { name: category, accounts: [] };
+      const accountHead = account.accountHead;
+      if (!hierarchy[accountHead]) {
+        hierarchy[accountHead] = { name: accountHead, accounts: [] };
       }
 
-      hierarchy[category].accounts.push(account);
+      hierarchy[accountHead].accounts.push(account);
     }
 
     res.json({
@@ -513,6 +516,65 @@ export const getAccountHierarchy = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching account hierarchy",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/chart-of-accounts/groups/:accountHead
+ * Get account groups for a specific account head
+ */
+export const getAccountGroups = async (req, res) => {
+  try {
+    const { accountHead } = req.params;
+
+    if (!ACCOUNT_HEADS.includes(accountHead)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid account head: ${accountHead}`,
+      });
+    }
+
+    const groups = ACCOUNT_GROUPS[accountHead] || [];
+
+    res.json({
+      success: true,
+      data: groups,
+    });
+  } catch (error) {
+    console.error("Error fetching account groups:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching account groups",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/chart-of-accounts/parent-accounts/:accountGroup
+ * Get parent accounts for a specific account group
+ */
+export const getParentAccounts = async (req, res) => {
+  try {
+    const { accountGroup } = req.params;
+
+    const parentAccounts = await Account.find({
+      accountGroup,
+      parent: null,
+      isActive: true,
+    }).sort({ name: 1 });
+
+    res.json({
+      success: true,
+      data: parentAccounts,
+    });
+  } catch (error) {
+    console.error("Error fetching parent accounts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching parent accounts",
       error: error.message,
     });
   }
@@ -620,64 +682,86 @@ export const bulkImportAccounts = async (req, res) => {
 
 /**
  * POST /api/chart-of-accounts/upload-excel
- * Upload parsed Excel data and import accounts
+ * Upload Excel file and import accounts
  */
 export const uploadExcelAccounts = async (req, res) => {
   try {
-    const {
-      accounts,
-      createHierarchy = true,
-      overwriteExisting = false,
-    } = req.body;
-
-    if (!accounts || !Array.isArray(accounts)) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "No accounts data provided or invalid format",
+        message: "No Excel file uploaded",
       });
     }
 
-    console.log(`Processing ${accounts.length} accounts from frontend`);
+    console.log("📊 Processing Excel file:", req.file.originalname);
 
-    // Convert frontend data format to backend format
-    const rows = [
-      [
-        "Account Name",
-        "Account Head",
-        "Account Group",
-        "Balance",
-        "Balance Type",
-      ], // Header
-      ...accounts.map((account) => [
-        account.name,
-        account.category,
-        account.subtype,
-        account.balance,
-        account.balanceType,
-      ]),
+    // Parse Excel file
+    const rows = await ExcelImportService.parseExcelFile(req.file.buffer);
+    console.log("📊 Excel rows parsed:", rows.length);
+
+    if (rows.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Excel file must contain at least a header row and one data row",
+      });
+    }
+
+    // Validate header row
+    const headerRow = rows[0];
+    const expectedHeaders = [
+      "Account Name",
+      "Account Head",
+      "Account Group",
+      "Balance",
+      "Balance Type",
     ];
 
-    // Build account hierarchy
+    const isValidHeader = expectedHeaders.every(
+      (header, index) =>
+        headerRow[index]?.toString().trim().toLowerCase() ===
+        header.toLowerCase()
+    );
+
+    if (!isValidHeader) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid Excel format. Expected headers: ${expectedHeaders.join(
+          ", "
+        )}`,
+        receivedHeaders: headerRow
+          .map((h) => h?.toString().trim())
+          .filter(Boolean),
+      });
+    }
+
+    // Build account hierarchy from Excel data
     const result = await ExcelImportService.buildAccountHierarchy(rows, {
-      createHierarchy,
-      overwriteExisting,
+      createHierarchy: true,
+      overwriteExisting: false,
     });
+
+    console.log("📊 Import result:", result);
 
     res.json({
       success: true,
-      data: {
-        created: result.data.created,
-        updated: result.data.updated,
-        errors: result.data.errors,
-        totalProcessed: result.totalProcessed,
-      },
-      message: `Successfully imported ${result.data.created} accounts, updated ${result.data.updated} accounts`,
+      data: result.data,
+      message: `Successfully imported ${
+        result.data.created
+      } accounts, updated ${result.data.updated} accounts${
+        result.data.errors.length > 0
+          ? ` (${result.data.errors.length} errors)`
+          : ""
+      }`,
+      totalProcessed: result.totalProcessed,
+      errors: result.data.errors,
     });
   } catch (error) {
-    console.error("Error uploading Excel data:", error);
+    console.error("Error uploading Excel accounts:", error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Error uploading Excel accounts",
+      error: error.message,
     });
   }
 };
@@ -688,11 +772,11 @@ export const uploadExcelAccounts = async (req, res) => {
  */
 export const exportAccountsToExcel = async (req, res) => {
   try {
-    const { category, search } = req.query;
+    const { accountHead, search } = req.query;
 
     // Build filter
-    const filter = { is_active: true };
-    if (category) filter.category = category;
+    const filter = { isActive: true };
+    if (accountHead) filter.accountHead = accountHead;
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -703,7 +787,7 @@ export const exportAccountsToExcel = async (req, res) => {
     // Get accounts
     const accounts = await Account.find(filter)
       .populate("parent", "name")
-      .sort({ category: 1, name: 1 });
+      .sort({ accountHead: 1, name: 1 });
 
     // Generate Excel file
     const buffer = await ExcelImportService.exportAccountsToExcel(accounts);
@@ -725,6 +809,29 @@ export const exportAccountsToExcel = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error exporting accounts",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/chart-of-accounts/create-defaults
+ * Create default Chart of Accounts structure
+ */
+export const createDefaultAccounts = async (req, res) => {
+  try {
+    const results = await ExcelImportService.createDefaultAccounts();
+
+    res.json({
+      success: true,
+      data: results,
+      message: `Default accounts created: ${results.created} accounts, ${results.errors.length} errors`,
+    });
+  } catch (error) {
+    console.error("Error creating default accounts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error creating default accounts",
       error: error.message,
     });
   }

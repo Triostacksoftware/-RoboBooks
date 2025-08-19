@@ -1,7 +1,34 @@
 import XLSX from "xlsx";
-import Account, { ACCOUNT_SUBTYPES } from "../models/Account.js";
+import Account, {
+  ACCOUNT_HEADS,
+  ACCOUNT_GROUPS,
+  BALANCE_TYPE_RULES,
+} from "../models/Account.js";
 
 export class ExcelImportService {
+  /**
+   * Generate unique 8-digit account code
+   */
+  static async generateUniqueCode() {
+    const min = 10000000; // 8 digits starting with 1
+    const max = 99999999;
+
+    let code;
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    do {
+      code = Math.floor(Math.random() * (max - min + 1)) + min;
+      attempts++;
+
+      if (attempts > maxAttempts) {
+        throw new Error("Unable to generate unique account code");
+      }
+    } while (await Account.exists({ code: code.toString() }));
+
+    return code.toString();
+  }
+
   /**
    * Parse Excel file buffer and return JSON data
    */
@@ -19,34 +46,73 @@ export class ExcelImportService {
   }
 
   /**
-   * Validate account data from Excel (simplified for frontend-processed data)
+   * Validate account data from Excel
    */
   static validateAccountData(accountData, rowNumber) {
     const errors = [];
 
-    // Basic validation only since frontend already validated
     if (!accountData.name?.trim()) {
       errors.push(`Row ${rowNumber}: Account name is required`);
     }
 
-    if (!accountData.category?.trim()) {
-      errors.push(`Row ${rowNumber}: Account Head (category) is required`);
+    if (!accountData.accountHead?.trim()) {
+      errors.push(`Row ${rowNumber}: Account Head is required`);
     }
 
-    if (!accountData.subtype?.trim()) {
-      errors.push(`Row ${rowNumber}: Account Group (subtype) is required`);
+    if (!accountData.accountGroup?.trim()) {
+      errors.push(`Row ${rowNumber}: Account Group is required`);
     }
 
-    // Validate balance is a number
-    if (isNaN(parseFloat(accountData.balance))) {
-      errors.push(`Row ${rowNumber}: Balance must be a valid number`);
+    // Validate account head - be more flexible with case
+    if (accountData.accountHead) {
+      const normalizedHead = accountData.accountHead.toLowerCase().trim();
+      if (!ACCOUNT_HEADS.includes(normalizedHead)) {
+        errors.push(
+          `Row ${rowNumber}: Invalid Account Head "${
+            accountData.accountHead
+          }". Must be one of: ${ACCOUNT_HEADS.join(", ")}`
+        );
+      }
+    }
+
+    // Validate account group - accept any group name, just log warnings
+    if (accountData.accountHead && accountData.accountGroup) {
+      const normalizedHead = accountData.accountHead.toLowerCase().trim();
+      const validGroups = ACCOUNT_GROUPS[normalizedHead] || [];
+      // Don't reject unknown groups - they might be custom groups
+      if (
+        validGroups.length > 0 &&
+        !validGroups.includes(accountData.accountGroup)
+      ) {
+        console.log(
+          `Info: Row ${rowNumber}: Custom Account Group "${accountData.accountGroup}" for Account Head "${accountData.accountHead}". This will be accepted.`
+        );
+      }
+    }
+
+    // Validate balance is a number - be more flexible
+    const balance = parseFloat(accountData.balance);
+    if (isNaN(balance)) {
+      errors.push(
+        `Row ${rowNumber}: Balance must be a valid number, got: "${accountData.balance}"`
+      );
+    }
+
+    // Validate balance type - be more flexible with case and empty values
+    if (accountData.balanceType && accountData.balanceType.trim()) {
+      const normalizedType = accountData.balanceType.toLowerCase().trim();
+      if (!["credit", "debit"].includes(normalizedType)) {
+        errors.push(
+          `Row ${rowNumber}: Balance Type must be either "credit" or "debit", got: "${accountData.balanceType}"`
+        );
+      }
     }
 
     return errors;
   }
 
   /**
-   * Parse rows from Excel data (simplified for frontend-processed data)
+   * Parse rows from Excel data
    */
   static parseRows(rows) {
     // Skip header row
@@ -56,65 +122,92 @@ export class ExcelImportService {
       .map((row, index) => {
         const rowNumber = index + 2; // +2 because we skip header and arrays are 0-indexed
 
-        return {
+        // Ensure row is an array and has enough elements
+        if (!Array.isArray(row) || row.length < 3) {
+          console.log(
+            `Warning: Row ${rowNumber} has insufficient data, skipping`
+          );
+          return null;
+        }
+
+        // Map Excel columns to our data structure
+        // Column A: Account Name, Column B: Account Head, Column C: Account Group, Column D: Balance, Column E: Balance Type
+        const parsedRow = {
           name: row[0]?.toString().trim() || "",
-          category: row[1]?.toString().trim() || "",
-          subtype: row[2]?.toString().trim() || "",
+          accountHead: row[1]?.toString().trim().toLowerCase() || "",
+          accountGroup: row[2]?.toString().trim() || "", // Keep original case for account groups
           balance: parseFloat(row[3]) || 0,
-          balanceType: row[4]?.toString().toLowerCase() || "",
+          balanceType: row[4]?.toString().toLowerCase().trim() || "",
           rowNumber,
         };
+
+        // Only include rows with essential data
+        if (parsedRow.name && parsedRow.accountHead && parsedRow.accountGroup) {
+          return parsedRow;
+        } else {
+          console.log(
+            `Warning: Row ${rowNumber} missing essential data, skipping`
+          );
+          return null;
+        }
       })
-      .filter((row) => row.name && row.category && row.subtype); // Only include complete rows
+      .filter((row) => row !== null); // Remove null rows
   }
 
   /**
-   * Create parent accounts for each category and subtype
+   * Create parent accounts for each account group
    */
-  static async createParentAccounts(accounts) {
-    const hierarchy = {};
+  static async createParentAccounts(accountGroups) {
+    const createdParents = [];
 
-    for (const account of accounts) {
-      if (!hierarchy[account.category]) {
-        hierarchy[account.category] = {};
-      }
-
-      if (!hierarchy[account.category][account.subtype]) {
-        // Check if parent account already exists
-        let parentAccount = await Account.findOne({
-          name: account.subtype,
-          category: account.category.toLowerCase(),
-          parent: null,
-        });
-
-        if (!parentAccount) {
-          // Create parent account for this subtype
-          parentAccount = new Account({
-            name: account.subtype,
-            category: account.category.toLowerCase(),
-            subtype: account.subtype,
-            opening_balance: 0,
-            balance: 0,
-            is_active: true,
-            description: `Parent account for ${account.subtype}`,
+    for (const [accountHead, groups] of Object.entries(accountGroups)) {
+      for (const groupName of groups) {
+        try {
+          // Check if parent account already exists
+          const existingParent = await Account.findOne({
+            name: groupName,
+            accountHead: accountHead.toLowerCase(),
+            accountGroup: groupName,
+            isParent: true,
           });
 
-          await parentAccount.save();
-        }
+          if (!existingParent) {
+            // Generate unique 8-digit code
+            const code = await this.generateUniqueCode();
 
-        hierarchy[account.category][account.subtype] = parentAccount._id;
+            // Determine balance type based on account head
+            const balanceType =
+              BALANCE_TYPE_RULES[accountHead.toLowerCase()] || "debit";
+
+            const parentAccount = new Account({
+              name: groupName,
+              code,
+              accountHead: accountHead.toLowerCase(),
+              accountGroup: groupName,
+              balance: 0,
+              balanceType,
+              isParent: true,
+              isActive: true,
+              description: `Parent account for ${groupName} group`,
+            });
+
+            await parentAccount.save();
+            createdParents.push(parentAccount);
+            console.log(
+              `Created parent account: ${groupName} (${accountHead})`
+            );
+          } else {
+            console.log(
+              `Parent account already exists: ${groupName} (${accountHead})`
+            );
+          }
+        } catch (error) {
+          console.error(`Error creating parent account ${groupName}:`, error);
+        }
       }
     }
 
-    return hierarchy;
-  }
-
-  /**
-   * Map account group to subtype - flexible validation
-   */
-  static mapAccountGroupToSubtype(subtype) {
-    // Simply return the subtype as-is, with basic normalization
-    return subtype.trim();
+    return createdParents;
   }
 
   /**
@@ -130,7 +223,8 @@ export class ExcelImportService {
     for (const accountData of accounts) {
       try {
         // Get parent account ID
-        const parentId = hierarchy[accountData.category]?.[accountData.subtype];
+        const parentId =
+          hierarchy[accountData.accountHead]?.[accountData.accountGroup];
 
         // Check if account exists by name and parent
         const existingAccount = await Account.findOne({
@@ -138,31 +232,34 @@ export class ExcelImportService {
           parent: parentId,
         });
 
-        // Parse balance from Excel - use exact value from Excel, no fallbacks
+        // Parse balance from Excel
         const excelBalance = parseFloat(accountData.balance);
-        const balanceType = accountData.balanceType?.toLowerCase() || "debit";
+        const balanceType =
+          accountData.balanceType ||
+          BALANCE_TYPE_RULES[accountData.accountHead];
 
-        // Create account document using validated mapping
+        // Create account document
         const accountDoc = {
           name: accountData.name,
-          category: accountData.category.toLowerCase(),
-          subtype: accountData.subtype,
+          accountHead: accountData.accountHead,
+          accountGroup: accountData.accountGroup,
           parent: parentId,
-          opening_balance: excelBalance,
+          openingBalance: excelBalance,
           balance: excelBalance,
-          is_active: true,
-          description: `Imported from Excel - ${accountData.category} / ${accountData.subtype}`,
+          balanceType: balanceType,
+          isActive: true,
+          description: `Imported from Excel - ${accountData.accountHead} / ${accountData.accountGroup}`,
         };
 
         if (existingAccount) {
-          // Update existing account with Excel data only
+          // Update existing account
           await Account.findByIdAndUpdate(existingAccount._id, accountDoc, {
             new: true,
             runValidators: true,
           });
           results.updated++;
         } else {
-          // Create new account with Excel data only
+          // Create new account
           const newAccount = new Account(accountDoc);
           await newAccount.save();
           results.created++;
@@ -178,40 +275,168 @@ export class ExcelImportService {
   }
 
   /**
-   * Build complete account hierarchy from Excel data
+   * Build account hierarchy from Excel data
    */
   static async buildAccountHierarchy(rows, options = {}) {
     const { createHierarchy = true, overwriteExisting = false } = options;
 
     try {
-      // Step 1: Parse and validate rows
-      const accounts = this.parseRows(rows);
+      // Parse rows from Excel
+      const parsedRows = this.parseRows(rows);
+      console.log(`Parsed ${parsedRows.length} rows from Excel`);
 
-      // Step 2: Validate all accounts
-      const allErrors = [];
-      for (const account of accounts) {
-        const errors = this.validateAccountData(account, account.rowNumber);
-        allErrors.push(...errors);
+      if (parsedRows.length === 0) {
+        return {
+          success: false,
+          message: "No valid data found in Excel file",
+          data: { created: 0, updated: 0, errors: [] },
+          totalProcessed: 0,
+        };
       }
 
-      if (allErrors.length > 0) {
-        throw new Error(`Validation errors:\n${allErrors.join("\n")}`);
+      // Validate all rows
+      const validationErrors = [];
+      for (const row of parsedRows) {
+        try {
+          const errors = this.validateAccountData(row, row.rowNumber);
+          validationErrors.push(...errors);
+        } catch (error) {
+          validationErrors.push(
+            `Row ${row.rowNumber}: Validation error - ${error.message}`
+          );
+        }
       }
 
-      // Step 3: Create parent accounts
-      const hierarchy = await this.createParentAccounts(accounts);
+      if (validationErrors.length > 0) {
+        console.log(`Validation errors found: ${validationErrors.length}`);
+        // Don't fail completely, just log the errors and continue
+        console.log("First 5 validation errors:", validationErrors.slice(0, 5));
+      }
 
-      // Step 4: Create individual accounts
-      const results = await this.createAccounts(accounts, hierarchy);
+      // Group accounts by account head and group
+      const accountGroups = {};
+      for (const row of parsedRows) {
+        const accountHead = row.accountHead.toLowerCase();
+        if (!accountGroups[accountHead]) {
+          accountGroups[accountHead] = new Set();
+        }
+        accountGroups[accountHead].add(row.accountGroup);
+      }
+
+      // Convert Sets to Arrays
+      const accountGroupsArray = {};
+      for (const [accountHead, groups] of Object.entries(accountGroups)) {
+        accountGroupsArray[accountHead] = Array.from(groups);
+      }
+
+      // Create parent accounts if hierarchy is enabled
+      if (createHierarchy) {
+        console.log("Creating parent accounts for hierarchy...");
+        try {
+          await this.createParentAccounts(accountGroupsArray);
+        } catch (error) {
+          console.error("Error creating parent accounts:", error);
+          // Continue with account creation even if parent creation fails
+        }
+      }
+
+      // Process each account
+      let created = 0;
+      let updated = 0;
+      const errors = [];
+
+      for (const row of parsedRows) {
+        try {
+          // Check if account already exists
+          const existingAccount = await Account.findOne({
+            name: row.name,
+            accountHead: row.accountHead.toLowerCase(),
+          });
+
+          if (existingAccount && !overwriteExisting) {
+            console.log(`Account already exists: ${row.name}`);
+            continue;
+          }
+
+          // Find parent account if hierarchy is enabled
+          let parentId = null;
+          if (createHierarchy) {
+            try {
+              const parentAccount = await Account.findOne({
+                name: row.accountGroup,
+                accountHead: row.accountHead.toLowerCase(),
+                isParent: true,
+              });
+              parentId = parentAccount?._id || null;
+            } catch (error) {
+              console.log(
+                `Could not find parent for ${row.name}: ${error.message}`
+              );
+            }
+          }
+
+          // Generate unique code
+          let code;
+          try {
+            code = await this.generateUniqueCode();
+          } catch (error) {
+            errors.push(
+              `Row ${row.rowNumber}: Failed to generate unique code - ${error.message}`
+            );
+            continue;
+          }
+
+          // Determine balance type based on account head
+          const balanceType =
+            BALANCE_TYPE_RULES[row.accountHead.toLowerCase()] || "debit";
+
+          const accountData = {
+            name: row.name,
+            code,
+            accountHead: row.accountHead.toLowerCase(),
+            accountGroup: row.accountGroup,
+            balance: row.balance || 0,
+            balanceType: row.balanceType || balanceType,
+            parent: parentId,
+            isActive: true,
+            description: `Imported from Excel - ${row.name}`,
+          };
+
+          if (existingAccount && overwriteExisting) {
+            // Update existing account
+            await Account.findByIdAndUpdate(existingAccount._id, accountData);
+            updated++;
+            console.log(`Updated account: ${row.name}`);
+          } else {
+            // Create new account
+            const newAccount = new Account(accountData);
+            await newAccount.save();
+            created++;
+            console.log(`Created account: ${row.name}`);
+          }
+        } catch (error) {
+          console.error(`Error processing account ${row.name}:`, error);
+          errors.push(`Row ${row.rowNumber}: ${error.message}`);
+        }
+      }
+
+      console.log(
+        `Import completed: ${created} created, ${updated} updated, ${errors.length} errors`
+      );
 
       return {
         success: true,
-        data: results,
-        hierarchy,
-        totalProcessed: accounts.length,
+        data: { created, updated, errors },
+        totalProcessed: parsedRows.length,
       };
     } catch (error) {
-      throw new Error(`Failed to build account hierarchy: ${error.message}`);
+      console.error("Error building account hierarchy:", error);
+      return {
+        success: false,
+        message: error.message,
+        data: { created: 0, updated: 0, errors: [error.message] },
+        totalProcessed: 0,
+      };
     }
   }
 
@@ -235,14 +460,17 @@ export class ExcelImportService {
         const parent = account.parent
           ? await Account.findById(account.parent)
           : null;
-        const accountGroup = parent ? parent.name : account.subtype || "Other";
+        const accountGroup = parent
+          ? parent.name
+          : account.accountGroup || "Other";
 
         exportData.push([
           account.name,
-          account.category.charAt(0).toUpperCase() + account.category.slice(1),
+          account.accountHead.charAt(0).toUpperCase() +
+            account.accountHead.slice(1),
           accountGroup,
           account.balance || 0,
-          account.balance >= 0 ? "debit" : "credit",
+          account.balanceType || "debit",
         ]);
       }
 
@@ -268,5 +496,155 @@ export class ExcelImportService {
     } catch (error) {
       throw new Error(`Failed to export accounts: ${error.message}`);
     }
+  }
+
+  /**
+   * Create default Chart of Accounts structure
+   */
+  static async createDefaultAccounts() {
+    const defaultAccounts = [
+      // Asset Accounts
+      {
+        name: "Cash In Hand",
+        accountHead: "asset",
+        accountGroup: "Current Asset",
+        balance: 0,
+      },
+      {
+        name: "Bank Accounts",
+        accountHead: "asset",
+        accountGroup: "Current Asset",
+        balance: 0,
+      },
+      {
+        name: "Accounts Receivable",
+        accountHead: "asset",
+        accountGroup: "Current Asset",
+        balance: 0,
+      },
+      {
+        name: "Inventory",
+        accountHead: "asset",
+        accountGroup: "Current Asset",
+        balance: 0,
+      },
+      {
+        name: "Fixed Assets",
+        accountHead: "asset",
+        accountGroup: "Non-Current Asset",
+        balance: 0,
+      },
+
+      // Liability Accounts
+      {
+        name: "Accounts Payable",
+        accountHead: "liability",
+        accountGroup: "Current Liability",
+        balance: 0,
+      },
+      {
+        name: "Loans Payable",
+        accountHead: "liability",
+        accountGroup: "Loans",
+        balance: 0,
+      },
+      {
+        name: "Provisions",
+        accountHead: "liability",
+        accountGroup: "Provisions",
+        balance: 0,
+      },
+
+      // Income Accounts
+      {
+        name: "Sales Revenue",
+        accountHead: "income",
+        accountGroup: "Direct Income",
+        balance: 0,
+      },
+      {
+        name: "Service Revenue",
+        accountHead: "income",
+        accountGroup: "Direct Income",
+        balance: 0,
+      },
+      {
+        name: "Interest Income",
+        accountHead: "income",
+        accountGroup: "Indirect Income",
+        balance: 0,
+      },
+
+      // Expense Accounts
+      {
+        name: "Cost of Goods Sold",
+        accountHead: "expense",
+        accountGroup: "Direct Expense",
+        balance: 0,
+      },
+      {
+        name: "Operating Expenses",
+        accountHead: "expense",
+        accountGroup: "Indirect Expense",
+        balance: 0,
+      },
+      {
+        name: "Salary Expenses",
+        accountHead: "expense",
+        accountGroup: "Indirect Expense",
+        balance: 0,
+      },
+
+      // Equity Accounts
+      {
+        name: "Owner's Capital",
+        accountHead: "equity",
+        accountGroup: "Capital Account",
+        balance: 0,
+      },
+      {
+        name: "Retained Earnings",
+        accountHead: "equity",
+        accountGroup: "Capital Account",
+        balance: 0,
+      },
+    ];
+
+    const results = {
+      created: 0,
+      updated: 0,
+      errors: [],
+    };
+
+    for (const accountData of defaultAccounts) {
+      try {
+        // Check if account exists
+        const existingAccount = await Account.findOne({
+          name: accountData.name,
+          accountHead: accountData.accountHead,
+          accountGroup: accountData.accountGroup,
+        });
+
+        if (!existingAccount) {
+          const newAccount = new Account({
+            name: accountData.name,
+            accountHead: accountData.accountHead,
+            accountGroup: accountData.accountGroup,
+            openingBalance: accountData.balance,
+            balance: accountData.balance,
+            balanceType: BALANCE_TYPE_RULES[accountData.accountHead],
+            isActive: true,
+            description: `Default account - ${accountData.accountHead} / ${accountData.accountGroup}`,
+          });
+
+          await newAccount.save();
+          results.created++;
+        }
+      } catch (error) {
+        results.errors.push(`${accountData.name}: ${error.message}`);
+      }
+    }
+
+    return results;
   }
 }

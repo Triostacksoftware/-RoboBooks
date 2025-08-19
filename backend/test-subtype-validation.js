@@ -5,75 +5,43 @@
  * Run this to test if the 'loans' subtype is now valid
  */
 
-import { ACCOUNT_SUBTYPES } from "./models/Account.js";
+import { ACCOUNT_HEADS, ACCOUNT_GROUPS } from "./models/Account.js";
 
-console.log("🧪 Testing subtype validation...\n");
+console.log("🧪 Testing account head and group validation...\n");
 
-// Test the specific subtype that was causing the error
-const testSubtypes = [
-  "loans",
-  "bank",
-  "cash",
-  "accounts_receivable",
-  "fixed_asset",
-  "inventory",
-  "other_asset",
-  "current_asset",
-  "investment",
-  "advances",
-  "prepaid_expenses",
-  "accounts_payable",
-  "credit_card",
-  "current_liability",
-  "long_term_liability",
-  "provisions",
-  "loans_payable",
-  "bonds_payable",
-  "owner_equity",
-  "retained_earnings",
-  "capital",
-  "drawings",
-  "sales",
-  "service_revenue",
-  "other_income",
-  "direct_income",
-  "indirect_income",
-  "interest_income",
-  "commission_income",
-  "cost_of_goods_sold",
-  "operating_expense",
-  "other_expense",
-  "direct_expense",
-  "indirect_expense",
-  "salary_expense",
-  "rent_expense",
-  "utilities_expense",
-  "advertising_expense",
-  "depreciation_expense",
-  "interest_expense",
-  "tax_expense",
-];
+// Test account heads
+const testAccountHeads = ACCOUNT_HEADS;
 
-console.log("✅ Valid subtypes:");
-testSubtypes.forEach((subtype) => {
-  if (ACCOUNT_SUBTYPES.includes(subtype)) {
-    console.log(`  ✅ ${subtype}`);
-  } else {
-    console.log(`  ❌ ${subtype} - NOT FOUND`);
-  }
+// Test account groups
+const testAccountGroups = Object.values(ACCOUNT_GROUPS).flat();
+
+console.log("✅ Valid account heads:");
+testAccountHeads.forEach((head) => {
+  console.log(`  ✅ ${head}`);
+});
+
+console.log("\n✅ Valid account groups:");
+testAccountGroups.forEach((group) => {
+  console.log(`  ✅ ${group}`);
 });
 
 console.log("\n📊 Summary:");
-console.log(`Total valid subtypes: ${ACCOUNT_SUBTYPES.length}`);
-console.log(`Tested subtypes: ${testSubtypes.length}`);
+console.log(`Total valid account heads: ${ACCOUNT_HEADS.length}`);
+console.log(`Total valid account groups: ${testAccountGroups.length}`);
 
-// Test the specific error case
-const loansSubtype = "loans";
-if (ACCOUNT_SUBTYPES.includes(loansSubtype)) {
-  console.log(`\n🎉 SUCCESS: '${loansSubtype}' is now a valid subtype!`);
+// Test the specific error case - check if "Loans" is in the liability groups
+const loansGroup = "Loans";
+const liabilityGroups = ACCOUNT_GROUPS.liability || [];
+if (liabilityGroups.includes(loansGroup)) {
+  console.log(`\n🎉 SUCCESS: '${loansGroup}' is now a valid account group!`);
 } else {
-  console.log(`\n❌ ERROR: '${loansSubtype}' is still not a valid subtype`);
+  console.log(`\n❌ ERROR: '${loansGroup}' is still not a valid account group`);
 }
 
-console.log("\n📋 All valid subtypes:");
-console.log(ACCOUNT_SUBTYPES.join(", "));
+console.log("\n📋 All valid account heads:");
+console.log(ACCOUNT_HEADS.join(", "));
+
+console.log("\n📋 All valid account groups by category:");
+Object.entries(ACCOUNT_GROUPS).forEach(([head, groups]) => {
+  console.log(`${head}: ${groups.join(", ")}`);
+});

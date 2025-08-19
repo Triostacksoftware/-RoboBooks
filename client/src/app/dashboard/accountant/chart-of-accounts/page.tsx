@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Building2,
   ChevronDown,
+  Database,
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { chartOfAccountsAPI } from "@/lib/api";
@@ -25,9 +26,8 @@ import { ParsedExcelResult } from "@/services/excelParserService";
 interface Account {
   _id: string;
   name: string;
-  accountType: string;
+  accountHead: string;
   accountGroup: string;
-  originalSubtype?: string; // Store the original subtype from backend
   balance: number;
   balanceType: "credit" | "debit";
   subAccountCount?: number;
@@ -50,15 +50,15 @@ const ChartOfAccountsPage = () => {
   const { showToast } = useToast();
 
   // Fetch accounts from backend API
-  const fetchAccounts = async (category?: string) => {
+  const fetchAccounts = async (accountHead?: string) => {
     try {
       setLoading(true);
       console.log("Fetching accounts...");
 
       // Build query parameters for filtering
       const params: Record<string, string> = {};
-      if (category && category !== "all") {
-        params.category = category;
+      if (accountHead && accountHead !== "all") {
+        params.accountHead = accountHead;
       }
 
       const data = await chartOfAccountsAPI.getAll(params);
@@ -77,51 +77,34 @@ const ChartOfAccountsPage = () => {
         data.data.length,
         "accounts"
       );
-      const transformedAccounts: Account[] = data.data.map((account: any) => {
-        // Determine balance type based on account category (accounting rules)
-        const getBalanceType = (category: string, balance: number) => {
-          const categoryLower = category.toLowerCase();
+      const transformedAccounts: Account[] = data.data
+        .filter((account: any) => account && account._id) // Filter out invalid accounts
+        .map((account: any) => {
+          // Ensure all required fields exist
+          const safeAccount = {
+            _id: account._id || "",
+            name: account.name || "Unnamed Account",
+            accountHead: account.accountHead || "unknown",
+            accountGroup: account.accountGroup || "Unknown",
+            balance: account.balance || 0,
+            balanceType: account.balanceType || "debit",
+            subAccountCount: account.subAccountCount || 0,
+            isParent: account.isParent || false,
+            parentId: account.parent?._id || null,
+            code: account.code || "",
+            description: account.description || "",
+            isActive: account.isActive !== undefined ? account.isActive : true,
+          };
 
-          // Assets and Expenses are typically debit (positive)
-          if (categoryLower === "asset" || categoryLower === "expense") {
-            return "debit";
-          }
-
-          // Liabilities, Equity, and Income are typically credit (negative)
-          if (
-            categoryLower === "liability" ||
-            categoryLower === "equity" ||
-            categoryLower === "income"
-          ) {
-            return "credit";
-          }
-
-          // Fallback: use the sign of the balance
-          return balance >= 0 ? "debit" : "credit";
-        };
-
-        return {
-          _id: account._id,
-          name: account.name,
-          accountType:
-            account.category.charAt(0).toUpperCase() +
-            account.category.slice(1),
-          accountGroup: account.subtype
-            ? account.subtype
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (l: string) => l.toUpperCase())
-            : "Other",
-          originalSubtype: account.subtype || null, // Store original subtype
-          balance: Math.abs(account.balance || 0), // Use absolute value for display
-          balanceType: getBalanceType(account.category, account.balance || 0),
-          subAccountCount: account.subAccountCount,
-          isParent: account.isParent,
-          parentId: account.parent,
-          code: account.code,
-          description: account.description,
-          isActive: account.is_active,
-        };
-      });
+          return {
+            ...safeAccount,
+            accountHead: safeAccount.accountHead
+              ? safeAccount.accountHead.charAt(0).toUpperCase() +
+                safeAccount.accountHead.slice(1)
+              : "Unknown",
+            balance: Math.abs(safeAccount.balance),
+          };
+        });
 
       console.log("Transformed accounts:", transformedAccounts);
       setAccounts(transformedAccounts);
@@ -131,17 +114,56 @@ const ChartOfAccountsPage = () => {
         error instanceof Error ? error.message : "Failed to fetch accounts",
         "error"
       );
+      // Set empty array to prevent further errors
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Upload parsed Excel data
-  const handleExcelUpload = async (parsedData: ParsedExcelResult) => {
+  // Export accounts to Excel
+  const handleExportExcel = async () => {
     try {
-      console.log("Uploading parsed data:", parsedData.validRows, "valid rows");
+      const blob = await chartOfAccountsAPI.exportExcel();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `chart-of-accounts-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast("Accounts exported successfully", "success");
+    } catch (error) {
+      console.error("Export failed:", error);
+      showToast("Failed to export accounts", "error");
+    }
+  };
 
-      const result = await chartOfAccountsAPI.uploadExcelData(parsedData.data);
+  // Create default accounts
+  const handleCreateDefaults = async () => {
+    try {
+      const result = await chartOfAccountsAPI.createDefaults();
+      showToast("Default accounts created successfully", "success");
+      await fetchAccounts(activeTab);
+    } catch (error) {
+      console.error("Error creating defaults:", error);
+      showToast("Failed to create default accounts", "error");
+    }
+  };
+
+  // Upload Excel file
+  const handleExcelUpload = async (file: File) => {
+    try {
+      console.log("Uploading Excel file:", file.name);
+
+      // Create FormData to send file
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await chartOfAccountsAPI.uploadExcelFile(formData);
       console.log("Upload result:", result);
 
       // Create a more detailed success message
@@ -161,9 +183,9 @@ const ChartOfAccountsPage = () => {
       await fetchAccounts(activeTab);
       setShowUploadModal(false);
     } catch (error) {
-      console.error("Error uploading Excel data:", error);
+      console.error("Error uploading Excel file:", error);
       showToast(
-        error instanceof Error ? error.message : "Failed to upload Excel data",
+        error instanceof Error ? error.message : "Failed to upload Excel file",
         "error"
       );
     }
@@ -174,17 +196,15 @@ const ChartOfAccountsPage = () => {
     try {
       await chartOfAccountsAPI.create({
         name: accountData.name,
-        category: accountData.category, // Now category is the head (Asset, Income, etc.)
-        subtype: accountData.subtype, // Now subtype is the group (Current, Fixed, etc.)
+        accountHead: accountData.accountHead.toLowerCase(),
+        accountGroup: accountData.accountGroup,
         parent: accountData.parent || null,
         code: accountData.code,
-        opening_balance: accountData.opening_balance,
+        openingBalance: accountData.openingBalance,
         currency: accountData.currency,
-        gst_treatment: accountData.gst_treatment,
-        gst_rate: accountData.gst_rate,
         description: accountData.description,
-        is_active: accountData.is_active,
-        is_sub_account: accountData.is_sub_account,
+        isActive: accountData.isActive,
+        balanceType: accountData.balanceType, // Add the missing balanceType field
       });
 
       showToast("Account created successfully", "success");
@@ -205,13 +225,13 @@ const ChartOfAccountsPage = () => {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    // Fetch accounts with the new category filter
+    // Fetch accounts with the new account head filter
     fetchAccounts(tab);
 
     // Show toast notification for filtering
     if (tab !== "all") {
-      const categoryName = tab.charAt(0).toUpperCase() + tab.slice(1);
-      showToast(`Filtering by ${categoryName} accounts`, "info");
+      const accountHeadName = tab.charAt(0).toUpperCase() + tab.slice(1);
+      showToast(`Filtering by ${accountHeadName} accounts`, "info");
     } else {
       showToast("Showing all accounts", "info");
     }
@@ -229,14 +249,15 @@ const ChartOfAccountsPage = () => {
     setShowUploadModal(true);
   };
 
+  // Handle account click to navigate to sub-accounts
   const handleAccountClick = (account: Account) => {
-    if (account.isParent) {
-      // Navigate to sub-accounts
+    if (account.isParent || account.subAccountCount > 0) {
+      // Navigate to sub-accounts page
       router.push(`/dashboard/accountant/chart-of-accounts/${account._id}`);
     }
   };
 
-  // Filter accounts by search term only (category filtering is now handled by backend)
+  // Filter accounts by search term only (account head filtering is now handled by backend)
   const filteredAccounts = accounts.filter((account) => {
     const matchesSearch = account.name
       .toLowerCase()
@@ -282,9 +303,10 @@ const ChartOfAccountsPage = () => {
         {/* Search and Actions */}
         <SearchAndActions
           searchTerm={searchTerm}
-          onSearch={handleSearch}
+          onSearchChange={handleSearch}
           onCreateAccount={handleCreateAccountClick}
-          onUploadExcel={handleUploadExcel}
+          onImportExcel={handleUploadExcel}
+          onExportExcel={handleExportExcel}
         />
 
         {/* Accounts Table */}
@@ -300,41 +322,7 @@ const ChartOfAccountsPage = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={handleCreateAccount}
-        existingAccounts={accounts.map((account) => {
-          const mappedAccount = {
-            _id: account._id,
-            name: account.name,
-            category: account.accountType.toLowerCase(),
-            subtype:
-              account.originalSubtype ||
-              account.accountGroup.toLowerCase().replace(/\s+/g, "_"),
-            isParent: account.isParent,
-            parentId: account.parentId,
-          };
-
-          // Debug: Check for current_asset accounts specifically
-          if (mappedAccount.subtype === "current_asset") {
-            console.log("🎯 Found current_asset account:", {
-              name: mappedAccount.name,
-              category: mappedAccount.category,
-              subtype: mappedAccount.subtype,
-              isParent: mappedAccount.isParent,
-              originalSubtype: account.originalSubtype,
-              accountGroup: account.accountGroup,
-              parentId: mappedAccount.parentId,
-            });
-          }
-
-          console.log("🔍 Mapped account for modal:", {
-            name: mappedAccount.name,
-            category: mappedAccount.category,
-            subtype: mappedAccount.subtype,
-            isParent: mappedAccount.isParent,
-            originalSubtype: account.originalSubtype,
-            accountGroup: account.accountGroup,
-          });
-          return mappedAccount;
-        })}
+        existingAccounts={accounts}
       />
 
       <ExcelUploadModal

@@ -493,6 +493,13 @@ export const chartOfAccountsAPI = {
     });
   },
 
+  // Create default accounts
+  createDefaults: () => {
+    return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/create-defaults`, {
+      method: "POST",
+    });
+  },
+
   // Update account
   update: (id: string, accountData: Record<string, unknown>) => {
     return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`, {
@@ -516,6 +523,20 @@ export const chartOfAccountsAPI = {
   // Get hierarchy
   getHierarchy: () => {
     return apiRequest(CHART_OF_ACCOUNTS_API.HIERARCHY);
+  },
+
+  // Upload Excel file
+  uploadExcelFile: (formData: FormData) => {
+    return fetch(CHART_OF_ACCOUNTS_API.UPLOAD_EXCEL, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+      return response.json();
+    });
   },
 
   // Upload parsed Excel data

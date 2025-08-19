@@ -1,10 +1,10 @@
 import React from "react";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, ChevronRight } from "lucide-react";
 
 interface Account {
   _id: string;
   name: string;
-  accountType: string;
+  accountHead: string;
   accountGroup: string;
   balance: number;
   balanceType: "credit" | "debit";
@@ -28,7 +28,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
   onEditAccount,
 }) => {
   const formatBalance = (balance: number, balanceType: "credit" | "debit") => {
-    return `₹ ${balance.toFixed(2)} ${balanceType.toUpperCase()}`;
+    return `₹${balance.toFixed(2)} ${balanceType.toUpperCase()}`;
   };
 
   return (
@@ -41,7 +41,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
                 Accounts
               </th>
               <th className="text-center py-3 px-6 text-sm font-medium text-gray-700">
-                Account Head
+                Account Type
               </th>
               <th className="text-center py-3 px-6 text-sm font-medium text-gray-700">
                 Account Group
@@ -58,29 +58,38 @@ const AccountTable: React.FC<AccountTableProps> = ({
             {accounts.map((account, index) => (
               <tr
                 key={account._id}
-                className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                  index === 4 ? "bg-yellow-50" : "" // Highlight "Stock in Hand" like in screenshot
+                className={`border-b border-gray-100 hover:bg-gray-50 ${
+                  account.isParent || account.subAccountCount > 0
+                    ? "cursor-pointer"
+                    : ""
                 }`}
                 onClick={() => onAccountClick(account)}
               >
                 {/* Accounts Column */}
                 <td className="py-4 px-6">
-                  <div className="flex flex-col">
-                    <div className="text-sm font-medium text-gray-900">
-                      {account.name}
-                    </div>
-                    {account.subAccountCount && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {account.subAccountCount} accounts
-                      </div>
+                  <div className="flex items-center">
+                    {(account.isParent || account.subAccountCount > 0) && (
+                      <ChevronRight className="h-4 w-4 text-gray-400 mr-2" />
                     )}
+                    <div className="flex flex-col">
+                      <div className="text-sm font-medium text-gray-900">
+                        {account.name}
+                      </div>
+                      {account.subAccountCount &&
+                        account.subAccountCount > 0 && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {account.subAccountCount} account
+                            {account.subAccountCount !== 1 ? "s" : ""}
+                          </div>
+                        )}
+                    </div>
                   </div>
                 </td>
 
-                {/* Account Head Column */}
+                {/* Account Type Column */}
                 <td className="py-4 px-6 text-center">
                   <div className="text-sm font-medium text-gray-900">
-                    {account.accountType}
+                    {account.accountHead}
                   </div>
                 </td>
 
