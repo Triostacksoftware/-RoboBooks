@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import {
   TableCellsIcon,
-  UploadIcon,
-  DownloadIcon,
+  ArrowUpTrayIcon as UploadIcon,
+  ArrowDownTrayIcon as DownloadIcon,
   EyeIcon,
   PlusIcon,
   TrashIcon,
