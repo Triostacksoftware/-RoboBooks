@@ -65,17 +65,42 @@ app.use(cookieParser());
 // CORS configuration - must be before other middleware
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_ORIGIN || "http://localhost:3000",
-      "https://robobookss.com",
-      "https://www.robobookss.com",
-      "http://localhost:3000",
-    ],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        process.env.CLIENT_ORIGIN || "http://localhost:3000",
+        "https://robobookss.com",
+        "https://www.robobookss.com",
+        "http://localhost:3000",
+        "http://localhost:3001", // For development
+      ];
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log("🚫 CORS blocked origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+    ],
+    exposedHeaders: ["Set-Cookie"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
+
+// Handle preflight requests
+app.options("*", cors());
 
 // Security middleware
 app.use(
@@ -142,9 +167,29 @@ app.get("/api/health", (_req, res) => {
 });
 
 // Error handler
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(err.status || 500).json({ success: false, message: err.message });
+app.use((err, req, res, next) => {
+  console.error("❌ Error occurred:", {
+    message: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    origin: req.headers.origin,
+    userAgent: req.headers["user-agent"],
+  });
+
+  // Handle CORS errors specifically
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: "CORS policy violation",
+      error: "Origin not allowed by CORS policy",
+    });
+  }
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message,
+  });
 });
 
 // Start server
