@@ -3,6 +3,7 @@ import multer from "multer";
 import {
   getAllAccounts,
   getAccountById,
+  getSubAccounts,
   createAccount,
   updateAccount,
   deleteAccount,
@@ -59,8 +60,14 @@ router.get("/categories", getCategories);
 // GET /api/chart-of-accounts/hierarchy - Get accounts organized in hierarchy
 router.get("/hierarchy", getAccountHierarchy);
 
+// GET /api/chart-of-accounts/export-excel - Export accounts to Excel file
+router.get("/export-excel", exportAccountsToExcel);
+
 // GET /api/chart-of-accounts/:id - Get a specific account by ID
 router.get("/:id", getAccountById);
+
+// GET /api/chart-of-accounts/:id/sub-accounts - Get sub-accounts of a specific account
+router.get("/:id/sub-accounts", getSubAccounts);
 
 // POST /api/chart-of-accounts - Create a new account
 router.post("/", createAccount);
@@ -79,8 +86,5 @@ router.post("/bulk-import", bulkImportAccounts);
 
 // POST /api/chart-of-accounts/upload-excel - Upload parsed Excel data and import accounts
 router.post("/upload-excel", uploadExcelAccounts);
-
-// GET /api/chart-of-accounts/export-excel - Export accounts to Excel file
-router.get("/export-excel", exportAccountsToExcel);
 
 export default router;

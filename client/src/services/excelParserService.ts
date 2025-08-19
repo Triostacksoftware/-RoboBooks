@@ -2,8 +2,8 @@ import * as XLSX from "xlsx";
 
 export interface ExcelAccountData {
   name: string;
-  accountType: string;
-  accountGroup: string;
+  category: string;
+  subtype: string;
   balance: number;
   balanceType: string;
   rowNumber: number;
@@ -152,8 +152,8 @@ export class ExcelParserService {
 
       const accountData: ExcelAccountData = {
         name: row[0]?.toString().trim() || "",
-        accountType: row[1]?.toString().trim() || "",
-        accountGroup: row[2]?.toString().trim() || "",
+        category: row[1]?.toString().trim() || "",
+        subtype: row[2]?.toString().trim() || "",
         balance: parseFloat(row[3]) || 0,
         balanceType: row[4]?.toString().toLowerCase() || "debit",
         rowNumber,
@@ -163,10 +163,8 @@ export class ExcelParserService {
       const rowErrors = this.validateRow(accountData);
 
       if (rowErrors.length === 0) {
-        // Map account group to valid subtype
-        accountData.accountGroup = this.mapAccountGroup(
-          accountData.accountGroup
-        );
+        // Map subtype to valid format
+        accountData.subtype = this.mapAccountGroup(accountData.subtype);
         data.push(accountData);
         validRows++;
       } else {
@@ -197,14 +195,14 @@ export class ExcelParserService {
       });
     }
 
-    // Validate account type - more flexible validation
-    if (!data.accountType.trim()) {
+    // Validate category - more flexible validation
+    if (!data.category.trim()) {
       errors.push({
         row: data.rowNumber,
         field: "Account Head",
         message: "Account head is required",
       });
-    } else if (data.accountType.trim().length > 50) {
+    } else if (data.category.trim().length > 50) {
       errors.push({
         row: data.rowNumber,
         field: "Account Head",
@@ -212,14 +210,14 @@ export class ExcelParserService {
       });
     }
 
-    // Validate account group - more flexible validation
-    if (!data.accountGroup.trim()) {
+    // Validate subtype - more flexible validation
+    if (!data.subtype.trim()) {
       errors.push({
         row: data.rowNumber,
         field: "Account Group",
         message: "Account group is required",
       });
-    } else if (data.accountGroup.trim().length > 100) {
+    } else if (data.subtype.trim().length > 100) {
       errors.push({
         row: data.rowNumber,
         field: "Account Group",

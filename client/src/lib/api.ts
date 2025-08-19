@@ -480,6 +480,8 @@ export const chartOfAccountsAPI = {
     const url = searchParams
       ? `${CHART_OF_ACCOUNTS_API.BASE}?${searchParams}`
       : CHART_OF_ACCOUNTS_API.BASE;
+    console.log("🌐 Chart of Accounts API URL:", url);
+    console.log("🌐 Chart of Accounts API params:", params);
     return apiRequest(url);
   },
 
@@ -534,5 +536,15 @@ export const chartOfAccountsAPI = {
       }
       return response.blob();
     });
+  },
+
+  // Get account by ID
+  getById: (id: string) => {
+    return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`);
+  },
+
+  // Get sub-accounts
+  getSubAccounts: (parentId: string) => {
+    return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${parentId}/sub-accounts`);
   },
 };

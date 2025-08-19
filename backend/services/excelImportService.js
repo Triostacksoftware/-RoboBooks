@@ -19,45 +19,34 @@ export class ExcelImportService {
   }
 
   /**
-   * Validate account data from Excel
+   * Validate account data from Excel (simplified for frontend-processed data)
    */
   static validateAccountData(accountData, rowNumber) {
     const errors = [];
 
-    // Required fields only
+    // Basic validation only since frontend already validated
     if (!accountData.name?.trim()) {
       errors.push(`Row ${rowNumber}: Account name is required`);
     }
 
-    if (!accountData.accountType?.trim()) {
-      errors.push(`Row ${rowNumber}: Account type is required`);
+    if (!accountData.category?.trim()) {
+      errors.push(`Row ${rowNumber}: Account Head (category) is required`);
     }
 
-    if (!accountData.accountGroup?.trim()) {
-      errors.push(`Row ${rowNumber}: Account group is required`);
+    if (!accountData.subtype?.trim()) {
+      errors.push(`Row ${rowNumber}: Account Group (subtype) is required`);
     }
 
-    // Validate balance is a number (if provided)
-    if (
-      accountData.balance !== undefined &&
-      isNaN(parseFloat(accountData.balance))
-    ) {
+    // Validate balance is a number
+    if (isNaN(parseFloat(accountData.balance))) {
       errors.push(`Row ${rowNumber}: Balance must be a valid number`);
-    }
-
-    // Validate account group - more flexible validation
-    const accountGroup = accountData.accountGroup.trim();
-    if (accountGroup.length > 100) {
-      errors.push(
-        `Row ${rowNumber}: Account group is too long (max 100 characters)`
-      );
     }
 
     return errors;
   }
 
   /**
-   * Parse rows from Excel data
+   * Parse rows from Excel data (simplified for frontend-processed data)
    */
   static parseRows(rows) {
     // Skip header row
@@ -69,53 +58,51 @@ export class ExcelImportService {
 
         return {
           name: row[0]?.toString().trim() || "",
-          accountType: row[1]?.toString().trim() || "",
-          accountGroup: row[2]?.toString().trim() || "",
+          category: row[1]?.toString().trim() || "",
+          subtype: row[2]?.toString().trim() || "",
           balance: parseFloat(row[3]) || 0,
           balanceType: row[4]?.toString().toLowerCase() || "",
           rowNumber,
         };
       })
-      .filter((row) => row.name || row.accountType || row.accountGroup); // Remove empty rows
+      .filter((row) => row.name && row.category && row.subtype); // Only include complete rows
   }
 
   /**
-   * Create parent accounts for each account type and group
+   * Create parent accounts for each category and subtype
    */
   static async createParentAccounts(accounts) {
     const hierarchy = {};
 
     for (const account of accounts) {
-      if (!hierarchy[account.accountType]) {
-        hierarchy[account.accountType] = {};
+      if (!hierarchy[account.category]) {
+        hierarchy[account.category] = {};
       }
 
-      if (!hierarchy[account.accountType][account.accountGroup]) {
+      if (!hierarchy[account.category][account.subtype]) {
         // Check if parent account already exists
         let parentAccount = await Account.findOne({
-          name: account.accountGroup,
-          category: account.accountType.toLowerCase(),
+          name: account.subtype,
+          category: account.category.toLowerCase(),
           parent: null,
         });
 
         if (!parentAccount) {
-          // Create parent account for this group using validated mapping
-          const subtype = this.mapAccountGroupToSubtype(account.accountGroup);
+          // Create parent account for this subtype
           parentAccount = new Account({
-            name: account.accountGroup,
-            category: account.accountType.toLowerCase(),
-            subtype: subtype,
+            name: account.subtype,
+            category: account.category.toLowerCase(),
+            subtype: account.subtype,
             opening_balance: 0,
             balance: 0,
             is_active: true,
-            description: `Parent account for ${account.accountGroup}`,
+            description: `Parent account for ${account.subtype}`,
           });
 
           await parentAccount.save();
         }
 
-        hierarchy[account.accountType][account.accountGroup] =
-          parentAccount._id;
+        hierarchy[account.category][account.subtype] = parentAccount._id;
       }
     }
 
@@ -125,9 +112,9 @@ export class ExcelImportService {
   /**
    * Map account group to subtype - flexible validation
    */
-  static mapAccountGroupToSubtype(accountGroup) {
-    // Simply return the account group as-is, with basic normalization
-    return accountGroup.trim();
+  static mapAccountGroupToSubtype(subtype) {
+    // Simply return the subtype as-is, with basic normalization
+    return subtype.trim();
   }
 
   /**
@@ -143,8 +130,7 @@ export class ExcelImportService {
     for (const accountData of accounts) {
       try {
         // Get parent account ID
-        const parentId =
-          hierarchy[accountData.accountType]?.[accountData.accountGroup];
+        const parentId = hierarchy[accountData.category]?.[accountData.subtype];
 
         // Check if account exists by name and parent
         const existingAccount = await Account.findOne({
@@ -157,16 +143,15 @@ export class ExcelImportService {
         const balanceType = accountData.balanceType?.toLowerCase() || "debit";
 
         // Create account document using validated mapping
-        const subtype = this.mapAccountGroupToSubtype(accountData.accountGroup);
         const accountDoc = {
           name: accountData.name,
-          category: accountData.accountType.toLowerCase(),
-          subtype: subtype,
+          category: accountData.category.toLowerCase(),
+          subtype: accountData.subtype,
           parent: parentId,
           opening_balance: excelBalance,
           balance: excelBalance,
           is_active: true,
-          description: `Imported from Excel - ${accountData.accountType} / ${accountData.accountGroup}`,
+          description: `Imported from Excel - ${accountData.category} / ${accountData.subtype}`,
         };
 
         if (existingAccount) {

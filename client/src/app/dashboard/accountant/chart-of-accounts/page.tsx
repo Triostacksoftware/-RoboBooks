@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
@@ -26,6 +27,7 @@ interface Account {
   name: string;
   accountType: string;
   accountGroup: string;
+  originalSubtype?: string; // Store the original subtype from backend
   balance: number;
   balanceType: "credit" | "debit";
   subAccountCount?: number;
@@ -37,6 +39,7 @@ interface Account {
 }
 
 const ChartOfAccountsPage = () => {
+  const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -47,15 +50,33 @@ const ChartOfAccountsPage = () => {
   const { showToast } = useToast();
 
   // Fetch accounts from backend API
-  const fetchAccounts = async () => {
+  const fetchAccounts = async (category?: string) => {
     try {
       setLoading(true);
       console.log("Fetching accounts...");
 
-      const data = await chartOfAccountsAPI.getAll();
+      // Build query parameters for filtering
+      const params: Record<string, string> = {};
+      if (category && category !== "all") {
+        params.category = category;
+      }
+
+      const data = await chartOfAccountsAPI.getAll(params);
       console.log("Received data:", data);
+      console.log("Filter params:", params);
+
+      // Validate data structure
+      if (!data || !data.data || !Array.isArray(data.data)) {
+        console.error("❌ Invalid data structure received:", data);
+        throw new Error("Invalid data structure received from API");
+      }
 
       // Transform backend data to match frontend interface
+      console.log(
+        "🔄 Transforming accounts data:",
+        data.data.length,
+        "accounts"
+      );
       const transformedAccounts: Account[] = data.data.map((account: any) => {
         // Determine balance type based on account category (accounting rules)
         const getBalanceType = (category: string, balance: number) => {
@@ -90,6 +111,7 @@ const ChartOfAccountsPage = () => {
                 .replace(/_/g, " ")
                 .replace(/\b\w/g, (l: string) => l.toUpperCase())
             : "Other",
+          originalSubtype: account.subtype || null, // Store original subtype
           balance: Math.abs(account.balance || 0), // Use absolute value for display
           balanceType: getBalanceType(account.category, account.balance || 0),
           subAccountCount: account.subAccountCount,
@@ -105,7 +127,10 @@ const ChartOfAccountsPage = () => {
       setAccounts(transformedAccounts);
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      showToast("Failed to fetch accounts", "error");
+      showToast(
+        error instanceof Error ? error.message : "Failed to fetch accounts",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -133,7 +158,7 @@ const ChartOfAccountsPage = () => {
       showToast(message, "success");
 
       // Refresh the accounts list
-      await fetchAccounts();
+      await fetchAccounts(activeTab);
       setShowUploadModal(false);
     } catch (error) {
       console.error("Error uploading Excel data:", error);
@@ -149,8 +174,8 @@ const ChartOfAccountsPage = () => {
     try {
       await chartOfAccountsAPI.create({
         name: accountData.name,
-        category: accountData.category,
-        subtype: accountData.subtype,
+        category: accountData.category, // Now category is the head (Asset, Income, etc.)
+        subtype: accountData.subtype, // Now subtype is the group (Current, Fixed, etc.)
         parent: accountData.parent || null,
         code: accountData.code,
         opening_balance: accountData.opening_balance,
@@ -159,10 +184,11 @@ const ChartOfAccountsPage = () => {
         gst_rate: accountData.gst_rate,
         description: accountData.description,
         is_active: accountData.is_active,
+        is_sub_account: accountData.is_sub_account,
       });
 
       showToast("Account created successfully", "success");
-      await fetchAccounts();
+      await fetchAccounts(activeTab);
       setShowCreateModal(false);
     } catch (error) {
       console.error("Error creating account:", error);
@@ -174,11 +200,21 @@ const ChartOfAccountsPage = () => {
   };
 
   useEffect(() => {
-    fetchAccounts();
+    fetchAccounts(activeTab);
   }, []);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    // Fetch accounts with the new category filter
+    fetchAccounts(tab);
+
+    // Show toast notification for filtering
+    if (tab !== "all") {
+      const categoryName = tab.charAt(0).toUpperCase() + tab.slice(1);
+      showToast(`Filtering by ${categoryName} accounts`, "info");
+    } else {
+      showToast("Showing all accounts", "info");
+    }
   };
 
   const handleSearch = (term: string) => {
@@ -195,19 +231,17 @@ const ChartOfAccountsPage = () => {
 
   const handleAccountClick = (account: Account) => {
     if (account.isParent) {
-      // Navigate to sub-accounts or expand
-      console.log("Navigate to sub-accounts for:", account.name);
+      // Navigate to sub-accounts
+      router.push(`/dashboard/accountant/chart-of-accounts/${account._id}`);
     }
   };
 
+  // Filter accounts by search term only (category filtering is now handled by backend)
   const filteredAccounts = accounts.filter((account) => {
     const matchesSearch = account.name
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesTab =
-      activeTab === "all" ||
-      account.accountType.toLowerCase() === activeTab.toLowerCase();
-    return matchesSearch && matchesTab;
+    return matchesSearch;
   });
 
   if (loading) {
@@ -266,6 +300,41 @@ const ChartOfAccountsPage = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={handleCreateAccount}
+        existingAccounts={accounts.map((account) => {
+          const mappedAccount = {
+            _id: account._id,
+            name: account.name,
+            category: account.accountType.toLowerCase(),
+            subtype:
+              account.originalSubtype ||
+              account.accountGroup.toLowerCase().replace(/\s+/g, "_"),
+            isParent: account.isParent,
+            parentId: account.parentId,
+          };
+
+          // Debug: Check for current_asset accounts specifically
+          if (mappedAccount.subtype === "current_asset") {
+            console.log("🎯 Found current_asset account:", {
+              name: mappedAccount.name,
+              category: mappedAccount.category,
+              subtype: mappedAccount.subtype,
+              isParent: mappedAccount.isParent,
+              originalSubtype: account.originalSubtype,
+              accountGroup: account.accountGroup,
+              parentId: mappedAccount.parentId,
+            });
+          }
+
+          console.log("🔍 Mapped account for modal:", {
+            name: mappedAccount.name,
+            category: mappedAccount.category,
+            subtype: mappedAccount.subtype,
+            isParent: mappedAccount.isParent,
+            originalSubtype: account.originalSubtype,
+            accountGroup: account.accountGroup,
+          });
+          return mappedAccount;
+        })}
       />
 
       <ExcelUploadModal

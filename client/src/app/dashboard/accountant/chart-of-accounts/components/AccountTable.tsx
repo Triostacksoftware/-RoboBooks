@@ -7,7 +7,7 @@ interface Account {
   accountType: string;
   accountGroup: string;
   balance: number;
-  balanceType: 'credit' | 'debit';
+  balanceType: "credit" | "debit";
   subAccountCount?: number;
   isParent?: boolean;
   parentId?: string;
@@ -27,7 +27,7 @@ const AccountTable: React.FC<AccountTableProps> = ({
   onAccountClick,
   onEditAccount,
 }) => {
-  const formatBalance = (balance: number, balanceType: 'credit' | 'debit') => {
+  const formatBalance = (balance: number, balanceType: "credit" | "debit") => {
     return `₹ ${balance.toFixed(2)} ${balanceType.toUpperCase()}`;
   };
 
@@ -41,7 +41,10 @@ const AccountTable: React.FC<AccountTableProps> = ({
                 Accounts
               </th>
               <th className="text-center py-3 px-6 text-sm font-medium text-gray-700">
-                Account Type / Groups
+                Account Head
+              </th>
+              <th className="text-center py-3 px-6 text-sm font-medium text-gray-700">
+                Account Group
               </th>
               <th className="text-right py-3 px-6 text-sm font-medium text-gray-700">
                 Balance
@@ -74,15 +77,17 @@ const AccountTable: React.FC<AccountTableProps> = ({
                   </div>
                 </td>
 
-                {/* Account Type / Groups Column */}
+                {/* Account Head Column */}
                 <td className="py-4 px-6 text-center">
-                  <div className="flex flex-col items-center">
-                    <div className="text-sm font-medium text-gray-900">
-                      {account.accountType}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {account.accountGroup}
-                    </div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {account.accountType}
+                  </div>
+                </td>
+
+                {/* Account Group Column */}
+                <td className="py-4 px-6 text-center">
+                  <div className="text-sm font-medium text-gray-900">
+                    {account.accountGroup}
                   </div>
                 </td>
 
@@ -116,18 +121,16 @@ const AccountTable: React.FC<AccountTableProps> = ({
         <div className="flex items-center justify-between text-sm text-gray-700">
           <div className="flex items-center gap-4">
             <span>Rows per page: 50</span>
-            <span>1-{accounts.length} of {accounts.length}</span>
+            <span>
+              1-{accounts.length} of {accounts.length}
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <button className="p-1 text-gray-400 hover:text-gray-600">
-              ←
-            </button>
+            <button className="p-1 text-gray-400 hover:text-gray-600">←</button>
             <button className="px-2 py-1 bg-blue-500 text-white rounded text-xs">
               1
             </button>
-            <button className="p-1 text-gray-400 hover:text-gray-600">
-              →
-            </button>
+            <button className="p-1 text-gray-400 hover:text-gray-600">→</button>
           </div>
         </div>
       </div>

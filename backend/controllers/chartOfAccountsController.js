@@ -8,6 +8,7 @@ import { ExcelImportService } from "../services/excelImportService.js";
  */
 export const getAllAccounts = async (req, res) => {
   try {
+    console.log("🔍 getAllAccounts - Query params:", req.query);
     const {
       category,
       subtype,
@@ -25,6 +26,8 @@ export const getAllAccounts = async (req, res) => {
     if (category) filter.category = category;
     if (subtype) filter.subtype = subtype;
     if (is_active !== undefined) filter.is_active = is_active === "true";
+
+    console.log("🔍 getAllAccounts - Built filter:", filter);
 
     if (search) {
       filter.$or = [
@@ -48,6 +51,13 @@ export const getAllAccounts = async (req, res) => {
       .limit(parseInt(limit))
       .populate("parent", "name code");
 
+    // Add isParent field to each account
+    const accountsWithParentInfo = accounts.map((account) => {
+      const accountObj = account.toObject();
+      accountObj.isParent = account.parent === null; // Top-level accounts are parent accounts
+      return accountObj;
+    });
+
     // Get total count for pagination
     const total = await Account.countDocuments(filter);
 
@@ -65,7 +75,7 @@ export const getAllAccounts = async (req, res) => {
 
     res.json({
       success: true,
-      data: accounts,
+      data: accountsWithParentInfo,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -120,6 +130,89 @@ export const getAccountById = async (req, res) => {
 };
 
 /**
+ * GET /api/chart-of-accounts/:id/sub-accounts
+ * Get sub-accounts of a specific account
+ */
+export const getSubAccounts = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      page = 1,
+      limit = 1000,
+      sortBy = "name",
+      sortOrder = "asc",
+    } = req.query;
+
+    // Verify parent account exists
+    const parentAccount = await Account.findById(id);
+    if (!parentAccount) {
+      return res.status(404).json({
+        success: false,
+        message: "Parent account not found",
+      });
+    }
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get sub-accounts with pagination
+    const subAccounts = await Account.find({ parent: id, is_active: true })
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate("parent", "name code");
+
+    // Add isParent field to each account
+    const subAccountsWithParentInfo = subAccounts.map((account) => {
+      const accountObj = account.toObject();
+      accountObj.isParent = account.parent === null; // Top-level accounts are parent accounts
+      return accountObj;
+    });
+
+    // Get total count for pagination
+    const total = await Account.countDocuments({ parent: id, is_active: true });
+
+    // Get sub-account statistics
+    const stats = await Account.aggregate([
+      { $match: { parent: id, is_active: true } },
+      {
+        $group: {
+          _id: "$category",
+          count: { $sum: 1 },
+          totalBalance: { $sum: "$balance" },
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      data: subAccountsWithParentInfo,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+      stats: stats.reduce((acc, stat) => {
+        acc[stat._id] = { count: stat.count, totalBalance: stat.totalBalance };
+        return acc;
+      }, {}),
+    });
+  } catch (error) {
+    console.error("Error fetching sub-accounts:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching sub-accounts",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * POST /api/chart-of-accounts
  * Create a new account
  */
@@ -136,6 +229,7 @@ export const createAccount = async (req, res) => {
       gst_treatment,
       gst_rate = 0,
       description,
+      is_sub_account = false,
     } = req.body;
 
     // Validate required fields
@@ -556,8 +650,8 @@ export const uploadExcelAccounts = async (req, res) => {
       ], // Header
       ...accounts.map((account) => [
         account.name,
-        account.accountType,
-        account.accountGroup,
+        account.category,
+        account.subtype,
         account.balance,
         account.balanceType,
       ]),
