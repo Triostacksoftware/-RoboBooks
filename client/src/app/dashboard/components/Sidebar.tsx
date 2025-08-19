@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   HomeIcon,
   CubeIcon,
@@ -20,6 +21,7 @@ import {
   ChevronDownIcon,
   ChevronLeftIcon,
   PlusIcon,
+  ArrowRightOnRectangleIcon,
   // submenu icons
   UserGroupIcon,
   DocumentTextIcon,
@@ -281,6 +283,7 @@ const cn = (...xs: (string | false | undefined)[]) =>
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout } = useAuth();
   const { isModuleEnabled } = useModulePreferences();
   const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({
@@ -586,6 +589,25 @@ export default function Sidebar() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Logout button */}
+      <div className="border-t">
+        <button
+          onClick={async () => {
+            try {
+              await logout();
+            } catch (error) {
+              console.error("Logout failed:", error);
+              router.push("/signin");
+            }
+          }}
+          className="w-full py-3 px-4 flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors"
+          aria-label="Logout"
+        >
+          <ArrowRightOnRectangleIcon className="h-5 w-5" />
+          {!collapsed && <span className="text-sm font-medium">Logout</span>}
+        </button>
       </div>
 
       {/* Bottom collapse/expand */}

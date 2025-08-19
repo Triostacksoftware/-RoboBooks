@@ -148,11 +148,17 @@ const ChartOfAccountsPage = () => {
   const handleCreateAccount = async (accountData: any) => {
     try {
       await chartOfAccountsAPI.create({
-        name: accountData.accountName,
-        category: accountData.accountType.toLowerCase(),
-        subtype: accountData.accountType.toLowerCase().replace(/\s+/g, "_"),
-        opening_balance: accountData.openingBalance,
+        name: accountData.name,
+        category: accountData.category,
+        subtype: accountData.subtype,
+        parent: accountData.parent || null,
+        code: accountData.code,
+        opening_balance: accountData.opening_balance,
+        currency: accountData.currency,
+        gst_treatment: accountData.gst_treatment,
+        gst_rate: accountData.gst_rate,
         description: accountData.description,
+        is_active: accountData.is_active,
       });
 
       showToast("Account created successfully", "success");
