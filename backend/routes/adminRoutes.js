@@ -49,7 +49,7 @@ router.post("/create-simple", async (req, res) => {
     // Basic validation
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({
-        success: false,
+        success: false,     
         message:
           "All fields are required: firstName, lastName, email, password",
       });

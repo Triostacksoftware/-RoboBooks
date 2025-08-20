@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useToast } from "../../../contexts/ToastContext";
 import { useModulePreferences } from "../../../contexts/ModulePreferenceContext";
@@ -13,6 +14,7 @@ interface ModulePreference {
 }
 
 export default function ConfigurePage() {
+  const router = useRouter();
   const [modulePreferences, setModulePreferences] = useState<ModulePreference[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -116,10 +118,10 @@ export default function ConfigurePage() {
                 </p>
               </div>
               <button
-                onClick={() => window.history.back()}
-                className="p-2 rounded-full hover:bg-gray-100 transition"
+                onClick={() => router.push('/dashboard')}
+                className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                <XMarkIcon className="w-5 h-5 text-gray-600" />
+                ← Back to Dashboard
               </button>
             </div>
           </div>

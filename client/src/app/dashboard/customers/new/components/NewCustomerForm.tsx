@@ -222,10 +222,10 @@ export default function NewCustomerForm() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <button
-                onClick={() => router.back()}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-md"
+                onClick={() => router.push('/dashboard/customers')}
+                className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                <ArrowLeftIcon className="w-5 h-5 text-gray-600" />
+                ← Back to Customers
               </button>
               <h1 className="text-2xl font-bold text-gray-900">New Customer</h1>
             </div>

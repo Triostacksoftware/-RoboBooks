@@ -245,11 +245,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
               <input
                 type="text"
                 placeholder="Street Address"
-                value={formData.billingAddress.street || ""}
+                value={formData.billingAddress?.street || ""}
                 onChange={(e) =>
                   onFormDataChange({
                     billingAddress: {
-                      ...formData.billingAddress,
+                      ...(formData.billingAddress || {}),
                       street: e.target.value,
                     },
                   })
@@ -260,11 +260,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="City"
-                  value={formData.billingAddress.city || ""}
+                  value={formData.billingAddress?.city || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       billingAddress: {
-                        ...formData.billingAddress,
+                        ...(formData.billingAddress || {}),
                         city: e.target.value,
                       },
                     })
@@ -274,11 +274,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="State"
-                  value={formData.billingAddress.state || ""}
+                  value={formData.billingAddress?.state || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       billingAddress: {
-                        ...formData.billingAddress,
+                        ...(formData.billingAddress || {}),
                         state: e.target.value,
                       },
                     })
@@ -290,11 +290,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="Country"
-                  value={formData.billingAddress.country || ""}
+                  value={formData.billingAddress?.country || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       billingAddress: {
-                        ...formData.billingAddress,
+                        ...(formData.billingAddress || {}),
                         country: e.target.value,
                       },
                     })
@@ -304,11 +304,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="ZIP Code"
-                  value={formData.billingAddress.zipCode || ""}
+                  value={formData.billingAddress?.zipCode || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       billingAddress: {
-                        ...formData.billingAddress,
+                        ...(formData.billingAddress || {}),
                         zipCode: e.target.value,
                       },
                     })
@@ -338,11 +338,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
               <input
                 type="text"
                 placeholder="Street Address"
-                value={formData.shippingAddress.street || ""}
+                value={formData.shippingAddress?.street || ""}
                 onChange={(e) =>
                   onFormDataChange({
                     shippingAddress: {
-                      ...formData.shippingAddress,
+                      ...(formData.shippingAddress || {}),
                       street: e.target.value,
                     },
                   })
@@ -353,11 +353,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="City"
-                  value={formData.shippingAddress.city || ""}
+                  value={formData.shippingAddress?.city || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       shippingAddress: {
-                        ...formData.shippingAddress,
+                        ...(formData.shippingAddress || {}),
                         city: e.target.value,
                       },
                     })
@@ -367,11 +367,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="State"
-                  value={formData.shippingAddress.state || ""}
+                  value={formData.shippingAddress?.state || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       shippingAddress: {
-                        ...formData.shippingAddress,
+                        ...(formData.shippingAddress || {}),
                         state: e.target.value,
                       },
                     })
@@ -383,11 +383,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="Country"
-                  value={formData.shippingAddress.country || ""}
+                  value={formData.shippingAddress?.country || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       shippingAddress: {
-                        ...formData.shippingAddress,
+                        ...(formData.shippingAddress || {}),
                         country: e.target.value,
                       },
                     })
@@ -397,11 +397,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 <input
                   type="text"
                   placeholder="ZIP Code"
-                  value={formData.shippingAddress.zipCode || ""}
+                  value={formData.shippingAddress?.zipCode || ""}
                   onChange={(e) =>
                     onFormDataChange({
                       shippingAddress: {
-                        ...formData.shippingAddress,
+                        ...(formData.shippingAddress || {}),
                         zipCode: e.target.value,
                       },
                     })

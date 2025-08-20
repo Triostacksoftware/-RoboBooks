@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ReportsSidebar from './components/ReportsSidebar';
 import ReportsList from './components/ReportsList';
 import CreateReportModal from './components/CreateReportModal';
@@ -21,6 +22,7 @@ interface Report {
 }
 
 export default function ReportsPage() {
+  const router = useRouter();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,11 +164,19 @@ export default function ReportsPage() {
           {/* Header */}
           <div className="bg-white border-b border-gray-200 px-6 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Reports Center</h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Generate and manage your business reports
-                </p>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+                >
+                  ← Back to Dashboard
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Reports Center</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Generate and manage your business reports
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}

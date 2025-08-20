@@ -245,13 +245,12 @@ export default function NewVendorForm() {
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => router.back()}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          onClick={() => router.push('/dashboard/purchases/vendors')}
+          className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 mb-4"
         >
-          <ArrowLeftIcon className="h-5 w-5 mr-2" />
-          Back to Customers
+          ← Back to Vendors
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">New Customer</h1>
+        <h1 className="text-2xl font-bold text-gray-900">New Vendor</h1>
       </div>
 
       {/* Prefill Banner */}

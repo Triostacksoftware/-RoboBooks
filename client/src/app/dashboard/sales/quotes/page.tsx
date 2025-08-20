@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PlusIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, FunnelIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import QuotesDropdown from './components/QuotesDropdown';
 import QuoteIntroSection from './components/QuoteIntroSection';
 import QuotesModuleInfo from './components/QuotesModuleInfo';
@@ -88,9 +88,21 @@ const QuotesPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Quotes</h1>
-              <p className="text-sm text-gray-600">Manage your quotes and estimates</p>
+            <div className="flex items-center gap-4">
+              {/* Back Button */}
+              <button
+                onClick={() => router.push('/dashboard/sales')}
+                className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-gray-700 hover:text-gray-900"
+                aria-label="Go back to Sales"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+              
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Quotes</h1>
+                <p className="text-sm text-gray-600">Manage your quotes and estimates</p>
+              </div>
             </div>
             <button
               onClick={() => router.push('/dashboard/sales/quotes/new')}

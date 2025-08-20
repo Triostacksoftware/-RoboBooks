@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   Calendar,
@@ -35,6 +36,7 @@ interface ProfitLossData {
 }
 
 const ProfitLossPage = () => {
+  const router = useRouter();
   const [reportData, setReportData] = useState<ProfitLossData | null>(null);
   const [loading, setLoading] = useState(false);
   const [startDate, setStartDate] = useState(() => {
@@ -185,11 +187,19 @@ const ProfitLossPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">
-                Profit & Loss Report v2
-              </h1>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/dashboard/accountant')}
+                className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+              >
+                ← Back to Accountant
+              </button>
+              <div className="flex items-center">
+                <TrendingUp className="h-8 w-8 text-green-600 mr-3" />
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Profit & Loss Report v2
+                </h1>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <select className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">

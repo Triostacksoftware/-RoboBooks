@@ -13,6 +13,7 @@ import {
   XMarkIcon,
   PencilIcon,
   MagnifyingGlassIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import { Customer } from "@/services/customerService";
 
@@ -263,11 +264,23 @@ export default function CustomersSection() {
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Active Customers
-              </h2>
-              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+            <div className="flex items-center gap-4">
+              {/* Back Button */}
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-gray-700 hover:text-gray-900"
+                aria-label="Go back to Dashboard"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+              
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Active Customers
+                </h2>
+                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Link

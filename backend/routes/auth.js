@@ -236,6 +236,15 @@ router.post("/login", async (req, res, next) => {
 
     const user = await User.findOne(query);
 
+    // DEBUG LOGGING
+    console.log("🔍 DEBUG LOGIN - User found:", {
+      found: !!user,
+      email: user?.email,
+      approvalStatus: user?.approvalStatus,
+      isActive: user?.isActive,
+      hasPassword: !!user?.passwordHash
+    });
+
     if (!user || !user.passwordHash) {
       return res
         .status(401)
@@ -244,11 +253,14 @@ router.post("/login", async (req, res, next) => {
 
     // Check if user is active
     if (!user.isActive) {
+      console.log("❌ DEBUG: User is not active");
       return res.status(401).json({ message: "Account is deactivated" });
     }
 
     // Check if user is approved
+    console.log("🔍 DEBUG: Checking approval status:", user.approvalStatus);
     if (user.approvalStatus === "pending") {
+      console.log("❌ DEBUG: User approval status is pending");
       return res.status(401).json({
         message:
           "Your account is pending approval. Please wait for admin approval before logging in.",
@@ -257,6 +269,7 @@ router.post("/login", async (req, res, next) => {
     }
 
     if (user.approvalStatus === "rejected") {
+      console.log("❌ DEBUG: User approval status is rejected");
       return res.status(401).json({
         message:
           user.rejectionReason ||
@@ -265,13 +278,18 @@ router.post("/login", async (req, res, next) => {
       });
     }
 
+    console.log("✅ DEBUG: User passed all checks, proceeding with password verification");
+
     // Verify password
     const match = await bcrypt.compare(password, user.passwordHash);
     if (!match) {
+      console.log("❌ DEBUG: Password verification failed");
       return res
         .status(401)
         .json({ message: "Invalid email/phone or password" });
     }
+
+    console.log("✅ DEBUG: Password verified successfully");
 
     // Update last login
     user.lastLogin = new Date();

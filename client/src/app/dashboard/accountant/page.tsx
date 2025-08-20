@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   BookOpen, 
   RefreshCw, 
@@ -11,10 +12,12 @@ import {
   Settings,
   TrendingUp,
   BarChart3,
-  Scale
+  Scale,
+  ArrowLeft
 } from "lucide-react";
 
 const AccountantPage = () => {
+  const router = useRouter();
   const accountantModules = [
     {
       title: "Profit & Loss Report",
@@ -128,9 +131,21 @@ const AccountantPage = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <Calculator className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Accountant</h1>
+            <div className="flex items-center gap-4">
+              {/* Back Button */}
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-gray-700 hover:text-gray-900"
+                aria-label="Go back to Dashboard"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+              
+              <div className="flex items-center">
+                <Calculator className="h-8 w-8 text-blue-600 mr-3" />
+                <h1 className="text-2xl font-bold text-gray-900">Accountant</h1>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">Professional accounting tools</span>

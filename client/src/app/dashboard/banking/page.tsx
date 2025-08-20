@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BanknotesIcon,
   CreditCardIcon,
@@ -15,6 +16,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XMarkIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import BankingOverview from "./components/BankingOverview";
 import TransactionManager from "./components/TransactionManager";
@@ -74,6 +76,7 @@ interface ReconciliationItem {
 export default function BankingPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showConnectModal, setShowConnectModal] = useState(false);
+  const router = useRouter();
 
   const tabs = [
     { id: "overview", label: "Overview", icon: ChartBarIcon },
@@ -339,11 +342,22 @@ export default function BankingPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Banking</h1>
-          <p className="text-gray-600">
-            Manage your bank accounts and transactions
-          </p>
+        <div className="flex items-center gap-4">
+          {/* Back Button */}
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+            aria-label="Go back to Dashboard"
+          >
+            ← Back to Dashboard
+          </button>
+          
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Banking</h1>
+            <p className="text-gray-600">
+              Manage your bank accounts and transactions
+            </p>
+          </div>
         </div>
         <button
           onClick={() => {

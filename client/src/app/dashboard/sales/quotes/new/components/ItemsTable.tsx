@@ -120,7 +120,7 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
             </tr>
           </thead>
           <tbody>
-            {items.map((item, index) => (
+            {(items || []).map((item, index) => (
               <tr key={item.id} className="border-b border-gray-100">
                 <td className="py-2 px-1">
                   <input
@@ -231,7 +231,7 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                   </span>
                 </td>
                 <td className="py-2 px-1">
-                  {items.length > 1 && (
+                  {(items || []).length > 1 && (
                     <button
                       onClick={() => onRemoveItem(item.id)}
                       className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"

@@ -37,6 +37,10 @@ interface QuoteSummaryProps {
     additionalTaxAmount: number;
     adjustment: number;
     total: number;
+    // Signature fields
+    enableSignature: boolean;
+    signatureFile: File | null;
+    signaturePreview: string;
     items: Array<{
       id: number;
       itemId: string;
@@ -468,6 +472,27 @@ const QuoteSummary: React.FC<QuoteSummaryProps> = ({
             )}
           </div>
         </div>
+
+        {/* Signature Status */}
+        {formData.enableSignature && (
+          <div className="mt-2 p-1.5 bg-green-50 rounded text-xs">
+            <div className="text-green-900 font-medium mb-0.5">
+              ✍️ Signature Upload
+            </div>
+            <div className="text-green-700 text-xs">
+              {formData.signatureFile ? (
+                <span>✅ Signature uploaded successfully</span>
+              ) : (
+                <span>⏳ Waiting for signature upload</span>
+              )}
+            </div>
+            {formData.signatureFile && (
+              <div className="text-green-600 text-xs mt-1">
+                File: {formData.signatureFile.name}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
