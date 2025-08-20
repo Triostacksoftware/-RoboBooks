@@ -47,6 +47,19 @@ interface CreateAccountModalProps {
     accountHead: string;
     accountGroup: string;
   } | null;
+  editingAccount?: {
+    _id: string;
+    name: string;
+    accountHead: string;
+    accountGroup: string;
+    code?: string;
+    description?: string;
+    isActive: boolean;
+    balanceType: string;
+    openingBalance?: number;
+    currency?: string;
+    parent?: string;
+  } | null;
 }
 
 const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
@@ -56,6 +69,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   existingAccounts = [],
   isSubAccount = false,
   parentAccount = null,
+  editingAccount = null,
 }) => {
   const { showToast } = useToast();
   const parentDropdownRef = useRef<HTMLDivElement>(null);
@@ -80,83 +94,106 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     useState(false);
   const [showParentDropdown, setShowParentDropdown] = useState(false);
 
-  // Initialize form data when modal opens for sub-account creation
+  // Initialize form data when modal opens for sub-account creation or editing
   useEffect(() => {
     console.log("🔍 useEffect triggered:", {
       isOpen,
       isSubAccount,
       parentAccount,
+      editingAccount,
     });
 
-    if (isOpen && isSubAccount && parentAccount) {
-      console.log("🔍 Setting up sub-account form with parent:", parentAccount);
-      console.log("🔍 Parent account details:", {
-        _id: parentAccount._id,
-        name: parentAccount.name,
-        accountHead: parentAccount.accountHead,
-        accountGroup: parentAccount.accountGroup,
-      });
+    if (isOpen) {
+      if (editingAccount) {
+        // Editing mode - populate form with existing account data
+        console.log("🔍 Setting up edit form with account:", editingAccount);
+        setFormData({
+          code: editingAccount.code || "",
+          name: editingAccount.name,
+          accountHead: editingAccount.accountHead,
+          accountGroup: editingAccount.accountGroup,
+          parent: editingAccount.parent || "",
+          openingBalance: editingAccount.openingBalance || 0,
+          currency: editingAccount.currency || "INR",
+          description: editingAccount.description || "",
+          isActive: editingAccount.isActive,
+          isSubAccount: !!editingAccount.parent,
+          balanceType: editingAccount.balanceType || "Debit",
+        });
+      } else if (isSubAccount && parentAccount) {
+        // Sub-account creation mode
+        console.log(
+          "🔍 Setting up sub-account form with parent:",
+          parentAccount
+        );
+        console.log("🔍 Parent account details:", {
+          _id: parentAccount._id,
+          name: parentAccount.name,
+          accountHead: parentAccount.accountHead,
+          accountGroup: parentAccount.accountGroup,
+        });
 
-      // Generate a random 8-digit account code
-      const generateAccountCode = () => {
-        const min = 10000000; // 8 digits starting with 1
-        const max = 99999999;
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-      };
-
-      // Determine balance type based on account head
-      const getBalanceType = (accountHead: string) => {
-        const balanceTypeRules: { [key: string]: string } = {
-          asset: "Debit",
-          liability: "Credit",
-          equity: "Credit",
-          income: "Credit",
-          expense: "Debit",
+        // Generate a random 8-digit account code
+        const generateAccountCode = () => {
+          const min = 10000000; // 8 digits starting with 1
+          const max = 99999999;
+          return Math.floor(Math.random() * (max - min + 1)) + min;
         };
-        return balanceTypeRules[accountHead.toLowerCase()] || "Debit";
-      };
 
-      const newFormData = {
-        code: generateAccountCode().toString(),
-        name: "",
-        accountHead: parentAccount.accountHead.toLowerCase(),
-        accountGroup: parentAccount.accountGroup, // Ensure this is set
-        parent: parentAccount._id,
-        openingBalance: 0,
-        currency: "INR",
-        description: "",
-        isActive: true,
-        isSubAccount: true,
-        balanceType: getBalanceType(parentAccount.accountHead), // Add balance type
-      };
+        // Determine balance type based on account head
+        const getBalanceType = (accountHead: string) => {
+          const balanceTypeRules: { [key: string]: string } = {
+            asset: "Debit",
+            liability: "Credit",
+            equity: "Credit",
+            income: "Credit",
+            expense: "Debit",
+          };
+          return balanceTypeRules[accountHead.toLowerCase()] || "Debit";
+        };
 
-      console.log("🔍 New form data to be set:", newFormData);
-      setFormData(newFormData);
+        const newFormData = {
+          code: generateAccountCode().toString(),
+          name: "",
+          accountHead: parentAccount.accountHead.toLowerCase(),
+          accountGroup: parentAccount.accountGroup, // Ensure this is set
+          parent: parentAccount._id,
+          openingBalance: 0,
+          currency: "INR",
+          description: "",
+          isActive: true,
+          isSubAccount: true,
+          balanceType: getBalanceType(parentAccount.accountHead), // Add balance type
+        };
 
-      console.log("🔍 Form data set for sub-account:", {
-        accountHead: parentAccount.accountHead.toLowerCase(),
-        accountGroup: parentAccount.accountGroup,
-        parent: parentAccount._id,
-        balanceType: getBalanceType(parentAccount.accountHead),
-      });
-    } else if (isOpen && !isSubAccount) {
-      console.log("🔍 Setting up regular account form");
-      // Reset form for regular account creation
-      setFormData({
-        code: "",
-        name: "",
-        accountHead: "",
-        accountGroup: "",
-        parent: "",
-        openingBalance: 0,
-        currency: "INR",
-        description: "",
-        isActive: true,
-        isSubAccount: false,
-        balanceType: "Debit", // Add default balance type
-      });
+        console.log("🔍 New form data to be set:", newFormData);
+        setFormData(newFormData);
+
+        console.log("🔍 Form data set for sub-account:", {
+          accountHead: parentAccount.accountHead.toLowerCase(),
+          accountGroup: parentAccount.accountGroup,
+          parent: parentAccount._id,
+          balanceType: getBalanceType(parentAccount.accountHead),
+        });
+      } else if (isOpen && !isSubAccount) {
+        console.log("🔍 Setting up regular account form");
+        // Reset form for regular account creation
+        setFormData({
+          code: "",
+          name: "",
+          accountHead: "",
+          accountGroup: "",
+          parent: "",
+          openingBalance: 0,
+          currency: "INR",
+          description: "",
+          isActive: true,
+          isSubAccount: false,
+          balanceType: "Debit", // Add default balance type
+        });
+      }
     }
-  }, [isOpen, isSubAccount, parentAccount]);
+  }, [isOpen, isSubAccount, parentAccount, editingAccount]);
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -363,12 +400,6 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     );
   };
 
-  // Remove duplicate ref declarations - they are already declared above
-
-  // Remove duplicate click-outside useEffect - already handled above
-
-  // Account group is now inherited from parent and cannot be changed
-
   // Reset account group when account head changes (for regular accounts)
   useEffect(() => {
     if (formData.accountHead && !isSubAccount) {
@@ -458,7 +489,11 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">
-            {isSubAccount ? "Add Sub-Account" : "Add New Account"}
+            {editingAccount
+              ? "Edit Account"
+              : isSubAccount
+              ? "Add Sub-Account"
+              : "Add New Account"}
           </h2>
           <button
             onClick={onClose}
@@ -511,100 +546,134 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Account Head *
               </label>
-              <div className="relative" ref={accountHeadDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowAccountHeadDropdown(!showAccountHeadDropdown)
+              {editingAccount ? (
+                // Read-only input for edit mode
+                <input
+                  type="text"
+                  value={
+                    accountHeads.find((h) => h.value === formData.accountHead)
+                      ?.label || formData.accountHead
                   }
-                  disabled={isSubAccount && parentAccount}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left ${
-                    isSubAccount && parentAccount
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : ""
-                  }`}
-                >
-                  {formData.accountHead
-                    ? accountHeads.find((h) => h.value === formData.accountHead)
-                        ?.label
-                    : "Select account head"}
-                </button>
-
-                {showAccountHeadDropdown &&
-                  !(isSubAccount && parentAccount) && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {accountHeads.map((head) => (
-                        <button
-                          key={head.value}
-                          type="button"
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              accountHead: head.value,
-                            });
-                            setShowAccountHeadDropdown(false);
-                          }}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm"
-                        >
-                          {head.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            </div>
-
-            {/* Account Group - Only show for new top-level accounts */}
-            {!isSubAccount && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Group *
-                </label>
-                <div className="relative" ref={accountGroupDropdownRef}>
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                />
+              ) : (
+                // Dropdown for create mode
+                <div className="relative" ref={accountHeadDropdownRef}>
                   <button
                     type="button"
                     onClick={() =>
-                      setShowAccountGroupDropdown(!showAccountGroupDropdown)
+                      setShowAccountHeadDropdown(!showAccountHeadDropdown)
                     }
-                    disabled={!formData.accountHead}
+                    disabled={isSubAccount && parentAccount}
                     className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left ${
-                      !formData.accountHead
+                      isSubAccount && parentAccount
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                         : ""
                     }`}
                   >
-                    {formData.accountGroup
-                      ? accountGroups
-                          .filter((g) => g.head === formData.accountHead)
-                          .find((g) => g.value === formData.accountGroup)?.label
-                      : formData.accountHead
-                      ? "Select account group"
-                      : "Select account head first"}
+                    {formData.accountHead
+                      ? accountHeads.find(
+                          (h) => h.value === formData.accountHead
+                        )?.label
+                      : "Select account head"}
                   </button>
 
-                  {showAccountGroupDropdown && formData.accountHead && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {accountGroups
-                        .filter((group) => group.head === formData.accountHead)
-                        .map((group) => (
+                  {showAccountHeadDropdown &&
+                    !(isSubAccount && parentAccount) && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {accountHeads.map((head) => (
                           <button
-                            key={group.value}
+                            key={head.value}
                             type="button"
                             onClick={() => {
                               setFormData({
                                 ...formData,
-                                accountGroup: group.value,
+                                accountHead: head.value,
                               });
-                              setShowAccountGroupDropdown(false);
+                              setShowAccountHeadDropdown(false);
                             }}
                             className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm"
                           >
-                            {group.label}
+                            {head.label}
                           </button>
                         ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
                 </div>
+              )}
+            </div>
+
+            {/* Account Group - Only show for new top-level accounts or in edit mode */}
+            {(!isSubAccount || editingAccount) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Group *
+                </label>
+                {editingAccount ? (
+                  // Read-only input for edit mode
+                  <input
+                    type="text"
+                    value={
+                      accountGroups
+                        .filter((g) => g.head === formData.accountHead)
+                        .find((g) => g.value === formData.accountGroup)
+                        ?.label || formData.accountGroup
+                    }
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                  />
+                ) : (
+                  // Dropdown for create mode
+                  <div className="relative" ref={accountGroupDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowAccountGroupDropdown(!showAccountGroupDropdown)
+                      }
+                      disabled={!formData.accountHead}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left ${
+                        !formData.accountHead
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : ""
+                      }`}
+                    >
+                      {formData.accountGroup
+                        ? accountGroups
+                            .filter((g) => g.head === formData.accountHead)
+                            .find((g) => g.value === formData.accountGroup)
+                            ?.label
+                        : formData.accountHead
+                        ? "Select account group"
+                        : "Select account head first"}
+                    </button>
+
+                    {showAccountGroupDropdown && formData.accountHead && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {accountGroups
+                          .filter(
+                            (group) => group.head === formData.accountHead
+                          )
+                          .map((group) => (
+                            <button
+                              key={group.value}
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  accountGroup: group.value,
+                                });
+                                setShowAccountGroupDropdown(false);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm"
+                            >
+                              {group.label}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -643,11 +712,18 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                         isSubAccount: e.target.checked,
                       })
                     }
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    disabled={editingAccount}
+                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded ${
+                      editingAccount ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
                   />
                   <label
                     htmlFor="isSubAccount"
-                    className="ml-2 text-sm text-gray-700"
+                    className={`ml-2 text-sm ${
+                      editingAccount
+                        ? "text-gray-500 cursor-not-allowed"
+                        : "text-gray-700"
+                    }`}
                   >
                     This is a sub account
                   </label>
@@ -750,16 +826,27 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Balance Type *
               </label>
-              <select
-                value={formData.balanceType}
-                onChange={(e) =>
-                  setFormData({ ...formData, balanceType: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="Debit">Debit</option>
-                <option value="Credit">Credit</option>
-              </select>
+              {editingAccount ? (
+                // Read-only input for edit mode
+                <input
+                  type="text"
+                  value={formData.balanceType}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                />
+              ) : (
+                // Dropdown for create mode
+                <select
+                  value={formData.balanceType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, balanceType: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="Debit">Debit</option>
+                  <option value="Credit">Credit</option>
+                </select>
+              )}
             </div>
           </div>
 
@@ -808,7 +895,11 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded-lg hover:bg-yellow-600"
             >
-              {isSubAccount ? "Create Sub-Account" : "Save"}
+              {editingAccount
+                ? "Update Account"
+                : isSubAccount
+                ? "Create Sub-Account"
+                : "Save"}
             </button>
           </div>
         </form>

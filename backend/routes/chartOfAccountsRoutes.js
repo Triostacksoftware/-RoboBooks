@@ -80,8 +80,11 @@ router.post("/bulk-update", bulkUpdateAccounts);
 // POST /api/chart-of-accounts/bulk-import - Bulk import accounts
 router.post("/bulk-import", bulkImportAccounts);
 
-// PUT /api/chart-of-accounts/:id - Update account
+// PUT /api/chart-of-accounts/:id - Update account (full update)
 router.put("/:id", updateAccount);
+
+// PATCH /api/chart-of-accounts/:id - Update account (partial update - only name, code, description, isActive, currency)
+router.patch("/:id", updateAccount);
 
 // DELETE /api/chart-of-accounts/:id - Delete an account (soft delete)
 router.delete("/:id", deleteAccount);

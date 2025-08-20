@@ -505,10 +505,18 @@ export const chartOfAccountsAPI = {
     });
   },
 
-  // Update account
+  // Update account (full update)
   update: (id: string, accountData: Record<string, unknown>) => {
     return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`, {
       method: "PUT",
+      body: JSON.stringify(accountData),
+    });
+  },
+
+  // Update account (partial update - only name, code, description, isActive, currency)
+  updatePartial: (id: string, accountData: Record<string, unknown>) => {
+    return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(accountData),
     });
   },

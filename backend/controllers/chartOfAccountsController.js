@@ -342,33 +342,8 @@ export const updateAccount = async (req, res) => {
       currency,
       description,
       isActive,
+      balanceType,
     } = req.body;
-
-    // Validate account head if provided
-    if (accountHead && !ACCOUNT_HEADS.includes(accountHead)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid account head. Must be one of: ${ACCOUNT_HEADS.join(
-          ", "
-        )}`,
-      });
-    }
-
-    // Validate account group if provided
-    if (accountGroup) {
-      const currentAccount = await Account.findById(req.params.id);
-      const accountHeadToUse = accountHead || currentAccount.accountHead;
-      const validGroups = ACCOUNT_GROUPS[accountHeadToUse] || [];
-
-      if (!validGroups.includes(accountGroup)) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid account group for ${accountHeadToUse}. Must be one of: ${validGroups.join(
-            ", "
-          )}`,
-        });
-      }
-    }
 
     // Check if account exists
     const existingAccount = await Account.findById(req.params.id);
@@ -377,6 +352,52 @@ export const updateAccount = async (req, res) => {
         success: false,
         message: "Account not found",
       });
+    }
+
+    // For PATCH requests (partial updates), only allow specific fields to be updated
+    const updateData = {};
+
+    // Always allow these fields to be updated
+    if (name !== undefined) updateData.name = name;
+    if (code !== undefined) updateData.code = code;
+    if (description !== undefined) updateData.description = description;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    if (currency !== undefined) updateData.currency = currency;
+
+    // Only allow accountHead, accountGroup, parent, and balanceType updates for full PUT requests
+    // For PATCH requests, these fields are read-only
+    if (req.method === "PUT") {
+      if (accountHead !== undefined) {
+        // Validate account head if provided
+        if (accountHead && !ACCOUNT_HEADS.includes(accountHead)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid account head. Must be one of: ${ACCOUNT_HEADS.join(
+              ", "
+            )}`,
+          });
+        }
+        updateData.accountHead = accountHead;
+      }
+
+      if (accountGroup !== undefined) {
+        // Validate account group if provided
+        const accountHeadToUse = accountHead || existingAccount.accountHead;
+        const validGroups = ACCOUNT_GROUPS[accountHeadToUse] || [];
+
+        if (accountGroup && !validGroups.includes(accountGroup)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid account group for ${accountHeadToUse}. Must be one of: ${validGroups.join(
+              ", "
+            )}`,
+          });
+        }
+        updateData.accountGroup = accountGroup;
+      }
+
+      if (parent !== undefined) updateData.parent = parent;
+      if (balanceType !== undefined) updateData.balanceType = balanceType;
     }
 
     // Check for name conflicts if name is being changed
@@ -398,16 +419,7 @@ export const updateAccount = async (req, res) => {
     // Update account
     const updatedAccount = await Account.findByIdAndUpdate(
       req.params.id,
-      {
-        name,
-        accountHead,
-        accountGroup,
-        parent,
-        code,
-        currency,
-        description,
-        isActive,
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 

@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { chartOfAccountsAPI } from "@/lib/api";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 import AccountTable from "./components/AccountTable";
 import AccountTabs from "./components/AccountTabs";
 import SearchAndActions from "./components/SearchAndActions";
@@ -47,8 +49,13 @@ const ChartOfAccountsPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [allAccountsForDropdown, setAllAccountsForDropdown] = useState<Account[]>([]);
+  const [allAccountsForDropdown, setAllAccountsForDropdown] = useState<
+    Account[]
+  >([]);
   const { showToast } = useToast();
+
+  // Initialize SweetAlert2 with React content
+  const MySwal = withReactContent(Swal);
 
   // Fetch all accounts for dropdown (including sub-accounts)
   const fetchAllAccountsForDropdown = async () => {
@@ -56,7 +63,7 @@ const ChartOfAccountsPage = () => {
       console.log("Fetching all accounts for dropdown...");
       const data = await chartOfAccountsAPI.getAllForDropdown();
       console.log("Received dropdown data:", data);
-      
+
       if (!data || !data.data || !Array.isArray(data.data)) {
         console.error("❌ Invalid dropdown data structure received:", data);
         return;
@@ -84,7 +91,9 @@ const ChartOfAccountsPage = () => {
     } catch (error) {
       console.error("Error fetching dropdown accounts:", error);
       showToast(
-        error instanceof Error ? error.message : "Failed to fetch dropdown accounts",
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch dropdown accounts",
         "error"
       );
     }
@@ -232,29 +241,45 @@ const ChartOfAccountsPage = () => {
     }
   };
 
-  // Create new account
+  // Create or update account
   const handleCreateAccount = async (accountData: any) => {
     try {
-      await chartOfAccountsAPI.create({
-        name: accountData.name,
-        accountHead: accountData.accountHead.toLowerCase(),
-        accountGroup: accountData.accountGroup,
-        parent: accountData.parent || null,
-        code: accountData.code,
-        openingBalance: accountData.openingBalance,
-        currency: accountData.currency,
-        description: accountData.description,
-        isActive: accountData.isActive,
-        balanceType: accountData.balanceType.toLowerCase(), // Add the missing balanceType field
-      });
+      if (selectedAccount) {
+        // Update existing account - only allow specific fields to be updated
+        await chartOfAccountsAPI.updatePartial(selectedAccount._id, {
+          name: accountData.name,
+          code: accountData.code,
+          description: accountData.description,
+          isActive: accountData.isActive,
+          currency: accountData.currency,
+        });
 
-      showToast("Account created successfully", "success");
+        showToast("Account updated successfully", "success");
+        setSelectedAccount(null);
+      } else {
+        // Create new account
+        await chartOfAccountsAPI.create({
+          name: accountData.name,
+          accountHead: accountData.accountHead.toLowerCase(),
+          accountGroup: accountData.accountGroup,
+          parent: accountData.parent || null,
+          code: accountData.code,
+          openingBalance: accountData.openingBalance,
+          currency: accountData.currency,
+          description: accountData.description,
+          isActive: accountData.isActive,
+          balanceType: accountData.balanceType.toLowerCase(),
+        });
+
+        showToast("Account created successfully", "success");
+      }
+
       await fetchAccounts(activeTab);
       setShowCreateModal(false);
     } catch (error) {
-      console.error("Error creating account:", error);
+      console.error("Error saving account:", error);
       showToast(
-        error instanceof Error ? error.message : "Failed to create account",
+        error instanceof Error ? error.message : "Failed to save account",
         "error"
       );
     }
@@ -296,6 +321,119 @@ const ChartOfAccountsPage = () => {
   const handleAccountClick = (account: Account) => {
     // Navigate to account page for any account (with or without sub-accounts)
     router.push(`/dashboard/accountant/chart-of-accounts/${account._id}`);
+  };
+
+  // Handle delete account with SweetAlert2
+  const handleDeleteAccount = async (accountId: string) => {
+    const account = accounts.find((acc) => acc._id === accountId);
+    const accountName = account?.name || "this account";
+
+    try {
+      const result = await MySwal.fire({
+        title: "Delete Account?",
+        html: `
+          <div class="text-left">
+            <p class="text-gray-600 mb-3">Are you sure you want to delete <strong>"${accountName}"</strong>?</p>
+            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-red-800 text-sm font-medium">This action cannot be undone!</span>
+              </div>
+            </div>
+          </div>
+        `,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#ef4444",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "Yes, Delete Account",
+        cancelButtonText: "Cancel",
+        reverseButtons: true,
+        focusCancel: true,
+        customClass: {
+          popup: "rounded-lg",
+          title: "text-xl font-semibold text-gray-900",
+          confirmButton: "rounded-lg px-4 py-2 font-medium",
+          cancelButton: "rounded-lg px-4 py-2 font-medium",
+        },
+      });
+
+      if (result.isConfirmed) {
+        // Show loading state
+        MySwal.fire({
+          title: "Deleting Account...",
+          html: "Please wait while we delete the account.",
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            MySwal.showLoading();
+          },
+        });
+
+        await chartOfAccountsAPI.delete(accountId);
+
+        // Show success message
+        await MySwal.fire({
+          title: "Deleted!",
+          text: `"${accountName}" has been successfully deleted.`,
+          icon: "success",
+          confirmButtonColor: "#10b981",
+          confirmButtonText: "OK",
+          customClass: {
+            popup: "rounded-lg",
+            confirmButton: "rounded-lg px-4 py-2 font-medium",
+          },
+        });
+
+        showToast("Account deleted successfully", "success");
+        await fetchAccounts(activeTab);
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+
+      // Show error message
+      await MySwal.fire({
+        title: "Error!",
+        text:
+          error instanceof Error ? error.message : "Failed to delete account",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+        confirmButtonText: "OK",
+        customClass: {
+          popup: "rounded-lg",
+          confirmButton: "rounded-lg px-4 py-2 font-medium",
+        },
+      });
+
+      showToast(
+        error instanceof Error ? error.message : "Failed to delete account",
+        "error"
+      );
+    }
+  };
+
+  // Handle archive/unarchive account
+  const handleArchiveAccount = async (accountId: string) => {
+    try {
+      const account = accounts.find((acc) => acc._id === accountId);
+      if (!account) return;
+
+      const newIsActive = !account.isActive;
+      const action = newIsActive ? "unarchived" : "archived";
+
+      await chartOfAccountsAPI.update(accountId, { isActive: newIsActive });
+      showToast(`Account ${action} successfully`, "success");
+      await fetchAccounts(activeTab);
+    } catch (error) {
+      console.error("Error archiving account:", error);
+      showToast(
+        error instanceof Error ? error.message : "Failed to archive account",
+        "error"
+      );
+    }
   };
 
   // Filter accounts by search term only (account head filtering is now handled by backend)
@@ -354,16 +492,25 @@ const ChartOfAccountsPage = () => {
         <AccountTable
           accounts={filteredAccounts}
           onAccountClick={handleAccountClick}
-          onEditAccount={(account) => setSelectedAccount(account)}
+          onEditAccount={(account) => {
+            setSelectedAccount(account);
+            setShowCreateModal(true);
+          }}
+          onDeleteAccount={handleDeleteAccount}
+          onArchiveAccount={handleArchiveAccount}
         />
       </div>
 
       {/* Modals */}
       <CreateAccountModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => {
+          setShowCreateModal(false);
+          setSelectedAccount(null);
+        }}
         onSave={handleCreateAccount}
         existingAccounts={allAccountsForDropdown}
+        editingAccount={selectedAccount}
       />
 
       <ExcelUploadModal
