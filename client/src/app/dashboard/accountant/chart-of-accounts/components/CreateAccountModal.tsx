@@ -38,6 +38,7 @@ interface CreateAccountModalProps {
     accountGroup: string;
     isParent?: boolean;
     parentId?: string;
+    parent?: string;
   }>;
   isSubAccount?: boolean;
   parentAccount?: {
@@ -57,6 +58,9 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   parentAccount = null,
 }) => {
   const { showToast } = useToast();
+  const parentDropdownRef = useRef<HTMLDivElement>(null);
+  const accountHeadDropdownRef = useRef<HTMLDivElement>(null);
+  const accountGroupDropdownRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<AccountFormData>({
     code: "",
     name: "",
@@ -107,7 +111,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           liability: "Credit",
           equity: "Credit",
           income: "Credit",
-          expense: "Debit"
+          expense: "Debit",
         };
         return balanceTypeRules[accountHead.toLowerCase()] || "Debit";
       };
@@ -133,7 +137,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
         accountHead: parentAccount.accountHead.toLowerCase(),
         accountGroup: parentAccount.accountGroup,
         parent: parentAccount._id,
-        balanceType: getBalanceType(parentAccount.accountHead)
+        balanceType: getBalanceType(parentAccount.accountHead),
       });
     } else if (isOpen && !isSubAccount) {
       console.log("🔍 Setting up regular account form");
@@ -154,6 +158,42 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     }
   }, [isOpen, isSubAccount, parentAccount]);
 
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        parentDropdownRef.current &&
+        !parentDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowParentDropdown(false);
+      }
+      if (
+        accountHeadDropdownRef.current &&
+        !accountHeadDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowAccountHeadDropdown(false);
+      }
+      if (
+        accountGroupDropdownRef.current &&
+        !accountGroupDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowAccountGroupDropdown(false);
+      }
+    };
+
+    if (
+      showParentDropdown ||
+      showAccountHeadDropdown ||
+      showAccountGroupDropdown
+    ) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showParentDropdown, showAccountHeadDropdown, showAccountGroupDropdown]);
+
   // Account hierarchy structure - CORRECTED
   const accountHeads = [
     { value: "asset", label: "Asset" },
@@ -164,28 +204,13 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   ];
 
   const accountGroups = [
-    // Asset groups
+    // Asset groups - RESTRICTED
     { value: "Current Asset", label: "Current Asset", head: "asset" },
     { value: "Non-Current Asset", label: "Non-Current Asset", head: "asset" },
     { value: "Fixed Asset", label: "Fixed Asset", head: "asset" },
     { value: "Investment", label: "Investment", head: "asset" },
-    { value: "Bank", label: "Bank", head: "asset" },
-    { value: "Cash", label: "Cash", head: "asset" },
-    {
-      value: "Accounts Receivable",
-      label: "Accounts Receivable",
-      head: "asset",
-    },
-    { value: "Inventory", label: "Inventory", head: "asset" },
-    { value: "Prepaid Expenses", label: "Prepaid Expenses", head: "asset" },
-    {
-      value: "Other Current Asset",
-      label: "Other Current Asset",
-      head: "asset",
-    },
-    { value: "Other Asset", label: "Other Asset", head: "asset" },
 
-    // Liability groups
+    // Liability groups - RESTRICTED
     {
       value: "Current Liability",
       label: "Current Liability",
@@ -198,68 +223,17 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
     },
     { value: "Provisions", label: "Provisions", head: "liability" },
     { value: "Loans", label: "Loans", head: "liability" },
-    { value: "Accounts Payable", label: "Accounts Payable", head: "liability" },
-    { value: "Credit Card", label: "Credit Card", head: "liability" },
-    {
-      value: "Long Term Borrowings",
-      label: "Long Term Borrowings",
-      head: "liability",
-    },
-    { value: "Bonds Payable", label: "Bonds Payable", head: "liability" },
-    {
-      value: "Other Current Liability",
-      label: "Other Current Liability",
-      head: "liability",
-    },
-    { value: "Other Liability", label: "Other Liability", head: "liability" },
 
-    // Equity groups
+    // Equity groups - RESTRICTED
     { value: "Capital Account", label: "Capital Account", head: "equity" },
-    { value: "Owner Equity", label: "Owner Equity", head: "equity" },
-    { value: "Retained Earnings", label: "Retained Earnings", head: "equity" },
-    { value: "Capital", label: "Capital", head: "equity" },
-    { value: "Drawings", label: "Drawings", head: "equity" },
-    { value: "Partner's Capital", label: "Partner's Capital", head: "equity" },
-    {
-      value: "Proprietor's Capital",
-      label: "Proprietor's Capital",
-      head: "equity",
-    },
 
-    // Income groups
+    // Income groups - RESTRICTED
     { value: "Direct Income", label: "Direct Income", head: "income" },
     { value: "Indirect Income", label: "Indirect Income", head: "income" },
-    { value: "Sales", label: "Sales", head: "income" },
-    { value: "Service Revenue", label: "Service Revenue", head: "income" },
-    { value: "Other Income", label: "Other Income", head: "income" },
-    { value: "Interest Income", label: "Interest Income", head: "income" },
-    { value: "Commission Income", label: "Commission Income", head: "income" },
 
-    // Expense groups
+    // Expense groups - RESTRICTED
     { value: "Direct Expense", label: "Direct Expense", head: "expense" },
     { value: "Indirect Expense", label: "Indirect Expense", head: "expense" },
-    {
-      value: "Cost of Goods Sold",
-      label: "Cost of Goods Sold",
-      head: "expense",
-    },
-    { value: "Operating Expense", label: "Operating Expense", head: "expense" },
-    { value: "Other Expense", label: "Other Expense", head: "expense" },
-    { value: "Salary Expense", label: "Salary Expense", head: "expense" },
-    { value: "Rent Expense", label: "Rent Expense", head: "expense" },
-    { value: "Utilities Expense", label: "Utilities Expense", head: "expense" },
-    {
-      value: "Advertising Expense",
-      label: "Advertising Expense",
-      head: "expense",
-    },
-    {
-      value: "Depreciation Expense",
-      label: "Depreciation Expense",
-      head: "expense",
-    },
-    { value: "Interest Expense", label: "Interest Expense", head: "expense" },
-    { value: "Tax Expense", label: "Tax Expense", head: "expense" },
   ];
 
   // Get available groups based on selected head
@@ -303,150 +277,117 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
   const currencies = ["INR", "USD", "EUR", "GBP"];
 
-  // Filter accounts by selected account group and show account names
-  const getFilteredParentAccounts = () => {
+  // Get all accounts with hierarchy information
+  const getHierarchicalAccounts = () => {
     if (!formData.isSubAccount) {
       return [];
     }
 
-    // Show all accounts that match the selected account group
-    let filteredParentAccounts = existingAccounts;
+    // If we have existingAccounts, use them (for backward compatibility)
+    if (existingAccounts && existingAccounts.length > 0) {
+      // Create a map of accounts by ID for quick lookup
+      const accountMap = new Map();
+      existingAccounts.forEach((account) => {
+        accountMap.set(account._id, { ...account, children: [] });
+      });
 
-    // If account group is selected, filter by it
-    if (formData.accountGroup) {
-      filteredParentAccounts = filteredParentAccounts.filter(
-        (account) => account.accountGroup === formData.accountGroup
-      );
+      // Build hierarchy
+      const rootAccounts = [];
+      existingAccounts.forEach((account) => {
+        const parentId = account.parentId || account.parent;
+        if (parentId) {
+          const parent = accountMap.get(parentId);
+          if (parent) {
+            parent.children.push(accountMap.get(account._id));
+          }
+        } else {
+          rootAccounts.push(accountMap.get(account._id));
+        }
+      });
+
+      // Flatten hierarchy with indentation levels
+      const flattenHierarchy = (accounts, level = 0, result = []) => {
+        accounts.forEach((account) => {
+          result.push({ ...account, level });
+          if (account.children && account.children.length > 0) {
+            flattenHierarchy(account.children, level + 1, result);
+          }
+        });
+        return result;
+      };
+
+      return flattenHierarchy(rootAccounts);
     }
 
-    // If account head is selected but no account group, filter by account head
-    if (formData.accountHead && !formData.accountGroup) {
-      filteredParentAccounts = filteredParentAccounts.filter(
-        (account) => account.accountHead === formData.accountHead
-      );
-    }
-
-    return filteredParentAccounts;
+    // If no existingAccounts, return empty array
+    return [];
   };
 
-  // Render account option (flat list)
-  const renderAccountOption = (account: HierarchicalAccount) => {
+  // Render account option with simple decimal mark indentation
+  const renderAccountOption = (account: any) => {
+    // Simple decimal marks based on level
+    const getIndentationMarks = (level: number) => {
+      if (level === 0) return "";
+      return "• ".repeat(level) + " ";
+    };
+
     return (
       <div
         key={account._id}
         className="border-b border-gray-100 last:border-b-0"
       >
-        <div className="flex items-center">
-          <button
-            type="button"
-            onClick={() => {
-              setFormData({ ...formData, parent: account._id });
-              setShowParentDropdown(false);
-            }}
-            className="flex-1 px-3 py-2 text-left hover:bg-gray-100 text-sm"
+        <button
+          type="button"
+          onClick={() => {
+            setFormData({ ...formData, parent: account._id });
+            setShowParentDropdown(false);
+          }}
+          className="w-full px-3 py-2 text-left hover:bg-blue-50 text-sm transition-all duration-150"
+        >
+          {/* Account name with simple decimal marks */}
+          <div
+            className={`font-medium ${
+              account.level === 0 ? "text-gray-900" : "text-gray-700"
+            } ${formData.parent === account._id ? "text-blue-600" : ""}`}
           >
-            <div className="flex-1">
-              <div className="font-semibold text-gray-900">{account.name}</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {account.accountHead?.charAt(0).toUpperCase() +
-                  account.accountHead?.slice(1)}{" "}
-                • {account.accountGroup}
-              </div>
-            </div>
-            {account.isParent && (
-              <span className="text-xs text-blue-600 ml-2 bg-blue-50 px-2 py-1 rounded">
-                Parent
-              </span>
+            <span className="text-blue-400 mr-1">
+              {getIndentationMarks(account.level)}
+            </span>
+            {account.name}
+            {formData.parent === account._id && (
+              <span className="ml-2 text-blue-500">✓</span>
             )}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              // Set this account as parent and open a new modal for sub-account
-              setFormData({
-                ...formData,
-                parent: account._id,
-                accountHead: account.accountHead,
-                accountGroup: account.accountGroup,
-              });
-              setShowParentDropdown(false);
-              // Open a new modal for creating sub-account
-              handleCreateSubAccount(account);
-            }}
-            className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded mr-2"
-            title="Add Sub-account"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              ></path>
-            </svg>
-          </button>
-        </div>
+          </div>
+        </button>
       </div>
     );
   };
 
-  // Refs for dropdowns
-  const accountHeadDropdownRef = useRef<HTMLDivElement>(null);
-  const accountGroupDropdownRef = useRef<HTMLDivElement>(null);
-  const parentDropdownRef = useRef<HTMLDivElement>(null);
+  // Remove duplicate ref declarations - they are already declared above
 
-  // Close dropdowns when clicking outside
+  // Remove duplicate click-outside useEffect - already handled above
+
+  // Account group is now inherited from parent and cannot be changed
+
+  // Reset account group when account head changes (for regular accounts)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        accountHeadDropdownRef.current &&
-        !accountHeadDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowAccountHeadDropdown(false);
-      }
-      if (
-        accountGroupDropdownRef.current &&
-        !accountGroupDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowAccountGroupDropdown(false);
-      }
-      if (
-        parentDropdownRef.current &&
-        !parentDropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowParentDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Reset account group when account head changes
-  useEffect(() => {
-    if (formData.accountHead) {
+    if (formData.accountHead && !isSubAccount) {
       setFormData((prev) => ({ ...prev, accountGroup: "" }));
     }
-  }, [formData.accountHead]);
+  }, [formData.accountHead, isSubAccount]);
 
   // Update balance type when account head changes (for regular accounts)
   useEffect(() => {
     if (formData.accountHead && !isSubAccount) {
       const balanceTypeRules: { [key: string]: string } = {
         asset: "Debit",
-        liability: "Credit", 
+        liability: "Credit",
         equity: "Credit",
         income: "Credit",
-        expense: "Debit"
+        expense: "Debit",
       };
-      const newBalanceType = balanceTypeRules[formData.accountHead.toLowerCase()] || "Debit";
+      const newBalanceType =
+        balanceTypeRules[formData.accountHead.toLowerCase()] || "Debit";
       setFormData((prev) => ({ ...prev, balanceType: newBalanceType }));
     }
   }, [formData.accountHead, isSubAccount]);
@@ -527,18 +468,7 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           </button>
         </div>
 
-        {/* Parent Account Info (for sub-accounts) */}
-        {isSubAccount && parentAccount && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">
-              Parent Account
-            </h3>
-            <p className="text-sm text-blue-700">
-              {parentAccount.name} ({parentAccount.accountHead} •{" "}
-              {parentAccount.accountGroup})
-            </p>
-          </div>
-        )}
+        {/* Parent Account Info removed - now shown as form field */}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -624,53 +554,80 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
               </div>
             </div>
 
-            {/* Account Group */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Account Group *
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (formData.accountHead) {
-                      setShowAccountGroupDropdown(!showAccountGroupDropdown);
+            {/* Account Group - Only show for new top-level accounts */}
+            {!isSubAccount && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Group *
+                </label>
+                <div className="relative" ref={accountGroupDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowAccountGroupDropdown(!showAccountGroupDropdown)
                     }
-                  }}
-                  disabled={!formData.accountHead}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left ${
-                    !formData.accountHead
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : ""
-                  }`}
-                >
-                  {accountGroupDisplayValue}
-                </button>
+                    disabled={!formData.accountHead}
+                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left ${
+                      !formData.accountHead
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : ""
+                    }`}
+                  >
+                    {formData.accountGroup
+                      ? accountGroups
+                          .filter((g) => g.head === formData.accountHead)
+                          .find((g) => g.value === formData.accountGroup)?.label
+                      : formData.accountHead
+                      ? "Select account group"
+                      : "Select account head first"}
+                  </button>
 
-                {showAccountGroupDropdown && formData.accountHead && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {getAvailableGroupsWithParent(formData.accountHead).map(
-                      (group) => (
-                        <button
-                          key={group.value}
-                          type="button"
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              accountGroup: group.value,
-                            });
-                            setShowAccountGroupDropdown(false);
-                          }}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm"
-                        >
-                          {group.label}
-                        </button>
-                      )
-                    )}
-                  </div>
-                )}
+                  {showAccountGroupDropdown && formData.accountHead && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {accountGroups
+                        .filter((group) => group.head === formData.accountHead)
+                        .map((group) => (
+                          <button
+                            key={group.value}
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                accountGroup: group.value,
+                              });
+                              setShowAccountGroupDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm"
+                          >
+                            {group.label}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Parent Account - Show for sub-accounts */}
+            {isSubAccount && parentAccount && (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Parent Account *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={parentAccount.name}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                    placeholder="Parent account name"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    Parent account cannot be changed
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Sub Account Checkbox - Only show for regular account creation */}
             {!isSubAccount && (
@@ -716,17 +673,8 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                             (a) => a._id === formData.parent
                           );
                           return selectedAccount ? (
-                            <div>
-                              <div className="font-medium">
-                                {selectedAccount.name}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {selectedAccount.accountHead
-                                  ?.charAt(0)
-                                  .toUpperCase() +
-                                  selectedAccount.accountHead?.slice(1)}{" "}
-                                • {selectedAccount.accountGroup}
-                              </div>
+                            <div className="font-medium">
+                              {selectedAccount.name}
                             </div>
                           ) : (
                             "Select parent account"
@@ -736,33 +684,14 @@ const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   </button>
 
                   {showParentDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {/* Header showing filter info */}
-                      {(formData.accountHead || formData.accountGroup) && (
-                        <div className="px-3 py-2 text-xs text-gray-600 bg-gray-50 border-b border-gray-200">
-                          {formData.accountGroup
-                            ? `Showing accounts for: ${formData.accountGroup}`
-                            : `Showing accounts for: ${
-                                formData.accountHead.charAt(0).toUpperCase() +
-                                formData.accountHead.slice(1)
-                              }`}
-                        </div>
-                      )}
-
-                      {getFilteredParentAccounts().length > 0 ? (
-                        getFilteredParentAccounts().map((account) =>
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                      {getHierarchicalAccounts().length > 0 ? (
+                        getHierarchicalAccounts().map((account) =>
                           renderAccountOption(account)
                         )
                       ) : (
                         <div className="px-3 py-2 text-sm text-gray-500">
-                          {formData.accountGroup
-                            ? `No accounts found for "${formData.accountGroup}" group. Please create an account in this group first.`
-                            : formData.accountHead
-                            ? `No accounts found for "${
-                                formData.accountHead.charAt(0).toUpperCase() +
-                                formData.accountHead.slice(1)
-                              }" category. Please create an account in this category first.`
-                            : "No accounts available. Please create an account first."}
+                          No accounts available. Please create an account first.
                         </div>
                       )}
                     </div>

@@ -47,19 +47,29 @@ export const getAllAccounts = async (req, res) => {
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Execute query
-    const accounts = await Account.find(filter)
+    // Execute query - Only show parent accounts (accounts with no parent) on main page
+    const accounts = await Account.find({ ...filter, parent: null })
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
       .populate("parent", "name code");
 
-    // Add isParent field to each account
-    const accountsWithParentInfo = accounts.map((account) => {
-      const accountObj = account.toObject();
-      accountObj.isParent = account.parent === null; // Top-level accounts are parent accounts
-      return accountObj;
-    });
+    // Add isParent field and subAccountCount to each account
+    const accountsWithParentInfo = await Promise.all(
+      accounts.map(async (account) => {
+        const accountObj = account.toObject();
+        accountObj.isParent = true; // All accounts on main page are parent accounts
+
+        // Count sub-accounts for each parent
+        const subAccountCount = await Account.countDocuments({
+          parent: account._id,
+          isActive: true,
+        });
+        accountObj.subAccountCount = subAccountCount;
+
+        return accountObj;
+      })
+    );
 
     // Get total count for pagination
     const total = await Account.countDocuments(filter);
@@ -169,12 +179,22 @@ export const getSubAccounts = async (req, res) => {
       .limit(parseInt(limit))
       .populate("parent", "name code");
 
-    // Add isParent field to each account
-    const subAccountsWithParentInfo = subAccounts.map((account) => {
-      const accountObj = account.toObject();
-      accountObj.isParent = account.parent === null;
-      return accountObj;
-    });
+    // Add isParent field and subAccountCount to each account
+    const subAccountsWithParentInfo = await Promise.all(
+      subAccounts.map(async (account) => {
+        const accountObj = account.toObject();
+        accountObj.isParent = account.parent === null;
+
+        // Count sub-accounts for each account
+        const subAccountCount = await Account.countDocuments({
+          parent: account._id,
+          isActive: true,
+        });
+        accountObj.subAccountCount = subAccountCount;
+
+        return accountObj;
+      })
+    );
 
     // Get total count for pagination
     const total = await Account.countDocuments({ parent: id, isActive: true });
@@ -763,6 +783,47 @@ export const uploadExcelAccounts = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error uploading Excel accounts",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * GET /api/chart-of-accounts/all-for-dropdown
+ * Get all accounts (including sub-accounts) for dropdown selection
+ */
+export const getAllAccountsForDropdown = async (req, res) => {
+  try {
+    console.log(
+      "🔍 getAllAccountsForDropdown - Getting all accounts for dropdown"
+    );
+
+    // Get ALL accounts (including sub-accounts) for dropdown
+    const accounts = await Account.find({ isActive: true })
+      .populate("parent", "name code")
+      .sort({ accountHead: 1, name: 1 });
+
+    // Transform accounts to include parent information
+    const accountsWithParentInfo = accounts.map((account) => {
+      const accountObj = account.toObject();
+      accountObj.isParent = account.parent === null;
+      accountObj.parentId = account.parent?._id || null;
+      return accountObj;
+    });
+
+    console.log(
+      `🔍 getAllAccountsForDropdown - Found ${accountsWithParentInfo.length} accounts`
+    );
+
+    res.json({
+      success: true,
+      data: accountsWithParentInfo,
+    });
+  } catch (error) {
+    console.error("Error getting accounts for dropdown:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error getting accounts for dropdown",
       error: error.message,
     });
   }

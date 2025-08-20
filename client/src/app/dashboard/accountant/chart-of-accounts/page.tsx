@@ -47,7 +47,48 @@ const ChartOfAccountsPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [allAccountsForDropdown, setAllAccountsForDropdown] = useState<Account[]>([]);
   const { showToast } = useToast();
+
+  // Fetch all accounts for dropdown (including sub-accounts)
+  const fetchAllAccountsForDropdown = async () => {
+    try {
+      console.log("Fetching all accounts for dropdown...");
+      const data = await chartOfAccountsAPI.getAllForDropdown();
+      console.log("Received dropdown data:", data);
+      
+      if (!data || !data.data || !Array.isArray(data.data)) {
+        console.error("❌ Invalid dropdown data structure received:", data);
+        return;
+      }
+
+      const transformedAccounts: Account[] = data.data
+        .filter((account: any) => account && account._id)
+        .map((account: any) => ({
+          _id: account._id || "",
+          name: account.name || "Unnamed Account",
+          accountHead: account.accountHead || "unknown",
+          accountGroup: account.accountGroup || "Unknown",
+          balance: account.balance || 0,
+          balanceType: account.balanceType || "debit",
+          subAccountCount: account.subAccountCount || 0,
+          isParent: account.isParent || false,
+          parentId: account.parentId || account.parent?._id || null,
+          code: account.code || "",
+          description: account.description || "",
+          isActive: account.isActive !== undefined ? account.isActive : true,
+        }));
+
+      console.log("Transformed dropdown accounts:", transformedAccounts);
+      setAllAccountsForDropdown(transformedAccounts);
+    } catch (error) {
+      console.error("Error fetching dropdown accounts:", error);
+      showToast(
+        error instanceof Error ? error.message : "Failed to fetch dropdown accounts",
+        "error"
+      );
+    }
+  };
 
   // Fetch accounts from backend API
   const fetchAccounts = async (accountHead?: string) => {
@@ -241,7 +282,9 @@ const ChartOfAccountsPage = () => {
     setSearchTerm(term);
   };
 
-  const handleCreateAccountClick = () => {
+  const handleCreateAccountClick = async () => {
+    // Fetch all accounts for dropdown when opening the modal
+    await fetchAllAccountsForDropdown();
     setShowCreateModal(true);
   };
 
@@ -251,10 +294,8 @@ const ChartOfAccountsPage = () => {
 
   // Handle account click to navigate to sub-accounts
   const handleAccountClick = (account: Account) => {
-    if (account.isParent || account.subAccountCount > 0) {
-      // Navigate to sub-accounts page
-      router.push(`/dashboard/accountant/chart-of-accounts/${account._id}`);
-    }
+    // Navigate to account page for any account (with or without sub-accounts)
+    router.push(`/dashboard/accountant/chart-of-accounts/${account._id}`);
   };
 
   // Filter accounts by search term only (account head filtering is now handled by backend)
@@ -322,7 +363,7 @@ const ChartOfAccountsPage = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={handleCreateAccount}
-        existingAccounts={accounts}
+        existingAccounts={allAccountsForDropdown}
       />
 
       <ExcelUploadModal

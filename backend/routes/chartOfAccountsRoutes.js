@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import {
   getAllAccounts,
+  getAllAccountsForDropdown,
   getAccountById,
   getSubAccounts,
   createAccount,
@@ -42,6 +43,9 @@ router.use(authenticateToken);
 
 // GET /api/chart-of-accounts - Get all accounts
 router.get("/", getAllAccounts);
+
+// GET /api/chart-of-accounts/all-for-dropdown - Get all accounts for dropdown
+router.get("/all-for-dropdown", getAllAccountsForDropdown);
 
 // GET /api/chart-of-accounts/categories - Get account categories
 router.get("/categories", getCategories);

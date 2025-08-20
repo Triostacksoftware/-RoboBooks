@@ -58,30 +58,25 @@ const AccountTable: React.FC<AccountTableProps> = ({
             {accounts.map((account, index) => (
               <tr
                 key={account._id}
-                className={`border-b border-gray-100 hover:bg-gray-50 ${
-                  account.isParent || account.subAccountCount > 0
-                    ? "cursor-pointer"
-                    : ""
-                }`}
+                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                 onClick={() => onAccountClick(account)}
               >
                 {/* Accounts Column */}
                 <td className="py-4 px-6">
                   <div className="flex items-center">
-                    {(account.isParent || account.subAccountCount > 0) && (
+                    {account.subAccountCount > 0 && (
                       <ChevronRight className="h-4 w-4 text-gray-400 mr-2" />
                     )}
                     <div className="flex flex-col">
                       <div className="text-sm font-medium text-gray-900">
                         {account.name}
                       </div>
-                      {account.subAccountCount &&
-                        account.subAccountCount > 0 && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {account.subAccountCount} account
-                            {account.subAccountCount !== 1 ? "s" : ""}
-                          </div>
-                        )}
+                      {account.subAccountCount > 0 && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {account.subAccountCount} account
+                          {account.subAccountCount !== 1 ? "s" : ""}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>

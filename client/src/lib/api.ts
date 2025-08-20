@@ -485,6 +485,11 @@ export const chartOfAccountsAPI = {
     return apiRequest(url);
   },
 
+  // Get all accounts for dropdown (including sub-accounts)
+  getAllForDropdown: () => {
+    return apiRequest(`${CHART_OF_ACCOUNTS_API.BASE}/all-for-dropdown`);
+  },
+
   // Create account
   create: (accountData: Record<string, unknown>) => {
     return apiRequest(CHART_OF_ACCOUNTS_API.BASE, {

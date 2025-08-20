@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   Building2,
   ChevronDown,
+  ChevronRight,
   ArrowLeft,
   Info,
 } from "lucide-react";
@@ -133,7 +134,7 @@ const SubAccountPage = () => {
               balance: account.balance || 0,
               balanceType: account.balanceType || "debit",
               subAccountCount: account.subAccountCount || 0,
-              isParent: account.isParent || false,
+              isParent: (account.subAccountCount || 0) > 0,
               parentId: account.parent?._id || null,
               code: account.code || "",
               description: account.description || "",
@@ -222,9 +223,8 @@ const SubAccountPage = () => {
 
   // Handle account click to navigate to its sub-accounts
   const handleAccountClick = (account: Account) => {
-    if (account.isParent || (account.subAccountCount ?? 0) > 0) {
-      router.push(`/dashboard/accountant/chart-of-accounts/${account._id}`);
-    }
+    // Navigate to account page for any account (with or without sub-accounts)
+    router.push(`/dashboard/accountant/chart-of-accounts/${account._id}`);
   };
 
   // Filter sub-accounts by search term
@@ -284,20 +284,18 @@ const SubAccountPage = () => {
               <Building2 className="h-8 w-8 text-blue-600 mr-3" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {parentAccount.name} v2
+                  {parentAccount.name}
                 </h1>
                 <div className="flex items-center text-sm text-gray-600 mt-1">
                   <Info className="h-4 w-4 mr-1" />
-                  {parentAccount.name} ({parentAccount.accountGroup}){" "}
-                  {parentAccount.description}
+                  {parentAccount.accountHead} • {parentAccount.accountGroup}
+                  {parentAccount.description &&
+                    ` • ${parentAccount.description}`}
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-600">
-                <span>My Company</span>
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </div>
+              {/* Removed topmost Add Sub-account button and My Company text */}
             </div>
           </div>
         </div>
@@ -305,6 +303,20 @@ const SubAccountPage = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Breadcrumb */}
+        <div className="flex items-center text-sm text-gray-600 mb-4">
+          <button
+            onClick={() =>
+              router.push("/dashboard/accountant/chart-of-accounts")
+            }
+            className="hover:text-blue-600"
+          >
+            Chart of Accounts
+          </button>
+          <span className="mx-2">/</span>
+          <span className="text-gray-900">{parentAccount.name}</span>
+        </div>
+
         {/* Tabs */}
         <div className="flex space-x-8 border-b border-gray-200 mb-6">
           <button
@@ -422,24 +434,25 @@ const SubAccountPage = () => {
                     filteredSubAccounts.map((account) => (
                       <tr
                         key={account._id}
-                        className={`hover:bg-gray-50 ${
-                          account.isParent || (account.subAccountCount ?? 0) > 0
-                            ? "cursor-pointer"
-                            : ""
-                        }`}
+                        className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => handleAccountClick(account)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {account.name}
-                            </div>
+                          <div className="flex items-center">
                             {(account.subAccountCount ?? 0) > 0 && (
-                              <div className="text-xs text-gray-500">
-                                {account.subAccountCount} account
-                                {account.subAccountCount !== 1 ? "s" : ""}
-                              </div>
+                              <ChevronRight className="h-4 w-4 text-gray-400 mr-2" />
                             )}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {account.name}
+                              </div>
+                              {(account.subAccountCount ?? 0) > 0 && (
+                                <div className="text-xs text-gray-500">
+                                  {account.subAccountCount} account
+                                  {account.subAccountCount !== 1 ? "s" : ""}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
