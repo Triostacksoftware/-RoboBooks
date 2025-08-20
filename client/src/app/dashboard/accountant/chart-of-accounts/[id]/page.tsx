@@ -55,6 +55,7 @@ interface AccountFormData {
   currency: string;
   description?: string;
   isActive: boolean;
+  balanceType: string;
 }
 
 interface BackendAccount {
@@ -204,6 +205,7 @@ const SubAccountPage = () => {
         currency: accountData.currency,
         description: accountData.description,
         isActive: accountData.isActive,
+        balanceType: accountData.balanceType.toLowerCase(),
       });
 
       showToast("Sub-account created successfully", "success");

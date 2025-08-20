@@ -204,7 +204,7 @@ const ChartOfAccountsPage = () => {
         currency: accountData.currency,
         description: accountData.description,
         isActive: accountData.isActive,
-        balanceType: accountData.balanceType, // Add the missing balanceType field
+        balanceType: accountData.balanceType.toLowerCase(), // Add the missing balanceType field
       });
 
       showToast("Account created successfully", "success");

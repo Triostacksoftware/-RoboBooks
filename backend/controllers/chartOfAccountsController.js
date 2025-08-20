@@ -284,8 +284,10 @@ export const createAccount = async (req, res) => {
       code,
       openingBalance,
       balance: openingBalance,
+      balanceType: req.body.balanceType || BALANCE_TYPE_RULES[accountHead],
       currency,
       description,
+      isActive: req.body.isActive !== undefined ? req.body.isActive : true,
     });
 
     await account.save();
