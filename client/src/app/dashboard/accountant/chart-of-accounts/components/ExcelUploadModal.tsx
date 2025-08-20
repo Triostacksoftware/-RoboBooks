@@ -1,5 +1,13 @@
 import React, { useState, useRef } from "react";
-import { X, Upload, FileSpreadsheet, Download } from "lucide-react";
+import {
+  X,
+  Upload,
+  FileSpreadsheet,
+  Download,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface ExcelUploadModalProps {
   isOpen: boolean;
@@ -14,6 +22,12 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<{
+    isValid: boolean;
+    rowCount: number;
+    errors: string[];
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -26,7 +40,7 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -35,16 +49,74 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
       const file = e.dataTransfer.files[0];
       if (isValidFile(file)) {
         setSelectedFile(file);
+        await validateFile(file);
       }
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (isValidFile(file)) {
         setSelectedFile(file);
+        await validateFile(file);
       }
+    }
+  };
+
+  const validateFile = async (file: File) => {
+    try {
+      setIsValidating(true);
+      setValidationResult(null);
+
+      // Read the Excel file to validate format
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      if (jsonData.length < 2) {
+        setValidationResult({
+          isValid: false,
+          rowCount: 0,
+          errors: ["Excel file must contain at least a header row and one data row"]
+        });
+        return;
+      }
+
+      // Validate headers
+      const headers = jsonData[0] as string[];
+      const expectedHeaders = ["Account Name", "Account Head", "Account Group", "Balance", "Balance Type"];
+      const errors: string[] = [];
+
+      if (headers.length < expectedHeaders.length) {
+        errors.push(`Expected ${expectedHeaders.length} columns, found ${headers.length}`);
+      }
+
+      expectedHeaders.forEach((expected, index) => {
+        if (headers[index]?.toString().trim().toLowerCase() !== expected.toLowerCase()) {
+          errors.push(`Column ${index + 1} should be "${expected}", found "${headers[index]}"`);
+        }
+      });
+
+      const rowCount = jsonData.length - 1; // Exclude header row
+
+      setValidationResult({
+        isValid: errors.length === 0,
+        rowCount,
+        errors
+      });
+
+    } catch (error) {
+      console.error("Error validating file:", error);
+      setValidationResult({
+        isValid: false,
+        rowCount: 0,
+        errors: ["Failed to read Excel file. Please ensure it's a valid Excel file."]
+      });
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -62,37 +134,67 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
   };
 
   const handleUpload = () => {
-    if (selectedFile) {
+    if (selectedFile && validationResult?.isValid) {
       onUpload(selectedFile);
     }
   };
 
   const handleDownloadSample = () => {
-    // Create sample Excel data
+    // Create sample Excel data with correct format
     const sampleData = [
-      ["Account Name", "Account Head", "Account Group", "Balance", "Balance Type"],
-      ["Cash in Hand", "Asset", "Current Asset", "50000", "debit"],
-      ["Bank Account", "Asset", "Current Asset", "100000", "debit"],
-      ["Accounts Receivable", "Asset", "Current Asset", "25000", "debit"],
-      ["Inventory", "Asset", "Current Asset", "75000", "debit"],
-      ["Equipment", "Asset", "Fixed Asset", "50000", "debit"],
-      ["Accounts Payable", "Liability", "Current Liability", "30000", "credit"],
-      ["Sales Revenue", "Income", "Sales", "0", "credit"],
-      ["Cost of Goods Sold", "Expense", "Direct Expense", "0", "debit"],
-      ["Rent Expense", "Expense", "Operating Expense", "0", "debit"],
+      {
+        "Account Name": "Cash in Hand",
+        "Account Head": "Asset",
+        "Account Group": "Current Asset",
+        Balance: 0,
+        "Balance Type": "debit",
+      },
+      {
+        "Account Name": "Bank Account",
+        "Account Head": "Asset",
+        "Account Group": "Current Asset",
+        Balance: 0,
+        "Balance Type": "debit",
+      },
+      {
+        "Account Name": "Accounts Receivable",
+        "Account Head": "Asset",
+        "Account Group": "Current Asset",
+        Balance: 0,
+        "Balance Type": "debit",
+      },
+      {
+        "Account Name": "Accounts Payable",
+        "Account Head": "Liability",
+        "Account Group": "Current Liability",
+        Balance: 0,
+        "Balance Type": "credit",
+      },
+      {
+        "Account Name": "Sales Revenue",
+        "Account Head": "Income",
+        "Account Group": "Direct Income",
+        Balance: 0,
+        "Balance Type": "credit",
+      },
+      {
+        "Account Name": "Office Rent",
+        "Account Head": "Expense",
+        "Account Group": "Direct Expense",
+        Balance: 0,
+        "Balance Type": "debit",
+      },
     ];
 
-    // Convert to CSV and download
-    const csvContent = sampleData.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "chart-of-accounts-sample.csv";
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Chart of Accounts");
+
+    // Generate and download file
+    XLSX.writeFile(workbook, "chart-of-accounts-sample.xlsx");
   };
 
   if (!isOpen) return null;
@@ -112,7 +214,8 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">
-            Upload an Excel file (.xlsx or .xls) with your Chart of Accounts data.
+            Upload an Excel file (.xlsx or .xls) with your Chart of Accounts
+            data.
           </p>
 
           <button
@@ -150,6 +253,47 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
               <p className="text-sm text-gray-500">
                 {(selectedFile.size / 1024).toFixed(1)} KB
               </p>
+              {isValidating && (
+                <div className="flex items-center justify-center gap-2 text-blue-600">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <span className="text-sm">Validating file...</span>
+                </div>
+              )}
+              {validationResult && !isValidating && (
+                <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                  <div className="flex items-center gap-1 text-green-600">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>{validationResult.rowCount} data rows found</span>
+                  </div>
+                  {validationResult.errors.length > 0 && (
+                    <div className="flex items-center gap-1 text-red-600 mt-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>{validationResult.errors.length} validation errors</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Detailed Error Display */}
+              {validationResult && validationResult.errors.length > 0 && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-red-800 mb-2">
+                    Validation Errors:
+                  </h4>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {validationResult.errors.slice(0, 5).map((error, index) => (
+                      <div key={index} className="text-xs text-red-700">
+                        {error}
+                      </div>
+                    ))}
+                    {validationResult.errors.length > 5 && (
+                      <div className="text-xs text-red-600 italic">
+                        ... and {validationResult.errors.length - 5} more errors
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -172,10 +316,14 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
 
         <div className="mt-4 space-y-2">
           <p className="text-xs text-gray-500">
-            <strong>Expected columns:</strong> Account Name, Account Head, Account Group, Balance, Balance Type
+            <strong>Expected columns:</strong> Account Name, Account Head,
+            Account Group, Balance, Balance Type
           </p>
           <p className="text-xs text-gray-500">
-            <strong>Account Head:</strong> Asset, Liability, Income, Expense, Equity
+            <strong>Account Head:</strong> Asset, Liability, Equity, Income, Expense
+          </p>
+          <p className="text-xs text-gray-500">
+            <strong>Account Group:</strong> Current Asset, Non-Current Asset, Current Liability, etc.
           </p>
           <p className="text-xs text-gray-500">
             <strong>Balance Type:</strong> debit or credit
@@ -191,7 +339,7 @@ const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
           </button>
           <button
             onClick={handleUpload}
-            disabled={!selectedFile}
+            disabled={!selectedFile || !validationResult?.isValid}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Upload

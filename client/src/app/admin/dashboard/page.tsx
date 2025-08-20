@@ -18,6 +18,7 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ExclamationTriangleIcon,
+  TableCellsIcon,
 } from "@heroicons/react/24/outline";
 
 export default function AdminDashboard() {
@@ -427,6 +428,7 @@ export default function AdminDashboard() {
             color: "bg-blue-500",
             description: "Manage user accounts",
           },
+
           {
             name: "Generate Report",
             icon: DocumentTextIcon,
@@ -440,13 +442,6 @@ export default function AdminDashboard() {
             href: "/admin/billing",
             color: "bg-purple-500",
             description: "Handle subscriptions",
-          },
-          {
-            name: "System Settings",
-            icon: ChartBarIcon,
-            href: "/admin/settings",
-            color: "bg-orange-500",
-            description: "Configure system",
           },
         ].map((action) => (
           <a

@@ -7,6 +7,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
+import { api } from "@/lib/api";
 
 interface ModulePreference {
   name: string;
@@ -52,25 +53,17 @@ export const ModulePreferenceProvider: React.FC<
     try {
       setLoading(true);
 
-      // Direct API call to get module preferences
-      const response = await fetch(
-        "http://localhost:5000/api/module-preferences/preferences",
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        }
-      );
+      // Use the api utility for consistent error handling
+      const response = (await api("/api/module-preferences/preferences")) as {
+        success: boolean;
+        data: ModulePreference[];
+      };
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (response.success) {
+        setModulePreferences(response.data || []);
+      } else {
+        setModulePreferences([]);
       }
-
-      const data = await response.json();
-      setModulePreferences(data.data);
     } catch (error) {
       console.error("Error loading module preferences:", error);
       // Set default preferences if loading fails

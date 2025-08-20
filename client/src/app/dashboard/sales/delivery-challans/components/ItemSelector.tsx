@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { MagnifyingGlassIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { itemService, Item } from '../services/itemService';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  MagnifyingGlassIcon,
+  ChevronDownIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import { itemService, Item } from "../services/itemService";
 
 interface ItemSelectorProps {
   value: string;
@@ -15,17 +19,17 @@ interface ItemSelectorProps {
 const ItemSelector: React.FC<ItemSelectorProps> = ({
   value,
   onChange,
-  placeholder = 'Search and select item...',
-  className = '',
-  disabled = false
+  placeholder = "Search and select item...",
+  className = "",
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  
+
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +41,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   // Set selected item when value changes
   useEffect(() => {
     if (value && items.length > 0) {
-      const item = items.find(i => i._id === value);
+      const item = items.find((i) => i._id === value);
       setSelectedItem(item || null);
     } else {
       setSelectedItem(null);
@@ -47,31 +51,34 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
   // Handle outside clicks
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
-        setSearchTerm('');
+        setSearchTerm("");
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const loadItems = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await itemService.getActiveItems(100);
-      
+
       if (response.success && response.data) {
         setItems(response.data);
       } else {
-        setError(response.error || 'Failed to load items');
+        setError(response.error || "Failed to load items");
       }
     } catch (err) {
-      setError('Failed to load items');
-      console.error('Error loading items:', err);
+      setError("Failed to load items");
+      console.error("Error loading items:", err);
     } finally {
       setLoading(false);
     }
@@ -79,17 +86,17 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
 
   const handleToggle = () => {
     if (disabled) return;
-    
+
     if (!isOpen) {
       setIsOpen(true);
-      setSearchTerm('');
+      setSearchTerm("");
       // Focus the search input after a short delay to ensure the dropdown is rendered
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
     } else {
       setIsOpen(false);
-      setSearchTerm('');
+      setSearchTerm("");
     }
   };
 
@@ -97,26 +104,28 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     setSelectedItem(item);
     onChange(item._id, item);
     setIsOpen(false);
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   const handleClear = () => {
     setSelectedItem(null);
-    onChange('', undefined);
-    setSearchTerm('');
+    onChange("", undefined);
+    setSearchTerm("");
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredItems = items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.category &&
+        item.category.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const displayValue = selectedItem ? selectedItem.name : '';
+  const displayValue = selectedItem ? selectedItem.name : "";
 
   return (
     <div className={`relative ${className}`} ref={wrapperRef}>
@@ -124,15 +133,19 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
       <div
         onClick={handleToggle}
         className={`w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer bg-white hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${
-          disabled ? 'bg-gray-50 cursor-not-allowed' : ''
+          disabled ? "bg-gray-50 cursor-not-allowed" : ""
         }`}
       >
         <div className="flex items-center justify-between">
-          <span className={`${displayValue ? 'text-gray-900' : 'text-gray-500'}`}>
+          <span
+            className={`${displayValue ? "text-gray-900" : "text-gray-500"}`}
+          >
             {displayValue || placeholder}
           </span>
-          <ChevronDownIcon 
-            className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+          <ChevronDownIcon
+            className={`h-4 w-4 text-gray-400 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
           />
         </div>
       </div>
@@ -168,7 +181,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="p-3 text-center text-gray-500 text-sm">
-                {searchTerm ? 'No items found' : 'No items available'}
+                {searchTerm ? "No items found" : "No items available"}
               </div>
             ) : (
               filteredItems.map((item) => (
@@ -179,9 +192,11 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900 text-sm">{item.name}</div>
+                      <div className="font-medium text-gray-900 text-sm">
+                        {item.name}
+                      </div>
                       <div className="text-xs text-gray-500">
-                        {item.type} • {item.category || 'No category'}
+                        {item.type} • {item.category || "No category"}
                         {item.sku && ` • SKU: ${item.sku}`}
                       </div>
                     </div>

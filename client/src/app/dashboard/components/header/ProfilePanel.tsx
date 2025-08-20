@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   XMarkIcon,
   BookOpenIcon,
@@ -69,6 +70,7 @@ const ASSIST_LIST = [
 export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { logout } = useAuth();
 
   const testClick = () => {
     console.log("🔘 Test button clicked!");
@@ -78,19 +80,15 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
     console.log("🚪 Logout button clicked!");
     try {
       setIsLoggingOut(true);
-      console.log("🚪 Calling logout API...");
+      console.log("🚪 Calling logout...");
 
-      // Call the logout API directly
-      const response = await api("/api/auth/logout", { method: "POST" });
-      console.log("✅ Logout API response:", response);
+      // Use the AuthContext logout function
+      await logout();
+      console.log("✅ Logout successful");
 
       // Close the panel
       onClose();
       console.log("✅ Panel closed");
-
-      // Redirect to signin page
-      console.log("🔄 Redirecting to signin page...");
-      router.push("/signin");
     } catch (error) {
       console.error("❌ Logout failed:", error);
       // Even if logout fails, redirect to signin page

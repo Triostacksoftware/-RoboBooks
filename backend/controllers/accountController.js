@@ -1,39 +1,43 @@
 import Account from "../models/Account.js";
 // backend/controllers/accountController.js
 import mongoose from "mongoose";
-import { ACCOUNT_CATEGORIES, ACCOUNT_SUBTYPES } from "../models/Account.js";
+import { ACCOUNT_HEADS, ACCOUNT_GROUPS } from "../models/Account.js";
 
 export async function getAccounts(req, res) {
   try {
-    const { category, parent, is_active } = req.query;
+    const { accountHead, parent, isActive } = req.query;
     const filter = {};
 
-    if (category) filter.category = category;
+    if (accountHead) filter.accountHead = accountHead;
     if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
-    if (is_active !== undefined) filter.is_active = is_active === "true";
+    if (isActive !== undefined) filter.isActive = isActive === "true";
 
     const accounts = await Account.find(filter).sort({ code: 1, name: 1 });
     res.json({ success: true, data: accounts });
   } catch (error) {
     console.error("Error fetching accounts:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch accounts" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch accounts" });
   }
 }
 
 export const listAccounts = async (req, res) => {
   try {
-    const { category, parent, is_active } = req.query;
+    const { accountHead, parent, isActive } = req.query;
     const filter = {};
 
-    if (category) filter.category = category;
+    if (accountHead) filter.accountHead = accountHead;
     if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
-    if (is_active !== undefined) filter.is_active = is_active === "true";
+    if (isActive !== undefined) filter.isActive = isActive === "true";
 
     const accounts = await Account.find(filter).sort({ code: 1, name: 1 });
     res.json({ success: true, data: accounts });
   } catch (error) {
     console.error("Error fetching accounts:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch accounts" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch accounts" });
   }
 };
 
@@ -41,18 +45,24 @@ export const getAccountById = async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ success: false, message: "Invalid account id" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid account id" });
     }
 
     const account = await Account.findById(id);
     if (!account) {
-      return res.status(404).json({ success: false, message: "Account not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Account not found" });
     }
 
     res.json({ success: true, data: account });
   } catch (error) {
     console.error("Error fetching account:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch account" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch account" });
   }
 };
 
@@ -102,45 +112,43 @@ export const getAccountById = async (req, res) => {
 
 /**
  * POST /api/accounts
- * Body: { code?, name, category, subtype?, parent?, opening_balance?, currency? }
+ * Body: { code?, name, accountHead, accountGroup?, parent?, openingBalance?, currency? }
  */
 export const createAccount = async (req, res) => {
   const {
     name,
-    category,
-    subtype,
+    accountHead,
+    accountGroup,
     parent,
     code,
-    opening_balance = 0,
+    openingBalance = 0,
     currency = "INR",
-    gst_treatment,
-    gst_rate = 0,
     description,
   } = req.body;
 
   // Basic validations
-  if (!name || !category) {
-    return res.status(400).json({ message: "name and category are required" });
+  if (!name || !accountHead) {
+    return res.status(400).json({ message: "name and accountHead are required" });
   }
-  if (!ACCOUNT_CATEGORIES.includes(category)) {
-    return res.status(400).json({ message: "Invalid category" });
+  if (!ACCOUNT_HEADS.includes(accountHead)) {
+    return res.status(400).json({ message: "Invalid account head" });
   }
-  if (subtype && !ACCOUNT_SUBTYPES.includes(subtype)) {
-    return res.status(400).json({ message: "Invalid subtype" });
+  if (accountGroup && accountGroup.length > 100) {
+    return res
+      .status(400)
+      .json({ message: "Account group is too long (max 100 characters)" });
   }
 
   try {
     const account = await Account.create({
       name,
-      category,
-      subtype,
+      accountHead,
+      accountGroup,
       parent: parent || null,
       code,
-      opening_balance,
-      balance: opening_balance, // initialise running balance
+      openingBalance,
+      balance: openingBalance, // initialise running balance
       currency,
-      gst_treatment,
-      gst_rate,
       description,
     });
     res.status(201).json({ success: true, data: account });
@@ -171,7 +179,10 @@ export const updateAccount = async (req, res) => {
       new: true,
       runValidators: true,
     });
-    if (!updated) return res.status(404).json({ success: false, message: "Account not found" });
+    if (!updated)
+      return res
+        .status(404)
+        .json({ success: false, message: "Account not found" });
     res.json({ success: true, data: updated });
   } catch (err) {
     if (err.code === 11000) {
@@ -193,14 +204,20 @@ export const deleteAccount = async (req, res) => {
   const { force } = req.query;
 
   const account = await Account.findById(id);
-  if (!account) return res.status(404).json({ success: false, message: "Account not found" });
+  if (!account)
+    return res
+      .status(404)
+      .json({ success: false, message: "Account not found" });
 
   // Hard delete requested
   if (force === "true") {
     if (account.balance !== 0) {
       return res
         .status(400)
-        .json({ success: false, message: "Cannot hard-delete: balance not zero" });
+        .json({
+          success: false,
+          message: "Cannot hard-delete: balance not zero",
+        });
     }
     await account.deleteOne();
     return res.status(204).end();

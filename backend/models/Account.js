@@ -1,139 +1,232 @@
 // backend/models/Account.js
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
 /**
- * Zoho Books-style account categories
- * (top-level buckets in the chart of accounts)
+ * 5 Fixed Account Heads (as taught)
  */
-export const ACCOUNT_CATEGORIES = [
-  'asset',
-  'liability',
-  'equity',
-  'income',
-  'expense',
+export const ACCOUNT_HEADS = [
+  "asset",
+  "liability",
+  "equity",
+  "income",
+  "expense",
 ];
 
 /**
- * Optional detailed sub-types (used in Zoho Books UI):
- * e.g. "Bank", "Accounts Receivable", "Fixed Asset", etc.
- * You can extend / localize this list anytime.
+ * Account Groups for each Account Head (as specified)
  */
-export const ACCOUNT_SUBTYPES = [
-  'bank',
-  'cash',
-  'accounts_receivable',
-  'fixed_asset',
-  'inventory',
-  'other_asset',
-  'current_asset',
-  'investment',
-  'accounts_payable',
-  'credit_card',
-  'current_liability',
-  'long_term_liability',
-  'provisions',
-  'owner_equity',
-  'retained_earnings',
-  'sales',
-  'other_income',
-  'direct_income',
-  'indirect_income',
-  'cost_of_goods_sold',
-  'operating_expense',
-  'other_expense',
-  'direct_expense',
-  'indirect_expense',
-];
+export const ACCOUNT_GROUPS = {
+  asset: [
+    "Current Asset",
+    "Non-Current Asset",
+    "Fixed Asset",
+    "Investment",
+    "Bank",
+    "Cash",
+    "Accounts Receivable",
+    "Inventory",
+    "Prepaid Expenses",
+    "Other Current Asset",
+    "Other Asset",
+  ],
+  liability: [
+    "Current Liability",
+    "Non-Current Liability",
+    "Provisions",
+    "Loans",
+    "Accounts Payable",
+    "Credit Card",
+    "Long Term Borrowings",
+    "Bonds Payable",
+    "Other Current Liability",
+    "Other Liability",
+  ],
+  equity: [
+    "Capital Account",
+    "Owner Equity",
+    "Retained Earnings",
+    "Capital",
+    "Drawings",
+    "Partner's Capital",
+    "Proprietor's Capital",
+  ],
+  income: [
+    "Direct Income",
+    "Indirect Income",
+    "Sales",
+    "Service Revenue",
+    "Other Income",
+    "Interest Income",
+    "Commission Income",
+  ],
+  expense: [
+    "Direct Expense",
+    "Indirect Expense",
+    "Cost of Goods Sold",
+    "Operating Expense",
+    "Other Expense",
+    "Salary Expense",
+    "Rent Expense",
+    "Utilities Expense",
+    "Advertising Expense",
+    "Depreciation Expense",
+    "Interest Expense",
+    "Tax Expense",
+  ],
+};
+
+/**
+ * Balance Type Rules (as taught)
+ */
+export const BALANCE_TYPE_RULES = {
+  asset: "debit",
+  expense: "debit",
+  liability: "credit",
+  equity: "credit",
+  income: "credit",
+};
 
 const accountSchema = new Schema(
   {
     /**
-     * Short code / number shown in COA (e.g. "1001").
-     * Make unique among leaf nodes for easier look-ups.
+     * 8-digit unique account code (as required)
      */
-    code: { type: String, trim: true },
-
-    /** Human-readable name ("Cash", "Sales Revenue", …) */
-    name: { type: String, required: true, trim: true },
-
-    /** Top-level category (asset, liability, …) */
-    category: {
+    code: {
       type: String,
-      enum: ACCOUNT_CATEGORIES,
+      required: true,
+      unique: true,
+      validate: {
+        validator: function (v) {
+          return /^\d{8}$/.test(v); // Exactly 8 digits
+        },
+        message: "Account code must be exactly 8 digits",
+      },
+    },
+
+    /** Account Name */
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    /** Account Head (5 fixed categories) */
+    accountHead: {
+      type: String,
+      enum: ACCOUNT_HEADS,
       required: true,
     },
 
-    /** Optional sub-type (bank, AR, sales, etc.) */
-    subtype: { type: String, enum: ACCOUNT_SUBTYPES },
-
-    /**
-     * Hierarchical parent; null for top-level accounts.
-     * Enables "Cash" inside "Current Assets" for example.
-     */
-    parent: { type: Schema.Types.ObjectId, ref: 'Account', default: null },
-
-    /** Opening balance when the book was created */
-    opening_balance: { type: Number, default: 0 },
-
-    /** Current running balance (updated by journals / bank txns) */
-    balance: { type: Number, default: 0 },
-
-    /** ISO currency code (Zoho lets multi-currency ledgers) */
-    currency: { type: String, default: 'INR' },
-
-    /** Active flag – archived accounts stay for history but disappear from dropdowns */
-    is_active: { type: Boolean, default: true },
-
-    /** GST / tax helper fields (India-specific) */
-    gst_treatment: {
+    /** Account Group */
+    accountGroup: {
       type: String,
-      enum: ['taxable', 'exempt', 'nil_rated', 'non_gst'],
-      default: 'taxable',
+      required: true,
+      validate: {
+        validator: function (v) {
+          // Be more flexible - accept any account group name
+          // The predefined groups are suggestions, but custom groups should be allowed
+          return true; // Accept all account group names
+        },
+        message: "Account group is required",
+      },
     },
-    gst_rate: { type: Number, default: 0 }, // e.g. 0, 5, 12, 18, 28
 
-    /** Free-text notes / description */
-    description: { type: String },
+    /** Parent account for hierarchy */
+    parent: {
+      type: Schema.Types.ObjectId,
+      ref: "Account",
+      default: null,
+    },
+
+    /** Opening balance */
+    openingBalance: {
+      type: Number,
+      default: 0,
+    },
+
+    /** Current balance */
+    balance: {
+      type: Number,
+      default: 0,
+    },
+
+    /** Balance Type (inherited from account head) */
+    balanceType: {
+      type: String,
+      enum: ["debit", "credit"],
+      required: true,
+    },
+
+    /** Currency */
+    currency: {
+      type: String,
+      default: "INR",
+    },
+
+    /** Active status */
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    /** Description */
+    description: {
+      type: String,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 /* ── Indexes ──────────────────────────────────────────────── */
-// Unique name scoped to sibling accounts (parent + name)
+accountSchema.index({ code: 1 }, { unique: true });
 accountSchema.index({ parent: 1, name: 1 }, { unique: true });
-// Optionally ensure code is unique across the tenant
-accountSchema.index({ code: 1 }, { unique: true, sparse: true });
+accountSchema.index({ accountHead: 1, accountGroup: 1 });
+accountSchema.index({ isActive: 1 });
 
-/* ── Virtuals ──────────────────────────────────────────────── */
-// Virtual for account type display
-accountSchema.virtual('accountType').get(function() {
-  return this.category.charAt(0).toUpperCase() + this.category.slice(1);
-});
+/* ── Pre-save middleware ──────────────────────────────────────────────── */
+accountSchema.pre("save", function (next) {
+  // Auto-set balance type based on account head
+  if (!this.balanceType) {
+    this.balanceType = BALANCE_TYPE_RULES[this.accountHead];
+  }
 
-// Virtual for account group (parent name or subtype)
-accountSchema.virtual('accountGroup').get(function() {
-  return this.parent ? this.parent.name : (this.subtype || 'Other');
-});
+  // Generate 8-digit code if not provided
+  if (!this.code) {
+    this.code = this.generateAccountCode();
+  }
 
-// Virtual for balance type (credit/debit)
-accountSchema.virtual('balanceType').get(function() {
-  return this.balance >= 0 ? 'debit' : 'credit';
-});
-
-// Virtual for sub-account count
-accountSchema.virtual('subAccountCount').get(async function() {
-  const count = await this.constructor.countDocuments({ parent: this._id, is_active: true });
-  return count;
+  next();
 });
 
 /* ── Methods ──────────────────────────────────────────────── */
-// Method to get full account path
-accountSchema.methods.getFullPath = async function() {
+// Generate unique 8-digit account code
+accountSchema.methods.generateAccountCode = async function () {
+  const min = 10000000; // 8 digits starting with 1
+  const max = 99999999;
+
+  let code;
+  let attempts = 0;
+  const maxAttempts = 100;
+
+  do {
+    code = Math.floor(Math.random() * (max - min + 1)) + min;
+    attempts++;
+
+    if (attempts > maxAttempts) {
+      throw new Error("Unable to generate unique account code");
+    }
+  } while (await this.constructor.exists({ code: code.toString() }));
+
+  return code.toString();
+};
+
+// Get full account path
+accountSchema.methods.getFullPath = async function () {
   const path = [this.name];
   let current = this;
-  
+
   while (current.parent) {
     current = await this.constructor.findById(current.parent);
     if (current) {
@@ -142,43 +235,51 @@ accountSchema.methods.getFullPath = async function() {
       break;
     }
   }
-  
-  return path.join(' > ');
+
+  return path.join(" > ");
 };
 
-// Method to check if account can be deleted
-accountSchema.methods.canDelete = async function() {
+// Check if account can be deleted
+accountSchema.methods.canDelete = async function () {
   // Check if has children
-  const hasChildren = await this.constructor.exists({ parent: this._id, is_active: true });
+  const hasChildren = await this.constructor.exists({
+    parent: this._id,
+    isActive: true,
+  });
   if (hasChildren) return false;
-  
+
   // Check if has balance
   if (this.balance !== 0) return false;
-  
+
   return true;
 };
 
 /* ── Statics ──────────────────────────────────────────────── */
-// Static method to get accounts by category
-accountSchema.statics.getByCategory = function(category) {
-  return this.find({ category, is_active: true }).sort({ name: 1 });
+// Get accounts by account head
+accountSchema.statics.getByAccountHead = function (accountHead) {
+  return this.find({ accountHead, isActive: true }).sort({ name: 1 });
 };
 
-// Static method to get account hierarchy
-accountSchema.statics.getHierarchy = function() {
-  return this.find({ is_active: true })
-    .populate('parent', 'name')
-    .sort({ category: 1, name: 1 });
+// Get accounts by account group
+accountSchema.statics.getByAccountGroup = function (accountGroup) {
+  return this.find({ accountGroup, isActive: true }).sort({ name: 1 });
 };
 
-// Static method to get parent accounts
-accountSchema.statics.getParentAccounts = function() {
-  return this.find({ parent: null, is_active: true }).sort({ name: 1 });
+// Get parent accounts
+accountSchema.statics.getParentAccounts = function () {
+  return this.find({ parent: null, isActive: true }).sort({ name: 1 });
 };
 
-// Static method to get sub-accounts
-accountSchema.statics.getSubAccounts = function(parentId) {
-  return this.find({ parent: parentId, is_active: true }).sort({ name: 1 });
+// Get sub-accounts
+accountSchema.statics.getSubAccounts = function (parentId) {
+  return this.find({ parent: parentId, isActive: true }).sort({ name: 1 });
 };
 
-export default mongoose.model('Account', accountSchema);
+// Get account hierarchy
+accountSchema.statics.getHierarchy = function () {
+  return this.find({ isActive: true })
+    .populate("parent", "name code")
+    .sort({ accountHead: 1, name: 1 });
+};
+
+export default mongoose.model("Account", accountSchema);

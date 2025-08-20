@@ -36,52 +36,52 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
     router.push(route);
   };
 
-  // Dashboard metrics data - based on actual available routes
+  // Dashboard metrics data - initialized with 0 for all values
   const dashboardMetrics = {
     customers: {
-      total: 37,
+      total: 0,
       icon: UsersIcon,
       color: "bg-blue-500",
       route: "/dashboard/customers",
     },
     items: {
-      total: 6,
+      total: 0,
       icon: ShoppingCartIcon,
       color: "bg-green-500",
       route: "/dashboard/items",
     },
     banking: {
-      total: 6,
+      total: 0,
       icon: CurrencyDollarIcon,
       color: "bg-purple-500",
       route: "/dashboard/banking",
     },
     sales: {
-      total: 12,
+      total: 0,
       icon: DocumentTextIcon,
       color: "bg-orange-500",
       route: "/dashboard/sales",
     },
     purchases: {
-      total: 6,
+      total: 0,
       icon: ShoppingCartIcon,
       color: "bg-pink-500",
       route: "/dashboard/purchases",
     },
     projects: {
-      total: 102,
+      total: 0,
       icon: DocumentTextIcon,
       color: "bg-indigo-500",
       route: "/dashboard/time/projects",
     },
     invoices: {
-      total: 1,
+      total: 0,
       icon: DocumentTextIcon,
       color: "bg-yellow-500",
       route: "/dashboard/sales/invoices",
     },
     reports: {
-      total: "₹7,080",
+      total: "₹0",
       icon: CurrencyDollarIcon,
       color: "bg-emerald-500",
       route: "/dashboard/reports",
@@ -95,7 +95,7 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
       icon: ClockIcon,
     },
     confirmed: {
-      count: 1,
+      count: 0,
       color: "bg-blue-100 text-blue-800",
       icon: CheckCircleIcon,
     },

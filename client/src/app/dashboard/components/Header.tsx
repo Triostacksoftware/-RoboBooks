@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Bars3Icon,
   ClockIcon,
@@ -72,6 +73,7 @@ export default function Header({ onToggleSidebar }: Props) {
   const recentButtonRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const router = useRouter();
+  const { logout } = useAuth();
 
   const openPanel = (panel: Exclude<Panel, null>) => {
     console.log("Opening panel:", panel);
@@ -87,12 +89,11 @@ export default function Header({ onToggleSidebar }: Props) {
   const handleLogout = async () => {
     console.log("🚪 Header logout button clicked!");
     try {
-      console.log("🚪 Calling logout API from header...");
-      await api("/api/auth/logout", { method: "POST" });
+      await logout();
       console.log("✅ Header logout successful");
-      router.push("/signin");
     } catch (error) {
       console.error("❌ Header logout failed:", error);
+      // Fallback redirect
       router.push("/signin");
     }
   };
