@@ -287,18 +287,13 @@ export default function Sidebar() {
   const { isModuleEnabled } = useModulePreferences();
   const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({
-    sales: true,
+    sales: false,
     purchases: false,
     time: false,
     accountant: false,
   });
 
-  // Auto-expand sales section when on customers page
-  useEffect(() => {
-    if (pathname?.startsWith("/dashboard/customers")) {
-      setOpen((prev) => ({ ...prev, sales: true }));
-    }
-  }, [pathname]);
+  // Auto-expand sales section when on customers page - REMOVED to keep sections closed by default
 
   // Flyout state (collapsed)
   const [flyId, setFlyId] = useState<string | null>(null);
@@ -427,12 +422,12 @@ export default function Sidebar() {
                         : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
                     )}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span className="flex-1 text-left">{node.label}</span>
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="flex-1 text-left truncate">{node.label}</span>
                     {open[node.id] ? (
-                      <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                      <ChevronDownIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                     ) : (
-                      <ChevronRightIcon className="h-4 w-4 text-gray-500" />
+                      <ChevronRightIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                     )}
                   </button>
                 ) : (
@@ -445,8 +440,8 @@ export default function Sidebar() {
                         : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
                     )}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span className="flex-1 text-left">{node.label}</span>
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="flex-1 text-left truncate">{node.label}</span>
                   </button>
                 )}
 
@@ -477,9 +472,9 @@ export default function Sidebar() {
                                     : "text-gray-700 hover:text-gray-900"
                                 )}
                               >
-                                <span className="flex items-center">
-                                  <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0" />
-                                  {leaf.label}
+                                <span className="flex items-center min-w-0 flex-1">
+                                  <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 flex-shrink-0" />
+                                  <span className="truncate">{leaf.label}</span>
                                 </span>
                                 <div
                                   onClick={(e) => {
@@ -559,9 +554,9 @@ export default function Sidebar() {
                             }}
                             className="group w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-50"
                           >
-                            <span className="flex items-center text-sm">
-                              <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0" />
-                              {leaf.label}
+                            <span className="flex items-center text-sm min-w-0 flex-1">
+                              <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 flex-shrink-0" />
+                              <span className="truncate">{leaf.label}</span>
                             </span>
                             <div
                               onClick={(e) => {
