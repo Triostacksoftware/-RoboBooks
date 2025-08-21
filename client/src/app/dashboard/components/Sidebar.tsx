@@ -418,7 +418,7 @@ export default function Sidebar() {
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg border-l-4",
                       isActive
-                        ? "border-sky-500 bg-sky-50 text-sky-800"
+                        ? "border-blue-500 bg-blue-50 text-blue-800"
                         : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
                     )}
                   >
@@ -436,7 +436,7 @@ export default function Sidebar() {
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-lg border-l-4",
                       isActive
-                        ? "border-sky-500 bg-sky-50 text-sky-800"
+                        ? "border-blue-500 bg-blue-50 text-blue-800"
                         : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
                     )}
                   >
@@ -466,10 +466,10 @@ export default function Sidebar() {
                               <button
                                 onClick={() => handleNavigation(leaf.href)}
                                 className={cn(
-                                  "group w-full flex items-center justify-between pr-3 py-2 rounded-md",
+                                  "group w-full flex items-center justify-between pr-3 py-2 rounded-md border-l-4",
                                   selected
-                                    ? "text-sky-800"
-                                    : "text-gray-700 hover:text-gray-900"
+                                    ? "border-blue-500 text-blue-800"
+                                    : "border-transparent text-gray-700 hover:text-gray-900"
                                 )}
                               >
                                 <span className="flex items-center min-w-0 flex-1">
@@ -516,7 +516,7 @@ export default function Sidebar() {
                 className={cn(
                   "group relative mx-2 rounded-lg grid place-items-center py-2 border-l-4 cursor-pointer",
                   isActive
-                    ? "border-sky-500 bg-sky-50 text-sky-800"
+                    ? "border-blue-500 bg-blue-50 text-blue-800"
                     : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
                 )}
               >
@@ -552,7 +552,7 @@ export default function Sidebar() {
                               setFlyId(null);
                               handleNavigation(leaf.href);
                             }}
-                            className="group w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-gray-50"
+                            className="group w-full flex items-center justify-between px-3 py-2 rounded-md border-l-4 hover:bg-gray-50"
                           >
                             <span className="flex items-center text-sm min-w-0 flex-1">
                               <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 flex-shrink-0" />
