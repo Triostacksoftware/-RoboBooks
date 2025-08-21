@@ -376,7 +376,7 @@ export default function Sidebar() {
       {/* Brand */}
       <div
         className={cn(
-          "px-4 py-4 flex items-center gap-3 border-b",
+          "px-4 py-4 flex items-center gap-3 border-b relative",
           collapsed && "justify-center"
         )}
       >
@@ -384,6 +384,24 @@ export default function Sidebar() {
           B
         </div>
         {!collapsed && <div className="text-xl font-semibold">Books</div>}
+        
+        {/* Sidebar collapse button - positioned at top right of brand section */}
+        <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2">
+          <button
+            onClick={() => {
+              setFlyId(null);
+              setCollapsed((v) => !v);
+            }}
+            className="h-8 w-8 rounded-l-lg bg-white border border-gray-300 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center shadow-md z-10"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <ChevronRightIcon className="h-4 w-4 text-gray-700" />
+            ) : (
+              <ChevronLeftIcon className="h-4 w-4 text-gray-700" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Nav list */}
@@ -607,24 +625,6 @@ export default function Sidebar() {
         >
           <ArrowRightOnRectangleIcon className="h-5 w-5" />
           {!collapsed && <span className="text-sm font-medium">Logout</span>}
-        </button>
-      </div>
-
-      {/* Bottom collapse/expand */}
-      <div className="border-t">
-        <button
-          onClick={() => {
-            setFlyId(null);
-            setCollapsed((v) => !v);
-          }}
-          className="w-full py-3 grid place-items-center text-gray-700 hover:bg-gray-50"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? (
-            <ChevronRightIcon className="h-5 w-5" />
-          ) : (
-            <ChevronLeftIcon className="h-5 w-5" />
-          )}
         </button>
       </div>
     </aside>
