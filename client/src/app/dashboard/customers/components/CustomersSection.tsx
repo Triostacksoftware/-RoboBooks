@@ -1,32 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ChevronDownIcon,
-  PlusIcon,
   EllipsisVerticalIcon,
   FunnelIcon,
-  StarIcon,
   XMarkIcon,
   PencilIcon,
   MagnifyingGlassIcon,
-  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import { Customer } from "@/services/customerService";
-
-const filters = ["All", "Active", "Inactive", "Business", "Individual"];
+import BulkUploadModal from "./BulkUploadModal";
 
 export default function CustomersSection() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
-  const [exportSubmenuOpen, setExportSubmenuOpen] = useState(false);
-  const [selectedView, setSelectedView] = useState("All Customers");
+
   const [activeHeader, setActiveHeader] = useState<string | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
@@ -35,10 +28,8 @@ export default function CustomersSection() {
     "overview" | "comments" | "transactions" | "mails" | "statement"
   >("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [bulkUploadModalOpen, setBulkUploadModalOpen] = useState(false);
   const router = useRouter();
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const moreActionsRef = useRef<HTMLDivElement>(null);
 
   // Fetch customers from backend
   const fetchCustomers = async () => {
@@ -49,7 +40,7 @@ export default function CustomersSection() {
       const response = await fetch(
         process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
         {
-          credentials: 'include',
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
@@ -75,34 +66,8 @@ export default function CustomersSection() {
     fetchCustomers();
   }, []);
 
-  // Close all dropdowns on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-      if (
-        moreActionsRef.current &&
-        !moreActionsRef.current.contains(event.target as Node)
-      ) {
-        setMoreActionsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleHeaderClick = (key: string) => {
     setActiveHeader(activeHeader === key ? null : key);
-  };
-
-  const handleActionClick = (action: string) => {
-    console.log("Action clicked:", action);
-    setMoreActionsOpen(false);
   };
 
   const handleCustomerClick = (customer: Customer) => {
@@ -267,14 +232,14 @@ export default function CustomersSection() {
             <div className="flex items-center gap-4">
               {/* Back Button */}
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push("/dashboard")}
                 className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-gray-700 hover:text-gray-900"
                 aria-label="Go back to Dashboard"
               >
                 <ArrowLeftIcon className="h-4 w-4" />
                 <span className="text-sm font-medium">Back</span>
               </button>
-              
+
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold text-gray-900">
                   Active Customers
@@ -290,6 +255,14 @@ export default function CustomersSection() {
               >
                 + New
               </Link>
+              <button
+                onClick={() => setBulkUploadModalOpen(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                title="Bulk Upload Customers"
+              >
+                <ArrowUpTrayIcon className="w-4 h-4" />
+                Bulk Upload
+              </button>
               <button
                 className="p-2 hover:bg-gray-100 rounded-md"
                 title="More Actions"
@@ -838,7 +811,7 @@ export default function CustomersSection() {
                               "Jun 2025",
                               "Jul 2025",
                               "Aug 2025",
-                            ].map((month, index) => (
+                            ].map((month) => (
                               <div
                                 key={month}
                                 className="flex flex-col items-center"
@@ -1375,6 +1348,16 @@ export default function CustomersSection() {
           </div>
         )}
       </div>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={bulkUploadModalOpen}
+        onClose={() => setBulkUploadModalOpen(false)}
+        onSuccess={() => {
+          setBulkUploadModalOpen(false);
+          fetchCustomers(); // Refresh the customer list
+        }}
+      />
     </section>
   );
 }
