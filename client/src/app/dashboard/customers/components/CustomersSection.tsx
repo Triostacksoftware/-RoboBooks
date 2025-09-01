@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-undef */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -11,9 +12,11 @@ import {
   XMarkIcon,
   PencilIcon,
   MagnifyingGlassIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 import { Customer } from "@/services/customerService";
 import BulkUploadModal from "./BulkUploadModal";
+import { ArrowUpTrayIcon } from "@heroicons/react/24/solid";
 
 export default function CustomersSection() {
   const [customers, setCustomers] = useState<Customer[]>([]);
