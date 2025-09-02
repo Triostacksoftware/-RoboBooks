@@ -1,93 +1,94 @@
 // models/BankTransaction.js
 import mongoose from 'mongoose';
 
-const bankTransactionSchema = new mongoose.Schema(
-  {
-    account: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Account',
-      required: true,
-    },
-    bankAccount: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'BankAccount',
-      required: true,
-    },
-    type: {
-      type: String,
-      enum: ['deposit', 'withdrawal', 'income', 'expense'],
-      required: true,
-    },
-    amount: { 
-      type: Number, 
-      required: true, 
-      min: 0 
-    },
-    currency: { 
-      type: String, 
-      default: 'USD' 
-    },
-    txn_date: { 
-      type: Date, 
-      default: Date.now 
-    },
-    reference: String,
-    reconciled: { 
-      type: Boolean, 
-      default: false 
-    },
-    description: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    category: {
-      type: String,
-      trim: true,
-      default: 'Uncategorized'
-    },
-    status: {
-      type: String,
-      enum: ['reconciled', 'pending', 'unreconciled'],
-      default: 'unreconciled'
-    },
-    // Additional fields for better transaction management
-    merchant: {
-      type: String,
-      trim: true
-    },
-    location: {
-      type: String,
-      trim: true
-    },
-    tags: [{
-      type: String,
-      trim: true
-    }],
-    // User who owns this transaction
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    // External transaction ID from bank
-    externalId: {
-      type: String,
-      trim: true
-    },
-    // Transaction metadata
-    metadata: {
-      type: Map,
-      of: String
-    }
+const bankTransactionSchema = new mongoose.Schema({
+  accountId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'BankAccount',
+    required: true
   },
-  { timestamps: true },
-);
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  date: {
+    type: Date,
+    required: true
+  },
+  description: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  payee: {
+    type: String,
+    trim: true
+  },
+  referenceNumber: {
+    type: String,
+    trim: true
+  },
+  withdrawals: {
+    type: Number,
+    default: 0
+  },
+  deposits: {
+    type: Number,
+    default: 0
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  type: {
+    type: String,
+    enum: ['deposit', 'withdrawal'],
+    required: true
+  },
+  category: {
+    type: String,
+    trim: true
+  },
+  status: {
+    type: String,
+    enum: ['uncategorized', 'categorized', 'reconciled'],
+    default: 'uncategorized'
+  },
+  isImported: {
+    type: Boolean,
+    default: true
+  },
+  importSource: {
+    type: String,
+    enum: ['manual', 'csv', 'excel', 'pdf', 'ofx', 'qif', 'camt'],
+    default: 'manual'
+  },
+  importBatchId: {
+    type: String
+  },
+  originalData: {
+    type: mongoose.Schema.Types.Mixed
+  }
+}, {
+  timestamps: true
+});
+
+// Calculate amount based on withdrawals/deposits
+bankTransactionSchema.pre('save', function(next) {
+  if (this.withdrawals > 0) {
+    this.amount = -this.withdrawals;
+    this.type = 'withdrawal';
+  } else if (this.deposits > 0) {
+    this.amount = this.deposits;
+    this.type = 'deposit';
+  }
+  next();
+});
 
 // Indexes for efficient querying
-bankTransactionSchema.index({ userId: 1, txn_date: -1 });
-bankTransactionSchema.index({ account: 1, reconciled: 1 });
-bankTransactionSchema.index({ bankAccount: 1, status: 1 });
-bankTransactionSchema.index({ externalId: 1 }, { unique: true, sparse: true });
+bankTransactionSchema.index({ userId: 1, accountId: 1, date: -1 });
+bankTransactionSchema.index({ userId: 1, status: 1 });
+bankTransactionSchema.index({ importBatchId: 1 });
 
 export default mongoose.model('BankTransaction', bankTransactionSchema);

@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { 
-  BanknotesIcon, 
-  CreditCardIcon, 
-  ArrowUpIcon, 
+import React, { useState, useEffect } from "react";
+import {
+  BanknotesIcon,
+  CreditCardIcon,
+  ArrowUpIcon,
   ArrowDownIcon,
   ChartBarIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon
-} from '@heroicons/react/24/outline';
-import { bankingService } from '@/services/bankingService';
+  ArrowTrendingDownIcon,
+} from "@heroicons/react/24/outline";
+import { bankingService } from "@/services/bankingService";
 
 interface BankAccount {
   _id: string;
@@ -25,40 +25,20 @@ interface BankAccount {
 
 interface BankingOverviewData {
   totalBalance: number;
-  cashFlow: {
-    income: number;
-    expenses: number;
-    netFlow: number;
-  };
-  accountSummary: {
-    total: number;
-    connected: number;
-    pending: number;
-    disconnected: number;
-    error: number;
-  };
-  accountsByType: {
-    checking: number;
-    savings: number;
-    credit: number;
-    loan: number;
-  };
-  connectedAccounts: BankAccount[];
-  recentTransactions: Array<{
+  totalAccounts: number;
+  accounts: Array<{
     id: string;
-    description: string;
-    amount: number;
+    name: string;
+    balance: number;
+    currency: string;
     type: string;
-    category: string;
-    date: string;
-    account: string;
-    status: string;
-    reference?: string;
   }>;
 }
 
 export default function BankingOverview() {
-  const [overviewData, setOverviewData] = useState<BankingOverviewData | null>(null);
+  const [overviewData, setOverviewData] = useState<BankingOverviewData | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,8 +51,10 @@ export default function BankingOverview() {
       };
       setOverviewData(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load banking overview');
-      console.error('Error loading banking overview:', err);
+      setError(
+        err.response?.data?.message || "Failed to load banking overview"
+      );
+      console.error("Error loading banking overview:", err);
     } finally {
       setLoading(false);
     }
@@ -97,7 +79,7 @@ export default function BankingOverview() {
           <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
           <p className="text-red-700">{error}</p>
         </div>
-        <button 
+        <button
           onClick={loadBankingOverview}
           className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
         >
@@ -109,80 +91,44 @@ export default function BankingOverview() {
 
   if (!overviewData) {
     return (
-      <div className="text-center text-gray-500">
-        No banking data available
-      </div>
+      <div className="text-center text-gray-500">No banking data available</div>
     );
   }
 
-  const { totalBalance, cashFlow, accountSummary, accountsByType, connectedAccounts, recentTransactions } = overviewData;
+  const { totalBalance, totalAccounts, accounts } = overviewData;
 
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Balance</p>
               <p className="text-2xl font-bold text-gray-900">
-                ${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                $
+                {totalBalance.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })}
               </p>
-              <p className="text-xs text-green-600 mt-1 flex items-center">
-                <ArrowTrendingUpIcon className="h-3 w-3 mr-1" />
-                +2.5% from last month
-              </p>
+              <p className="text-xs text-gray-600 mt-1">Across all accounts</p>
             </div>
             <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
               <BanknotesIcon className="h-6 w-6 text-green-600" />
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">This Month Income</p>
-              <p className="text-2xl font-bold text-green-600">
-                ${cashFlow.income.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              <p className="text-sm font-medium text-gray-600">
+                Total Accounts
               </p>
-              <p className="text-xs text-green-600 mt-1 flex items-center">
-                <ArrowTrendingUpIcon className="h-3 w-3 mr-1" />
-                +12.3% from last month
+              <p className="text-2xl font-bold text-blue-600">
+                {totalAccounts}
               </p>
-            </div>
-            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <ArrowUpIcon className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">This Month Expenses</p>
-              <p className="text-2xl font-bold text-red-600">
-                ${cashFlow.expenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
-              <p className="text-xs text-red-600 mt-1 flex items-center">
-                <ArrowTrendingDownIcon className="h-3 w-3 mr-1" />
-                -5.2% from last month
-              </p>
-            </div>
-            <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
-              <ArrowDownIcon className="h-6 w-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Connected Accounts</p>
-              <p className="text-2xl font-bold text-gray-900">{accountSummary.connected}/{accountSummary.total}</p>
-              <p className="text-xs text-blue-600 mt-1">
-                {accountSummary.total > 0 ? Math.round((accountSummary.connected / accountSummary.total) * 100) : 0}% connected
-              </p>
+              <p className="text-xs text-gray-600 mt-1">Connected accounts</p>
             </div>
             <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <CreditCardIcon className="h-6 w-6 text-blue-600" />
@@ -191,84 +137,60 @@ export default function BankingOverview() {
         </div>
       </div>
 
-      {/* Financial Flow Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Cash Flow Overview</h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-600 mb-2">
-                ${cashFlow.income.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Total Income</div>
-              <div className="text-xs text-green-600 mt-1">+12.3% vs last month</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-red-600 mb-2">
-                ${cashFlow.expenses.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Total Expenses</div>
-              <div className="text-xs text-red-600 mt-1">-5.2% vs last month</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-2">
-                ${cashFlow.netFlow.toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-600">Net Cash Flow</div>
-              <div className="text-xs text-blue-600 mt-1">+45.2% vs last month</div>
-            </div>
-          </div>
-          
-          {/* Simple Progress Bar */}
-          <div className="mt-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Income vs Expenses</span>
-              <span>{cashFlow.income + cashFlow.expenses > 0 ? Math.round((cashFlow.income / (cashFlow.income + cashFlow.expenses)) * 100) : 0}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${cashFlow.income + cashFlow.expenses > 0 ? (cashFlow.income / (cashFlow.income + cashFlow.expenses)) * 100 : 0}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Connected Accounts */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Connected Accounts</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Connected Accounts
+          </h3>
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {connectedAccounts.map((account) => (
-              <div key={account._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+            {accounts.map((account) => (
+              <div
+                key={account.id}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 <div className="flex items-center space-x-4">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                    account.type === 'checking' ? 'bg-blue-100' : 
-                    account.type === 'credit' ? 'bg-purple-100' : 'bg-green-100'
-                  }`}>
-                    <BanknotesIcon className={`h-5 w-5 ${
-                      account.type === 'checking' ? 'text-blue-600' : 
-                      account.type === 'credit' ? 'text-purple-600' : 'text-green-600'
-                    }`} />
+                  <div
+                    className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      account.type === "bank"
+                        ? "bg-blue-100"
+                        : account.type === "credit_card"
+                        ? "bg-purple-100"
+                        : "bg-green-100"
+                    }`}
+                  >
+                    <BanknotesIcon
+                      className={`h-5 w-5 ${
+                        account.type === "bank"
+                          ? "text-blue-600"
+                          : account.type === "credit_card"
+                          ? "text-purple-600"
+                          : "text-green-600"
+                      }`}
+                    />
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">{account.name}</h4>
-                    <p className="text-sm text-gray-500">{account.bank} • {account.accountNumber}</p>
+                    <h4 className="font-medium text-gray-900">
+                      {account.name}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {account.currency} • {account.type}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-semibold ${
-                    account.balance >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {account.balance >= 0 ? '+' : ''}${account.balance.toLocaleString()}
+                  <p
+                    className={`font-semibold ${
+                      account.balance >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {account.balance >= 0 ? "+" : ""}$
+                    {account.balance.toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {account.status === 'connected' ? 'Connected' : 'Pending'} • {new Date(account.lastSync).toLocaleDateString()}
+                    {account.currency}
                   </p>
                 </div>
               </div>
@@ -276,48 +198,6 @@ export default function BankingOverview() {
           </div>
         </div>
       </div>
-
-      {/* Recent Transactions */}
-      {recentTransactions.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {recentTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-4">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                      transaction.amount > 0 ? 'bg-green-100' : 'bg-red-100'
-                    }`}>
-                      {transaction.amount > 0 ? (
-                        <ArrowUpIcon className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <ArrowDownIcon className="h-5 w-5 text-red-600" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">{transaction.description}</h4>
-                      <p className="text-sm text-gray-500">{transaction.category} • {transaction.account}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-semibold ${
-                      transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.amount >= 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString()}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(transaction.date).toLocaleDateString()} • {transaction.status}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
-} 
+}

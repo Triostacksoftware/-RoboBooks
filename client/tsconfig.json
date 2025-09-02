@@ -23,10 +23,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "src/app/dashboard/banking/components/BankingOverview.jsx",
-    "src/app/dashboard/components/header/search/SearchableSelect.jsx",
-    "src/app/homepage/components/FeaturesSection.jsx"
+    ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

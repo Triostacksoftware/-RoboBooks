@@ -23,10 +23,7 @@ import projectRoutes from "./routes/projectroutes.js";
 import timesheetRoutes from "./routes/timesheetroutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
-import bankTransactionRoutes from "./routes/bankTransactionRoutes.js";
-import bankAccountRoutes from "./routes/bankAccountRoutes.js";
-import bankReconciliationRoutes from "./routes/bankReconciliationRoutes.js";
-import bankingOverviewRoutes from "./routes/bankingOverviewRoutes.js";
+import bankingRoutes from "./routes/banking.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
@@ -95,11 +92,8 @@ app.use(passport.initialize());
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/accounts", accountsRoutes);
-// Keep only the new bank transaction routes
-app.use("/api/bank-transactions", bankTransactionRoutes);
-app.use("/api/bank-accounts", bankAccountRoutes);
-app.use("/api/bank-reconciliations", bankReconciliationRoutes);
-app.use("/api/banking", bankingOverviewRoutes);
+// Banking routes
+app.use("/api/banking", bankingRoutes);
 app.use("/api/vendors", vendorsRoutes);
 app.use("/api/bills", billsRoutes);
 app.use("/api/expenses", expensesRoutes);
