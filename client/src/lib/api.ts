@@ -16,7 +16,7 @@ async function refreshAccessToken(): Promise<string | null> {
       console.log("🔄 Attempting to refresh access token...");
       const response = await fetch(
         `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5050"
         }/api/auth/refresh-token`,
         {
           method: "POST",
@@ -61,7 +61,7 @@ export async function api<T = unknown>(
 
   // Use environment variable for backend URL
   const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5050";
   console.log("🌐 Making request to:", `${backendUrl}${path}`);
   console.log("🌐 Request method:", init.method || "GET");
   console.log("🌐 Request body:", json);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -107,7 +108,7 @@ export default function BankingOverview() {
               <p className="text-sm font-medium text-gray-600">Total Balance</p>
               <p className="text-2xl font-bold text-gray-900">
                 $
-                {totalBalance.toLocaleString("en-US", {
+                {(totalBalance || 0).toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                 })}
               </p>
@@ -126,7 +127,7 @@ export default function BankingOverview() {
                 Total Accounts
               </p>
               <p className="text-2xl font-bold text-blue-600">
-                {totalAccounts}
+                {totalAccounts || 0}
               </p>
               <p className="text-xs text-gray-600 mt-1">Connected accounts</p>
             </div>
@@ -146,7 +147,7 @@ export default function BankingOverview() {
         </div>
         <div className="p-6">
           <div className="space-y-4">
-            {accounts.map((account) => (
+            {(accounts || []).map((account) => (
               <div
                 key={account.id}
                 className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
