@@ -15,7 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Customer } from '@/services/customerService';
 import { Invoice } from '@/services/invoiceService';
-import { BankAccount } from '@/services/bankAccountService';
+import { BankAccount } from '@/services/bankingService';
 import { CreatePaymentRequest } from '@/services/paymentService';
 
 interface NewPaymentModalProps {

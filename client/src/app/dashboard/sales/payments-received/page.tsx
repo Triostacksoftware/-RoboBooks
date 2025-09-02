@@ -14,7 +14,7 @@ import {
 } from "@/services/paymentService";
 import { customerService, Customer } from "@/services/customerService";
 import { invoiceService, Invoice } from "@/services/invoiceService";
-import { bankAccountService, BankAccount } from "@/services/bankAccountService";
+import { bankingService, BankAccount } from "@/services/bankingService";
 import {
   paymentsRealTimeService,
   PaymentUpdate,
@@ -253,7 +253,7 @@ export default function PaymentsReceivedPage() {
         await Promise.allSettled([
           customerService.getCustomers(),
           invoiceService.getInvoices(),
-          bankAccountService.getBankAccounts(),
+          bankingService.getBankAccounts(),
         ]);
 
       // Handle successful responses
