@@ -12,6 +12,7 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import TransactionCategorizationModal from "./TransactionCategorizationModal";
+import { formatCurrency } from "@/utils/currency";
 
 interface ReconciliationItem {
   id: number;
@@ -48,9 +49,6 @@ export default function BankReconciliation({
 }: BankReconciliationProps) {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedItem, setSelectedItem] = useState<ReconciliationItem | null>(
-    null
-  );
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showCategorizationModal, setShowCategorizationModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<{
@@ -122,7 +120,16 @@ export default function BankReconciliation({
     setShowCategorizationModal(true);
   };
 
-  const handleModalSave = (data: Record<string, string>) => {
+  const handleModalSave = (data: {
+    category: string;
+    account: string;
+    date: string;
+    amount: string;
+    vendor: string;
+    invoice: string;
+    description: string;
+    customer: string;
+  }) => {
     console.log("Saving transaction data:", data);
     // Here you would typically make an API call to save the categorization
     setShowCategorizationModal(false);
@@ -223,14 +230,14 @@ export default function BankReconciliation({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center p-4 border border-gray-200 rounded-lg">
               <div className="text-2xl font-bold text-blue-600 mb-2">
-                ${reconciliationData.bankBalance.toLocaleString()}
+                {formatCurrency(reconciliationData.bankBalance)}
               </div>
               <div className="text-sm text-gray-600">Bank Balance</div>
             </div>
 
             <div className="text-center p-4 border border-gray-200 rounded-lg">
               <div className="text-2xl font-bold text-green-600 mb-2">
-                ${reconciliationData.bookBalance.toLocaleString()}
+                {formatCurrency(reconciliationData.bookBalance)}
               </div>
               <div className="text-sm text-gray-600">Book Balance</div>
             </div>
@@ -243,7 +250,7 @@ export default function BankReconciliation({
                     : "text-red-600"
                 }`}
               >
-                ${Math.abs(reconciliationData.difference).toLocaleString()}
+                {formatCurrency(Math.abs(reconciliationData.difference))}
               </div>
               <div className="text-sm text-gray-600">Difference</div>
               {reconciliationData.difference !== 0 && (
@@ -269,9 +276,9 @@ export default function BankReconciliation({
               <div className="flex items-center gap-2">
                 <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600" />
                 <span className="text-sm font-medium text-yellow-800">
-                  There&apos;s a difference of $
-                  {Math.abs(reconciliationData.difference).toFixed(2)} between
-                  your bank and book balances.
+                  There&apos;s a difference of{" "}
+                  {formatCurrency(Math.abs(reconciliationData.difference))}{" "}
+                  between your bank and book balances.
                 </span>
               </div>
             </div>
@@ -374,8 +381,8 @@ export default function BankReconciliation({
                           {item.bankTransaction.description}
                         </h4>
                         <p className="text-sm text-gray-500">
-                          Bank: {item.bankTransaction.date} • $
-                          {item.bankTransaction.amount.toFixed(2)}
+                          Bank: {item.bankTransaction.date} •{" "}
+                          {formatCurrency(item.bankTransaction.amount)}
                           {item.bankTransaction.reference &&
                             ` • Ref: ${item.bankTransaction.reference}`}
                         </p>
@@ -387,8 +394,8 @@ export default function BankReconciliation({
                             {item.bookTransaction.description}
                           </h4>
                           <p className="text-sm text-gray-500">
-                            Book: {item.bookTransaction.date} • $
-                            {item.bookTransaction.amount.toFixed(2)}
+                            Book: {item.bookTransaction.date} •{" "}
+                            {formatCurrency(item.bookTransaction.amount)}
                           </p>
                         </div>
                       )}
@@ -396,7 +403,7 @@ export default function BankReconciliation({
 
                     {item.difference && item.difference !== 0 && (
                       <p className="text-sm text-red-600 mt-1">
-                        Difference: ${item.difference.toFixed(2)}
+                        Difference: {formatCurrency(item.difference)}
                       </p>
                     )}
                   </div>
@@ -417,7 +424,8 @@ export default function BankReconciliation({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedItem(item);
+                        // Handle view details action
+                        console.log("View details for item:", item);
                       }}
                       className="p-1 text-gray-400 hover:text-gray-600 rounded"
                     >

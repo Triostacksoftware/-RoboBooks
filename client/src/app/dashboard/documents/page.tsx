@@ -1,4 +1,5 @@
 "use client";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
@@ -123,19 +124,21 @@ export default function DocumentsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push("/dashboard")}
               className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
             >
-              ← Back to Dashboard
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-              <p className="text-sm text-gray-600">Manage your business documents and files</p>
+              <p className="text-sm text-gray-600">
+                Manage your business documents and files
+              </p>
             </div>
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <DocumentsOverview />
         <DocumentTypes />

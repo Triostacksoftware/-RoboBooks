@@ -2,6 +2,7 @@
 "use client";
 import { useState, useEffect, type ComponentType } from "react";
 import { api } from "@/lib/api";
+import { formatCurrency } from "@/utils/currency";
 import {
   UsersIcon,
   CurrencyDollarIcon,
@@ -52,6 +53,9 @@ export default function AdminDashboard() {
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
+    // Set the page title
+    document.title = "RoboBooks-admin";
+
     fetchStats();
     fetchRecentActivity();
     fetchPendingUsers();
@@ -264,10 +268,10 @@ export default function AdminDashboard() {
             {typeof value === "number" && value >= 1000
               ? `${(value / 1000).toFixed(1)}k`
               : typeof value === "number" && value >= 1000000
-              ? `$${(value / 1000000).toFixed(1)}M`
+              ? `${formatCurrency(value / 1000000)}M`
               : typeof value === "number" &&
                 title.toLowerCase().includes("revenue")
-              ? `$${value.toLocaleString()}`
+              ? formatCurrency(value)
               : value}
           </p>
           {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}

@@ -31,6 +31,7 @@ import {
   TrashIcon,
   CalendarIcon,
 } from "@heroicons/react/24/outline";
+import { formatCurrency } from "@/utils/currency";
 
 interface RecurringInvoice {
   _id: string;
@@ -144,13 +145,6 @@ const AllRecurringInvoicesPage = () => {
       month: "short",
       day: "numeric",
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
   };
 
   const handleEditRecurringInvoice = (invoiceId: string) => {

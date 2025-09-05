@@ -12,6 +12,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useToast } from "../../../../contexts/ToastContext";
+import { formatCurrency } from "@/utils/currency";
 
 interface ProfitLossData {
   period: {
@@ -83,13 +84,6 @@ const ProfitLossPage = () => {
     fetchReport();
   }, [startDate, endDate]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
 
   const handleGenerateReport = () => {
     fetchReport();
@@ -192,7 +186,7 @@ const ProfitLossPage = () => {
                 onClick={() => router.push('/dashboard/accountant')}
                 className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                ← Back to Accountant
+                < Back to Accountant
               </button>
               <div className="flex items-center">
                 <TrendingUp className="h-8 w-8 text-green-600 mr-3" />

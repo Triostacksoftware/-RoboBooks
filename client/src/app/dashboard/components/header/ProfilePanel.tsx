@@ -3,7 +3,6 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   XMarkIcon,
@@ -25,8 +24,10 @@ import {
   DevicePhoneMobileIcon,
   DeviceTabletIcon,
   ChevronRightIcon,
+  PencilIcon,
 } from "@heroicons/react/24/outline";
 import { createPortal } from "react-dom";
+import EditAccountModal from "./EditAccountModal";
 
 interface ProfilePanelProps {
   open: boolean;
@@ -69,36 +70,8 @@ const ASSIST_LIST = [
 
 export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
   const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { logout } = useAuth();
-
-  const testClick = () => {
-    console.log("🔘 Test button clicked!");
-  };
-
-  const handleLogout = async () => {
-    console.log("🚪 Logout button clicked!");
-    try {
-      setIsLoggingOut(true);
-      console.log("🚪 Calling logout...");
-
-      // Use the AuthContext logout function
-      await logout();
-      console.log("✅ Logout successful");
-
-      // Close the panel
-      onClose();
-      console.log("✅ Panel closed");
-    } catch (error) {
-      console.error("❌ Logout failed:", error);
-      // Even if logout fails, redirect to signin page
-      console.log("🔄 Redirecting to signin page despite error...");
-      router.push("/signin");
-    } finally {
-      setIsLoggingOut(false);
-      console.log("✅ Logout process completed");
-    }
-  };
+  const { user } = useAuth();
+  const [showEditModal, setShowEditModal] = useState(false);
 
   if (!open) return null;
 
@@ -113,12 +86,16 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center font-semibold text-white">
-              T
+              {user?.companyName?.charAt(0)?.toUpperCase() ||
+                user?.email?.charAt(0)?.toUpperCase() ||
+                "U"}
             </div>
             <div>
-              <div className="text-lg font-semibold text-gray-900">Try</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {user?.companyName || "User"}
+              </div>
               <div className="text-sm text-gray-500">
-                farziemailthisis@gmail.com
+                {user?.email || "No email available"}
               </div>
             </div>
           </div>
@@ -131,7 +108,7 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           </button>
         </div>
 
-        {/* My Account / Sign Out */}
+        {/* My Account / Edit Account */}
         <div className="flex items-center justify-between px-6 py-3 border-b">
           <a
             href="/my-account"
@@ -139,6 +116,13 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           >
             My Account
           </a>
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="text-gray-600 hover:text-blue-600 font-medium text-sm flex items-center gap-1"
+          >
+            <PencilIcon className="w-4 h-4" />
+            Edit Details
+          </button>
         </div>
 
         {/* Trial info */}
@@ -291,6 +275,12 @@ export default function ProfilePanel({ open, onClose }: ProfilePanelProps) {
           </div>
         </div>
       </div>
+
+      {/* Edit Account Modal */}
+      <EditAccountModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+      />
     </>,
     document.body
   );

@@ -187,7 +187,7 @@ const ManualJournalsPage = () => {
                 onClick={() => router.push('/dashboard/accountant')}
                 className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                ← Back to Accountant
+                < Back to Accountant
               </button>
               <div className="flex items-center">
                 <BookOpen className="h-8 w-8 text-blue-600 mr-3" />

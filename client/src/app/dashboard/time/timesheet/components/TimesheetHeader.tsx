@@ -43,7 +43,7 @@ export default function TimesheetHeader({
           onClick={() => router.push('/dashboard/time')}
           className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
         >
-          ← Back to Time
+          < Back to Time
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Timesheet</h1>

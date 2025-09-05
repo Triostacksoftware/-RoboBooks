@@ -5,24 +5,10 @@ import React, { useState, useEffect } from "react";
 import {
   BanknotesIcon,
   CreditCardIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  ChartBarIcon,
-  ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
 } from "@heroicons/react/24/outline";
 import { bankingService } from "@/services/bankingService";
-
-interface BankAccount {
-  _id: string;
-  name: string;
-  bank: string;
-  accountNumber: string;
-  balance: number;
-  type: string;
-  status: string;
-  lastSync: string;
-}
+import { formatCurrency } from "@/utils/currency";
 
 interface BankingOverviewData {
   totalBalance: number;
@@ -107,10 +93,7 @@ export default function BankingOverview() {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Balance</p>
               <p className="text-2xl font-bold text-gray-900">
-                $
-                {(totalBalance || 0).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}
+                {formatCurrency(totalBalance || 0)}
               </p>
               <p className="text-xs text-gray-600 mt-1">Across all accounts</p>
             </div>
@@ -187,8 +170,8 @@ export default function BankingOverview() {
                       account.balance >= 0 ? "text-green-600" : "text-red-600"
                     }`}
                   >
-                    {account.balance >= 0 ? "+" : ""}$
-                    {account.balance.toLocaleString()}
+                    {account.balance >= 0 ? "+" : ""}
+                    {formatCurrency(account.balance)}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     {account.currency}

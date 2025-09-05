@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { PlusIcon, MagnifyingGlassIcon, FunnelIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import QuotesDropdown from './components/QuotesDropdown';
-import QuoteIntroSection from './components/QuoteIntroSection';
-import QuotesModuleInfo from './components/QuotesModuleInfo';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowLeftIcon,
+} from "@heroicons/react/24/outline";
+import QuotesDropdown from "./components/QuotesDropdown";
+import QuoteIntroSection from "./components/QuoteIntroSection";
+import QuotesModuleInfo from "./components/QuotesModuleInfo";
+import { formatCurrency } from "@/utils/currency";
 
 interface Quote {
   _id: string;
@@ -22,8 +28,8 @@ const QuotesPage = () => {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     fetchQuotes();
@@ -32,54 +38,51 @@ const QuotesPage = () => {
   const fetchQuotes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/quotes');
+      const response = await fetch("/api/quotes");
       if (response.ok) {
         const data = await response.json();
         setQuotes(data);
       }
     } catch (error) {
-      console.error('Error fetching quotes:', error);
+      console.error("Error fetching quotes:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredQuotes = quotes.filter(quote => {
-    const matchesSearch = quote.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (quote.subject && quote.subject.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || quote.status.toLowerCase() === statusFilter.toLowerCase();
-    
+  const filteredQuotes = quotes.filter((quote) => {
+    const matchesSearch =
+      quote.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quote.subject &&
+        quote.subject.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      quote.status.toLowerCase() === statusFilter.toLowerCase();
+
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800';
-      case 'sent':
-        return 'bg-blue-100 text-blue-800';
-      case 'accepted':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'expired':
-        return 'bg-orange-100 text-orange-800';
+      case "draft":
+        return "bg-gray-100 text-gray-800";
+      case "sent":
+        return "bg-blue-100 text-blue-800";
+      case "accepted":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "expired":
+        return "bg-orange-100 text-orange-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-    }).format(amount);
   };
 
   return (
@@ -91,21 +94,23 @@ const QuotesPage = () => {
             <div className="flex items-center gap-4">
               {/* Back Button */}
               <button
-                onClick={() => router.push('/dashboard/sales')}
+                onClick={() => router.push("/dashboard/sales")}
                 className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-gray-700 hover:text-gray-900"
                 aria-label="Go back to Sales"
               >
                 <ArrowLeftIcon className="h-4 w-4" />
                 <span className="text-sm font-medium">Back</span>
               </button>
-              
+
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Quotes</h1>
-                <p className="text-sm text-gray-600">Manage your quotes and estimates</p>
+                <p className="text-sm text-gray-600">
+                  Manage your quotes and estimates
+                </p>
               </div>
             </div>
             <button
-              onClick={() => router.push('/dashboard/sales/quotes/new')}
+              onClick={() => router.push("/dashboard/sales/quotes/new")}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <PlusIcon className="w-4 h-4 mr-2" />
@@ -163,20 +168,31 @@ const QuotesPage = () => {
           ) : filteredQuotes.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-gray-400 mb-4">
-                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <svg
+                  className="mx-auto h-12 w-12"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No quotes found</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No quotes found
+              </h3>
               <p className="text-gray-600 mb-4">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'Try adjusting your search or filters'
-                  : 'Get started by creating your first quote'
-                }
+                {searchTerm || statusFilter !== "all"
+                  ? "Try adjusting your search or filters"
+                  : "Get started by creating your first quote"}
               </p>
-              {!searchTerm && statusFilter === 'all' && (
+              {!searchTerm && statusFilter === "all" && (
                 <button
-                  onClick={() => router.push('/dashboard/sales/quotes/new')}
+                  onClick={() => router.push("/dashboard/sales/quotes/new")}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
                 >
                   <PlusIcon className="w-4 h-4 mr-2" />
@@ -220,7 +236,9 @@ const QuotesPage = () => {
                     <tr key={quote._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         <button
-                          onClick={() => router.push(`/dashboard/sales/quotes/${quote._id}`)}
+                          onClick={() =>
+                            router.push(`/dashboard/sales/quotes/${quote._id}`)
+                          }
                           className="text-blue-600 hover:text-blue-800 hover:underline"
                         >
                           {quote.quoteNumber}
@@ -230,7 +248,7 @@ const QuotesPage = () => {
                         {quote.customerName}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {quote.subject || '-'}
+                        {quote.subject || "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(quote.quoteDate)}
@@ -242,19 +260,29 @@ const QuotesPage = () => {
                         {formatCurrency(quote.total)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(quote.status)}`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                            quote.status
+                          )}`}
+                        >
                           {quote.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => router.push(`/dashboard/sales/quotes/${quote._id}`)}
+                          onClick={() =>
+                            router.push(`/dashboard/sales/quotes/${quote._id}`)
+                          }
                           className="text-blue-600 hover:text-blue-800 mr-3"
                         >
                           View
                         </button>
                         <button
-                          onClick={() => router.push(`/dashboard/sales/quotes/${quote._id}/edit`)}
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/sales/quotes/${quote._id}/edit`
+                            )
+                          }
                           className="text-green-600 hover:text-green-800"
                         >
                           Edit

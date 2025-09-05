@@ -285,7 +285,10 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({ isOpen = false, onClose }: SidebarProps = {}) {
+export default function Sidebar({
+  isOpen = false,
+  onClose,
+}: SidebarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
@@ -368,12 +371,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps = {}) 
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={onClose}
         />
       )}
-      
+
       <aside
         data-settings-sidebar
         ref={containerRef}
@@ -386,260 +389,269 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps = {}) 
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-      {/* Brand */}
-      <div
-        className={cn(
-          "px-4 py-4 flex items-center gap-3 border-b relative",
-          collapsed && "justify-center"
-        )}
-      >
-        <div className="h-8 w-8 rounded-md bg-sky-600 text-white grid place-items-center font-bold">
-          B
+        {/* Brand */}
+        <div
+          className={cn(
+            "px-4 py-4 flex items-center gap-3 border-b relative",
+            collapsed && "justify-center"
+          )}
+        >
+          <div className="h-8 w-8 rounded-md bg-sky-600 text-white grid place-items-center font-bold">
+            B
+          </div>
+          {!collapsed && <div className="text-xl font-semibold">Books</div>}
+
+          {/* Sidebar collapse button - positioned at top right of brand section */}
+          <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2">
+            <button
+              onClick={() => {
+                setFlyId(null);
+                setCollapsed((v) => !v);
+              }}
+              className="h-8 w-8 rounded-l-lg bg-white border border-gray-300 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center shadow-md z-10"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <ChevronRightIcon className="h-4 w-4 text-gray-700" />
+              ) : (
+                <ChevronLeftIcon className="h-4 w-4 text-gray-700" />
+              )}
+            </button>
+          </div>
         </div>
-        {!collapsed && <div className="text-xl font-semibold">Books</div>}
-        
-        {/* Sidebar collapse button - positioned at top right of brand section */}
-        <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2">
-          <button
-            onClick={() => {
-              setFlyId(null);
-              setCollapsed((v) => !v);
-            }}
-            className="h-8 w-8 rounded-l-lg bg-white border border-gray-300 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center shadow-md z-10"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <ChevronRightIcon className="h-4 w-4 text-gray-700" />
-            ) : (
-              <ChevronLeftIcon className="h-4 w-4 text-gray-700" />
-            )}
-          </button>
-        </div>
-      </div>
 
-      {/* Nav list */}
-      <div className="flex-1 overflow-y-auto px-2 pt-3">
-        {NAV.filter((node) => isModuleEnabled(node.id)).map((node) => {
-          const Icon = node.icon;
-          const isActive = activeTopId === node.id;
-          const hasChildren = !!node.children?.length;
+        {/* Nav list */}
+        <div className="flex-1 overflow-y-auto px-2 pt-3">
+          {NAV.filter((node) => isModuleEnabled(node.id)).map((node) => {
+            const Icon = node.icon;
+            const isActive = activeTopId === node.id;
+            const hasChildren = !!node.children?.length;
 
-          // Expanded
-          if (!collapsed) {
-            return (
-              <div key={node.id} className="mb-1">
-                {hasChildren ? (
-                  <button
-                    onClick={() =>
-                      setOpen((p) => ({ ...p, [node.id]: !p[node.id] }))
-                    }
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg border-l-4",
-                      isActive
-                        ? "border-blue-500 bg-blue-50 text-blue-800"
-                        : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
-                    )}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span className="flex-1 text-left truncate">{node.label}</span>
-                    {open[node.id] ? (
-                      <ChevronDownIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                    ) : (
-                      <ChevronRightIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => node.href && handleNavigation(node.href)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg border-l-4",
-                      isActive
-                        ? "border-blue-500 bg-blue-50 text-blue-800"
-                        : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
-                    )}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span className="flex-1 text-left truncate">{node.label}</span>
-                  </button>
-                )}
+            // Expanded
+            if (!collapsed) {
+              return (
+                <div key={node.id} className="mb-1">
+                  {hasChildren ? (
+                    <button
+                      onClick={() =>
+                        setOpen((p) => ({ ...p, [node.id]: !p[node.id] }))
+                      }
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg border-l-4",
+                        isActive
+                          ? "border-blue-500 bg-blue-50 text-blue-800"
+                          : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
+                      )}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="flex-1 text-left truncate">
+                        {node.label}
+                      </span>
+                      {open[node.id] ? (
+                        <ChevronDownIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      ) : (
+                        <ChevronRightIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => node.href && handleNavigation(node.href)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg border-l-4",
+                        isActive
+                          ? "border-blue-500 bg-blue-50 text-blue-800"
+                          : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
+                      )}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="flex-1 text-left truncate">
+                        {node.label}
+                      </span>
+                    </button>
+                  )}
 
-                {/* Submenu */}
-                {hasChildren && (
-                  <div
-                    className={cn(
-                      "overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ml-9",
-                      open[node.id]
-                        ? "max-h-[800px] opacity-100"
-                        : "max-h-0 opacity-0"
-                    )}
-                  >
-                    <ul className="py-1">
-                      {node
-                        .children!.filter((leaf) => isModuleEnabled(leaf.id))
-                        .map((leaf) => {
-                          const selected = pathname?.startsWith(leaf.href);
-                          const LeafIcon = leaf.icon;
-                          return (
-                            <li key={leaf.id}>
-                              <button
-                                onClick={() => handleNavigation(leaf.href)}
-                                className={cn(
-                                  "group w-full flex items-center justify-between pr-3 py-2 rounded-md border-l-4",
-                                  selected
-                                    ? "border-blue-500 text-blue-800"
-                                    : "border-transparent text-gray-700 hover:text-gray-900"
-                                )}
-                              >
-                                <span className="flex items-center min-w-0 flex-1">
-                                  <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 flex-shrink-0" />
-                                  <span className="truncate">{leaf.label}</span>
-                                </span>
-                                <div
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    onPlus(leaf.label);
-                                  }}
-                                  className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
-                                  aria-label={`Create new ${leaf.label}`}
+                  {/* Submenu */}
+                  {hasChildren && (
+                    <div
+                      className={cn(
+                        "overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ml-9",
+                        open[node.id]
+                          ? "max-h-[800px] opacity-100"
+                          : "max-h-0 opacity-0"
+                      )}
+                    >
+                      <ul className="py-1">
+                        {node
+                          .children!.filter((leaf) => isModuleEnabled(leaf.id))
+                          .map((leaf) => {
+                            const selected = pathname?.startsWith(leaf.href);
+                            const LeafIcon = leaf.icon;
+                            return (
+                              <li key={leaf.id}>
+                                <button
+                                  onClick={() => handleNavigation(leaf.href)}
+                                  className={cn(
+                                    "group w-full flex items-center justify-between pr-3 py-2 rounded-md border-l-4",
+                                    selected
+                                      ? "border-blue-500 text-blue-800"
+                                      : "border-transparent text-gray-700 hover:text-gray-900"
+                                  )}
                                 >
-                                  <PlusIcon className="h-3 w-3" />
-                                </div>
-                              </button>
-                            </li>
-                          );
-                        })}
+                                  <span className="flex items-center min-w-0 flex-1">
+                                    <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {leaf.label}
+                                    </span>
+                                  </span>
+                                  <div
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      onPlus(leaf.label);
+                                    }}
+                                    className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
+                                    aria-label={`Create new ${leaf.label}`}
+                                  >
+                                    <PlusIcon className="h-3 w-3" />
+                                  </div>
+                                </button>
+                              </li>
+                            );
+                          })}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Collapsed + Flyout
+            return (
+              <div key={node.id} className="mb-2">
+                <div
+                  onMouseEnter={(e) =>
+                    hasChildren ? openFlyout(node.id, e) : undefined
+                  }
+                  onMouseLeave={() =>
+                    hasChildren ? scheduleClose() : undefined
+                  }
+                  onClick={(e) => {
+                    if (hasChildren) {
+                      openFlyout(node.id, e as unknown as React.MouseEvent);
+                    } else if (node.href) {
+                      handleNavigation(node.href);
+                    }
+                  }}
+                  className={cn(
+                    "group relative mx-2 rounded-lg grid place-items-center py-2 border-l-4 cursor-pointer",
+                    isActive
+                      ? "border-blue-500 bg-blue-50 text-blue-800"
+                      : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
+                  )}
+                >
+                  <Icon className="h-6 w-6" />
+                  <div className="mt-1 text-[11px] text-gray-700 leading-none text-center line-clamp-2">
+                    {node.label}
+                  </div>
+                  {hasChildren && (
+                    <span className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-gray-600">
+                      <ChevronRightIcon className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
+
+                {/* Flyout */}
+                {hasChildren && flyId === node.id && (
+                  <div
+                    className="fixed z-40 w-72 rounded-xl border bg-white shadow-xl"
+                    style={{ top: flyPos.top, left: flyPos.left }}
+                    onMouseEnter={() => clearClose()}
+                    onMouseLeave={() => scheduleClose()}
+                  >
+                    <div className="px-4 pt-3 pb-2 text-xs font-semibold text-gray-500">
+                      {node.label.toUpperCase()}
+                    </div>
+                    <ul className="px-2 pb-2">
+                      {node.children!.map((leaf) => {
+                        const LeafIcon = leaf.icon;
+                        return (
+                          <li key={leaf.id}>
+                            <button
+                              onClick={() => {
+                                setFlyId(null);
+                                handleNavigation(leaf.href);
+                              }}
+                              className="group w-full flex items-center justify-between px-3 py-2 rounded-md border-l-4 hover:bg-gray-50"
+                            >
+                              <span className="flex items-center text-sm min-w-0 flex-1">
+                                <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 flex-shrink-0" />
+                                <span className="truncate">{leaf.label}</span>
+                              </span>
+                              <div
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onPlus(leaf.label);
+                                }}
+                                className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
+                                aria-label={`Create new ${leaf.label}`}
+                              >
+                                <PlusIcon className="h-4 w-4" />
+                              </div>
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}
               </div>
             );
-          }
+          })}
 
-          // Collapsed + Flyout
-          return (
-            <div key={node.id} className="mb-2">
-              <div
-                onMouseEnter={(e) =>
-                  hasChildren ? openFlyout(node.id, e) : undefined
-                }
-                onMouseLeave={() => (hasChildren ? scheduleClose() : undefined)}
-                onClick={(e) => {
-                  if (hasChildren) {
-                    openFlyout(node.id, e as unknown as React.MouseEvent);
-                  } else if (node.href) {
-                    handleNavigation(node.href);
-                  }
-                }}
-                className={cn(
-                  "group relative mx-2 rounded-lg grid place-items-center py-2 border-l-4 cursor-pointer",
-                  isActive
-                    ? "border-blue-500 bg-blue-50 text-blue-800"
-                    : "border-transparent hover:bg-gray-50 hover:ring-1 hover:ring-gray-100"
-                )}
-              >
-                <Icon className="h-6 w-6" />
-                <div className="mt-1 text-[11px] text-gray-700 leading-none text-center line-clamp-2">
-                  {node.label}
+          {/* Promo (expanded only) */}
+          {!collapsed && (
+            <div className="mx-2 mt-6 mb-16 rounded-2xl border bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-sky-50 text-sky-600 grid place-items-center text-lg">
+                  ▶
                 </div>
-                {hasChildren && (
-                  <span className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-gray-600">
-                    <ChevronRightIcon className="h-3 w-3" />
-                  </span>
-                )}
-              </div>
-
-              {/* Flyout */}
-              {hasChildren && flyId === node.id && (
-                <div
-                  className="fixed z-40 w-72 rounded-xl border bg-white shadow-xl"
-                  style={{ top: flyPos.top, left: flyPos.left }}
-                  onMouseEnter={() => clearClose()}
-                  onMouseLeave={() => scheduleClose()}
-                >
-                  <div className="px-4 pt-3 pb-2 text-xs font-semibold text-gray-500">
-                    {node.label.toUpperCase()}
+                <div>
+                  <div className="text-xs font-semibold tracking-wide text-sky-600">
+                    ● TAKE A LIVE PRODUCT TOUR
                   </div>
-                  <ul className="px-2 pb-2">
-                    {node.children!.map((leaf) => {
-                      const LeafIcon = leaf.icon;
-                      return (
-                        <li key={leaf.id}>
-                          <button
-                            onClick={() => {
-                              setFlyId(null);
-                              handleNavigation(leaf.href);
-                            }}
-                            className="group w-full flex items-center justify-between px-3 py-2 rounded-md border-l-4 hover:bg-gray-50"
-                          >
-                            <span className="flex items-center text-sm min-w-0 flex-1">
-                              <LeafIcon className="h-4 w-4 mr-2 opacity-0 -translate-x-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-x-0 flex-shrink-0" />
-                              <span className="truncate">{leaf.label}</span>
-                            </span>
-                            <div
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onPlus(leaf.label);
-                              }}
-                              className="opacity-0 scale-95 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100 inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-900 text-white cursor-pointer"
-                              aria-label={`Create new ${leaf.label}`}
-                            >
-                              <PlusIcon className="h-4 w-4" />
-                            </div>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <p className="mt-2 text-sm text-gray-600">
+                    Join us for a free webinar and get an in-depth overview of
+                    books.
+                  </p>
+                  <button className="mt-2 text-sm text-blue-600 hover:underline">
+                    Register Now →
+                  </button>
                 </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Promo (expanded only) */}
-        {!collapsed && (
-          <div className="mx-2 mt-6 mb-16 rounded-2xl border bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-sky-50 text-sky-600 grid place-items-center text-lg">
-                ▶
-              </div>
-              <div>
-                <div className="text-xs font-semibold tracking-wide text-sky-600">
-                  ● TAKE A LIVE PRODUCT TOUR
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  Join us for a free webinar and get an in-depth overview of
-                  books.
-                </p>
-                <button className="mt-2 text-sm text-blue-600 hover:underline">
-                  Register Now →
-                </button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Logout button */}
-      <div className="border-t">
-        <button
-          onClick={async () => {
-            try {
-              await logout();
-            } catch (error) {
-              console.error("Logout failed:", error);
-              router.push("/signin");
-            }
-          }}
-          className="w-full py-3 px-4 flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors"
-          aria-label="Logout"
-        >
-          <ArrowRightOnRectangleIcon className="h-5 w-5" />
-          {!collapsed && <span className="text-sm font-medium">Logout</span>}
-        </button>
-      </div>
-    </aside>
+        {/* Logout button */}
+        <div className="border-t">
+          <button
+            onClick={async () => {
+              try {
+                await logout();
+              } catch (error) {
+                console.error("Logout failed:", error);
+                router.push("/signin");
+              }
+            }}
+            className="w-full py-3 px-4 flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors"
+            aria-label="Logout"
+          >
+            <ArrowRightOnRectangleIcon className="h-5 w-5" />
+            {!collapsed && <span className="text-sm font-medium">Logout</span>}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

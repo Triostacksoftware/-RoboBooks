@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Payment } from '@/services/paymentService';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import React, { useState } from "react";
+import { Payment } from "@/services/paymentService";
+import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { formatCurrency } from "@/utils/currency";
 
 interface PaymentsReceivedTableProps {
   payments: Payment[];
@@ -23,48 +24,49 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
   onPaymentRowClick,
   selectedPaymentId,
   isDeleting,
-  isCollapsed = false
+  isCollapsed = false,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortColumn, setSortColumn] = useState<keyof Payment>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortColumn, setSortColumn] = useState<keyof Payment>("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
 
   const handleSort = (column: keyof Payment) => {
     if (sortColumn === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       setSortColumn(column);
-      setSortOrder('asc');
+      setSortOrder("asc");
     }
   };
 
-  const filteredPayments = payments.filter(payment =>
-    payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.paymentNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPayments = payments.filter(
+    (payment) =>
+      payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.paymentNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const sortedPayments = [...filteredPayments].sort((a, b) => {
     const aValue = a[sortColumn];
     const bValue = b[sortColumn];
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortOrder === 'asc' 
+
+    if (typeof aValue === "string" && typeof bValue === "string") {
+      return sortOrder === "asc"
         ? aValue.localeCompare(bValue)
         : bValue.localeCompare(aValue);
     }
-    
-    if (typeof aValue === 'number' && typeof bValue === 'number') {
-      return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+
+    if (typeof aValue === "number" && typeof bValue === "number") {
+      return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
     }
-    
+
     return 0;
   });
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedPayments(payments.map(p => p._id));
+      setSelectedPayments(payments.map((p) => p._id));
     } else {
       setSelectedPayments([]);
     }
@@ -74,20 +76,12 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
     if (checked) {
       setSelectedPayments([...selectedPayments, paymentId]);
     } else {
-      setSelectedPayments(selectedPayments.filter(id => id !== paymentId));
+      setSelectedPayments(selectedPayments.filter((id) => id !== paymentId));
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-GB');
+    return new Date(dateString).toLocaleDateString("en-GB");
   };
 
   const handleEdit = (payment: Payment, e: React.MouseEvent) => {
@@ -101,15 +95,21 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 mt-6 ${
-      isCollapsed ? 'w-full' : 'w-full'
-    }`}>
+    <div
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 mt-6 ${
+        isCollapsed ? "w-full" : "w-full"
+      }`}
+    >
       {/* Table Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center">
           <div className="flex items-center space-x-4">
-            <h2 className="text-lg font-semibold text-gray-900">Payments Received</h2>
-            <span className="text-sm text-gray-500">({payments.length} payments)</span>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Payments Received
+            </h2>
+            <span className="text-sm text-gray-500">
+              ({payments.length} payments)
+            </span>
           </div>
         </div>
       </div>
@@ -141,7 +141,7 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
               </svg>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200">
               Filter
@@ -165,69 +165,69 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                onClick={() => handleSort('date')}
+                onClick={() => handleSort("date")}
               >
                 Date
-                {sortColumn === 'date' && (
+                {sortColumn === "date" && (
                   <span className="ml-1">
-                    {sortOrder === 'asc' ? '↑' : '↓'}
+                    {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
                 )}
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                onClick={() => handleSort('paymentNumber')}
+                onClick={() => handleSort("paymentNumber")}
               >
                 Payment #
-                {sortColumn === 'paymentNumber' && (
+                {sortColumn === "paymentNumber" && (
                   <span className="ml-1">
-                    {sortOrder === 'asc' ? '↑' : '↓'}
+                    {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
                 )}
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                onClick={() => handleSort('customerName')}
+                onClick={() => handleSort("customerName")}
               >
                 Customer
-                {sortColumn === 'customerName' && (
+                {sortColumn === "customerName" && (
                   <span className="ml-1">
-                    {sortOrder === 'asc' ? '↑' : '↓'}
+                    {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
                 )}
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                onClick={() => handleSort('invoiceNumber')}
+                onClick={() => handleSort("invoiceNumber")}
               >
                 Invoice #
-                {sortColumn === 'invoiceNumber' && (
+                {sortColumn === "invoiceNumber" && (
                   <span className="ml-1">
-                    {sortOrder === 'asc' ? '↑' : '↓'}
+                    {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
                 )}
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                onClick={() => handleSort('mode')}
+                onClick={() => handleSort("mode")}
               >
                 Mode
-                {sortColumn === 'mode' && (
+                {sortColumn === "mode" && (
                   <span className="ml-1">
-                    {sortOrder === 'asc' ? '↑' : '↓'}
+                    {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
                 )}
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
-                onClick={() => handleSort('amount')}
+                onClick={() => handleSort("amount")}
               >
                 Amount
-                {sortColumn === 'amount' && (
+                {sortColumn === "amount" && (
                   <span className="ml-1">
-                    {sortOrder === 'asc' ? '↑' : '↓'}
+                    {sortOrder === "asc" ? "↑" : "↓"}
                   </span>
                 )}
               </th>
@@ -242,14 +242,18 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
                 key={payment._id}
                 onClick={() => onPaymentRowClick(payment)}
                 className={`hover:bg-gray-50 cursor-pointer transition-colors duration-150 ${
-                  selectedPaymentId === payment._id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                  selectedPaymentId === payment._id
+                    ? "bg-blue-50 border-l-4 border-l-blue-500"
+                    : ""
                 }`}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <input
                     type="checkbox"
                     checked={selectedPayments.includes(payment._id)}
-                    onChange={(e) => handleSelectPayment(payment._id, e.target.checked)}
+                    onChange={(e) =>
+                      handleSelectPayment(payment._id, e.target.checked)
+                    }
                     onClick={(e) => e.stopPropagation()}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
@@ -267,13 +271,19 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
                   {payment.invoiceNumber}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    payment.mode === 'Cash' ? 'bg-green-100 text-green-800' :
-                    payment.mode === 'Bank Transfer' ? 'bg-blue-100 text-blue-800' :
-                    payment.mode === 'Cheque' ? 'bg-yellow-100 text-yellow-800' :
-                    payment.mode === 'Credit Card' ? 'bg-purple-100 text-purple-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      payment.mode === "Cash"
+                        ? "bg-green-100 text-green-800"
+                        : payment.mode === "Bank Transfer"
+                        ? "bg-blue-100 text-blue-800"
+                        : payment.mode === "Cheque"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : payment.mode === "Credit Card"
+                        ? "bg-purple-100 text-purple-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
                     {payment.mode}
                   </span>
                 </td>
@@ -313,9 +323,13 @@ const PaymentsReceivedTable: React.FC<PaymentsReceivedTableProps> = ({
       {sortedPayments.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-6xl mb-4">📄</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No payments found
+          </h3>
           <p className="text-gray-500 mb-4">
-            {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating your first payment.'}
+            {searchTerm
+              ? "Try adjusting your search terms."
+              : "Get started by creating your first payment."}
           </p>
           {!searchTerm && (
             <button

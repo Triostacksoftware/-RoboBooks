@@ -1,9 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Printer, Download, MoreVertical, Eye, Trash2, FileText, Calendar, User, DollarSign } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Edit,
+  Printer,
+  Download,
+  MoreVertical,
+  Eye,
+  Trash2,
+  FileText,
+  Calendar,
+  User,
+  DollarSign,
+} from "lucide-react";
+import Link from "next/link";
+import { formatCurrency } from "@/utils/currency";
 
 interface CreditNoteItem {
   id: string;
@@ -27,13 +40,13 @@ interface CreditNote {
   items: CreditNoteItem[];
   subTotal: number;
   discount: number;
-  discountType: 'percentage' | 'amount';
-  tdsType: 'TDS' | 'TCS';
+  discountType: "percentage" | "amount";
+  tdsType: "TDS" | "TCS";
   selectedTax?: string;
   tdsAmount: number;
   adjustment: number;
   total: number;
-  status: 'draft' | 'open' | 'void';
+  status: "draft" | "open" | "void";
   notes?: string;
   terms?: string;
 }
@@ -48,35 +61,36 @@ const CreditNoteDetailPage = () => {
     // Mock data - in real app, fetch from API
     const mockCreditNote: CreditNote = {
       id: params.id as string,
-      creditNoteNumber: 'CN-00001',
-      customerName: 'ABC Company Ltd',
-      customerEmail: 'contact@abc.com',
-      customerAddress: '123 Business Street, Mumbai, Maharashtra 400001',
-      date: '2025-08-11',
-      referenceNumber: 'REF-001',
-      salesperson: 'John Doe',
-      subject: 'Product return - Damaged goods',
+      creditNoteNumber: "CN-00001",
+      customerName: "ABC Company Ltd",
+      customerEmail: "contact@abc.com",
+      customerAddress: "123 Business Street, Mumbai, Maharashtra 400001",
+      date: "2025-08-11",
+      referenceNumber: "REF-001",
+      salesperson: "John Doe",
+      subject: "Product return - Damaged goods",
       items: [
         {
-          id: '1',
-          itemDetails: 'Laptop Computer - Dell XPS 13',
-          account: 'Product Returns',
+          id: "1",
+          itemDetails: "Laptop Computer - Dell XPS 13",
+          account: "Product Returns",
           quantity: 1,
           rate: 15000,
-          amount: 15000
-        }
+          amount: 15000,
+        },
       ],
       subTotal: 15000,
       discount: 0,
-      discountType: 'percentage',
-      tdsType: 'TDS',
-      selectedTax: 'TDS on Services',
+      discountType: "percentage",
+      tdsType: "TDS",
+      selectedTax: "TDS on Services",
       tdsAmount: 0,
       adjustment: 0,
       total: 15000,
-      status: 'open',
-      notes: 'Customer returned the laptop due to manufacturing defect. Full refund issued.',
-      terms: 'Credit note valid for 30 days from date of issue.'
+      status: "open",
+      notes:
+        "Customer returned the laptop due to manufacturing defect. Full refund issued.",
+      terms: "Credit note valid for 30 days from date of issue.",
     };
 
     setTimeout(() => {
@@ -85,27 +99,24 @@ const CreditNoteDetailPage = () => {
     }, 1000);
   }, [params.id]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'void': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "open":
+        return "bg-green-100 text-green-800";
+      case "draft":
+        return "bg-yellow-100 text-yellow-800";
+      case "void":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -121,8 +132,12 @@ const CreditNoteDetailPage = () => {
     return (
       <div className="p-6">
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900">Credit Note not found</h2>
-          <p className="text-gray-600 mt-2">The credit note you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Credit Note not found
+          </h2>
+          <p className="text-gray-600 mt-2">
+            The credit note you're looking for doesn't exist.
+          </p>
         </div>
       </div>
     );
@@ -140,13 +155,20 @@ const CreditNoteDetailPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{creditNote.creditNoteNumber}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {creditNote.creditNoteNumber}
+            </h1>
             <p className="text-gray-600 mt-1">Credit Note Details</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(creditNote.status)}`}>
-            {creditNote.status.charAt(0).toUpperCase() + creditNote.status.slice(1)}
+          <span
+            className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(
+              creditNote.status
+            )}`}
+          >
+            {creditNote.status.charAt(0).toUpperCase() +
+              creditNote.status.slice(1)}
           </span>
           <div className="flex items-center space-x-2">
             <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
@@ -179,44 +201,64 @@ const CreditNoteDetailPage = () => {
                   <FileText className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Credit Note</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Credit Note
+                  </h2>
                   <p className="text-gray-600">{creditNote.creditNoteNumber}</p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">{formatCurrency(creditNote.total)}</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(creditNote.total)}
+                </div>
                 <div className="text-sm text-gray-600">Total Amount</div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Customer Information</h3>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  Customer Information
+                </h3>
                 <div className="space-y-2">
                   <div>
-                    <div className="font-medium text-gray-900">{creditNote.customerName}</div>
-                    <div className="text-sm text-gray-600">{creditNote.customerEmail}</div>
-                    <div className="text-sm text-gray-600">{creditNote.customerAddress}</div>
+                    <div className="font-medium text-gray-900">
+                      {creditNote.customerName}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {creditNote.customerEmail}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {creditNote.customerAddress}
+                    </div>
                   </div>
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Credit Note Information</h3>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                  Credit Note Information
+                </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Date:</span>
-                    <span className="font-medium">{formatDate(creditNote.date)}</span>
+                    <span className="font-medium">
+                      {formatDate(creditNote.date)}
+                    </span>
                   </div>
                   {creditNote.referenceNumber && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reference:</span>
-                      <span className="font-medium">{creditNote.referenceNumber}</span>
+                      <span className="font-medium">
+                        {creditNote.referenceNumber}
+                      </span>
                     </div>
                   )}
                   {creditNote.salesperson && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Salesperson:</span>
-                      <span className="font-medium">{creditNote.salesperson}</span>
+                      <span className="font-medium">
+                        {creditNote.salesperson}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -227,7 +269,9 @@ const CreditNoteDetailPage = () => {
           {/* Subject */}
           {creditNote.subject && (
             <div className="bg-white rounded-lg border p-6">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Subject</h3>
+              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                Subject
+              </h3>
               <p className="text-gray-900">{creditNote.subject}</p>
             </div>
           )}
@@ -241,11 +285,21 @@ const CreditNoteDetailPage = () => {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Details</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Item Details
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Account
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Quantity
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rate
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -279,13 +333,17 @@ const CreditNoteDetailPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {creditNote.notes && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Notes</h3>
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                      Notes
+                    </h3>
                     <p className="text-gray-900">{creditNote.notes}</p>
                   </div>
                 )}
                 {creditNote.terms && (
                   <div>
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Terms</h3>
+                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">
+                      Terms
+                    </h3>
                     <p className="text-gray-900">{creditNote.terms}</p>
                   </div>
                 )}
@@ -297,37 +355,47 @@ const CreditNoteDetailPage = () => {
         {/* Summary Sidebar */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg border p-6 sticky top-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
-            
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Summary
+            </h3>
+
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Sub Total</span>
-                <span className="font-medium">{formatCurrency(creditNote.subTotal)}</span>
+                <span className="font-medium">
+                  {formatCurrency(creditNote.subTotal)}
+                </span>
               </div>
-              
+
               {creditNote.discount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Discount</span>
                   <span className="font-medium">
-                    {creditNote.discountType === 'percentage' ? `${creditNote.discount}%` : formatCurrency(creditNote.discount)}
+                    {creditNote.discountType === "percentage"
+                      ? `${creditNote.discount}%`
+                      : formatCurrency(creditNote.discount)}
                   </span>
                 </div>
               )}
-              
+
               {creditNote.tdsAmount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">{creditNote.tdsType}</span>
-                  <span className="font-medium">-{formatCurrency(creditNote.tdsAmount)}</span>
+                  <span className="font-medium">
+                    -{formatCurrency(creditNote.tdsAmount)}
+                  </span>
                 </div>
               )}
-              
+
               {creditNote.adjustment !== 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Adjustment</span>
-                  <span className="font-medium">{formatCurrency(creditNote.adjustment)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(creditNote.adjustment)}
+                  </span>
                 </div>
               )}
-              
+
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>

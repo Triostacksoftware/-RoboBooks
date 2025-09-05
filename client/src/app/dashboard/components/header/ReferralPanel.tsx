@@ -38,14 +38,11 @@ export default function ReferralPanel({
     ? createPortal(
         <>
           {/* backdrop */}
-          <div
-            className="fixed inset-0 bg-black/20 z-40"
-            onClick={onClose}
-          />
+          <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
 
           {/* slide-in panel */}
           <div
-            /* sit under the header and shrink height accordingly */  
+            /* sit under the header and shrink height accordingly */
             ref={ref}
             className="fixed top-14 right-0 z-50 w-80 h-[calc(100%-3.5rem)] bg-white shadow-2xl overflow-auto flex flex-col"
           >
@@ -71,7 +68,7 @@ export default function ReferralPanel({
                 </h4>
                 <p>
                   Refer them today and earn{" "}
-                  <span className="text-red-600">$3</span> for every qualified
+                  <span className="text-red-600">Rs3</span> for every qualified
                   signup — you also get{" "}
                   <span className="text-red-600">20%</span> of their
                   subscription payment as Robo Wallet credits.
@@ -96,7 +93,7 @@ export default function ReferralPanel({
                     clients.
                   </li>
                   <li>
-                    You’ll earn <span className="font-semibold">$3</span>{" "}
+                    You'll earn <span className="font-semibold">Rs3</span>{" "}
                     instantly for every qualified signup.
                   </li>
                   <li>
@@ -106,7 +103,7 @@ export default function ReferralPanel({
                   </li>
                   <li>
                     Your contact will also receive{" "}
-                    <span className="font-semibold">$100</span> in Robo Wallet
+                    <span className="font-semibold">Rs100</span> in Robo Wallet
                     credits as a welcome gift for signing up through your
                     referral.
                   </li>
@@ -126,4 +123,3 @@ export default function ReferralPanel({
       )
     : null;
 }
-

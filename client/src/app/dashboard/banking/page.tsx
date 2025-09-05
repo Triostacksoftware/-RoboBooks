@@ -492,7 +492,7 @@ export default function BankingPage() {
               className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               aria-label="Go back to Dashboard"
             >
-              ← Back to Dashboard
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
             </button>
 
             <div>

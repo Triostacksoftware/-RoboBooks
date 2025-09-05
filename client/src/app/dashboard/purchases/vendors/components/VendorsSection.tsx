@@ -15,6 +15,7 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { Vendor, vendorService } from "@/services/vendorService";
+import { formatCurrency } from "@/utils/currency";
 
 const filters = ["All", "Active", "Inactive", "Business", "Individual"];
 
@@ -93,14 +94,6 @@ export default function VendorsSection() {
 
   const closeVendorDetails = () => {
     setSelectedVendor(null);
-  };
-
-  const formatCurrency = (amount?: number) => {
-    if (amount === undefined || amount === null) return "₹0.00";
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
   };
 
   const getVendorType = (vendor: Vendor) => {

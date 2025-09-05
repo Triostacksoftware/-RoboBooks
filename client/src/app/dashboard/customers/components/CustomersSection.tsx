@@ -17,6 +17,7 @@ import {
 import { Customer } from "@/services/customerService";
 import BulkUploadModal from "./BulkUploadModal";
 import { ArrowUpTrayIcon } from "@heroicons/react/24/solid";
+import { formatCurrency } from "@/utils/currency";
 
 export default function CustomersSection() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -81,13 +82,6 @@ export default function CustomersSection() {
     setSelectedCustomer(null);
   };
 
-  const formatCurrency = (amount?: number) => {
-    if (amount === undefined || amount === null) return "₹0.00";
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
-  };
 
   const getCustomerType = (customer: Customer) => {
     return customer.customerType;

@@ -25,77 +25,84 @@ import {
 } from "recharts";
 
 export default function GraphicalView() {
-  // Mock data for graphical view
+  // Mock data for graphical view - all values set to 0
   const monthlyData = [
-    { month: "Jan", revenue: 85000, expenses: 62000, profit: 23000 },
-    { month: "Feb", revenue: 92000, expenses: 68000, profit: 24000 },
-    { month: "Mar", revenue: 78000, expenses: 59000, profit: 19000 },
-    { month: "Apr", revenue: 105000, expenses: 72000, profit: 33000 },
-    { month: "May", revenue: 98000, expenses: 65000, profit: 33000 },
-    { month: "Jun", revenue: 125000, expenses: 78500, profit: 46500 },
+    { month: "Jan", revenue: 0, expenses: 0, profit: 0 },
+    { month: "Feb", revenue: 0, expenses: 0, profit: 0 },
+    { month: "Mar", revenue: 0, expenses: 0, profit: 0 },
+    { month: "Apr", revenue: 0, expenses: 0, profit: 0 },
+    { month: "May", revenue: 0, expenses: 0, profit: 0 },
+    { month: "Jun", revenue: 0, expenses: 0, profit: 0 },
   ];
 
   const expenseBreakdown = [
-    { name: "Office Supplies", value: 8500, color: "#3B82F6" },
-    { name: "Internet & Phone", value: 6200, color: "#10B981" },
-    { name: "Software Subscriptions", value: 5800, color: "#8B5CF6" },
-    { name: "Travel & Entertainment", value: 4900, color: "#F59E0B" },
-    { name: "Marketing", value: 4200, color: "#EF4444" },
-    { name: "Others", value: 48900, color: "#6B7280" },
+    { name: "Office Supplies", value: 0, color: "#3B82F6" },
+    { name: "Internet & Phone", value: 0, color: "#10B981" },
+    { name: "Software Subscriptions", value: 0, color: "#8B5CF6" },
+    { name: "Travel & Entertainment", value: 0, color: "#F59E0B" },
+    { name: "Marketing", value: 0, color: "#EF4444" },
+    { name: "Others", value: 0, color: "#6B7280" },
   ];
 
   const customerRevenue = [
-    { name: "ABC Company", value: 45600, color: "#3B82F6" },
-    { name: "XYZ Corporation", value: 38900, color: "#10B981" },
-    { name: "DEF Limited", value: 32400, color: "#8B5CF6" },
-    { name: "Others", value: 8100, color: "#6B7280" },
+    { name: "ABC Company", value: 0, color: "#3B82F6" },
+    { name: "XYZ Corporation", value: 0, color: "#10B981" },
+    { name: "DEF Limited", value: 0, color: "#8B5CF6" },
+    { name: "Others", value: 0, color: "#6B7280" },
   ];
 
   const profitTrendData = [
-    { month: "Jan", profit: 23000 },
-    { month: "Feb", profit: 24000 },
-    { month: "Mar", profit: 19000 },
-    { month: "Apr", profit: 33000 },
-    { month: "May", profit: 33000 },
-    { month: "Jun", profit: 46500 },
+    { month: "Jan", profit: 0 },
+    { month: "Feb", profit: 0 },
+    { month: "Mar", profit: 0 },
+    { month: "Apr", profit: 0 },
+    { month: "May", profit: 0 },
+    { month: "Jun", profit: 0 },
   ];
 
   const kpiCards = [
     {
       title: "Total Revenue",
-      value: "₹125,000",
-      change: "+27.6%",
-      trend: "up",
+      value: "₹0",
+      change: "0%",
+      trend: "stable",
       icon: "💰",
-      color: "bg-green-50 border-green-200",
+      color: "bg-gray-50 border-gray-200",
     },
     {
       title: "Total Expenses",
-      value: "₹78,500",
-      change: "+20.4%",
-      trend: "up",
+      value: "₹0",
+      change: "0%",
+      trend: "stable",
       icon: "💸",
-      color: "bg-red-50 border-red-200",
+      color: "bg-gray-50 border-gray-200",
     },
     {
       title: "Net Profit",
-      value: "₹46,500",
-      change: "+41.8%",
-      trend: "up",
+      value: "₹0",
+      change: "0%",
+      trend: "stable",
       icon: "📈",
-      color: "bg-blue-50 border-blue-200",
+      color: "bg-gray-50 border-gray-200",
     },
     {
       title: "Cash Flow",
-      value: "₹67,800",
-      change: "+25.1%",
-      trend: "up",
+      value: "₹0",
+      change: "0%",
+      trend: "stable",
       icon: "🏦",
-      color: "bg-purple-50 border-purple-200",
+      color: "bg-gray-50 border-gray-200",
     },
   ];
 
-  const COLORS = ["#3B82F6", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444", "#6B7280"];
+  const COLORS = [
+    "#3B82F6",
+    "#10B981",
+    "#8B5CF6",
+    "#F59E0B",
+    "#EF4444",
+    "#6B7280",
+  ];
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -127,13 +134,19 @@ export default function GraphicalView() {
                 </p>
                 <div
                   className={`flex items-center mt-2 text-sm ${
-                    kpi.trend === "up" ? "text-green-600" : "text-red-600"
+                    kpi.trend === "up"
+                      ? "text-green-600"
+                      : kpi.trend === "down"
+                      ? "text-red-600"
+                      : "text-gray-600"
                   }`}
                 >
                   {kpi.trend === "up" ? (
                     <ArrowUpIcon className="w-4 h-4 mr-1" />
-                  ) : (
+                  ) : kpi.trend === "down" ? (
                     <ArrowDownIcon className="w-4 h-4 mr-1" />
+                  ) : (
+                    <span className="w-4 h-4 mr-1">—</span>
                   )}
                   {kpi.change}
                 </div>
@@ -174,7 +187,9 @@ export default function GraphicalView() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) =>
+                  `${name} ${(percent * 100).toFixed(0)}%`
+                }
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -200,7 +215,9 @@ export default function GraphicalView() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) =>
+                  `${name} ${(percent * 100).toFixed(0)}%`
+                }
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -235,9 +252,9 @@ export default function GraphicalView() {
           </LineChart>
         </ResponsiveContainer>
         <div className="flex items-center justify-center mt-4">
-          <ChartBarIcon className="w-5 h-5 text-green-600 mr-2" />
-          <span className="text-sm text-green-600 font-medium">
-            Overall Profit Trend: +41.8%
+          <ChartBarIcon className="w-5 h-5 text-gray-600 mr-2" />
+          <span className="text-sm text-gray-600 font-medium">
+            Overall Profit Trend: 0%
           </span>
         </div>
       </div>
@@ -279,19 +296,19 @@ export default function GraphicalView() {
         <h2 className="text-xl font-semibold mb-4">Performance Indicators</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">85%</div>
+            <div className="text-2xl font-bold text-gray-600">0%</div>
             <div className="text-sm text-gray-600">Customer Satisfaction</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">92%</div>
+            <div className="text-2xl font-bold text-gray-600">0%</div>
             <div className="text-sm text-gray-600">Payment Collection Rate</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">78%</div>
+            <div className="text-2xl font-bold text-gray-600">0%</div>
             <div className="text-sm text-gray-600">Expense Efficiency</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">15</div>
+            <div className="text-2xl font-bold text-gray-600">0</div>
             <div className="text-sm text-gray-600">Active Projects</div>
           </div>
         </div>

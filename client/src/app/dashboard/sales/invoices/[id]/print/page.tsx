@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { formatCurrency } from "@/utils/currency";
 
 interface InvoiceItem {
   id: number;
@@ -119,12 +120,6 @@ const InvoicePrintPage = () => {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
-  };
 
   const numberToWords = (num: number) => {
     const ones = [
@@ -266,7 +261,7 @@ const InvoicePrintPage = () => {
             onClick={handleBack}
             className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            ← Back
+            < Back
           </button>
         </div>
       </div>

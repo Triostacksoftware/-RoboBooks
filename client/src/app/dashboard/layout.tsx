@@ -10,6 +10,10 @@ import { api } from "../../lib/api";
 // Dynamic imports to prevent SSR issues with document references
 const Header = dynamic(() => import("./components/Header"), { ssr: false });
 const Sidebar = dynamic(() => import("./components/Sidebar"), { ssr: false });
+const ScrollToTopButton = dynamic(
+  () => import("./components/ScrollToTopButton"),
+  { ssr: false }
+);
 
 export default function DashboardLayout({
   children,
@@ -174,6 +178,9 @@ export default function DashboardLayout({
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <main className="flex-1 overflow-hidden">{children}</main>
         </div>
+
+        {/* Scroll to Top Button */}
+        <ScrollToTopButton />
       </div>
     </>
   );

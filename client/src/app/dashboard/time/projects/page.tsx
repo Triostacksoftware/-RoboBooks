@@ -25,6 +25,7 @@ import {
   Squares2X2Icon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import { formatCurrency } from '@/utils/currency';
 import ProjectDetail from './components/ProjectDetail';
 import { projectApi, Project, ProjectDetails, Task, TimeEntry, Invoice, Expense } from '@/lib/api';
 
@@ -775,7 +776,7 @@ export default function ProjectsPage() {
             onClick={() => router.push('/dashboard/time')}
             className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
           >
-            ← Back to Time
+            < Back to Time
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
@@ -1037,12 +1038,12 @@ export default function ProjectsPage() {
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Budget</span>
-                  <span className="font-medium">${project.budget.toLocaleString()}</span>
+                  <span className="font-medium">{formatCurrency(project.budget)}</span>
                 </div>
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Spent</span>
-                  <span className="font-medium">${project.spent.toLocaleString()}</span>
+                  <span className="font-medium">{formatCurrency(project.spent)}</span>
                 </div>
               </div>
               

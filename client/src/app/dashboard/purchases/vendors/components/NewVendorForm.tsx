@@ -248,7 +248,7 @@ export default function NewVendorForm() {
           onClick={() => router.push('/dashboard/purchases/vendors')}
           className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 mb-4"
         >
-          ← Back to Vendors
+          < Back to Vendors
         </button>
         <h1 className="text-2xl font-bold text-gray-900">New Vendor</h1>
       </div>

@@ -21,6 +21,7 @@ import {
   EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 import Swal from "sweetalert2";
+import { formatCurrency } from "@/utils/currency";
 
 interface RecurringInvoice {
   _id: string;
@@ -216,13 +217,6 @@ const RecurringInvoiceViewPage = () => {
       month: "short",
       day: "numeric",
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
   };
 
   // Helper function to extract state code from address

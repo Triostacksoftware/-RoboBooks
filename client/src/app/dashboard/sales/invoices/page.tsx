@@ -32,6 +32,7 @@ import {
   TrashIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
+import { formatCurrency } from "@/utils/currency";
 
 interface Invoice {
   _id: string;
@@ -129,13 +130,6 @@ const AllInvoicesPage = () => {
       month: "short",
       day: "numeric",
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amount);
   };
 
   const handleEditInvoice = (invoiceId: string) => {
@@ -277,14 +271,14 @@ const AllInvoicesPage = () => {
           <div className="flex items-center space-x-4">
             {/* Back Button */}
             <button
-              onClick={() => router.push('/dashboard/sales')}
+              onClick={() => router.push("/dashboard/sales")}
               className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-gray-700 hover:text-gray-900"
               aria-label="Go back to Sales"
             >
               <ArrowLeftIcon className="h-4 w-4" />
               <span className="text-sm font-medium">Back</span>
             </button>
-            
+
             <div className="flex items-center space-x-2">
               <h1 className="text-xl font-semibold text-gray-900">
                 All Invoices

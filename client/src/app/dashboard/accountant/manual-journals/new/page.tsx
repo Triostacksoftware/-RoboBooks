@@ -429,7 +429,7 @@ const NewManualJournalPage = () => {
               }
               className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                ← Back to Manual Journals
+                < Back to Manual Journals
             </button>
             <DocumentTextIcon className="h-6 w-6 text-blue-600" />
             <h1 className="text-xl font-bold text-gray-900">New Journal</h1>
