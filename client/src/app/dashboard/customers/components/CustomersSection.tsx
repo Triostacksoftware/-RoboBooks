@@ -1258,10 +1258,10 @@ export default function CustomersSection() {
                           </p>
                         </div>
                         <div className="text-right text-sm text-gray-600">
-                          <p>Trioostack Technologies pvt ltd</p>
-                          <p>Uttar Pradesh</p>
-                          <p>India</p>
-                          <p>comrade34arya@gmail.com</p>
+                          <p>Your Company Name</p>
+                          <p>Your State</p>
+                          <p>Your Country</p>
+                          <p>contact@yourcompany.com</p>
                         </div>
                       </div>
 
