@@ -20,8 +20,13 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const authCheckRef = useRef(false);
   const redirectAttemptsRef = useRef(0);
+
+  const handleToggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   useEffect(() => {
     // Prevent multiple auth checks
@@ -164,9 +169,9 @@ export default function DashboardLayout({
         <title>Dashboard – Robo Books</title>
       </Head>
       <div className="flex flex-col h-screen bg-gray-50">
-        <Header />
+        <Header onToggleSidebar={handleToggleSidebar} />
         <div className="flex flex-1 ">
-          <Sidebar />
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <main className="flex-1 overflow-hidden">{children}</main>
         </div>
       </div>

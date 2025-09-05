@@ -280,7 +280,12 @@ const NAV: Node[] = [
 const cn = (...xs: (string | false | undefined)[]) =>
   xs.filter(Boolean).join(" ");
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
@@ -360,14 +365,27 @@ export default function Sidebar() {
   };
 
   return (
-    <aside
-      data-settings-sidebar
-      ref={containerRef}
-      className={cn(
-        "h-full bg-white border-r flex flex-col transition-all duration-300 ease-in-out",
-        collapsed ? "w-20" : "w-64"
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={onClose}
+        />
       )}
-    >
+      
+      <aside
+        data-settings-sidebar
+        ref={containerRef}
+        className={cn(
+          "h-full bg-white border-r flex flex-col transition-all duration-300 ease-in-out",
+          "lg:relative lg:translate-x-0", // Desktop: always visible
+          "fixed lg:static z-50", // Mobile: fixed positioning with high z-index
+          collapsed ? "w-20" : "w-64",
+          // Mobile visibility
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
       {/* Brand */}
       <div
         className={cn(
