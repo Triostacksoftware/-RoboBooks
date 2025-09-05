@@ -82,7 +82,9 @@ interface QuoteItem {
 const NewQuoteForm = () => {
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCustomerPreSelected, setShowCustomerPreSelected] = useState(false);
@@ -93,7 +95,7 @@ const NewQuoteForm = () => {
   const [isLoadingTaxes, setIsLoadingTaxes] = useState(false);
   const [showTDSModal, setShowTDSModal] = useState(false);
   const [showTCSModal, setShowTCSModal] = useState(false);
-  
+
   // Form submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Backend status removed
@@ -102,7 +104,9 @@ const NewQuoteForm = () => {
     quoteNumber: "QT-000001",
     referenceNumber: "",
     quoteDate: new Date().toISOString().split("T")[0],
-    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
     terms: "Due on Receipt",
     salesperson: "",
     subject: "",
@@ -397,7 +401,8 @@ const NewQuoteForm = () => {
           }
 
           // Calculate proportional discount for this item
-          const itemProportion = subTotal > 0 ? (item.amount || 0) / subTotal : 0;
+          const itemProportion =
+            subTotal > 0 ? (item.amount || 0) / subTotal : 0;
           const itemDiscountAmount = discountAmount * itemProportion;
           const itemTaxableAmount = (item.amount || 0) - itemDiscountAmount;
 
@@ -411,9 +416,18 @@ const NewQuoteForm = () => {
         });
 
         // Calculate GST totals
-        const cgstTotal = updatedItems.reduce((sum, i) => sum + (i.cgst || 0), 0);
-        const sgstTotal = updatedItems.reduce((sum, i) => sum + (i.sgst || 0), 0);
-        const igstTotal = updatedItems.reduce((sum, i) => sum + (i.igst || 0), 0);
+        const cgstTotal = updatedItems.reduce(
+          (sum, i) => sum + (i.cgst || 0),
+          0
+        );
+        const sgstTotal = updatedItems.reduce(
+          (sum, i) => sum + (i.sgst || 0),
+          0
+        );
+        const igstTotal = updatedItems.reduce(
+          (sum, i) => sum + (i.igst || 0),
+          0
+        );
         const totalGSTTax = cgstTotal + sgstTotal + igstTotal;
 
         // Calculate TDS/TCS on (subtotal - discount) BEFORE GST
@@ -464,7 +478,7 @@ const NewQuoteForm = () => {
     additionalTaxType: formData.additionalTaxType,
     additionalTaxRate: formData.additionalTaxRate,
     adjustment: formData.adjustment,
-    placeOfSupplyState: formData.placeOfSupplyState
+    placeOfSupplyState: formData.placeOfSupplyState,
   });
 
   useEffect(() => {
@@ -474,7 +488,7 @@ const NewQuoteForm = () => {
     }
 
     // Only recalculate if relevant values actually changed (excluding items to prevent infinite loops)
-    const hasRelevantChanges = 
+    const hasRelevantChanges =
       prevFormData.current.discount !== formData.discount ||
       prevFormData.current.discountType !== formData.discountType ||
       prevFormData.current.additionalTaxType !== formData.additionalTaxType ||
@@ -490,10 +504,17 @@ const NewQuoteForm = () => {
         additionalTaxType: formData.additionalTaxType,
         additionalTaxRate: formData.additionalTaxRate,
         adjustment: formData.adjustment,
-        placeOfSupplyState: formData.placeOfSupplyState
+        placeOfSupplyState: formData.placeOfSupplyState,
       };
     }
-  }, [formData.discount, formData.discountType, formData.additionalTaxType, formData.additionalTaxRate, formData.adjustment, formData.placeOfSupplyState]);
+  }, [
+    formData.discount,
+    formData.discountType,
+    formData.additionalTaxType,
+    formData.additionalTaxRate,
+    formData.adjustment,
+    formData.placeOfSupplyState,
+  ]);
 
   // Determine intra vs inter-state with enhanced logic
   const isIntraState = () => {
@@ -606,7 +627,9 @@ const NewQuoteForm = () => {
   // Show immediate alert about backend status
   useEffect(() => {
     console.log("🚨 SHOWING IMMEDIATE BACKEND STATUS ALERT");
-    alert("🔧 Backend Status Check: The system is checking if your backend server is running. Look for the blue status panel below.");
+    alert(
+      "🔧 Backend Status Check: The system is checking if your backend server is running. Look for the blue status panel below."
+    );
   }, []);
 
   // Check authentication status on mount
@@ -614,20 +637,23 @@ const NewQuoteForm = () => {
     const checkAuthStatus = async () => {
       try {
         console.log("🔐 Checking authentication status...");
-        const response = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/auth/check", {
-          method: "GET",
-          credentials: "include",
-          signal: AbortSignal.timeout(5000),
-        });
-        
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/auth/check",
+          {
+            method: "GET",
+            credentials: "include",
+            signal: AbortSignal.timeout(5000),
+          }
+        );
+
         if (response.status === 401) {
           console.log("❌ Authentication failed on page load");
           showToast("Your session has expired. Please log in again.", "error");
-          
+
           // Clear authentication data
-          localStorage.removeItem('user');
+          localStorage.removeItem("user");
           sessionStorage.clear();
-          
+
           // Redirect to login
           setTimeout(() => {
             router.push("/signin");
@@ -894,41 +920,50 @@ const NewQuoteForm = () => {
       if (isSubmitting) {
         return;
       }
-      
+
       setIsSubmitting(true);
-      
+
       // Check if user is authenticated
       try {
-        const authCheck = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/auth/check", {
-          method: "GET",
-          credentials: "include",
-          signal: AbortSignal.timeout(5000),
-        });
-        
+        const authCheck = await fetch(
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/auth/check",
+          {
+            method: "GET",
+            credentials: "include",
+            signal: AbortSignal.timeout(5000),
+          }
+        );
+
         if (authCheck.status === 401) {
           console.log("🔐 Authentication check failed - session expired");
-          
+
           // Try to refresh the session first
           try {
             console.log("🔄 Attempting to refresh session...");
-            const refreshResponse = await fetch(process.env.NEXT_PUBLIC_BACKEND_URL + "/api/auth/refresh", {
-              method: "POST",
-              credentials: "include",
-              signal: AbortSignal.timeout(5000),
-            });
-            
+            const refreshResponse = await fetch(
+              process.env.NEXT_PUBLIC_BACKEND_URL + "/api/auth/refresh",
+              {
+                method: "POST",
+                credentials: "include",
+                signal: AbortSignal.timeout(5000),
+              }
+            );
+
             if (refreshResponse.ok) {
               console.log("✅ Session refreshed successfully");
               showToast("Session refreshed successfully", "success");
             } else {
               console.log("❌ Session refresh failed, redirecting to login");
-              showToast("Your session has expired. Please log in again.", "error");
+              showToast(
+                "Your session has expired. Please log in again.",
+                "error"
+              );
               setIsSubmitting(false);
-              
+
               // Clear authentication data
-              localStorage.removeItem('user');
+              localStorage.removeItem("user");
               sessionStorage.clear();
-              
+
               // Redirect to login
               setTimeout(() => {
                 router.push("/signin");
@@ -937,13 +972,16 @@ const NewQuoteForm = () => {
             }
           } catch (refreshError) {
             console.log("❌ Session refresh failed:", refreshError);
-            showToast("Your session has expired. Please log in again.", "error");
+            showToast(
+              "Your session has expired. Please log in again.",
+              "error"
+            );
             setIsSubmitting(false);
-            
+
             // Clear authentication data
-            localStorage.removeItem('user');
+            localStorage.removeItem("user");
             sessionStorage.clear();
-            
+
             // Redirect to login
             setTimeout(() => {
               router.push("/signin");
@@ -951,12 +989,15 @@ const NewQuoteForm = () => {
             return;
           }
         }
-        
+
         console.log("✅ Authentication check passed");
       } catch (authError) {
-        console.log("🔐 Auth check failed, continuing with quote save...", authError);
+        console.log(
+          "🔐 Auth check failed, continuing with quote save...",
+          authError
+        );
       }
-      
+
       if (!selectedCustomer) {
         showToast("Please select a customer", "error");
         setIsSubmitting(false);
@@ -964,7 +1005,11 @@ const NewQuoteForm = () => {
       }
 
       // Validate customer has required phone number
-      if (!selectedCustomer.phone && !selectedCustomer.mobile && !selectedCustomer.workPhone) {
+      if (
+        !selectedCustomer.phone &&
+        !selectedCustomer.mobile &&
+        !selectedCustomer.workPhone
+      ) {
         showToast("Customer must have at least one phone number", "error");
         setIsSubmitting(false);
         return;
@@ -990,9 +1035,14 @@ const NewQuoteForm = () => {
       }
 
       // Validate items have required fields
-      const invalidItems = formData.items.filter(item => !item.details?.trim() || !item.rate || item.rate <= 0);
+      const invalidItems = formData.items.filter(
+        (item) => !item.details?.trim() || !item.rate || item.rate <= 0
+      );
       if (invalidItems.length > 0) {
-        showToast("Please fill in all required item fields (details and rate)", "error");
+        showToast(
+          "Please fill in all required item fields (details and rate)",
+          "error"
+        );
         setIsSubmitting(false);
         return;
       }
@@ -1000,48 +1050,61 @@ const NewQuoteForm = () => {
       // Additional validation for critical fields
       console.log("🔍 Validation Check:");
       console.log("✅ Customer:", selectedCustomer ? "Selected" : "Missing");
-      console.log("✅ Quote Number:", formData.quoteNumber ? "Present" : "Missing");
+      console.log(
+        "✅ Quote Number:",
+        formData.quoteNumber ? "Present" : "Missing"
+      );
       console.log("✅ Quote Date:", formData.quoteDate ? "Present" : "Missing");
       console.log("✅ Items:", formData.items?.length || 0, "items");
       console.log("✅ Total Amount:", formData.total || 0);
-      
+
       // Validate file sizes
       if (formData.signatureFile && formData.enableSignature) {
         const signatureSizeMB = formData.signatureFile.size / (1024 * 1024);
         if (signatureSizeMB > 5) {
-          showToast("Signature file is too large. Maximum size is 5MB.", "error");
+          showToast(
+            "Signature file is too large. Maximum size is 5MB.",
+            "error"
+          );
           setIsSubmitting(false);
           return;
         }
-        console.log("📝 Signature file size:", signatureSizeMB.toFixed(2), "MB");
+        console.log(
+          "📝 Signature file size:",
+          signatureSizeMB.toFixed(2),
+          "MB"
+        );
       }
-      
+
       if (formData.files && formData.files.length > 0) {
         for (let i = 0; i < formData.files.length; i++) {
           const file = formData.files[i];
           const fileSizeMB = file.size / (1024 * 1024);
           if (fileSizeMB > 10) {
-            showToast(`File "${file.name}" is too large. Maximum size is 10MB.`, "error");
+            showToast(
+              `File "${file.name}" is too large. Maximum size is 10MB.`,
+              "error"
+            );
             setIsSubmitting(false);
             return;
           }
           console.log(`📎 File ${i + 1} size:`, fileSizeMB.toFixed(2), "MB");
         }
       }
-      
+
       // Check if any critical data is missing
       if (!formData.quoteNumber?.trim()) {
         showToast("Quote number is required", "error");
         setIsSubmitting(false);
         return;
       }
-      
+
       if (!formData.quoteDate) {
         showToast("Quote date is required", "error");
         setIsSubmitting(false);
         return;
       }
-      
+
       if (!formData.items || formData.items.length === 0) {
         showToast("At least one item is required", "error");
         setIsSubmitting(false);
@@ -1050,39 +1113,55 @@ const NewQuoteForm = () => {
 
       const quoteData = {
         customerId: selectedCustomer._id,
-        customerName: selectedCustomer.firstName + " " + selectedCustomer.lastName,
+        customerName:
+          selectedCustomer.firstName + " " + selectedCustomer.lastName,
         customerEmail: selectedCustomer.email,
-        customerPhone: selectedCustomer.phone || selectedCustomer.mobile || selectedCustomer.workPhone || "Not provided",
+        customerPhone:
+          selectedCustomer.phone ||
+          selectedCustomer.mobile ||
+          selectedCustomer.workPhone ||
+          "Not provided",
         customerAddress: selectedCustomer.billingAddress
           ? `${selectedCustomer.billingAddress?.street || ""}, ${
               selectedCustomer.billingAddress?.city || ""
             }, ${selectedCustomer.billingAddress?.state || ""}`.trim()
           : "",
-        
+
         // Buyer Details (same as customer for now)
         buyerName: selectedCustomer.firstName + " " + selectedCustomer.lastName,
         buyerEmail: selectedCustomer.email,
-        buyerPhone: selectedCustomer.phone || selectedCustomer.mobile || selectedCustomer.workPhone || "Not provided",
+        buyerPhone:
+          selectedCustomer.phone ||
+          selectedCustomer.mobile ||
+          selectedCustomer.workPhone ||
+          "Not provided",
         buyerAddress: selectedCustomer.billingAddress
           ? `${selectedCustomer.billingAddress?.street || ""}, ${
               selectedCustomer.billingAddress?.city || ""
             }, ${selectedCustomer.billingAddress?.state || ""}`.trim()
           : "",
-        
+
         // Seller Details (from company settings)
         sellerName: companySettings.companyName,
         sellerEmail: companySettings.email,
         sellerPhone: companySettings.phone,
         sellerGstin: companySettings.gstin,
         sellerAddress: companySettings.address,
-        
+
         // Quote Details
         quoteNumber: formData.quoteNumber?.trim() || "",
-        quoteDate: new Date(formData.quoteDate || new Date().toISOString().split("T")[0]),
-        validUntil: new Date(formData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        quoteDate: new Date(
+          formData.quoteDate || new Date().toISOString().split("T")[0]
+        ),
+        validUntil: new Date(
+          formData.validUntil ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0]
+        ),
         subject: formData.subject || "",
         terms: formData.terms || "Due on Receipt",
-        
+
         // Items with essential data only (reduce payload size)
         items: (formData.items || []).map((item) => ({
           itemId: item.itemId || "",
@@ -1097,10 +1176,10 @@ const NewQuoteForm = () => {
           taxAmount: item.taxAmount || 0,
           cgst: item.cgst || 0,
           sgst: item.sgst || 0,
-          igst: item.igst || 0
+          igst: item.igst || 0,
           // Removed taxRemark to reduce payload size
         })),
-        
+
         // Summary with full tax breakdown
         subTotal: formData.subTotal || 0,
         discount: formData.discount || 0,
@@ -1112,16 +1191,16 @@ const NewQuoteForm = () => {
         cgstTotal: formData.cgstTotal || 0,
         sgstTotal: formData.sgstTotal || 0,
         igstTotal: formData.igstTotal || 0,
-        
+
         // TDS/TCS fields
         additionalTaxType: formData.additionalTaxType || null,
         additionalTaxId: formData.additionalTaxId || "",
         additionalTaxRate: formData.additionalTaxRate || 0,
         additionalTaxAmount: formData.additionalTaxAmount || 0,
-        
+
         adjustment: formData.adjustment || 0,
         total: formData.total || 0,
-        
+
         // Additional fields - Keep only essential text data
         customerNotes: formData.customerNotes || "",
         termsConditions: formData.termsConditions || "",
@@ -1129,26 +1208,29 @@ const NewQuoteForm = () => {
         files: [], // Don't send file data in JSON payload
         // Signature fields - Don't send large image data
         enableSignature: formData.enableSignature || false,
-        signatureFile: formData.signatureFile ? {
-          name: formData.signatureFile.name,
-          size: formData.signatureFile.size,
-          type: formData.signatureFile.type
-        } : null, // Send file metadata only
+        signatureFile: formData.signatureFile
+          ? {
+              name: formData.signatureFile.name,
+              size: formData.signatureFile.size,
+              type: formData.signatureFile.type,
+            }
+          : null, // Send file metadata only
         signaturePreview: "", // Don't send actual image data
         currency: formData.currency || "INR",
-        
+
         // Address blocks
         billingAddress: formData.billingAddress || {},
         shippingAddress: formData.shippingAddress || {},
         placeOfSupplyState: formData.placeOfSupplyState || "",
-        
-        status: asDraft ? 'draft' : 'sent'
+
+        status: asDraft ? "draft" : "sent",
       };
 
       // Check if backend URL is configured
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
       console.log("Using backend URL:", backendUrl);
-      
+
       // Debug: Log the data being sent
       console.log("🚀 Sending quote data:", JSON.stringify(quoteData, null, 2));
       console.log("🌐 API URL:", backendUrl + "/api/quotes");
@@ -1156,41 +1238,65 @@ const NewQuoteForm = () => {
       console.log("📅 Quote Date:", formData.quoteDate);
       console.log("📝 Items Count:", formData.items?.length);
       console.log("💰 Total Amount:", formData.total);
-      
-        // Check payload size to prevent "entity too large" errors
-        const payloadSize = JSON.stringify(quoteData).length;
-        console.log("📏 Payload size:", payloadSize, "bytes (~", Math.round(payloadSize / 1024), "KB)");
-        
-        if (payloadSize > 100000) { // 100KB limit
-          console.warn("⚠️ Payload is large, may cause backend issues");
-          showToast("Warning: Quote data is large, some fields may be truncated", "info");
-        }
-        
-        // Log file information
-        if (formData.signatureFile && formData.enableSignature) {
-          console.log("📝 Signature file:", formData.signatureFile.name, "(", (formData.signatureFile.size / 1024).toFixed(1), "KB)");
-        }
-        
-        if (formData.files && formData.files.length > 0) {
-          console.log("📎 Attached files:", formData.files.length, "files");
-          formData.files.forEach((file, index) => {
-            console.log(`  ${index + 1}. ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
-          });
-        }
-      
+
+      // Check payload size to prevent "entity too large" errors
+      const payloadSize = JSON.stringify(quoteData).length;
+      console.log(
+        "📏 Payload size:",
+        payloadSize,
+        "bytes (~",
+        Math.round(payloadSize / 1024),
+        "KB)"
+      );
+
+      if (payloadSize > 100000) {
+        // 100KB limit
+        console.warn("⚠️ Payload is large, may cause backend issues");
+        showToast(
+          "Warning: Quote data is large, some fields may be truncated",
+          "info"
+        );
+      }
+
+      // Log file information
+      if (formData.signatureFile && formData.enableSignature) {
+        console.log(
+          "📝 Signature file:",
+          formData.signatureFile.name,
+          "(",
+          (formData.signatureFile.size / 1024).toFixed(1),
+          "KB)"
+        );
+      }
+
+      if (formData.files && formData.files.length > 0) {
+        console.log("📎 Attached files:", formData.files.length, "files");
+        formData.files.forEach((file, index) => {
+          console.log(
+            `  ${index + 1}. ${file.name} (${(file.size / 1024).toFixed(1)} KB)`
+          );
+        });
+      }
+
       if (!backendUrl) {
-        showToast("Backend URL not configured. Please check environment variables.", "error");
+        showToast(
+          "Backend URL not configured. Please check environment variables.",
+          "error"
+        );
         setIsSubmitting(false);
         return;
       }
 
       // Check if we're in development mode and try alternative ports
       let finalBackendUrl = backendUrl;
-      if (process.env.NODE_ENV === 'development' && backendUrl === 'http://localhost:5000') {
+      if (
+        process.env.NODE_ENV === "development" &&
+        backendUrl === "http://localhost:5000"
+      ) {
         // Try common development ports
         const testPorts = [5000, 3001, 8000, 8080];
         let foundPort = null;
-        
+
         for (const port of testPorts) {
           try {
             const testUrl = `http://localhost:${port}`;
@@ -1209,7 +1315,7 @@ const NewQuoteForm = () => {
             console.log(`Port ${port} not responding`);
           }
         }
-        
+
         if (foundPort) {
           finalBackendUrl = `http://localhost:${foundPort}`;
           console.log(`Using backend URL: ${finalBackendUrl}`);
@@ -1231,75 +1337,96 @@ const NewQuoteForm = () => {
 
       // Test backend connectivity
       try {
-        console.log("🧪 Testing backend connectivity to:", finalBackendUrl + "/api/quotes");
+        console.log(
+          "🧪 Testing backend connectivity to:",
+          finalBackendUrl + "/api/quotes"
+        );
         const testResponse = await fetch(finalBackendUrl + "/api/quotes", {
           method: "GET",
           credentials: "include",
           signal: AbortSignal.timeout(5000), // 5 second timeout for test
         });
         console.log("🧪 Backend connectivity test:", testResponse.status);
-        
+
         if (testResponse.status === 401) {
           console.log("🔐 Authentication failed - redirecting to login");
           showToast("Your session has expired. Please log in again.", "error");
           setIsSubmitting(false);
-          
+
           // Clear any stored authentication data
-          localStorage.removeItem('user');
+          localStorage.removeItem("user");
           sessionStorage.clear();
-          
+
           // Redirect to login page
           setTimeout(() => {
             router.push("/signin");
           }, 1000);
           return;
         }
-        
+
         // Also test with a simple POST to see if the endpoint accepts data
         console.log("🧪 Testing POST endpoint with minimal data...");
         try {
-          const testPostResponse = await fetch(finalBackendUrl + "/api/quotes", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              test: true,
-              message: "Testing endpoint connectivity"
-            }),
-            signal: AbortSignal.timeout(5000),
-          });
-          console.log("🧪 Test POST response:", testPostResponse.status, testPostResponse.statusText);
+          const testPostResponse = await fetch(
+            finalBackendUrl + "/api/quotes",
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                test: true,
+                message: "Testing endpoint connectivity",
+              }),
+              signal: AbortSignal.timeout(5000),
+            }
+          );
+          console.log(
+            "🧪 Test POST response:",
+            testPostResponse.status,
+            testPostResponse.statusText
+          );
         } catch (testPostError) {
           console.log("🧪 Test POST failed:", testPostError);
         }
       } catch (testError) {
         console.error("Backend connectivity test failed:", testError);
-        if (testError.name === 'AbortError') {
-          showToast("Backend server is not responding. Please check if the server is running.", "error");
+        if (testError.name === "AbortError") {
+          showToast(
+            "Backend server is not responding. Please check if the server is running.",
+            "error"
+          );
         } else {
-          showToast("Cannot connect to backend server. Please check if the server is running.", "error");
+          showToast(
+            "Cannot connect to backend server. Please check if the server is running.",
+            "error"
+          );
         }
-        
+
         // Offer to save locally as fallback
         const saveLocally = window.confirm(
           "Backend server is not reachable. Would you like to save this quote locally for now? You can sync it later when the server is back online."
         );
-        
+
         if (saveLocally) {
           try {
-            const localQuotes = JSON.parse(localStorage.getItem('localQuotes') || '[]');
+            const localQuotes = JSON.parse(
+              localStorage.getItem("localQuotes") || "[]"
+            );
             const quoteWithId = {
               ...quoteData,
               id: Date.now(),
               savedAt: new Date().toISOString(),
-              status: 'local-draft'
+              status: "local-draft",
             };
             localQuotes.push(quoteWithId);
-            localStorage.setItem('localQuotes', JSON.stringify(localQuotes));
-            
-            showToast("Quote saved locally! You can sync it when the server is back online.", "success");
+            localStorage.setItem("localQuotes", JSON.stringify(localQuotes));
+
+            showToast(
+              "Quote saved locally! You can sync it when the server is back online.",
+              "success"
+            );
             setIsSubmitting(false);
             setTimeout(() => router.push("/dashboard/sales/quotes"), 800);
             return;
@@ -1310,66 +1437,65 @@ const NewQuoteForm = () => {
             return;
           }
         }
-        
+
         setIsSubmitting(false);
         return;
       }
 
       let response;
-      
+
       try {
         // Check if we have files to upload (signature or other files)
-        const hasFiles = (formData.signatureFile && formData.enableSignature) || (formData.files && formData.files.length > 0);
-        
+        const hasFiles =
+          (formData.signatureFile && formData.enableSignature) ||
+          (formData.files && formData.files.length > 0);
+
         if (hasFiles) {
           console.log("📁 Files detected, using FormData for upload");
-          
+
           // Create FormData for file uploads
           const formDataToSend = new FormData();
-          
+
           // Add the quote data as JSON string
-          formDataToSend.append('quoteData', JSON.stringify(quoteData));
-          
+          formDataToSend.append("quoteData", JSON.stringify(quoteData));
+
           // Add signature file if enabled
           if (formData.signatureFile && formData.enableSignature) {
-            formDataToSend.append('signature', formData.signatureFile);
-            console.log("📝 Adding signature file:", formData.signatureFile.name);
+            formDataToSend.append("signature", formData.signatureFile);
+            console.log(
+              "📝 Adding signature file:",
+              formData.signatureFile.name
+            );
           }
-          
+
           // Add other files
           if (formData.files && formData.files.length > 0) {
             formData.files.forEach((file, index) => {
-              formDataToSend.append('files', file);
+              formDataToSend.append("files", file);
               console.log(`📎 Adding file ${index + 1}:`, file.name);
             });
           }
-          
+
           // Send with FormData
-          response = await fetch(
-            finalBackendUrl + "/api/quotes",
-            {
-              method: "POST",
-              credentials: "include",
-              body: formDataToSend,
-              signal: AbortSignal.timeout(30000), // 30 second timeout
-            }
-          );
+          response = await fetch(finalBackendUrl + "/api/quotes", {
+            method: "POST",
+            credentials: "include",
+            body: formDataToSend,
+            signal: AbortSignal.timeout(30000), // 30 second timeout
+          });
         } else {
           console.log("📄 No files, sending as JSON");
-          
+
           // Send as regular JSON
-          response = await fetch(
-            finalBackendUrl + "/api/quotes",
-            {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(quoteData),
-              signal: AbortSignal.timeout(30000), // 30 second timeout
-            }
-          );
+          response = await fetch(finalBackendUrl + "/api/quotes", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(quoteData),
+            signal: AbortSignal.timeout(30000), // 30 second timeout
+          });
         }
 
         // Debug: Log the response
@@ -1382,7 +1508,7 @@ const NewQuoteForm = () => {
         try {
           const responseText = await response.text();
           console.log("Raw response text:", responseText);
-          
+
           if (responseText.trim()) {
             result = JSON.parse(responseText);
           } else {
@@ -1410,7 +1536,11 @@ const NewQuoteForm = () => {
           setIsSubmitting(false);
           setTimeout(() => router.push("/dashboard/sales/quotes"), 800);
         } else {
-          const errorMessage = result.error || result.message || result.details || `HTTP ${response.status}: ${response.statusText}`;
+          const errorMessage =
+            result.error ||
+            result.message ||
+            result.details ||
+            `HTTP ${response.status}: ${response.statusText}`;
           console.error("Error saving quote:", errorMessage);
           console.error("Full error response:", result);
           showToast(`Error: ${errorMessage}`, "error");
@@ -1440,11 +1570,13 @@ const NewQuoteForm = () => {
                 onClick={() => router.push("/dashboard/sales/quotes")}
                 className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                < Back to Quotes
+                &lt; Back to Quotes
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">New Quote</h1>
-                <p className="text-sm text-gray-600">Create a new quote for your customer</p>
+                <p className="text-sm text-gray-600">
+                  Create a new quote for your customer
+                </p>
                 {/* Backend status indicator removed */}
                 {/* Backend status removed */}
               </div>
@@ -1455,7 +1587,6 @@ const NewQuoteForm = () => {
 
       {/* Main Form Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        
         <div className="space-y-6">
           {/* Customer Details */}
           <CustomerDetails
@@ -1510,11 +1641,11 @@ const NewQuoteForm = () => {
           />
 
           {/* Quote Details */}
-          <QuoteDetails 
-            formData={formData} 
-            onFormDataChange={(data) => 
+          <QuoteDetails
+            formData={formData}
+            onFormDataChange={(data) =>
               setFormData((prev) => ({ ...prev, ...data }))
-            } 
+            }
           />
 
           {/* Items Table */}
@@ -1594,26 +1725,39 @@ const NewQuoteForm = () => {
                     <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <div className={`w-3 h-3 rounded-full ${
-                            formData.signatureFile ? 'bg-green-500' : 'bg-yellow-500'
-                          }`}></div>
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              formData.signatureFile
+                                ? "bg-green-500"
+                                : "bg-yellow-500"
+                            }`}
+                          ></div>
                           <span className="text-sm font-medium text-gray-700">
                             Signature Upload Status
                           </span>
                         </div>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          formData.signatureFile 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {formData.signatureFile ? 'Uploaded' : 'Pending'}
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            formData.signatureFile
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {formData.signatureFile ? "Uploaded" : "Pending"}
                         </span>
                       </div>
                       {formData.signatureFile && (
                         <div className="mt-2 text-xs text-gray-600">
-                          <span className="font-medium">File:</span> {formData.signatureFile.name}
+                          <span className="font-medium">File:</span>{" "}
+                          {formData.signatureFile.name}
                           <span className="ml-2 text-gray-500">
-                            ({(formData.signatureFile.size / 1024 / 1024).toFixed(2)} MB)
+                            (
+                            {(
+                              formData.signatureFile.size /
+                              1024 /
+                              1024
+                            ).toFixed(2)}{" "}
+                            MB)
                           </span>
                         </div>
                       )}
@@ -1637,7 +1781,10 @@ const NewQuoteForm = () => {
                         }
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <label htmlFor="enableSignature" className="text-sm text-gray-700">
+                      <label
+                        htmlFor="enableSignature"
+                        className="text-sm text-gray-700"
+                      >
                         Enable signature upload for the customer
                       </label>
                     </div>
@@ -1660,14 +1807,15 @@ const NewQuoteForm = () => {
                                   ...prev,
                                   signatureFile: file,
                                 }));
-                                
+
                                 // Create preview for image files
-                                if (file.type.startsWith('image/')) {
+                                if (file.type.startsWith("image/")) {
                                   const reader = new FileReader();
                                   reader.onload = (e) => {
                                     setFormData((prev) => ({
                                       ...prev,
-                                      signaturePreview: e.target?.result as string,
+                                      signaturePreview: e.target
+                                        ?.result as string,
                                     }));
                                   };
                                   reader.readAsDataURL(file);
@@ -1685,7 +1833,7 @@ const NewQuoteForm = () => {
                         <p className="text-xs text-gray-500">
                           Supported formats: JPG, PNG, GIF, PDF (Max size: 5MB)
                         </p>
-                        
+
                         {/* Signature Preview */}
                         {formData.signaturePreview && (
                           <div className="mt-3">
@@ -1693,15 +1841,15 @@ const NewQuoteForm = () => {
                               Signature Preview:
                             </label>
                             <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                              <img 
-                                src={formData.signaturePreview} 
-                                alt="Signature Preview" 
+                              <img
+                                src={formData.signaturePreview}
+                                alt="Signature Preview"
                                 className="max-w-full h-20 object-contain"
                               />
                             </div>
                           </div>
                         )}
-                        
+
                         {/* Remove Signature Button */}
                         {formData.signatureFile && (
                           <button
@@ -1772,24 +1920,24 @@ const NewQuoteForm = () => {
             <button
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 isSubmitting
-                  ? 'text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                  ? "text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed"
+                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
               }`}
               onClick={() => handleSaveQuote(true)}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Save as Draft'}
+              {isSubmitting ? "Saving..." : "Save as Draft"}
             </button>
             <button
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                 isSubmitting
-                  ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                  : 'text-white bg-blue-600 hover:bg-blue-700'
+                  ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                  : "text-white bg-blue-600 hover:bg-blue-700"
               }`}
               onClick={() => handleSaveQuote(false)}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Save and Send'}
+              {isSubmitting ? "Saving..." : "Save and Send"}
             </button>
             <button
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -1815,7 +1963,7 @@ const NewQuoteForm = () => {
             </button>
           </div>
         </div>
-        
+
         {/* Backend status footer removed */}
       </div>
 

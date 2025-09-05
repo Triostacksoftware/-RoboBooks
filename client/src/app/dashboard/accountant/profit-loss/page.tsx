@@ -84,7 +84,6 @@ const ProfitLossPage = () => {
     fetchReport();
   }, [startDate, endDate]);
 
-
   const handleGenerateReport = () => {
     fetchReport();
   };
@@ -183,10 +182,10 @@ const ProfitLossPage = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push('/dashboard/accountant')}
+                onClick={() => router.push("/dashboard/accountant")}
                 className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                < Back to Accountant
+                &lt; Back to Accountant
               </button>
               <div className="flex items-center">
                 <TrendingUp className="h-8 w-8 text-green-600 mr-3" />

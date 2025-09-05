@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import ReportsSidebar from './components/ReportsSidebar';
-import ReportsList from './components/ReportsList';
-import CreateReportModal from './components/CreateReportModal';
-import { useToast } from '../../../contexts/ToastContext';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import ReportsSidebar from "./components/ReportsSidebar";
+import ReportsList from "./components/ReportsList";
+import CreateReportModal from "./components/CreateReportModal";
+import { useToast } from "../../../contexts/ToastContext";
 
 interface Report {
   _id: string;
   name: string;
   description: string;
-  type: 'system' | 'custom';
+  type: "system" | "custom";
   category: string;
   subCategory?: string;
   isFavorite: boolean;
@@ -26,38 +26,42 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filterType, setFilterType] = useState('all');
+  const [filterType, setFilterType] = useState("all");
   const [showFavorites, setShowFavorites] = useState(false);
   const { showToast } = useToast();
 
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-      
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+
       const params = new URLSearchParams();
-      if (selectedCategory !== 'all') params.append('category', selectedCategory);
-      if (filterType !== 'all') params.append('type', filterType);
-      if (searchQuery) params.append('search', searchQuery);
-      if (showFavorites) params.append('favorite', 'true');
+      if (selectedCategory !== "all")
+        params.append("category", selectedCategory);
+      if (filterType !== "all") params.append("type", filterType);
+      if (searchQuery) params.append("search", searchQuery);
+      if (showFavorites) params.append("favorite", "true");
 
       const response = await fetch(`${backendUrl}/api/reports?${params}`, {
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch reports');
+        throw new Error(errorData.message || "Failed to fetch reports");
       }
 
       const data = await response.json();
       setReports(data.data || []);
     } catch (error) {
-      console.error('Fetch reports error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch reports');
+      console.error("Fetch reports error:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch reports"
+      );
     } finally {
       setLoading(false);
     }
@@ -65,75 +69,94 @@ export default function ReportsPage() {
 
   const handleCreateReport = async (reportData: any) => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
       const response = await fetch(`${backendUrl}/api/reports`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(reportData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create report');
+        throw new Error(errorData.message || "Failed to create report");
       }
 
       const result = await response.json();
-      showToast('Report created successfully!', 'success');
+      showToast("Report created successfully!", "success");
       setShowCreateModal(false);
       fetchReports();
     } catch (error) {
-      console.error('Create report error:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to create report', 'error');
+      console.error("Create report error:", error);
+      showToast(
+        error instanceof Error ? error.message : "Failed to create report",
+        "error"
+      );
     }
   };
 
   const handleToggleFavorite = async (reportId: string) => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-      const response = await fetch(`${backendUrl}/api/reports/${reportId}/favorite`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(
+        `${backendUrl}/api/reports/${reportId}/favorite`,
+        {
+          method: "PATCH",
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update favorite status');
+        throw new Error(
+          errorData.message || "Failed to update favorite status"
+        );
       }
 
       const result = await response.json();
-      showToast(result.message, 'success');
+      showToast(result.message, "success");
       fetchReports();
     } catch (error) {
-      console.error('Toggle favorite error:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to update favorite status', 'error');
+      console.error("Toggle favorite error:", error);
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to update favorite status",
+        "error"
+      );
     }
   };
 
   const handleDeleteReport = async (reportId: string) => {
-    if (!confirm('Are you sure you want to delete this report?')) {
+    if (!confirm("Are you sure you want to delete this report?")) {
       return;
     }
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
       const response = await fetch(`${backendUrl}/api/reports/${reportId}`, {
-        method: 'DELETE',
-        credentials: 'include',
+        method: "DELETE",
+        credentials: "include",
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete report');
+        throw new Error(errorData.message || "Failed to delete report");
       }
 
-      showToast('Report deleted successfully!', 'success');
+      showToast("Report deleted successfully!", "success");
       fetchReports();
     } catch (error) {
-      console.error('Delete report error:', error);
-      showToast(error instanceof Error ? error.message : 'Failed to delete report', 'error');
+      console.error("Delete report error:", error);
+      showToast(
+        error instanceof Error ? error.message : "Failed to delete report",
+        "error"
+      );
     }
   };
 
@@ -166,13 +189,15 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push("/dashboard")}
                   className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
                 >
-                  < Back to Dashboard
+                  &lt; Back to Dashboard
                 </button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Reports Center</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    Reports Center
+                  </h1>
                   <p className="text-sm text-gray-600 mt-1">
                     Generate and manage your business reports
                   </p>

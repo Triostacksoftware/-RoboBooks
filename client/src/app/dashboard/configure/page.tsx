@@ -15,7 +15,9 @@ interface ModulePreference {
 
 export default function ConfigurePage() {
   const router = useRouter();
-  const [modulePreferences, setModulePreferences] = useState<ModulePreference[]>([]);
+  const [modulePreferences, setModulePreferences] = useState<
+    ModulePreference[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
@@ -29,26 +31,29 @@ export default function ConfigurePage() {
   const loadModulePreferences = async () => {
     try {
       setLoading(true);
-      
+
       // Direct API call to get module preferences
-      const response = await fetch("http://localhost:5000/api/module-preferences/preferences", {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-      
+      const response = await fetch(
+        "http://localhost:5000/api/module-preferences/preferences",
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       setModulePreferences(data.data);
     } catch (error) {
-      console.error('Error loading module preferences:', error);
-      showToast('Failed to load module preferences', 'error');
+      console.error("Error loading module preferences:", error);
+      showToast("Failed to load module preferences", "error");
     } finally {
       setLoading(false);
     }
@@ -67,31 +72,36 @@ export default function ConfigurePage() {
   const handleSavePreferences = async () => {
     try {
       setSaving(true);
-      
+
       // Direct API call to save module preferences
-      const response = await fetch("http://localhost:5000/api/module-preferences/preferences", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          preferences: modulePreferences
-        }),
-      });
-      
+      const response = await fetch(
+        "http://localhost:5000/api/module-preferences/preferences",
+        {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            preferences: modulePreferences,
+          }),
+        }
+      );
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(
+          errorData.message || `HTTP ${response.status}: ${response.statusText}`
+        );
       }
-      
+
       const data = await response.json();
       await refreshPreferences(); // Refresh the global context
-      showToast('Module preferences saved successfully!', 'success');
+      showToast("Module preferences saved successfully!", "success");
     } catch (error) {
-      console.error('Error saving module preferences:', error);
-      showToast('Failed to save module preferences', 'error');
+      console.error("Error saving module preferences:", error);
+      showToast("Failed to save module preferences", "error");
     } finally {
       setSaving(false);
     }
@@ -118,10 +128,10 @@ export default function ConfigurePage() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push("/dashboard")}
                 className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
               >
-                < Back to Dashboard
+                &lt; Back to Dashboard
               </button>
             </div>
           </div>
@@ -216,7 +226,7 @@ export default function ConfigurePage() {
                 {saving && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 )}
-                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                <span>{saving ? "Saving..." : "Save Changes"}</span>
               </button>
             </div>
           </div>
