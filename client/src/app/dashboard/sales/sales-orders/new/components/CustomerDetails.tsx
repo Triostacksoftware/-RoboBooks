@@ -162,7 +162,7 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
       setAddressesLoaded(false);
       setLastPlaceOfSupplyState(""); // Reset place of supply state
     }
-  }, [selectedCustomer, companyState, onFormDataChange, onPlaceOfSupplyChange]);
+  }, [selectedCustomer, companyState, lastPlaceOfSupplyState]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

@@ -89,6 +89,7 @@ export default function BankingPage() {
     accountName: "",
     selectedAccount: null,
   });
+  const [isHydrated, setIsHydrated] = useState(false);
   const router = useRouter();
 
   const tabs = [
@@ -97,6 +98,10 @@ export default function BankingPage() {
     { id: "transactions", label: "Transactions", icon: CreditCardIcon },
     { id: "reconciliation", label: "Reconciliation", icon: Cog6ToothIcon },
   ];
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const accounts: BankAccount[] = [
     {
@@ -479,6 +484,15 @@ export default function BankingPage() {
         return <BankingOverview />;
     }
   };
+
+  // Prevent hydration mismatch by not rendering until hydrated
+  if (!isHydrated) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

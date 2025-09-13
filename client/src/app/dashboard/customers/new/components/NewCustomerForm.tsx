@@ -1,11 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
   InformationCircleIcon,
+  PaperClipIcon,
+  ChevronDownIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 interface CustomerFormData {
@@ -44,6 +47,7 @@ interface CustomerFormData {
     phone: string;
     designation: string;
   }>;
+  documents: File[];
 }
 
 const initialFormData: CustomerFormData = {
@@ -77,6 +81,7 @@ const initialFormData: CustomerFormData = {
     zipCode: "",
   },
   contactPersons: [],
+  documents: [],
 };
 
 export default function NewCustomerForm() {
@@ -84,6 +89,11 @@ export default function NewCustomerForm() {
   const [activeTab, setActiveTab] = useState("otherDetails");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showUploadFilesDropdown, setShowUploadFilesDropdown] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const handleInputChange = (field: string, value: any) => {
@@ -142,6 +152,126 @@ export default function NewCustomerForm() {
     }));
   };
 
+  // File upload handlers
+  const validateFile = (file: File): string | null => {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif'
+    ];
+
+    if (file.size > maxSize) {
+      return `File ${file.name} is too large. Maximum size is 10MB.`;
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return `File ${file.name} has an unsupported format.`;
+    }
+
+    return null;
+  };
+
+  const handleFiles = (files: File[]) => {
+    // Clear previous errors
+    setUploadErrors([]);
+
+    // Check file count limit
+    if (formData.documents.length + files.length > 10) {
+      setUploadErrors(["Maximum 10 files allowed"]);
+      return;
+    }
+
+    const errors: string[] = [];
+    const validFiles: File[] = [];
+
+    // Validate each file
+    files.forEach((file) => {
+      const error = validateFile(file);
+      if (error) {
+        errors.push(error);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (errors.length > 0) {
+      setUploadErrors(errors);
+      if (validFiles.length === 0) return;
+    }
+
+    // Add valid files to form data
+    setFormData((prev) => ({
+      ...prev,
+      documents: [...prev.documents, ...validFiles]
+    }));
+
+    setShowUploadFilesDropdown(false);
+    showToast(`${validFiles.length} file(s) added successfully`, "success");
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    handleFiles(files);
+  };
+
+  const removeFile = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      documents: prev.documents.filter((_, i) => i !== index)
+    }));
+  };
+
+  const openFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUploadFilesDropdown(false);
+      }
+    };
+
+    if (showUploadFilesDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUploadFilesDropdown]);
+
   const showToast = (message: string, type: "success" | "error") => {
     // Create toast element
     const toast = document.createElement("div");
@@ -172,29 +302,70 @@ export default function NewCustomerForm() {
     setError(null);
 
     try {
-      const response = await fetch(
-        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
+      // Check if we have files to upload
+      const hasFiles = formData.documents && formData.documents.length > 0;
+
+      if (hasFiles) {
+        // Create FormData for file uploads
+        const formDataToSend = new FormData();
+
+        // Add the customer data as JSON string (excluding documents)
+        const { documents, ...customerData } = formData;
+        formDataToSend.append("customerData", JSON.stringify(customerData));
+
+        // Add files
+        formData.documents.forEach((file, index) => {
+          formDataToSend.append("documents", file);
+        });
+
+        // Send with FormData
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
+          {
+            method: "POST",
+            credentials: "include",
+            body: formDataToSend,
+          }
+        );
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showToast("Customer created successfully!", "success");
+          // Redirect to customers page after a short delay
+          setTimeout(() => {
+            router.push("/dashboard/customers");
+          }, 1000);
+        } else {
+          setError(result.message || "Failed to create customer");
+          showToast(result.message || "Failed to create customer", "error");
         }
-      );
-
-      const result = await response.json();
-
-      if (response.ok) {
-        showToast("Customer created successfully!", "success");
-        // Redirect to customers page after a short delay
-        setTimeout(() => {
-          router.push("/dashboard/customers");
-        }, 1000);
       } else {
-        setError(result.message || "Failed to create customer");
-        showToast(result.message || "Failed to create customer", "error");
+        // Send as regular JSON without files
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_BACKEND_URL + "/api/customers",
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(formData),
+          }
+        );
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showToast("Customer created successfully!", "success");
+          // Redirect to customers page after a short delay
+          setTimeout(() => {
+            router.push("/dashboard/customers");
+          }, 1000);
+        } else {
+          setError(result.message || "Failed to create customer");
+          showToast(result.message || "Failed to create customer", "error");
+        }
       }
     } catch (error) {
       console.error("Error creating customer:", error);
@@ -558,14 +729,97 @@ export default function NewCustomerForm() {
 
                   <div>
                     <label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Documents
+                      Attach File(s) to Customer
                     </label>
-                    <button
-                      type="button"
-                      className="border border-gray-300 rounded-md px-4 py-2 text-sm hover:bg-gray-50"
-                    >
-                      Upload File ▼
-                    </button>
+                    
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleFiles(Array.from(e.target.files));
+                        }
+                      }}
+                      className="hidden"
+                    />
+
+                    {/* Upload Button with Dropdown */}
+                    <div className="relative" ref={dropdownRef}>
+                      <button 
+                        onClick={() => setShowUploadFilesDropdown(!showUploadFilesDropdown)}
+                        className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        <PaperClipIcon className="h-4 w-4 mr-2" />
+                        Upload File
+                        <ChevronDownIcon className="h-4 w-4 ml-2" />
+                      </button>
+                      
+                      {showUploadFilesDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                          <button
+                            onClick={openFileInput}
+                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200"
+                          >
+                            Choose Files
+                          </button>
+                          <div
+                            className={`px-3 py-4 text-center text-sm text-gray-500 ${
+                              isDragOver ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50'
+                            }`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                          >
+                            Or drag and drop files here
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Upload Errors */}
+                    {uploadErrors.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {uploadErrors.map((error, index) => (
+                          <p key={index} className="text-xs text-red-600">
+                            {error}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Uploaded Files List */}
+                    {formData.documents.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-gray-600 font-medium">
+                          Uploaded Files ({formData.documents.length}/10):
+                        </p>
+                        <div className="space-y-1">
+                          {formData.documents.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-xs">
+                              <div className="flex items-center space-x-2">
+                                <PaperClipIcon className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-700 truncate max-w-[200px]">
+                                  {file.name}
+                                </span>
+                                <span className="text-gray-500">
+                                  ({formatFileSize(file.size)})
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => removeFile(index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <p className="text-xs text-gray-500 mt-1">
                       You can upload a maximum of 10 files, 10MB each
                     </p>

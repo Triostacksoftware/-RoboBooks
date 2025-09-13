@@ -2,7 +2,28 @@ import * as SalesOrderService from "../services/salesOrderService.js";
 
 export async function create(req, res) {
   try {
-    const salesOrder = await SalesOrderService.createSalesOrder(req.body);
+    // Handle both JSON and FormData requests
+    let salesOrderData;
+    if (req.body.salesOrderData) {
+      // FormData request - parse the JSON string
+      salesOrderData = JSON.parse(req.body.salesOrderData);
+    } else {
+      // Regular JSON request
+      salesOrderData = req.body;
+    }
+
+    // Add files to sales order data if they exist
+    if (req.files && req.files.length > 0) {
+      salesOrderData.files = req.files.map(file => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        path: file.path,
+        size: file.size,
+        mimetype: file.mimetype,
+      }));
+    }
+
+    const salesOrder = await SalesOrderService.createSalesOrder(salesOrderData);
     res.status(201).json({
       success: true,
       data: salesOrder,

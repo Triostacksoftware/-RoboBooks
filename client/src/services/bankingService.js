@@ -29,44 +29,44 @@ const http = {
 // Bank Account Management
 export const bankingService = {
   // Bank Accounts
-  getBankAccounts: () => http.get("/bank-accounts"),
-  getBankAccount: (id) => http.get(`/bank-accounts/${id}`),
-  createBankAccount: (data) => http.post("/bank-accounts", data),
-  updateBankAccount: (id, data) => http.put(`/bank-accounts/${id}`, data),
-  deleteBankAccount: (id) => http.delete(`/bank-accounts/${id}`),
-  syncBankAccount: (id) => http.patch(`/bank-accounts/${id}/sync`),
+  getBankAccounts: () => http.get("/banking/accounts"),
+  getBankAccount: (id) => http.get(`/banking/accounts/${id}`),
+  createBankAccount: (data) => http.post("/banking/accounts", data),
+  updateBankAccount: (id, data) => http.put(`/banking/accounts/${id}`, data),
+  deleteBankAccount: (id) => http.delete(`/banking/accounts/${id}`),
+  syncBankAccount: (id) => http.patch(`/banking/accounts/${id}/sync`),
   getAccountTransactions: (id, params) =>
-    http.get(`/bank-accounts/${id}/transactions`, { params }),
-  getBankAccountsSummary: () => http.get("/bank-accounts/summary"),
+    http.get(`/banking/accounts/${id}/transactions`, { params }),
+  getBankAccountsSummary: () => http.get("/banking/overview"),
 
   // Bank Transactions
-  getTransactions: (params) => http.get("/bank-transactions", { params }),
-  getTransaction: (id) => http.get(`/bank-transactions/${id}`),
-  createTransaction: (data) => http.post("/bank-transactions", data),
-  updateTransaction: (id, data) => http.put(`/bank-transactions/${id}`, data),
-  deleteTransaction: (id) => http.delete(`/bank-transactions/${id}`),
+  getTransactions: (params) => http.get("/banking/transactions", { params }),
+  getTransaction: (id) => http.get(`/banking/transactions/${id}`),
+  createTransaction: (data) => http.post("/banking/transactions", data),
+  updateTransaction: (id, data) => http.put(`/banking/transactions/${id}`, data),
+  deleteTransaction: (id) => http.delete(`/banking/transactions/${id}`),
   reconcileTransaction: (id) =>
-    http.patch(`/bank-transactions/${id}/reconcile`),
+    http.patch(`/banking/transactions/${id}/reconcile`),
   categorizeTransaction: (id, data) =>
-    http.patch(`/bank-transactions/${id}/categorize`, data),
-  getTransactionCategories: () => http.get("/bank-transactions/categories"),
+    http.patch(`/banking/transactions/${id}/categorize`, data),
+  getTransactionCategories: () => http.get("/banking/transactions/categories"),
   getTransactionSummary: (params) =>
-    http.get("/bank-transactions/summary", { params }),
+    http.get("/banking/transactions/summary", { params }),
 
   // Bank Reconciliation
-  getReconciliations: () => http.get("/bank-reconciliations"),
-  getReconciliation: (id) => http.get(`/bank-reconciliations/${id}`),
-  createReconciliation: (data) => http.post("/bank-reconciliations", data),
+  getReconciliations: () => http.get("/banking/reconciliations"),
+  getReconciliation: (id) => http.get(`/banking/reconciliations/${id}`),
+  createReconciliation: (data) => http.post("/banking/reconciliations", data),
   updateReconciliation: (id, data) =>
-    http.put(`/bank-reconciliations/${id}`, data),
+    http.put(`/banking/reconciliations/${id}`, data),
   updateReconciliationItem: (id, itemId, data) =>
-    http.patch(`/bank-reconciliations/${id}/items/${itemId}`, data),
+    http.patch(`/banking/reconciliations/${id}/items/${itemId}`, data),
   completeReconciliation: (id) =>
-    http.post(`/bank-reconciliations/${id}/complete`),
+    http.post(`/banking/reconciliations/${id}/complete`),
   autoMatchReconciliation: (id) =>
-    http.post(`/bank-reconciliations/${id}/auto-match`),
+    http.post(`/banking/reconciliations/${id}/auto-match`),
   getAccountReconciliations: (accountId) =>
-    http.get(`/bank-reconciliations/account/${accountId}`),
+    http.get(`/banking/reconciliations/account/${accountId}`),
 
   // Banking Overview & Analytics
   getBankingOverview: (params) => http.get("/banking/overview", { params }),

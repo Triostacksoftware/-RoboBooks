@@ -28,6 +28,7 @@ export default function BankingOverview() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const loadBankingOverview = async () => {
     try {
@@ -48,8 +49,18 @@ export default function BankingOverview() {
   };
 
   useEffect(() => {
+    setIsHydrated(true);
     loadBankingOverview();
   }, []);
+
+  // Prevent hydration mismatch by not rendering until hydrated
+  if (!isHydrated) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1206,6 +1206,7 @@ const NewRecurringInvoiceForm = () => {
                 setFormData((prev) => ({
                   ...prev,
                   customerAddress: data.billingAddress?.street || "",
+                  placeOfSupplyState: data.placeOfSupplyState || prev.placeOfSupplyState,
                 }));
               }}
             />

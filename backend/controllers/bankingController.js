@@ -51,7 +51,11 @@ class BankingController {
   // Create a new bank account
   async createBankAccount(req, res) {
     try {
+      console.log('🔍 Debug - req.user:', req.user);
+      console.log('🔍 Debug - req.body.userId:', req.body.userId);
+      
       const {
+        userId,
         name,
         accountCode,
         currency,
@@ -63,8 +67,20 @@ class BankingController {
         accountType
       } = req.body;
 
+      // Use userId from request body or fallback to req.user.id from auth middleware
+      const accountUserId = userId || req.user?.id;
+      
+      console.log('🔍 Debug - accountUserId:', accountUserId);
+      
+      if (!accountUserId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'User ID is required. Please ensure you are logged in.' 
+        });
+      }
+
       const account = new BankAccount({
-        userId: req.user.id,
+        userId: accountUserId,
         name,
         accountCode,
         currency,
@@ -396,6 +412,194 @@ class BankingController {
       };
 
       res.json({ success: true, data: overview });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Get single bank account
+  async getBankAccount(req, res) {
+    try {
+      const { id } = req.params;
+      const account = await BankAccount.findOne({ _id: id, userId: req.user.id });
+      
+      if (!account) {
+        return res.status(404).json({ success: false, message: 'Bank account not found' });
+      }
+      
+      res.json({ success: true, data: account });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Sync bank account
+  async syncBankAccount(req, res) {
+    try {
+      const { id } = req.params;
+      const account = await BankAccount.findOne({ _id: id, userId: req.user.id });
+      
+      if (!account) {
+        return res.status(404).json({ success: false, message: 'Bank account not found' });
+      }
+      
+      // Simulate sync process
+      res.json({ success: true, message: 'Account sync initiated' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Get single transaction
+  async getTransaction(req, res) {
+    try {
+      const { id } = req.params;
+      const transaction = await BankTransaction.findOne({ _id: id, userId: req.user.id });
+      
+      if (!transaction) {
+        return res.status(404).json({ success: false, message: 'Transaction not found' });
+      }
+      
+      res.json({ success: true, data: transaction });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Create transaction
+  async createTransaction(req, res) {
+    try {
+      const transaction = new BankTransaction({
+        ...req.body,
+        userId: req.user.id
+      });
+      
+      await transaction.save();
+      res.status(201).json({ success: true, data: transaction });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // Update transaction
+  async updateTransaction(req, res) {
+    try {
+      const { id } = req.params;
+      const transaction = await BankTransaction.findOneAndUpdate(
+        { _id: id, userId: req.user.id },
+        req.body,
+        { new: true }
+      );
+      
+      if (!transaction) {
+        return res.status(404).json({ success: false, message: 'Transaction not found' });
+      }
+      
+      res.json({ success: true, data: transaction });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // Delete transaction
+  async deleteTransaction(req, res) {
+    try {
+      const { id } = req.params;
+      const transaction = await BankTransaction.findOneAndDelete({ _id: id, userId: req.user.id });
+      
+      if (!transaction) {
+        return res.status(404).json({ success: false, message: 'Transaction not found' });
+      }
+      
+      res.json({ success: true, message: 'Transaction deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Reconcile transaction
+  async reconcileTransaction(req, res) {
+    try {
+      const { id } = req.params;
+      const transaction = await BankTransaction.findOneAndUpdate(
+        { _id: id, userId: req.user.id },
+        { isReconciled: true },
+        { new: true }
+      );
+      
+      if (!transaction) {
+        return res.status(404).json({ success: false, message: 'Transaction not found' });
+      }
+      
+      res.json({ success: true, data: transaction });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Categorize transaction
+  async categorizeTransaction(req, res) {
+    try {
+      const { id } = req.params;
+      const { category, subcategory } = req.body;
+      
+      const transaction = await BankTransaction.findOneAndUpdate(
+        { _id: id, userId: req.user.id },
+        { category, subcategory },
+        { new: true }
+      );
+      
+      if (!transaction) {
+        return res.status(404).json({ success: false, message: 'Transaction not found' });
+      }
+      
+      res.json({ success: true, data: transaction });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Get transaction categories
+  async getTransactionCategories(req, res) {
+    try {
+      const categories = [
+        'Income', 'Expense', 'Transfer', 'Investment', 'Loan', 'Other'
+      ];
+      
+      res.json({ success: true, data: categories });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Get transaction summary
+  async getTransactionSummary(req, res) {
+    try {
+      const { startDate, endDate } = req.query;
+      const query = { userId: req.user.id };
+      
+      if (startDate && endDate) {
+        query.date = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        };
+      }
+      
+      const transactions = await BankTransaction.find(query);
+      
+      const summary = {
+        totalTransactions: transactions.length,
+        totalIncome: transactions
+          .filter(t => t.type === 'credit')
+          .reduce((sum, t) => sum + t.amount, 0),
+        totalExpense: transactions
+          .filter(t => t.type === 'debit')
+          .reduce((sum, t) => sum + t.amount, 0),
+        netAmount: transactions
+          .reduce((sum, t) => sum + (t.type === 'credit' ? t.amount : -t.amount), 0)
+      };
+      
+      res.json({ success: true, data: summary });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

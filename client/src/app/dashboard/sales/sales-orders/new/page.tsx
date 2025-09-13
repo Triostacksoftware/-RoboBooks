@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
@@ -44,6 +44,69 @@ interface TCSRecord {
 }
 
 type TaxMode = "GST" | "IGST" | "NON_TAXABLE" | "NO_GST" | "EXPORT";
+
+interface FormData {
+  invoiceNumber: string;
+  reference: string;
+  invoiceDate: string;
+  terms: string;
+  dueDate: string;
+  salesperson: string;
+  deliveryMethod: string;
+  subject: string;
+  project: string;
+  items: InvoiceItem[];
+  subTotal: number;
+  discount: number;
+  discountType: "percentage" | "amount";
+  discountAmount: number;
+  taxAmount: number;
+  cgstTotal: number;
+  sgstTotal: number;
+  igstTotal: number;
+  additionalTaxType: "TDS" | "TCS" | null;
+  additionalTaxId: string;
+  additionalTaxRate: number;
+  additionalTaxAmount: number;
+  adjustment: number;
+  total: number;
+  paymentTerms: string;
+  paymentMethod: string;
+  customerNotes: string;
+  termsConditions: string;
+  internalNotes: string;
+  files: File[];
+  currency: string;
+  exchangeRate: number;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  buyerGstin: string;
+  buyerAddress: string;
+  billingAddress: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+  shippingAddress: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+  placeOfSupplyState?: string;
+  taxMode: TaxMode;
+  taxType: string;
+  taxRate: number;
+  sellerName: string;
+  sellerEmail: string;
+  sellerPhone: string;
+  sellerGstin: string;
+  sellerAddress: string;
+}
 interface InvoiceItem {
   id: number;
   itemId: string;
@@ -78,8 +141,15 @@ const NewSalesOrderForm = () => {
   const [isLoadingTaxes, setIsLoadingTaxes] = useState(false);
   const [showTDSModal, setShowTDSModal] = useState(false);
   const [showTCSModal, setShowTCSModal] = useState(false);
+  
+  // File upload states
+  const [showUploadFilesDropdown, setShowUploadFilesDropdown] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     invoiceNumber: "INV-000001",
     reference: "",
     invoiceDate: new Date().toISOString().split("T")[0],
@@ -114,8 +184,6 @@ const NewSalesOrderForm = () => {
     discount: 0,
     discountType: "percentage" as "percentage" | "amount",
     discountAmount: 0.0,
-    taxType: "GST",
-    taxRate: 18,
     taxAmount: 0.0,
     cgstTotal: 0.0,
     sgstTotal: 0.0,
@@ -169,6 +237,9 @@ const NewSalesOrderForm = () => {
       zipCode?: string;
     },
     placeOfSupplyState: "" as string | undefined,
+    taxMode: "GST" as TaxMode,
+    taxType: "GST",
+    taxRate: 18,
     // Seller Details
     sellerName: "",
     sellerEmail: "",
@@ -596,6 +667,24 @@ const NewSalesOrderForm = () => {
     }
   }, [companySettings.state, formData.placeOfSupplyState]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowUploadFilesDropdown(false);
+        setIsDragOver(false);
+      }
+    };
+
+    if (showUploadFilesDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUploadFilesDropdown]);
+
   // Separate function to recalculate only totals (recalculates GST on discounted amount but preserves item-level GST distribution)
   const recalculateOnlyTotals = () => {
     setFormData((prev) => {
@@ -976,9 +1065,136 @@ const NewSalesOrderForm = () => {
     }
   };
 
+  // File upload handlers
+  const validateFile = (file: File): string | null => {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif'
+    ];
+
+    if (file.size > maxSize) {
+      return `File ${file.name} is too large. Maximum size is 10MB.`;
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return `File ${file.name} has an unsupported format.`;
+    }
+
+    return null;
+  };
+
+  const handleFiles = (files: File[]) => {
+    // Clear previous errors
+    setUploadErrors([]);
+
+    // Check if files array is empty
+    if (!files || files.length === 0) {
+      setUploadErrors(["No files selected"]);
+      return;
+    }
+
+    // Check file count limit
+    if (formData.files.length + files.length > 10) {
+      setUploadErrors(["Maximum 10 files allowed"]);
+      return;
+    }
+
+    const errors: string[] = [];
+    const validFiles: File[] = [];
+
+    // Validate each file
+    files.forEach((file) => {
+      const error = validateFile(file);
+      if (error) {
+        errors.push(error);
+      } else {
+        validFiles.push(file);
+      }
+    });
+
+    if (errors.length > 0) {
+      setUploadErrors(errors);
+      if (validFiles.length === 0) {
+        showToast("No valid files to upload", "error");
+        return;
+      }
+    }
+
+    // Add valid files to form data
+    setFormData((prev) => ({
+      ...prev,
+      files: [...prev.files, ...validFiles]
+    }));
+
+    setShowUploadFilesDropdown(false);
+    setIsDragOver(false);
+    
+    if (validFiles.length > 0) {
+      showToast(`${validFiles.length} file(s) added successfully`, "success");
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      files: prev.files.filter((_, i) => i !== index)
+    }));
+  };
+
+  const openFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error("File input ref is not available");
+      showToast("File input not available. Please try again.", "error");
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const handleSaveInvoice = async (asDraft = false) => {
     try {
-      if (!selectedCustomer) {
+      if (!selectedCustomer || !selectedCustomer._id) {
         showToast("Please select a customer", "error");
         return;
       }
@@ -1009,17 +1225,57 @@ const NewSalesOrderForm = () => {
         })),
       };
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/sales-orders`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(salesOrderData),
+      let response;
+
+      try {
+        // Check if we have files to upload
+        const hasFiles = formData.files && formData.files.length > 0;
+
+        if (hasFiles) {
+          console.log("📁 Files detected, using FormData for upload");
+
+          // Create FormData for file uploads
+          const formDataToSend = new FormData();
+
+          // Add the sales order data as JSON string
+          formDataToSend.append("salesOrderData", JSON.stringify(salesOrderData));
+
+          // Add files
+          formData.files.forEach((file, index) => {
+            formDataToSend.append("files", file);
+            console.log(`📎 Adding file ${index + 1}:`, file.name);
+          });
+
+          // Send with FormData
+          response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/sales-orders`,
+            {
+              method: "POST",
+              credentials: "include",
+              body: formDataToSend,
+            }
+          );
+        } else {
+          console.log("📄 No files, sending as JSON");
+
+          // Send as regular JSON
+          response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/sales-orders`,
+            {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(salesOrderData),
+            }
+          );
         }
-      );
+      } catch (error) {
+        console.error("Error in file upload preparation:", error);
+        showToast("Error preparing file upload. Please try again.", "error");
+        return;
+      }
 
       const result = await response.json();
 
@@ -1399,11 +1655,109 @@ const NewSalesOrderForm = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Attach File(s) to Sales Order
                     </label>
-                    <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                      <PaperClipIcon className="h-4 w-4 mr-2" />
-                      Upload File
-                      <ChevronDownIcon className="h-4 w-4 ml-2" />
-                    </button>
+                    
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          handleFiles(Array.from(e.target.files));
+                        }
+                      }}
+                      className="hidden"
+                    />
+
+                    {/* Upload Button with Dropdown */}
+                    <div className="relative" ref={dropdownRef}>
+                      <button 
+                        onClick={() => setShowUploadFilesDropdown(!showUploadFilesDropdown)}
+                        className={`flex items-center px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
+                          showUploadFilesDropdown 
+                            ? 'text-blue-700 bg-blue-50 border-blue-300' 
+                            : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <PaperClipIcon className="h-4 w-4 mr-2" />
+                        Upload File
+                        <ChevronDownIcon className={`h-4 w-4 ml-2 transition-transform ${
+                          showUploadFilesDropdown ? 'rotate-180' : ''
+                        }`} />
+                      </button>
+                      
+                      {showUploadFilesDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                          <button
+                            onClick={openFileInput}
+                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200 flex items-center"
+                          >
+                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Choose Files
+                          </button>
+                          <div
+                            className={`px-3 py-4 text-center text-sm transition-colors ${
+                              isDragOver 
+                                ? 'bg-blue-50 text-blue-600 border-2 border-dashed border-blue-300' 
+                                : 'text-gray-500 hover:bg-gray-50 border-2 border-dashed border-transparent'
+                            }`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                          >
+                            <svg className="h-6 w-6 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Or drag and drop files here
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Upload Errors */}
+                    {uploadErrors.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {uploadErrors.map((error, index) => (
+                          <p key={index} className="text-xs text-red-600">
+                            {error}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Uploaded Files List */}
+                    {formData.files.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-xs text-gray-600 font-medium">
+                          Uploaded Files ({formData.files.length}/10):
+                        </p>
+                        <div className="space-y-1">
+                          {formData.files.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-xs">
+                              <div className="flex items-center space-x-2">
+                                <PaperClipIcon className="h-3 w-3 text-gray-500" />
+                                <span className="text-gray-700 truncate max-w-[200px]">
+                                  {file.name}
+                                </span>
+                                <span className="text-gray-500">
+                                  ({formatFileSize(file.size)})
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => removeFile(index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <p className="text-xs text-gray-500 mt-1">
                       You can upload a maximum of 10 files, 10MB each
                     </p>

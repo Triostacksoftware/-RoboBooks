@@ -2,7 +2,28 @@ import * as Svc from '../services/estimates.service.js';
 
 export const createEstimate = async (req, res, next) => {
   try {
-    const est = await Svc.createEstimate(req.body);
+    // Handle both JSON and FormData requests
+    let estimateData;
+    if (req.body.quoteData) {
+      // FormData request - parse the JSON string
+      estimateData = JSON.parse(req.body.quoteData);
+    } else {
+      // Regular JSON request
+      estimateData = req.body;
+    }
+
+    // Add files to estimate data if they exist
+    if (req.files && req.files.length > 0) {
+      estimateData.files = req.files.map(file => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        path: file.path,
+        size: file.size,
+        mimetype: file.mimetype,
+      }));
+    }
+
+    const est = await Svc.createEstimate(estimateData);
     res.status(201).json({ success: true, data: est });
   } catch (err) { next(err); }
 };

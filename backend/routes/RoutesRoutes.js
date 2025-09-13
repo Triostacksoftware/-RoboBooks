@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import Joi from "joi";
 import { authGuard } from "../utils/jwt.js";
 import validate from "../middlewares/validation.middleware.js";
@@ -13,6 +14,35 @@ import {
 } from "../controllers/estimates.controller.js";
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif'
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'), false);
+    }
+  }
+});
 
 // Apply authentication to all quotes routes
 router.use(authGuard);
@@ -107,7 +137,7 @@ router.get("/next-number", getNextEstimateNumber);
 router.get("/:id", getEstimateById);
 
 // POST /api/quotes - Create new quote
-router.post("/", validate(quoteSchema), createEstimate);
+router.post("/", upload.array('files', 10), createEstimate);
 
 // PUT /api/quotes/:id - Update quote
 router.put("/:id", validate(quoteSchema), updateEstimate);
