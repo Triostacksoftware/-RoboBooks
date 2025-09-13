@@ -41,9 +41,15 @@ class BankingController {
   // Get all bank accounts for a user
   async getBankAccounts(req, res) {
     try {
+      console.log("🔍 getBankAccounts - req.user:", req.user);
+      console.log("🔍 getBankAccounts - req.user.id:", req.user?.id);
+      
       const accounts = await BankAccount.find({ userId: req.user.id }).sort({ createdAt: -1 });
+      console.log("🔍 getBankAccounts - Found accounts:", accounts.length);
+      
       res.json({ success: true, data: accounts });
     } catch (error) {
+      console.error("🔍 getBankAccounts - Error:", error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -51,11 +57,11 @@ class BankingController {
   // Create a new bank account
   async createBankAccount(req, res) {
     try {
-      console.log('🔍 Debug - req.user:', req.user);
-      console.log('🔍 Debug - req.body.userId:', req.body.userId);
+      console.log("🔍 createBankAccount - req.user:", req.user);
+      console.log("🔍 createBankAccount - req.user.id:", req.user?.id);
+      console.log("🔍 createBankAccount - req.body:", req.body);
       
       const {
-        userId,
         name,
         accountCode,
         currency,
@@ -67,20 +73,8 @@ class BankingController {
         accountType
       } = req.body;
 
-      // Use userId from request body or fallback to req.user.id from auth middleware
-      const accountUserId = userId || req.user?.id;
-      
-      console.log('🔍 Debug - accountUserId:', accountUserId);
-      
-      if (!accountUserId) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'User ID is required. Please ensure you are logged in.' 
-        });
-      }
-
       const account = new BankAccount({
-        userId: accountUserId,
+        userId: req.user.id,
         name,
         accountCode,
         currency,
@@ -92,9 +86,13 @@ class BankingController {
         accountType
       });
 
+      console.log("🔍 createBankAccount - Account to save:", account);
       await account.save();
+      console.log("🔍 createBankAccount - Account saved successfully");
+      
       res.status(201).json({ success: true, data: account });
     } catch (error) {
+      console.error("🔍 createBankAccount - Error:", error);
       res.status(400).json({ success: false, message: error.message });
     }
   }

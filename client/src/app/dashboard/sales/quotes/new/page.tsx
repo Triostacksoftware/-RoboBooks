@@ -1858,10 +1858,10 @@ const NewQuoteForm = () => {
                         onClick={() => setShowUploadFilesDropdown(!showUploadFilesDropdown)}
                         className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                       >
-                        <PaperClipIcon className="h-4 w-4 mr-2" />
-                        Upload File
-                        <ChevronDownIcon className="h-4 w-4 ml-2" />
-                      </button>
+                      <PaperClipIcon className="h-4 w-4 mr-2" />
+                      Upload File
+                      <ChevronDownIcon className="h-4 w-4 ml-2" />
+                    </button>
                       
                       {showUploadFilesDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">

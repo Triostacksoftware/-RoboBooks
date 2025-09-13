@@ -14,3 +14,11 @@ export const getBillById = async (req, res, next) => {
     res.json({ success: true, data: bill });
   } catch (err) { next(err); }
 };
+
+// Get bill statistics
+export const getBillStats = async (req, res, next) => {
+  try {
+    const stats = await Svc.getBillStats(req.query);
+    res.json({ success: true, data: stats });
+  } catch (err) { next(err); }
+};

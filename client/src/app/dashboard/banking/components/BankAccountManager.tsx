@@ -494,27 +494,39 @@ export default function BankAccountManager() {
     accountType: "bank" as "bank" | "credit_card",
   });
 
-  const statuses = ["all", "connected", "pending", "disconnected", "error"];
+  const statuses = ["all", "active", "inactive", "closed"];
   const accountTypes = ["checking", "savings", "credit", "loan"];
 
   const filteredAccounts = Array.isArray(accounts) ? accounts.filter(
-    (account) => filterStatus === "all" || account.status === filterStatus
+    (account) => {
+      const matches = filterStatus === "all" || account.status === filterStatus;
+      console.log(`🔍 Filter - Account ${account.name} (status: ${account.status}) matches filter "${filterStatus}": ${matches}`);
+      return matches;
+    }
   ) : [];
+  
+  console.log("🔍 Filter - Total accounts:", accounts.length);
+  console.log("🔍 Filter - Filtered accounts:", filteredAccounts.length);
+  console.log("🔍 Filter - Current filter status:", filterStatus);
 
   // Load bank accounts
   const loadBankAccounts = async () => {
     try {
+      console.log("🔍 Frontend - Loading bank accounts...");
       setLoading(true);
       setError(null);
       const response = (await bankingService.getBankAccounts()) as {
         data: BankAccount[];
       };
+      console.log("🔍 Frontend - Response received:", response);
+      console.log("🔍 Frontend - Accounts data:", response.data);
       setAccounts(response.data);
       // If there are no accounts yet, prompt user to add one
       if (response.data.length === 0) {
         setShowAddAccount(true);
       }
     } catch (err: any) {
+      console.error("🔍 Frontend - Error loading bank accounts:", err);
       const message =
         err?.message ||
         err.response?.data?.message ||
@@ -571,15 +583,8 @@ export default function BankAccountManager() {
       setError("Please fill in account name and select account type");
       return;
     }
-    if (!user?.id) {
-      setError("User not authenticated. Please log in again.");
-      return;
-    }
     try {
-      setSubmitting(true);
-      setError(null);
-      await bankingService.createBankAccount({
-        userId: user.id,
+      console.log("🔍 Frontend - Creating bank account with data:", {
         name: form.name,
         accountCode: form.accountCode,
         currency: form.currency,
@@ -590,6 +595,20 @@ export default function BankAccountManager() {
         isPrimary: form.isPrimary,
         accountType: form.accountType,
       });
+      setSubmitting(true);
+      setError(null);
+      const result = await bankingService.createBankAccount({
+        name: form.name,
+        accountCode: form.accountCode,
+        currency: form.currency,
+        accountNumber: form.accountNumber,
+        bankName: form.bankName,
+        ifsc: form.ifsc,
+        description: form.description,
+        isPrimary: form.isPrimary,
+        accountType: form.accountType,
+      });
+      console.log("🔍 Frontend - Account creation result:", result);
       setShowAddAccount(false);
       setForm({
         name: "",
@@ -602,6 +621,7 @@ export default function BankAccountManager() {
         isPrimary: false,
         accountType: "bank",
       });
+      console.log("🔍 Frontend - Reloading accounts after creation...");
       await loadBankAccounts();
     } catch (err: any) {
       const message =
@@ -927,3 +947,5 @@ export default function BankAccountManager() {
     </div>
   );
 }
+
+

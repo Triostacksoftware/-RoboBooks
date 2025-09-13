@@ -2,7 +2,7 @@ import express from "express";
 import Joi from "joi";
 import { authGuard } from "../utils/jwt.js";
 import validate from "../middlewares/validation.middleware.js";
-import { createBill, getBillById } from "../controllers/bills.controller.js";
+import { createBill, getBillById, getBillStats } from "../controllers/bills.controller.js";
 
 const router = express.Router();
 
@@ -17,6 +17,7 @@ const billSchema = Joi.object({
 });
 
 router.post("/", validate(billSchema), createBill);
+router.get("/stats", getBillStats);
 router.get("/:id", getBillById);
 
 export default router;

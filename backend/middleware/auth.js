@@ -23,7 +23,17 @@ export const authenticateToken = (req, res, next) => {
     // Directly decode JWT using JWT_SECRET
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("✅ Token verified, user:", decoded);
-    req.user = decoded; // { id, role, iat, exp }
+    
+    // Create consistent user object structure (same as authGuard)
+    req.user = {
+      id: decoded.uid || decoded.id, // Handle both uid and id formats
+      uid: decoded.uid || decoded.id, // Keep uid for backward compatibility
+      role: decoded.role || 'user',
+      email: decoded.email,
+      iat: decoded.iat,
+      exp: decoded.exp
+    };
+    
     next();
   } catch (err) {
     console.log("❌ Token verification failed:", err.message);

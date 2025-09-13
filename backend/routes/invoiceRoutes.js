@@ -1,11 +1,15 @@
 import express from 'express';
 import { recordPayment } from '../services/invoiceservice.js';
 import { auth } from '../middleware/auth.js';
+import { getInvoiceStats } from '../controllers/invoicecontroller.js';
 
 const router = express.Router();
 
 // Apply auth middleware to all routes
 router.use(auth);
+
+// GET /api/invoices/stats - Get invoice statistics
+router.get('/stats', getInvoiceStats);
 
 // POST /api/invoices/:id/record-payment
 router.post('/:id/record-payment', async (req, res) => {

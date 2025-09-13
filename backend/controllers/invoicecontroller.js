@@ -169,3 +169,20 @@ export async function getNextInvoiceNumber(req, res) {
     });
   }
 }
+
+// Get invoice statistics
+export async function getInvoiceStats(req, res) {
+  try {
+    const stats = await InvoiceService.getInvoiceStats(req.query);
+    res.status(200).json({
+      success: true,
+      data: stats,
+      message: "Invoice statistics retrieved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+}

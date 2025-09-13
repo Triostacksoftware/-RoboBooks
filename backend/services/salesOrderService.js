@@ -270,3 +270,35 @@ export async function sendSalesOrderEmail(id, emailData) {
     throw new Error(`Failed to send sales order email: ${error.message}`);
   }
 }
+
+// Get order statistics for dashboard
+export async function getOrderStats() {
+  try {
+    const [
+      pending,
+      confirmed,
+      completed,
+      cancelled
+    ] = await Promise.all([
+      SalesOrder.countDocuments({ status: 'pending' }),
+      SalesOrder.countDocuments({ status: 'confirmed' }),
+      SalesOrder.countDocuments({ status: 'completed' }),
+      SalesOrder.countDocuments({ status: 'cancelled' })
+    ]);
+
+    return {
+      pending,
+      confirmed,
+      completed,
+      cancelled
+    };
+  } catch (error) {
+    console.error('Error getting order stats:', error);
+    return {
+      pending: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0
+    };
+  }
+}

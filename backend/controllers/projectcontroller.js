@@ -64,6 +64,16 @@ export async function getStats(req, res) {
   }
 }
 
+// Get general project statistics
+export async function getProjectStats(req, res) {
+  try {
+    const stats = await ProjectService.getAllProjectStats(req.user.uid);
+    res.json(stats);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+}
+
 // Task operations
 export async function createTask(req, res) {
   try {

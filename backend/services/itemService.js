@@ -373,4 +373,7 @@ class ItemService {
   }
 }
 
-export default ItemService; 
+export default ItemService;
+
+// Export static methods for dashboard
+export const getItemStats = ItemService.getItemStats; 

@@ -350,3 +350,70 @@ export async function getNextInvoiceNumber() {
     throw new Error(`Failed to get next invoice number: ${error.message}`);
   }
 }
+
+// Get invoice statistics
+export async function getInvoiceStats(filters = {}) {
+  try {
+    const { startDate, endDate, customerId, status } = filters;
+    
+    // Build filter object
+    const filter = {};
+    if (startDate || endDate) {
+      filter.invoiceDate = {};
+      if (startDate) filter.invoiceDate.$gte = new Date(startDate);
+      if (endDate) filter.invoiceDate.$lte = new Date(endDate);
+    }
+    if (customerId) filter.customerId = customerId;
+    if (status) filter.status = status;
+
+    // Get basic counts
+    const [
+      totalInvoices,
+      paidInvoices,
+      pendingInvoices,
+      overdueInvoices,
+      draftInvoices
+    ] = await Promise.all([
+      Invoice.countDocuments(filter),
+      Invoice.countDocuments({ ...filter, status: "Paid" }),
+      Invoice.countDocuments({ ...filter, status: { $in: ["Sent", "Viewed", "Unpaid"] } }),
+      Invoice.countDocuments({ ...filter, status: "Overdue" }),
+      Invoice.countDocuments({ ...filter, status: "Draft" })
+    ]);
+
+    // Get revenue statistics
+    const revenueStats = await Invoice.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$total" },
+          paidRevenue: { $sum: { $cond: [{ $eq: ["$status", "Paid"] }, "$total", 0] } },
+          pendingRevenue: { $sum: { $cond: [{ $in: ["$status", ["Sent", "Viewed", "Unpaid"]] }, "$total", 0] } },
+          overdueRevenue: { $sum: { $cond: [{ $eq: ["$status", "Overdue"] }, "$total", 0] } }
+        }
+      }
+    ]);
+
+    const stats = revenueStats[0] || {
+      totalRevenue: 0,
+      paidRevenue: 0,
+      pendingRevenue: 0,
+      overdueRevenue: 0
+    };
+
+    return {
+      totalInvoices,
+      paidInvoices,
+      pendingInvoices,
+      overdueInvoices,
+      draftInvoices,
+      totalRevenue: stats.totalRevenue,
+      paidRevenue: stats.paidRevenue,
+      pendingRevenue: stats.pendingRevenue,
+      overdueRevenue: stats.overdueRevenue
+    };
+  } catch (error) {
+    throw new Error(`Failed to get invoice statistics: ${error.message}`);
+  }
+}

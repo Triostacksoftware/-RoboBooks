@@ -13,6 +13,7 @@ router.get("/", ctrl.list);
 router.get("/:id", ctrl.getById);
 router.put("/:id", ctrl.update);
 router.delete("/:id", ctrl.remove);
+router.get("/stats", ctrl.getProjectStats);
 router.get("/:id/stats", ctrl.getStats);
 
 // Task routes

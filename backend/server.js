@@ -45,6 +45,7 @@ import accountingReportsRoutes from "./routes/accountingReportsRoutes.js";
 import invoicePaymentRoutes from "./routes/invoicePaymentRoutes.js";
 import chartOfAccountsRoutes from "./routes/chartOfAccountsRoutes.js";
 import adminUserApprovalRoutes from "./routes/adminUserApproval.js";
+// import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 const app = express();
 
@@ -124,6 +125,7 @@ app.use("/api/module-preferences", modulePreferenceRoutes);
 app.use("/api/accounting-reports", accountingReportsRoutes);
 app.use("/api/invoice-payments", invoicePaymentRoutes);
 app.use("/api/chart-of-accounts", chartOfAccountsRoutes);
+// app.use("/api/dashboard", dashboardRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {

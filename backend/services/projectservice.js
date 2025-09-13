@@ -102,3 +102,32 @@ export const getProjectStats = async (projectId) => {
     profitMargin: project.revenue > 0 ? ((project.revenue - totalExpenses) / project.revenue) * 100 : 0
   };
 };
+
+// Get all project statistics
+export const getAllProjectStats = async (userId) => {
+  try {
+    const [
+      totalProjects,
+      activeProjects,
+      completedProjects,
+      totalHours
+    ] = await Promise.all([
+      Project.countDocuments({ user_id: userId }),
+      Project.countDocuments({ user_id: userId, status: "active" }),
+      Project.countDocuments({ user_id: userId, status: "completed" }),
+      TimeEntry.aggregate([
+        { $match: { user: userId } },
+        { $group: { _id: null, total: { $sum: "$hours" } } }
+      ])
+    ]);
+
+    return {
+      totalProjects,
+      activeProjects,
+      completedProjects,
+      totalHours: totalHours[0]?.total || 0
+    };
+  } catch (error) {
+    throw new Error(`Failed to get project statistics: ${error.message}`);
+  }
+};

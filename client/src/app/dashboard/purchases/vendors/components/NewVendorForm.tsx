@@ -36,6 +36,10 @@ interface VendorFormData {
     phone: string;
     designation: string;
   }>;
+  type: "business" | "individual";
+  salutation: string;
+  firstName: string;
+  lastName: string;
   pan: string;
   msmeRegistered: boolean;
   currency: string;
@@ -80,6 +84,10 @@ export default function NewVendorForm() {
         designation: "",
       },
     ],
+    type: "business",
+    salutation: "Mr.",
+    firstName: "",
+    lastName: "",
     pan: "",
     msmeRegistered: false,
     currency: "INR- Indian Rupee",
@@ -250,7 +258,7 @@ export default function NewVendorForm() {
         <div className="flex items-start">
           <InformationCircleIcon className="h-5 w-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" />
           <div className="text-sm text-blue-800">
-            Prefill Customer details from the GST portal using the Customer's
+            Prefill Vendor details from the GST portal using the Vendor's
             GSTIN.{" "}
             <button className="text-blue-600 hover:text-blue-800 font-medium">
               Prefill
@@ -260,6 +268,38 @@ export default function NewVendorForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Vendor Type Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center mb-4">
+            <InformationCircleIcon className="h-5 w-5 text-gray-400 mr-2" />
+            <h2 className="text-lg font-medium text-gray-900">Vendor Type</h2>
+          </div>
+          <div className="space-y-3">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="type"
+                value="business"
+                checked={formData.type === "business"}
+                onChange={(e) => handleInputChange("type", e.target.value)}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Business</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                name="type"
+                value="individual"
+                checked={formData.type === "individual"}
+                onChange={(e) => handleInputChange("type", e.target.value)}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Individual</span>
+            </label>
+          </div>
+        </div>
+
         {/* Primary Contact Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center mb-4">
@@ -870,11 +910,11 @@ export default function NewVendorForm() {
           </div>
         </div>
 
-        {/* Customer Owner Section */}
+        {/* Vendor Owner Section */}
         <div className="bg-gray-50 rounded-lg p-4">
           <p className="text-sm text-gray-600">
-            Customer Owner: Assign a user as the customer owner to provide
-            access only to the data of this customer.{" "}
+            Vendor Owner: Assign a user as the vendor owner to provide
+            access only to the data of this vendor.{" "}
             <button className="text-blue-600 hover:text-blue-800">
               Learn More
             </button>
