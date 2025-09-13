@@ -13,14 +13,29 @@ export const createEstimate = async (req, res, next) => {
     }
 
     // Add files to estimate data if they exist
-    if (req.files && req.files.length > 0) {
-      estimateData.files = req.files.map(file => ({
-        filename: file.filename,
-        originalName: file.originalname,
-        path: file.path,
-        size: file.size,
-        mimetype: file.mimetype,
-      }));
+    if (req.files) {
+      // Handle files field (array of files)
+      if (req.files.files && req.files.files.length > 0) {
+        estimateData.files = req.files.files.map(file => ({
+          filename: file.filename,
+          originalName: file.originalname,
+          path: file.path,
+          size: file.size,
+          mimetype: file.mimetype,
+        }));
+      }
+      
+      // Handle signature field (single file)
+      if (req.files.signature && req.files.signature.length > 0) {
+        const signatureFile = req.files.signature[0];
+        estimateData.signatureFile = {
+          filename: signatureFile.filename,
+          originalName: signatureFile.originalname,
+          path: signatureFile.path,
+          size: signatureFile.size,
+          mimetype: signatureFile.mimetype,
+        };
+      }
     }
 
     const est = await Svc.createEstimate(estimateData);

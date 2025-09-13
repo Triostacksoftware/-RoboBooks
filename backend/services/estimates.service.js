@@ -2,9 +2,16 @@ import Estimate from '../models/estimate.model.js';
 
 export const createEstimate = async (data) => {
   try {
-    // Generate quote number if not provided
+    // Generate quote number if not provided or if provided number already exists
     if (!data.quoteNumber) {
       data.quoteNumber = await getNextEstimateNumber();
+    } else {
+      // Check if the provided quote number already exists
+      const existingQuote = await Estimate.findOne({ quoteNumber: data.quoteNumber });
+      if (existingQuote) {
+        // If it exists, generate a new unique number
+        data.quoteNumber = await getNextEstimateNumber();
+      }
     }
     
     // Set default values

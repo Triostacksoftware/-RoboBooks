@@ -15,12 +15,12 @@ import { formatCurrency } from "@/utils/currency";
 
 interface Quote {
   _id: string;
-  quoteNumber: string;
-  customerName: string;
-  quoteDate: string;
-  validUntil: string;
-  total: number;
-  status: string;
+  quoteNumber?: string;
+  customerName?: string;
+  quoteDate?: string;
+  validUntil?: string;
+  total?: number;
+  status?: string;
   subject?: string;
 }
 
@@ -38,10 +38,14 @@ const QuotesPage = () => {
   const fetchQuotes = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/quotes");
+      const response = await fetch("/api/quotes", {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
-        setQuotes(data);
+        setQuotes(data.data || data);
+      } else {
+        console.error("Failed to fetch quotes:", response.status, response.statusText);
       }
     } catch (error) {
       console.error("Error fetching quotes:", error);
@@ -52,19 +56,21 @@ const QuotesPage = () => {
 
   const filteredQuotes = quotes.filter((quote) => {
     const matchesSearch =
-      quote.quoteNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quote.quoteNumber?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (quote.customerName?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
       (quote.subject &&
         quote.subject.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus =
       statusFilter === "all" ||
-      quote.status.toLowerCase() === statusFilter.toLowerCase();
+      (quote.status?.toLowerCase() || "") === statusFilter.toLowerCase();
 
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
+    if (!status) return "bg-gray-100 text-gray-800";
+    
     switch (status.toLowerCase()) {
       case "draft":
         return "bg-gray-100 text-gray-800";
@@ -82,7 +88,12 @@ const QuotesPage = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    if (!dateString) return "-";
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch (error) {
+      return "-";
+    }
   };
 
   return (
@@ -241,11 +252,11 @@ const QuotesPage = () => {
                           }
                           className="text-blue-600 hover:text-blue-800 hover:underline"
                         >
-                          {quote.quoteNumber}
+                          {quote.quoteNumber || "N/A"}
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {quote.customerName}
+                        {quote.customerName || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {quote.subject || "-"}
@@ -257,7 +268,7 @@ const QuotesPage = () => {
                         {formatDate(quote.validUntil)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                        {formatCurrency(quote.total)}
+                        {formatCurrency(quote.total || 0)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -265,7 +276,7 @@ const QuotesPage = () => {
                             quote.status
                           )}`}
                         >
-                          {quote.status}
+                          {quote.status || "Unknown"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

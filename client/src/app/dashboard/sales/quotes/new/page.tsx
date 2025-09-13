@@ -108,7 +108,7 @@ const NewQuoteForm = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
-    quoteNumber: "QT-000001",
+    quoteNumber: "",
     referenceNumber: "",
     quoteDate: new Date().toISOString().split("T")[0],
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
@@ -549,6 +549,45 @@ const NewQuoteForm = () => {
     };
   };
 
+  // Fetch next quote number from backend
+  const fetchNextQuoteNumber = async () => {
+    try {
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_URL + "/api/quotes/next-number",
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (response.ok) {
+        const responseData = await response.json();
+        const nextNumber = responseData.data || responseData;
+        setFormData(prev => ({ ...prev, quoteNumber: nextNumber }));
+        showToast(`New quote number: ${nextNumber}`, "success");
+      } else {
+        console.error("Error fetching next quote number:", response.status);
+        // Fallback to default if API fails
+        setFormData(prev => ({ ...prev, quoteNumber: "QT-000001" }));
+        showToast("Failed to get new quote number, using default", "error");
+      }
+    } catch (error) {
+      console.error("Error fetching next quote number:", error);
+      // Fallback to default if API fails
+      setFormData(prev => ({ ...prev, quoteNumber: "QT-000001" }));
+      showToast("Failed to get new quote number, using default", "error");
+    }
+  };
+
+  // Expose refresh function globally for the refresh button
+  useEffect(() => {
+    (window as any).refreshQuoteNumber = fetchNextQuoteNumber;
+    return () => {
+      delete (window as any).refreshQuoteNumber;
+    };
+  }, []);
+
   // Fetch customers from backend
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -586,6 +625,7 @@ const NewQuoteForm = () => {
     };
 
     fetchCustomers();
+    fetchNextQuoteNumber();
     loadTdsRecords();
     loadTcsRecords();
     // Remove the setTimeout call to prevent conflicts

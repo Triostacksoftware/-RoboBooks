@@ -137,7 +137,10 @@ router.get("/next-number", getNextEstimateNumber);
 router.get("/:id", getEstimateById);
 
 // POST /api/quotes - Create new quote
-router.post("/", upload.array('files', 10), createEstimate);
+router.post("/", upload.fields([
+  { name: 'files', maxCount: 10 },
+  { name: 'signature', maxCount: 1 }
+]), createEstimate);
 
 // PUT /api/quotes/:id - Update quote
 router.put("/:id", validate(quoteSchema), updateEstimate);

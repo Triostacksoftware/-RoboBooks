@@ -74,7 +74,22 @@ const estimateSchema = new mongoose.Schema({
   customerNotes: { type: String, default: "Thanks for your business." },
   termsConditions: { type: String },
   internalNotes: { type: String },
-  files: [{ type: String }],
+  files: [{
+    filename: { type: String },
+    originalName: { type: String },
+    path: { type: String },
+    size: { type: Number },
+    mimetype: { type: String },
+  }],
+  signatureFile: {
+    filename: { type: String },
+    originalName: { type: String },
+    path: { type: String },
+    size: { type: Number },
+    mimetype: { type: String },
+  },
+  enableSignature: { type: Boolean, default: false },
+  signaturePreview: { type: String },
   currency: { type: String, default: "INR" },
   
   // Address blocks

@@ -40,14 +40,29 @@ const QuoteDetails: React.FC<QuoteDetailsProps> = ({
           <label className="block text-xs font-medium text-gray-700 mb-1">
             Quote Number
           </label>
-          <input
-            type="text"
-            value={formData.quoteNumber}
-            onChange={(e) =>
-              onFormDataChange({ quoteNumber: e.target.value })
-            }
-            className="w-full px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={formData.quoteNumber}
+              onChange={(e) =>
+                onFormDataChange({ quoteNumber: e.target.value })
+              }
+              className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                // This will be handled by the parent component
+                if (window.refreshQuoteNumber) {
+                  window.refreshQuoteNumber();
+                }
+              }}
+              className="px-2 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-xs font-medium"
+              title="Get next quote number"
+            >
+              🔄
+            </button>
+          </div>
         </div>
 
         <div>
