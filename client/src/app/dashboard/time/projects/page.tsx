@@ -27,6 +27,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { formatCurrency } from "@/utils/currency";
 import ProjectDetail from "./components/ProjectDetail";
+import CreateProjectModal from "./components/CreateProjectModal";
 import {
   projectApi,
   Project,
@@ -51,24 +52,21 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    client: "",
-    startDate: "",
-    endDate: "",
-    budget: "",
-    status: "active",
-    description: "",
-    teamMembers: "",
-  });
   const [isCreating, setIsCreating] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectDetails | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Load projects from API
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
+        console.log("🔄 Fetching projects from API...");
         const data = await projectApi.list();
+        console.log("📋 Raw projects data from API:", data);
+        
         // Convert Project[] to ProjectDetails[] by adding empty arrays for related entities
         const projectDetails: ProjectDetails[] = data.map((project) => ({
           ...project,
@@ -77,9 +75,11 @@ export default function ProjectsPage() {
           invoices: [],
           expenses: [],
         }));
+        console.log("📋 Processed projects data:", projectDetails);
         setProjects(projectDetails);
         setIsAuthenticated(true); // If we can fetch projects, user is authenticated
       } catch (err) {
+        console.error("❌ Error fetching projects:", err);
         const errorMessage =
           err instanceof Error ? err.message : "Failed to fetch projects";
         if (
@@ -535,27 +535,11 @@ export default function ProjectsPage() {
     return "bg-red-500";
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    handleCreateProject();
-  };
-
-  const handleCreateProject = async () => {
+  const handleCreateProject = async (formData: any) => {
     try {
       setIsCreating(true);
+      console.log("🚀 Creating project with data:", formData);
 
       // Validate required fields
       if (
@@ -601,7 +585,9 @@ export default function ProjectsPage() {
         revenue: 0,
       };
 
+      console.log("📤 Sending project data to API:", projectData);
       const newProject = await projectApi.create(projectData);
+      console.log("✅ Project created successfully:", newProject);
 
       // Add the new project to the list (convert to ProjectDetails)
       const newProjectDetails: ProjectDetails = {
@@ -612,24 +598,18 @@ export default function ProjectsPage() {
         expenses: [],
       };
       setProjects((prev) => [newProjectDetails, ...prev]);
+      console.log("📋 Projects list updated");
 
-      // Reset form and close modal
-      setFormData({
-        name: "",
-        client: "",
-        startDate: "",
-        endDate: "",
-        budget: "",
-        status: "active",
-        description: "",
-        teamMembers: "",
-      });
+      // Close modal
       setShowCreateProject(false);
     } catch (error) {
+      console.error("❌ Error creating project:", error);
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Failed to create project. Please try again.";
+
+      console.error("❌ Error message:", errorMessage);
 
       if (
         errorMessage.includes("401") ||
@@ -647,175 +627,107 @@ export default function ProjectsPage() {
     }
   };
 
-  const CreateProjectModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Create New Project
-          </h3>
-          <button
-            onClick={() => setShowCreateProject(false)}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            ×
-          </button>
-        </div>
+  // Edit project handler
+  const handleEditProject = (project: ProjectDetails) => {
+    setEditingProject(project);
+    setShowEditModal(true);
+  };
 
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Project Name *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter project name"
-                required
-                autoComplete="off"
-                spellCheck="false"
-              />
-            </div>
+  // Update project handler
+  const handleUpdateProject = async (formData: any) => {
+    if (!editingProject) return;
+    
+    try {
+      setIsCreating(true);
+      console.log("🔄 Updating project with data:", formData);
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Client *
-              </label>
-              <input
-                type="text"
-                name="client"
-                value={formData.client}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter client name"
-                required
-                autoComplete="off"
-                spellCheck="false"
-              />
-            </div>
+      const projectData = {
+        name: formData.name,
+        client: formData.client,
+        description: formData.description || "",
+        status: formData.status || "active",
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        budget: parseFloat(formData.budget) || 0,
+        progress: parseInt(formData.progress) || 0,
+        spent: parseFloat(formData.spent) || 0,
+        revenue: parseFloat(formData.revenue) || 0,
+      };
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date *
-              </label>
-              <input
-                type="date"
-                name="startDate"
-                value={formData.startDate}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
+      console.log("📤 Sending update data to API:", projectData);
+      const updatedProject = await projectApi.update(editingProject._id, projectData);
+      console.log("✅ Project updated successfully:", updatedProject);
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Date *
-              </label>
-              <input
-                type="date"
-                name="endDate"
-                value={formData.endDate}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
+      // Update the project in the list
+      setProjects((prev) =>
+        prev.map((p) =>
+          p._id === editingProject._id
+            ? { ...updatedProject, tasks: p.tasks, timeEntries: p.timeEntries, invoices: p.invoices, expenses: p.expenses }
+            : p
+        )
+      );
+      console.log("📋 Projects list updated");
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Budget
-              </label>
-              <input
-                type="number"
-                name="budget"
-                value={formData.budget}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter budget amount"
-              />
-            </div>
+      // Close modal
+      setShowEditModal(false);
+      setEditingProject(null);
+    } catch (error) {
+      console.error("❌ Error updating project:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to update project. Please try again.";
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="active">Active</option>
-                <option value="on-hold">On Hold</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-          </div>
+      console.error("❌ Error message:", errorMessage);
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              rows={3}
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter project description"
-            />
-          </div>
+  // Delete project handler
+  const handleDeleteProject = (projectId: string) => {
+    setDeletingProjectId(projectId);
+    setShowDeleteConfirm(true);
+  };
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Team Members
-            </label>
-            <input
-              type="text"
-              name="teamMembers"
-              value={formData.teamMembers}
-              onChange={handleInputChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter team member names (comma separated)"
-              autoComplete="off"
-              spellCheck="false"
-            />
-          </div>
+  // Confirm delete handler
+  const confirmDeleteProject = async () => {
+    if (!deletingProjectId) return;
 
-          <div className="mt-6 flex gap-3">
-            <button
-              type="submit"
-              disabled={isCreating}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isCreating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating...
-                </>
-              ) : (
-                "Create Project"
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowCreateProject(false)}
-              disabled={isCreating}
-              className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+    try {
+      setIsCreating(true);
+      console.log("🗑️ Deleting project:", deletingProjectId);
+
+      await projectApi.delete(deletingProjectId);
+      console.log("✅ Project deleted successfully");
+
+      // Remove the project from the list
+      setProjects((prev) => prev.filter((p) => p._id !== deletingProjectId));
+      console.log("📋 Projects list updated");
+
+      // Close confirmation dialog
+      setShowDeleteConfirm(false);
+      setDeletingProjectId(null);
+    } catch (error) {
+      console.error("❌ Error deleting project:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to delete project. Please try again.";
+
+      console.error("❌ Error message:", errorMessage);
+      alert(`Error: ${errorMessage}`);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  // View project handler
+  const handleViewProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setShowProjectDetail(true);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -1029,21 +941,21 @@ export default function ProjectsPage() {
                   <div className="flex items-center space-x-6">
                     <div className="text-center">
                       <div className="text-sm font-medium text-gray-900">
-                        {project.progress}%
+                        {project.progress || 0}%
                       </div>
                       <div className="text-xs text-gray-500">Progress</div>
                     </div>
 
                     <div className="text-center">
                       <div className="text-sm font-medium text-gray-900">
-                        ${project.spent.toLocaleString()}
+                        ${(project.spent || 0).toLocaleString()}
                       </div>
                       <div className="text-xs text-gray-500">Spent</div>
                     </div>
 
                     <div className="text-center">
                       <div className="text-sm font-medium text-gray-900">
-                        ${project.budget.toLocaleString()}
+                        ${(project.budget || 0).toLocaleString()}
                       </div>
                       <div className="text-xs text-gray-500">Budget</div>
                     </div>
@@ -1059,22 +971,32 @@ export default function ProjectsPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <button className="p-2 text-gray-400 hover:text-blue-600 rounded">
+                      <button 
+                        onClick={() => handleViewProject(project._id)}
+                        className="p-2 text-gray-400 hover:text-blue-600 rounded"
+                        title="View Project Details"
+                      >
                         <PlayIcon className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => {
-                          setSelectedProjectId(project._id);
-                          setShowProjectDetail(true);
-                        }}
+                        onClick={() => handleViewProject(project._id)}
                         className="p-2 text-gray-400 hover:text-gray-600 rounded"
+                        title="View Project"
                       >
                         <EyeIcon className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 rounded">
+                      <button 
+                        onClick={() => handleEditProject(project)}
+                        className="p-2 text-gray-400 hover:text-gray-600 rounded"
+                        title="Edit Project"
+                      >
                         <PencilIcon className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 rounded">
+                      <button 
+                        onClick={() => handleDeleteProject(project._id)}
+                        className="p-2 text-gray-400 hover:text-red-600 rounded"
+                        title="Delete Project"
+                      >
                         <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
@@ -1085,14 +1007,14 @@ export default function ProjectsPage() {
                 <div className="mt-4">
                   <div className="flex justify-between text-xs text-gray-500 mb-1">
                     <span>Progress</span>
-                    <span>{project.progress}%</span>
+                    <span>{project.progress || 0}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                        project.progress
+                        project.progress || 0
                       )}`}
-                      style={{ width: `${project.progress}%` }}
+                      style={{ width: `${project.progress || 0}%` }}
                     ></div>
                   </div>
                 </div>
@@ -1128,28 +1050,28 @@ export default function ProjectsPage() {
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Progress</span>
-                  <span className="font-medium">{project.progress}%</span>
+                  <span className="font-medium">{project.progress || 0}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(
-                      project.progress
+                      project.progress || 0
                     )}`}
-                    style={{ width: `${project.progress}%` }}
+                    style={{ width: `${project.progress || 0}%` }}
                   ></div>
                 </div>
 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Budget</span>
                   <span className="font-medium">
-                    {formatCurrency(project.budget)}
+                    {formatCurrency(project.budget || 0)}
                   </span>
                 </div>
 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Spent</span>
                   <span className="font-medium">
-                    {formatCurrency(project.spent)}
+                    {formatCurrency(project.spent || 0)}
                   </span>
                 </div>
               </div>
@@ -1177,21 +1099,34 @@ export default function ProjectsPage() {
                 </div>
 
                 <div className="flex items-center gap-2 mt-4">
-                  <button className="flex-1 p-2 text-blue-600 hover:bg-blue-50 rounded border border-blue-200 text-sm">
+                  <button 
+                    onClick={() => handleViewProject(project._id)}
+                    className="flex-1 p-2 text-blue-600 hover:bg-blue-50 rounded border border-blue-200 text-sm"
+                    title="View Project Details"
+                  >
                     <PlayIcon className="h-4 w-4 inline mr-1" />
                     Start
                   </button>
                   <button
-                    onClick={() => {
-                      setSelectedProjectId(project._id);
-                      setShowProjectDetail(true);
-                    }}
+                    onClick={() => handleViewProject(project._id)}
                     className="p-2 text-gray-400 hover:text-gray-600 rounded"
+                    title="View Project"
                   >
                     <EyeIcon className="h-4 w-4" />
                   </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 rounded">
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
+                  <button 
+                    onClick={() => handleEditProject(project)}
+                    className="p-2 text-gray-400 hover:text-gray-600 rounded"
+                    title="Edit Project"
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteProject(project._id)}
+                    className="p-2 text-gray-400 hover:text-red-600 rounded"
+                    title="Delete Project"
+                  >
+                    <TrashIcon className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -1200,13 +1135,94 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {showCreateProject && <CreateProjectModal />}
+      {showCreateProject && (
+        <CreateProjectModal
+          isOpen={showCreateProject}
+          onClose={() => setShowCreateProject(false)}
+          onSubmit={handleCreateProject}
+          isCreating={isCreating}
+        />
+      )}
+
+      {/* Edit Project Modal */}
+      {showEditModal && editingProject && (
+        <CreateProjectModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingProject(null);
+          }}
+          onSubmit={handleUpdateProject}
+          isCreating={isCreating}
+          initialData={{
+            name: editingProject.name,
+            client: editingProject.client,
+            description: editingProject.description || "",
+            status: editingProject.status,
+            startDate: editingProject.startDate,
+            endDate: editingProject.endDate,
+            budget: editingProject.budget || 0,
+            progress: editingProject.progress || 0,
+            spent: editingProject.spent || 0,
+            revenue: editingProject.revenue || 0,
+            teamMembers: editingProject.teamMembers || [],
+          }}
+          title="Edit Project"
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Delete Project
+                </h3>
+              </div>
+            </div>
+            <div className="mb-6">
+              <p className="text-sm text-gray-500">
+                Are you sure you want to delete this project? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingProjectId(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteProject}
+                disabled={isCreating}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+              >
+                {isCreating ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showProjectDetail && selectedProjectId && (
         <ProjectDetail
           projectId={selectedProjectId}
           onClose={() => {
             setShowProjectDetail(false);
             setSelectedProjectId(null);
+          }}
+          onEdit={(project) => {
+            setShowProjectDetail(false);
+            setSelectedProjectId(null);
+            setEditingProject(project);
+            setShowEditModal(true);
           }}
         />
       )}

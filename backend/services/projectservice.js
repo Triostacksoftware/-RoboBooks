@@ -16,7 +16,18 @@ export const createProject = async (data) => {
     throw error;
   }
 };
-export const listProjects = (userId) => Project.find({ user_id: userId });
+export const listProjects = async (userId) => {
+  console.log('🔍 ProjectService.listProjects called with userId:', userId);
+  try {
+    const projects = await Project.find({ user_id: userId });
+    console.log('🔍 Found projects:', projects.length, 'projects');
+    console.log('🔍 Projects data:', projects);
+    return projects;
+  } catch (error) {
+    console.error('🔍 Error in listProjects:', error);
+    throw error;
+  }
+};
 export const getProjectById = (id) => Project.findById(id);
 export const updateProject = (id, data) => Project.findByIdAndUpdate(id, data, { new: true });
 export const deleteProject = (id) => Project.findByIdAndDelete(id);

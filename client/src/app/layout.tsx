@@ -44,7 +44,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Remove browser extension attributes that cause hydration mismatches
+              if (typeof window !== 'undefined') {
+                document.documentElement.removeAttribute('extension-installed');
+                document.documentElement.removeAttribute('data-extension');
+                document.documentElement.removeAttribute('data-extension-id');
+              }
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50`}
       >

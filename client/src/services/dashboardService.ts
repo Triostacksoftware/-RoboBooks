@@ -54,6 +54,8 @@ class DashboardService {
   // Fetch all dashboard statistics
   async getDashboardStats(): Promise<DashboardStats> {
     try {
+      console.log('📊 Fetching dashboard statistics...');
+      
       const [
         customersStats,
         itemsStats,
@@ -74,7 +76,16 @@ class DashboardService {
         this.getOrdersStats()
       ]);
 
-      return {
+      // Log any rejected promises for debugging
+      [customersStats, itemsStats, bankingStats, salesStats, purchasesStats, projectsStats, reportsStats, ordersStats]
+        .forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const moduleNames = ['customers', 'items', 'banking', 'sales', 'purchases', 'projects', 'reports', 'orders'];
+            console.warn(`⚠️ Failed to fetch ${moduleNames[index]} stats:`, result.reason);
+          }
+        });
+
+      const stats = {
         customers: customersStats.status === 'fulfilled' ? customersStats.value : { total: 0, active: 0, business: 0, individual: 0 },
         items: itemsStats.status === 'fulfilled' ? itemsStats.value : { total: 0, goods: 0, services: 0, lowStock: 0 },
         banking: bankingStats.status === 'fulfilled' ? bankingStats.value : { totalAccounts: 0, totalBalance: 0, pendingTransactions: 0 },
@@ -84,9 +95,22 @@ class DashboardService {
         reports: reportsStats.status === 'fulfilled' ? reportsStats.value : { totalGenerated: 0, totalRevenue: 0 },
         orders: ordersStats.status === 'fulfilled' ? ordersStats.value : { pending: 0, confirmed: 0, completed: 0, cancelled: 0 }
       };
+
+      console.log('📊 Dashboard statistics loaded successfully:', stats);
+      return stats;
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      throw error;
+      console.error('❌ Error fetching dashboard stats:', error);
+      // Return default stats instead of throwing
+      return {
+        customers: { total: 0, active: 0, business: 0, individual: 0 },
+        items: { total: 0, goods: 0, services: 0, lowStock: 0 },
+        banking: { totalAccounts: 0, totalBalance: 0, pendingTransactions: 0 },
+        sales: { totalInvoices: 0, paidInvoices: 0, pendingInvoices: 0, totalRevenue: 0 },
+        purchases: { totalBills: 0, paidBills: 0, pendingBills: 0, totalExpenses: 0 },
+        projects: { total: 0, active: 0, completed: 0, totalHours: 0 },
+        reports: { totalGenerated: 0, totalRevenue: 0 },
+        orders: { pending: 0, confirmed: 0, completed: 0, cancelled: 0 }
+      };
     }
   }
 
@@ -101,7 +125,7 @@ class DashboardService {
         individual: response.data?.individualCustomers || 0
       };
     } catch (error) {
-      console.error('Error fetching customer stats:', error);
+      console.warn('⚠️ Customer stats not available:', error);
       return { total: 0, active: 0, business: 0, individual: 0 };
     }
   }
@@ -117,7 +141,7 @@ class DashboardService {
         lowStock: response.data?.lowStockCount || 0
       };
     } catch (error) {
-      console.error('Error fetching item stats:', error);
+      console.warn('⚠️ Item stats not available:', error);
       return { total: 0, goods: 0, services: 0, lowStock: 0 };
     }
   }
@@ -132,7 +156,7 @@ class DashboardService {
         pendingTransactions: response.data?.pendingTransactions || 0
       };
     } catch (error) {
-      console.error('Error fetching banking stats:', error);
+      console.warn('⚠️ Banking stats not available:', error);
       return { totalAccounts: 0, totalBalance: 0, pendingTransactions: 0 };
     }
   }
@@ -148,7 +172,7 @@ class DashboardService {
         totalRevenue: response.data?.totalRevenue || 0
       };
     } catch (error) {
-      console.error('Error fetching sales stats:', error);
+      console.warn('⚠️ Sales stats not available:', error);
       return { totalInvoices: 0, paidInvoices: 0, pendingInvoices: 0, totalRevenue: 0 };
     }
   }
@@ -164,7 +188,7 @@ class DashboardService {
         totalExpenses: response.data?.totalExpenses || 0
       };
     } catch (error) {
-      console.error('Error fetching purchases stats:', error);
+      console.warn('⚠️ Purchases stats not available:', error);
       return { totalBills: 0, paidBills: 0, pendingBills: 0, totalExpenses: 0 };
     }
   }
@@ -180,7 +204,7 @@ class DashboardService {
         totalHours: response.data?.totalHours || 0
       };
     } catch (error) {
-      console.error('Error fetching projects stats:', error);
+      console.warn('⚠️ Projects stats not available:', error);
       return { total: 0, active: 0, completed: 0, totalHours: 0 };
     }
   }
@@ -194,7 +218,7 @@ class DashboardService {
         totalRevenue: response.data?.totalRevenue || 0
       };
     } catch (error) {
-      console.error('Error fetching reports stats:', error);
+      console.warn('⚠️ Reports stats not available:', error);
       return { totalGenerated: 0, totalRevenue: 0 };
     }
   }
@@ -214,7 +238,7 @@ class DashboardService {
         cancelled: (salesOrders.data?.cancelled || 0) + (purchaseOrders.data?.cancelled || 0)
       };
     } catch (error) {
-      console.error('Error fetching orders stats:', error);
+      console.warn('⚠️ Orders stats not available:', error);
       return { pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
     }
   }

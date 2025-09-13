@@ -21,9 +21,12 @@ export async function create(req, res) {
 
 export async function list(req, res) {
   try {
+    console.log('📋 ProjectController.list called for user:', req.user.uid);
     const projects = await ProjectService.listProjects(req.user.uid);
+    console.log('📋 ProjectController.list returning:', projects.length, 'projects');
     res.json(projects);
   } catch (e) {
+    console.error('❌ ProjectController.list error:', e);
     res.status(500).json({ error: e.message });
   }
 }

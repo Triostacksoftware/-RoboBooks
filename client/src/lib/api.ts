@@ -201,10 +201,31 @@ export async function api<T = unknown>(
   }
 
   if (!res.ok) {
-    const errorData = await res
-      .json()
-      .catch(() => ({ message: "Request failed" }));
-    console.error("🌐 API Error:", errorData);
+    let errorData: any = { message: "Request failed" };
+    
+    try {
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        errorData = await res.json();
+      } else {
+        const text = await res.text();
+        errorData = { message: text || `HTTP ${res.status}: ${res.statusText}` };
+      }
+    } catch (parseError) {
+      console.error("🌐 Failed to parse error response:", parseError);
+      errorData = { 
+        message: `HTTP ${res.status}: ${res.statusText}`,
+        originalError: parseError instanceof Error ? parseError.message : "Unknown parse error"
+      };
+    }
+    
+    console.error("🌐 API Error:", {
+      status: res.status,
+      statusText: res.statusText,
+      url: res.url,
+      errorData
+    });
+    
     throw new Error(
       errorData.message || `HTTP ${res.status}: ${res.statusText}`
     );
