@@ -97,6 +97,13 @@ export default function SignIn() {
   /* ------------ classic JWT login ------------ */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (loading) {
+      console.log("🚫 Login already in progress, ignoring duplicate submission");
+      return;
+    }
+    
     setErr("");
     setLoading(true);
 

@@ -4,6 +4,18 @@ import { CustomerExcelService } from "../services/customerExcelService.js";
 // Create a new customer
 export const createCustomer = async (req, res) => {
   try {
+    let customerData;
+    
+    // Check if request contains files (multipart/form-data)
+    if (req.files && req.files.length > 0) {
+      // Handle file upload case
+      const { customerData: customerDataString } = req.body;
+      customerData = JSON.parse(customerDataString);
+    } else {
+      // Handle regular JSON case
+      customerData = req.body;
+    }
+
     const {
       customerType,
       salutation,
@@ -23,7 +35,7 @@ export const createCustomer = async (req, res) => {
       billingAddress,
       shippingAddress,
       contactPersons,
-    } = req.body;
+    } = customerData;
 
     // Validate required fields
     if (!firstName || !lastName || !email) {
@@ -60,7 +72,8 @@ export const createCustomer = async (req, res) => {
       }
     }
 
-    const customerData = {
+    // Build customer data object
+    const finalCustomerData = {
       customerType,
       salutation,
       firstName,
@@ -82,7 +95,18 @@ export const createCustomer = async (req, res) => {
       createdBy: req.user?.id || null,
     };
 
-    const customer = new Customer(customerData);
+    // Handle file uploads if any
+    if (req.files && req.files.length > 0) {
+      const documents = req.files.map(file => ({
+        filename: file.filename || file.originalname,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      }));
+      finalCustomerData.documents = documents;
+    }
+
+    const customer = new Customer(finalCustomerData);
     await customer.save();
 
     res.status(201).json({

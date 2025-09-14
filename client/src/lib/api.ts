@@ -16,7 +16,7 @@ async function refreshAccessToken(): Promise<string | null> {
       console.log("🔄 Attempting to refresh access token...");
       const response = await fetch(
         `${
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5050"
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
         }/api/auth/refresh-token`,
         {
           method: "POST",
@@ -61,7 +61,7 @@ export async function api<T = unknown>(
 
   // Use environment variable for backend URL
   const backendUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5050";
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
   console.log("🌐 Making request to:", `${backendUrl}${path}`);
   console.log("🌐 Request method:", init.method || "GET");
   console.log("🌐 Request body:", json);
@@ -69,8 +69,12 @@ export async function api<T = unknown>(
   // Prepare headers with authentication
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "Content-Type": "application/json",
   };
+
+  // Only set Content-Type for JSON requests, not for FormData
+  if (!(init.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   // Add any additional headers from init
   if (init.headers) {
@@ -96,7 +100,7 @@ export async function api<T = unknown>(
     credentials: "include", // include cookies for cross-origin
     cache: "no-store", // avoid 304/etag cache confusing auth flows
     headers,
-    body: json ? JSON.stringify(json) : undefined,
+    body: init.body || (json ? JSON.stringify(json) : undefined),
     ...rest,
   });
 

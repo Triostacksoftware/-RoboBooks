@@ -21,6 +21,14 @@ interface ItemFormData {
   description: string;
   intraGST: number;
   interGST: number;
+  size: string;
+  color: string;
+  weight: string;
+  dimensions: {
+    length: string;
+    width: string;
+    height: string;
+  };
 }
 
 interface FormErrors {
@@ -53,6 +61,14 @@ export default function NewItemForm() {
     description: "",
     intraGST: 0,
     interGST: 0,
+    size: "",
+    color: "",
+    weight: "",
+    dimensions: {
+      length: "",
+      width: "",
+      height: "",
+    },
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -632,6 +648,85 @@ export default function NewItemForm() {
             className={getInputClassName("preferredVendor")}
             placeholder="Enter preferred vendor name"
           />
+        </div>
+      </div>
+
+      {/* Physical Attributes */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Physical Attributes</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              Size
+            </label>
+            <input
+              type="text"
+              value={formData.size}
+              onChange={(e) => handleInputChange("size", e.target.value)}
+              className={getInputClassName("size")}
+              placeholder="e.g., Small, Medium, Large, 10x10x5"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              Color
+            </label>
+            <input
+              type="text"
+              value={formData.color}
+              onChange={(e) => handleInputChange("color", e.target.value)}
+              className={getInputClassName("color")}
+              placeholder="e.g., Red, Blue, Black"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              Weight (kg)
+            </label>
+            <input
+              type="number"
+              value={formData.weight}
+              onChange={(e) => handleInputChange("weight", e.target.value)}
+              className={getInputClassName("weight")}
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 mb-2 font-medium">
+              Dimensions (cm)
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                type="number"
+                value={formData.dimensions.length}
+                onChange={(e) => handleInputChange("dimensions", { ...formData.dimensions, length: e.target.value })}
+                className={getInputClassName("dimensions")}
+                placeholder="Length"
+                step="0.01"
+                min="0"
+              />
+              <input
+                type="number"
+                value={formData.dimensions.width}
+                onChange={(e) => handleInputChange("dimensions", { ...formData.dimensions, width: e.target.value })}
+                className={getInputClassName("dimensions")}
+                placeholder="Width"
+                step="0.01"
+                min="0"
+              />
+              <input
+                type="number"
+                value={formData.dimensions.height}
+                onChange={(e) => handleInputChange("dimensions", { ...formData.dimensions, height: e.target.value })}
+                className={getInputClassName("dimensions")}
+                placeholder="Height"
+                step="0.01"
+                min="0"
+              />
+            </div>
+          </div>
         </div>
       </div>
 

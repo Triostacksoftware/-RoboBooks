@@ -3,6 +3,49 @@ import Bill from '../models/bill.model.js';
 export const createBill    = (data) => Bill.create(data);
 export const getBillById   = (id)   => Bill.findById(id);
 
+// Get all bills with pagination and filtering
+export const getBills = async (filters = {}) => {
+  try {
+    const { page = 1, limit = 10, search, status, vendor_id } = filters;
+    
+    let query = {};
+    
+    if (search) {
+      query.$or = [
+        { bill_number: { $regex: search, $options: "i" } },
+        { notes: { $regex: search, $options: "i" } }
+      ];
+    }
+    
+    if (status) {
+      query.status = status;
+    }
+    
+    if (vendor_id) {
+      query.vendor_id = vendor_id;
+    }
+
+    const bills = await Bill.find(query)
+      .populate('vendor_id', 'name email')
+      .sort({ created_at: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Bill.countDocuments(query);
+
+    return {
+      bills,
+      pagination: {
+        current: parseInt(page),
+        pages: Math.ceil(total / limit),
+        total
+      }
+    };
+  } catch (error) {
+    throw new Error(`Failed to fetch bills: ${error.message}`);
+  }
+};
+
 // Get bill statistics
 export const getBillStats = async (filters = {}) => {
   try {

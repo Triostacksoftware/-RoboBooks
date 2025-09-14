@@ -42,6 +42,41 @@ const upload = multer({
   },
 });
 
+// Configure multer for document uploads
+const documentUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-powerpoint",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "text/plain",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif"
+    ];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          "Invalid file type. Only PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, JPG, JPEG, PNG, and GIF files are allowed."
+        ),
+        false
+      );
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 10 // Maximum 10 files
+  },
+});
+
 // Error handling middleware for multer
 const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -78,7 +113,7 @@ router.post(
 router.get("/download-template", authGuard, downloadCustomerTemplate);
 
 // Create a new customer
-router.post("/", createCustomer);
+router.post("/", documentUpload.array("documents", 10), handleMulterError, createCustomer);
 
 // Get all customers with pagination and filtering
 router.get("/", getAllCustomers);

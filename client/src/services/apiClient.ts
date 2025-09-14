@@ -8,9 +8,19 @@ export const apiClient = {
     return { data };
   },
 
-  post: async (path: string, body: any) => {
-    const data = await api(path, { method: "POST", json: body });
-    return { data };
+  post: async (path: string, body: any, options: any = {}) => {
+    // Check if body is FormData (for file uploads)
+    if (body instanceof FormData) {
+      const data = await api(path, { 
+        method: "POST", 
+        body: body,
+        headers: options.headers || {}
+      });
+      return { data };
+    } else {
+      const data = await api(path, { method: "POST", json: body });
+      return { data };
+    }
   },
 
   put: async (path: string, body: any) => {

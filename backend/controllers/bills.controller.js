@@ -7,6 +7,13 @@ export const createBill = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const getBills = async (req, res, next) => {
+  try {
+    const result = await Svc.getBills(req.query);
+    res.json({ success: true, data: result.bills, pagination: result.pagination });
+  } catch (err) { next(err); }
+};
+
 export const getBillById = async (req, res, next) => {
   try {
     const bill = await Svc.getBillById(req.params.id);

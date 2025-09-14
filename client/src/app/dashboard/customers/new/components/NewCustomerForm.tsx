@@ -749,6 +749,7 @@ export default function NewCustomerForm() {
                     {/* Upload Button with Dropdown */}
                     <div className="relative" ref={dropdownRef}>
                       <button 
+                        type="button"
                         onClick={() => setShowUploadFilesDropdown(!showUploadFilesDropdown)}
                         className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                       >
@@ -760,6 +761,7 @@ export default function NewCustomerForm() {
                       {showUploadFilesDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
                           <button
+                            type="button"
                             onClick={openFileInput}
                             className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-200"
                           >
@@ -828,9 +830,14 @@ export default function NewCustomerForm() {
                   <div>
                     <button
                       type="button"
+                      onClick={() => {
+                        const currentIndex = tabs.findIndex(tab => tab.key === activeTab);
+                        const nextIndex = (currentIndex + 1) % tabs.length;
+                        setActiveTab(tabs[nextIndex].key);
+                      }}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
-                      Add more details
+                      Add more details →
                     </button>
                   </div>
                 </div>

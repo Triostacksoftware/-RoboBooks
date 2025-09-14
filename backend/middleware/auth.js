@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { verifyAccessToken } from "../utils/token.js";
 
 /**
@@ -30,6 +31,7 @@ export const authenticateToken = (req, res, next) => {
       uid: decoded.uid || decoded.id, // Keep uid for backward compatibility
       role: decoded.role || 'user',
       email: decoded.email,
+      organization: decoded.organization || new mongoose.Types.ObjectId(), // Use ObjectId for organization
       iat: decoded.iat,
       exp: decoded.exp
     };

@@ -1,0 +1,9 @@
+@echo off
+echo Starting Backend Server...
+cd backend
+echo Current directory: %CD%
+echo Installing dependencies if needed...
+npm install
+echo Starting server...
+node server.js
+pause

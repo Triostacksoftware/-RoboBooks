@@ -137,6 +137,24 @@ const itemSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Physical attributes
+    size: {
+      type: String,
+      trim: true,
+    },
+    color: {
+      type: String,
+      trim: true,
+    },
+    weight: {
+      type: Number,
+      min: 0,
+    },
+    dimensions: {
+      length: { type: Number, min: 0 },
+      width: { type: Number, min: 0 },
+      height: { type: Number, min: 0 },
+    },
     // Inventory tracking
     currentStock: {
       type: Number,

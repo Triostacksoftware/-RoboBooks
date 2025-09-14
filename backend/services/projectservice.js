@@ -2,7 +2,7 @@ import Project from "../models/projectmodel.js";
 import Task from "../models/task.model.js";
 import TimeEntry from "../models/timesheetmodel.js";
 import Invoice from "../models/invoicemodel.js";
-import Expense from "../models/expense.model.js";
+import Expense from "../models/Expense.js";
 
 // Project CRUD operations
 export const createProject = async (data) => {

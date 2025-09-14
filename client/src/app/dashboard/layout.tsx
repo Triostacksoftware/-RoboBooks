@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
+import { ToastProvider } from "../../contexts/ToastContext";
 
 // Dynamic imports to prevent SSR issues with document references
 const Header = dynamic(() => import("./components/Header"), { ssr: false });
@@ -168,7 +169,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <>
+    <ToastProvider>
       <Head>
         <title>Dashboard – Robo Books</title>
       </Head>
@@ -182,6 +183,6 @@ export default function DashboardLayout({
         {/* Scroll to Top Button */}
         <ScrollToTopButton />
       </div>
-    </>
+    </ToastProvider>
   );
 }

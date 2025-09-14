@@ -96,6 +96,17 @@ const customerSchema = new mongoose.Schema({
     phone: String,
     designation: String
   }],
+  // Documents
+  documents: [{
+    filename: String,
+    originalName: String,
+    mimetype: String,
+    size: Number,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   // Financial information
   receivables: {
     type: Number,

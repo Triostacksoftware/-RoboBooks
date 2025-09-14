@@ -16,7 +16,7 @@ import accountsRoutes from "./routes/accounts.js";
 // Removed legacy bankTransactions router to avoid conflicts
 import vendorsRoutes from "./routes/vendorsRoutes.js";
 import billsRoutes from "./routes/bills.routes.js";
-import expensesRoutes from "./routes/expenses.routes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
 import estimatesRoutes from "./routes/estimates.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
 import projectRoutes from "./routes/projectroutes.js";
@@ -45,6 +45,12 @@ import accountingReportsRoutes from "./routes/accountingReportsRoutes.js";
 import invoicePaymentRoutes from "./routes/invoicePaymentRoutes.js";
 import chartOfAccountsRoutes from "./routes/chartOfAccountsRoutes.js";
 import adminUserApprovalRoutes from "./routes/adminUserApproval.js";
+import organizationRoutes from "./routes/organizationRoutes.js";
+import recurringExpenseRoutes from "./routes/recurringExpenseRoutes.js";
+import purchaseOrderRoutes from "./routes/purchaseOrderRoutes.js";
+import paymentMadeRoutes from "./routes/paymentMadeRoutes.js";
+import recurringBillRoutes from "./routes/recurringBillRoutes.js";
+import vendorCreditRoutes from "./routes/vendorCreditRoutes.js";
 // import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 const app = express();
@@ -97,7 +103,7 @@ app.use("/api/accounts", accountsRoutes);
 app.use("/api/banking", bankingRoutes);
 app.use("/api/vendors", vendorsRoutes);
 app.use("/api/bills", billsRoutes);
-app.use("/api/expenses", expensesRoutes);
+app.use("/api/expenses", expenseRoutes);
 app.use("/api/estimates", estimatesRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/projects", projectRoutes);
@@ -125,6 +131,12 @@ app.use("/api/module-preferences", modulePreferenceRoutes);
 app.use("/api/accounting-reports", accountingReportsRoutes);
 app.use("/api/invoice-payments", invoicePaymentRoutes);
 app.use("/api/chart-of-accounts", chartOfAccountsRoutes);
+app.use("/api/organizations", organizationRoutes);
+app.use("/api/recurring-expenses", recurringExpenseRoutes);
+app.use("/api/purchase-orders", purchaseOrderRoutes);
+app.use("/api/payments-made", paymentMadeRoutes);
+app.use("/api/recurring-bills", recurringBillRoutes);
+app.use("/api/vendor-credits", vendorCreditRoutes);
 // app.use("/api/dashboard", dashboardRoutes);
 
 // Health check and welcome routes

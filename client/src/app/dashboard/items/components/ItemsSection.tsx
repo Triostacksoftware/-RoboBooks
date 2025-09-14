@@ -39,6 +39,14 @@ interface Item {
   barcode?: string;
   category?: string;
   brand?: string;
+  size?: string;
+  color?: string;
+  weight?: number;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+  };
   currentStock?: number;
   reorderPoint?: number;
   gstRate?: number;
@@ -73,6 +81,9 @@ export default function ItemsSection() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<Partial<Item>>({});
+  const [selectedFilter, setSelectedFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const moreActionsRef = useRef<HTMLDivElement>(null);
@@ -282,9 +293,49 @@ export default function ItemsSection() {
     }, 3000);
   };
 
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = items
+    .filter((item) => {
+      // Search filter
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.brand?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      // Status filter
+      switch (selectedFilter) {
+        case "Active":
+          return item.isActive;
+        case "Inactive":
+          return !item.isActive;
+        case "Sales":
+          return item.salesEnabled;
+        case "Purchases":
+          return item.purchaseEnabled;
+        case "Services":
+          return item.type === "Service";
+        case "Goods":
+          return item.type === "Goods";
+        case "All":
+        default:
+          return true;
+      }
+    })
+    .sort((a, b) => {
+      let aValue: any = a[sortBy as keyof Item];
+      let bValue: any = b[sortBy as keyof Item];
+      
+      // Handle different data types
+      if (typeof aValue === "string") {
+        aValue = aValue.toLowerCase();
+        bValue = bValue?.toLowerCase() || "";
+      }
+      
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
 
   // Render minimal list item
   const renderMinimalListItem = (item: Item) => (
@@ -438,17 +489,32 @@ export default function ItemsSection() {
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* Search and Filter Bar */}
           <div className="p-4 bg-white border-b border-gray-200">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search in Items (/)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search in Items (/)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div className="relative">
+                <select
+                  value={selectedFilter}
+                  onChange={(e) => setSelectedFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  {filters.map((filter) => (
+                    <option key={filter} value={filter}>
+                      {filter}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1217,6 +1283,68 @@ export default function ItemsSection() {
                         ) : (
                           <p className="font-medium mt-1">
                             {selectedItem.brand || "-"}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Size:</span>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={
+                              editFormData.size || selectedItem.size || ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange("size", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., Small, Medium, Large, 10x10x5"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.size || "-"}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Color:</span>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={
+                              editFormData.color || selectedItem.color || ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange("color", e.target.value)
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., Red, Blue, Black"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.color || "-"}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Weight (kg):</span>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            value={
+                              editFormData.weight || selectedItem.weight || ""
+                            }
+                            onChange={(e) =>
+                              handleEditInputChange("weight", parseFloat(e.target.value))
+                            }
+                            className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                          />
+                        ) : (
+                          <p className="font-medium mt-1">
+                            {selectedItem.weight ? `${selectedItem.weight} kg` : "-"}
                           </p>
                         )}
                       </div>
