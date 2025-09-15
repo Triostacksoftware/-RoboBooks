@@ -18,13 +18,22 @@ const purchaseOrderSchema = new mongoose.Schema({
   },
   expected_delivery_date: {
     type: Date,
-    required: true
+    required: false
   },
   items: [{
     item_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Item',
-      required: true
+      required: false // Made optional for manual entries
+    },
+    item_name: {
+      type: String,
+      required: false, // For manual entries
+      trim: true
+    },
+    description: {
+      type: String,
+      trim: true
     },
     quantity: {
       type: Number,
@@ -34,6 +43,11 @@ const purchaseOrderSchema = new mongoose.Schema({
     unit_price: {
       type: Number,
       required: true,
+      min: 0
+    },
+    tax_rate: {
+      type: Number,
+      default: 0,
       min: 0
     },
     total: {

@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { vendorCreditService } from "@/services/vendorCreditService";
+import { vendorService } from "@/services/vendorService";
 
 interface VendorCreditFormData {
   vendorId: string;
@@ -37,6 +39,22 @@ export default function NewVendorCreditForm() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+  const [vendorSearchTerm, setVendorSearchTerm] = useState("");
+
+  // Load vendors on component mount
+  useEffect(() => {
+    const loadVendors = async () => {
+      try {
+        const vendorsData = await vendorService.getVendors();
+        setVendors(vendorsData);
+      } catch (error) {
+        console.error("Error loading vendors:", error);
+      }
+    };
+    loadVendors();
+  }, []);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -45,14 +63,46 @@ export default function NewVendorCreditForm() {
     }));
   };
 
+  const handleVendorSelect = (vendor: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      vendorId: vendor._id,
+      vendorName: vendor.displayName || vendor.name,
+    }));
+    setVendorSearchTerm(vendor.displayName || vendor.name);
+    setShowVendorDropdown(false);
+  };
+
+  const filteredVendors = vendors.filter(vendor =>
+    (vendor.displayName || vendor.name).toLowerCase().includes(vendorSearchTerm.toLowerCase())
+  );
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.vendor-dropdown-container')) {
+        setShowVendorDropdown(false);
+      }
+    };
+
+    if (showVendorDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showVendorDropdown]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     // Validate required fields
-    if (!formData.vendorName.trim()) {
-      setError('"vendorName" is required');
+    if (!formData.vendorId) {
+      setError('Please select a vendor');
       setLoading(false);
       return;
     }
@@ -127,17 +177,50 @@ export default function NewVendorCreditForm() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Vendor Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="relative vendor-dropdown-container">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Vendor Name *
               </label>
-              <input
-                type="text"
-                value={formData.vendorName}
-                onChange={(e) => handleInputChange("vendorName", e.target.value)}
-                placeholder="Enter vendor name"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={vendorSearchTerm}
+                  onChange={(e) => {
+                    setVendorSearchTerm(e.target.value);
+                    setShowVendorDropdown(true);
+                  }}
+                  onFocus={() => setShowVendorDropdown(true)}
+                  placeholder="Search and select vendor"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                
+                {/* Vendor Dropdown */}
+                {showVendorDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {filteredVendors.length > 0 ? (
+                      filteredVendors.map((vendor) => (
+                        <div
+                          key={vendor._id}
+                          onClick={() => handleVendorSelect(vendor)}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900">
+                            {vendor.displayName || vendor.name}
+                          </div>
+                          {vendor.email && (
+                            <div className="text-sm text-gray-500">{vendor.email}</div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-gray-500 text-sm">
+                        No vendors found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

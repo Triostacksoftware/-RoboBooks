@@ -19,12 +19,23 @@ const purchaseOrderSchema = Joi.object({
   vendor_id: Joi.string().required(),
   po_number: Joi.string().required(),
   order_date: Joi.date().required(),
-  expected_delivery_date: Joi.date().required(),
+  expected_delivery_date: Joi.date().optional(),
   items: Joi.array().items(Joi.object({
-    item_id: Joi.string().required(),
+    item_id: Joi.string().allow(null, '').optional(),
+    item_name: Joi.string().allow(null, '').optional(),
+    description: Joi.string().allow(null, '').optional(),
     quantity: Joi.number().min(1).required(),
     unit_price: Joi.number().min(0).required(),
+    tax_rate: Joi.number().min(0).default(0),
     total: Joi.number().min(0).required()
+  }).custom((value, helpers) => {
+    // Either item_id or item_name must be provided
+    if ((!value.item_id || value.item_id === '') && (!value.item_name || value.item_name === '')) {
+      return helpers.error('custom.itemRequired');
+    }
+    return value;
+  }).messages({
+    'custom.itemRequired': 'Either item_id or item_name must be provided'
   })).min(1).required(),
   subtotal: Joi.number().min(0).required(),
   tax_amount: Joi.number().min(0).default(0),

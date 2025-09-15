@@ -186,22 +186,22 @@ export default function ExpensesSection({
   const calculateStats = (expenseList: Expense[]) => {
     const totalAmount = expenseList.reduce((sum, expense) => sum + expense.amount, 0);
     const unbilledAmount = expenseList
-      .filter(e => e.status === "unbilled")
-      .reduce((sum, expense) => sum + expense.amount, 0);
+        .filter(e => e.status === "unbilled")
+        .reduce((sum, expense) => sum + expense.amount, 0);
     const billableAmount = expenseList
-      .filter(e => e.billable)
-      .reduce((sum, expense) => sum + expense.amount, 0);
+        .filter(e => e.billable)
+        .reduce((sum, expense) => sum + expense.amount, 0);
     const nonBillableAmount = expenseList
-      .filter(e => !e.billable)
-      .reduce((sum, expense) => sum + expense.amount, 0);
+        .filter(e => !e.billable)
+        .reduce((sum, expense) => sum + expense.amount, 0);
 
-    setStats({
+      setStats({
       totalExpenses: expenseList.length,
-      totalAmount,
-      unbilledAmount,
-      billableAmount,
-      nonBillableAmount,
-    });
+        totalAmount,
+        unbilledAmount,
+        billableAmount,
+        nonBillableAmount,
+      });
   };
 
   // Apply filters
@@ -346,12 +346,12 @@ export default function ExpensesSection({
   const selectedFilterOption = filterOptions.find(opt => opt.value === selectedFilter);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Header - Matching Vendors Section Design */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-white rounded-t-lg border border-b-0">
         {/* Main Header */}
         <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
             {/* Left side - Title with dropdown */}
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -435,8 +435,8 @@ export default function ExpensesSection({
                         <div key={option.id}>
                           {option.hasSubmenu ? (
                             <div className="relative">
-                              <button
-                                onClick={() => {
+                      <button
+                        onClick={() => {
                                   if (option.id === 'sort') {
                                     setShowSortMenu(!showSortMenu);
                                     setShowExportMenu(false); // Close export menu when opening sort
@@ -461,10 +461,10 @@ export default function ExpensesSection({
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                      >
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
                                         {subOption.label}
-                                      </button>
+                      </button>
                                     ))}
                                   </div>
                                 </div>
@@ -475,11 +475,11 @@ export default function ExpensesSection({
                                 }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
-                                      <button
+                      <button
                                         key={subOption.value}
                                         onClick={() => handleExportOption(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                      >
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
                                         {subOption.label}
                                       </button>
                                     ))}
@@ -496,7 +496,7 @@ export default function ExpensesSection({
                             >
                               <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
-                            </button>
+                      </button>
                           )}
                         </div>
                       ))}
@@ -505,10 +505,10 @@ export default function ExpensesSection({
                 )}
               </div>
             </div>
-          </div>
         </div>
+      </div>
 
-        {/* Tabs */}
+      {/* Tabs */}
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             <button className="py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm">
@@ -525,80 +525,80 @@ export default function ExpensesSection({
       </div>
 
       {/* Search and Filter Bar - Matching Vendors Section Design */}
-      <div className="bg-white rounded-lg border p-4">
-        <div className="flex items-center space-x-4">
+      <div className="bg-white border-l border-r border-gray-200 p-3">
+          <div className="flex items-center space-x-4">
           <div className="relative flex-1">
-            <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
+              <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
               placeholder="Search expenses..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+              />
+            </div>
 
           {/* Filter Button */}
-          <div className="relative">
-            <button
+            <div className="relative">
+              <button
               ref={filterRef}
               onClick={() => {
                 const position = calculateDropdownPosition(filterRef);
                 setDropdownPosition(position);
                 setShowFilters(!showFilters);
               }}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
               <FunnelIcon className="h-4 w-4" />
               <span className="text-sm">Filter</span>
-            </button>
-            
-            {showFilters && (
+              </button>
+
+              {showFilters && (
               <div className={`absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 ${
                 dropdownPosition === 'left' ? 'right-0' : 'left-0'
               }`}>
-                <div className="p-2">
-                  {filterOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setSelectedFilter(option.value);
-                          setShowFilters(false);
-                        }}
-                        className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 ${
-                          selectedFilter === option.value ? "bg-blue-50 text-blue-700" : "text-gray-700"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="text-sm">{option.label}</span>
-                        {selectedFilter === option.value && (
-                          <CheckIcon className="h-4 w-4 ml-auto" />
-                        )}
+                  <div className="p-2">
+                    {filterOptions.map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setSelectedFilter(option.value);
+                            setShowFilters(false);
+                          }}
+                          className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 ${
+                            selectedFilter === option.value ? "bg-blue-50 text-blue-700" : "text-gray-700"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span className="text-sm">{option.label}</span>
+                          {selectedFilter === option.value && (
+                            <CheckIcon className="h-4 w-4 ml-auto" />
+                          )}
+                        </button>
+                      );
+                    })}
+                    <div className="border-t border-gray-200 mt-2 pt-2">
+                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 text-blue-600">
+                        <PlusIcon className="h-4 w-4" />
+                        <span className="text-sm">New Custom View</span>
                       </button>
-                    );
-                  })}
-                  <div className="border-t border-gray-200 mt-2 pt-2">
-                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 text-blue-600">
-                      <PlusIcon className="h-4 w-4" />
-                      <span className="text-sm">New Custom View</span>
-                    </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Upload Expense Button */}
-          <button
-            onClick={() => window.location.href = '/dashboard/purchases/expenses/import'}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            <DocumentArrowUpIcon className="h-4 w-4" />
-            <span className="text-sm">Upload Expense</span>
-            <ChevronDownIcon className="h-4 w-4" />
-          </button>
+              <button
+                onClick={() => window.location.href = '/dashboard/purchases/expenses/import'}
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <DocumentArrowUpIcon className="h-4 w-4" />
+                <span className="text-sm">Upload Expense</span>
+                <ChevronDownIcon className="h-4 w-4" />
+              </button>
         </div>
       </div>
 
@@ -624,7 +624,7 @@ export default function ExpensesSection({
         </div>
       ) : filteredExpenses.length === 0 ? (
         /* Empty State - Matching Zoho Books Design */
-        <div className="space-y-8">
+        <div className="space-y-4">
           {/* Main Empty State Card */}
           <div className="bg-white rounded-lg border p-8 text-center">
             <div className="max-w-md mx-auto">
@@ -772,9 +772,9 @@ export default function ExpensesSection({
         </div>
       ) : (
         /* Expense Table View - Matching Vendors Design */
-        <div className="bg-white">
+        <div className="bg-white rounded-b-lg border border-t-0">
           {/* Table Header */}
-          <div className="px-6 py-3 border-b border-gray-200">
+          <div className="px-6 py-2 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-900">
                 All Expenses ({filteredExpenses.length})

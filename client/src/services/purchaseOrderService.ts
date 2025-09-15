@@ -85,11 +85,14 @@ export const purchaseOrderService = {
       vendor_id: data.vendorId,
       po_number: `PO-${Date.now()}`, // Generate PO number
       order_date: data.orderDate,
-      expected_delivery_date: data.expectedDeliveryDate,
+      expected_delivery_date: data.expectedDeliveryDate || null,
       items: data.items.map(item => ({
-        item_id: item.itemId,
+        item_id: item.itemId || null, // Send null if no itemId (manual entry)
+        item_name: item.itemName || null, // Send item name for manual entries
+        description: item.description || null,
         quantity: item.quantity,
         unit_price: item.unitPrice,
+        tax_rate: item.taxRate || 0,
         total: item.quantity * item.unitPrice
       })),
       subtotal: data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0),
@@ -121,13 +124,16 @@ export const purchaseOrderService = {
     const transformedData: any = {};
     if (data.vendorId !== undefined) transformedData.vendor_id = data.vendorId;
     if (data.orderDate !== undefined) transformedData.order_date = data.orderDate;
-    if (data.expectedDeliveryDate !== undefined) transformedData.expected_delivery_date = data.expectedDeliveryDate;
+    if (data.expectedDeliveryDate !== undefined) transformedData.expected_delivery_date = data.expectedDeliveryDate || null;
     if (data.notes !== undefined) transformedData.notes = data.notes;
     if (data.items !== undefined) {
       transformedData.items = data.items.map(item => ({
-        item_id: item.itemId,
+        item_id: item.itemId || null,
+        item_name: item.itemName || null,
+        description: item.description || null,
         quantity: item.quantity,
         unit_price: item.unitPrice,
+        tax_rate: item.taxRate || 0,
         total: item.quantity * item.unitPrice
       }));
       transformedData.subtotal = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);

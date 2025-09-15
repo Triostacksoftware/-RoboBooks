@@ -281,19 +281,19 @@ export default function PurchaseOrdersSection({
           />
           <div>
             <div className="text-sm font-medium text-gray-900">
-              {order.poNumber}
+              {order.poNumber || 'N/A'}
             </div>
             <div className="text-xs text-gray-500">
-              {order.vendorName} • {new Date(order.orderDate).toLocaleDateString()}
+              {order.vendorName || 'N/A'} • {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}
             </div>
             <div className="text-xs text-gray-500 uppercase">
-              {order.status.replace('_', ' ')}
+              {order.status ? order.status.replace('_', ' ') : 'N/A'}
             </div>
           </div>
         </div>
         <div className="text-right">
           <div className="text-sm font-semibold text-gray-900">
-            {formatCurrency(order.totalAmount)}
+            {formatCurrency(order.totalAmount || 0)}
           </div>
         </div>
       </div>
@@ -319,29 +319,29 @@ export default function PurchaseOrdersSection({
         <div className="flex items-center">
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
             <span className="text-blue-600 font-semibold text-xs">
-              {order.poNumber.charAt(0).toUpperCase()}
+              {order.poNumber?.charAt(0)?.toUpperCase() || 'P'}
             </span>
           </div>
           <div>
             <div className="text-sm font-medium text-gray-900">
-              {order.poNumber}
+              {order.poNumber || 'N/A'}
             </div>
-            <div className="text-sm text-gray-500">{order.vendorName}</div>
+            <div className="text-sm text-gray-500">{order.vendorName || 'N/A'}</div>
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {new Date(order.orderDate).toLocaleDateString()}
+        {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {order.vendorName}
+        {order.vendorName || 'N/A'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {formatCurrency(order.totalAmount)}
+        {formatCurrency(order.totalAmount || 0)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-          {order.status.replace('_', ' ').toUpperCase()}
+          {order.status ? order.status.replace('_', ' ').toUpperCase() : 'N/A'}
         </span>
       </td>
     </tr>
@@ -375,9 +375,9 @@ export default function PurchaseOrdersSection({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Header - Matching Expenses Design */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-white rounded-t-lg border border-b-0">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -538,7 +538,7 @@ export default function PurchaseOrdersSection({
       </div>
 
       {/* Search and Filter Bar - Matching Expenses Design */}
-      <div className="bg-white rounded-lg border p-4">
+      <div className="bg-white border-l border-r border-gray-200 p-3">
         <div className="flex items-center space-x-4">
           <div className="relative flex-1">
             <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -664,9 +664,9 @@ export default function PurchaseOrdersSection({
         </div>
       ) : (
         /* Purchase Orders Table View - Matching Expenses Design */
-        <div className="bg-white">
+        <div className="bg-white rounded-b-lg border border-t-0">
           {/* Table Header */}
-          <div className="px-6 py-3 border-b border-gray-200">
+          <div className="px-6 py-2 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-900">
                 All Purchase Orders ({filteredPurchaseOrders.length})

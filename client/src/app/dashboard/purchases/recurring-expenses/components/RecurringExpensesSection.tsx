@@ -431,9 +431,9 @@ export default function RecurringExpensesSection({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Header - Matching Expenses Design */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-white rounded-t-lg border border-b-0">
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -594,7 +594,7 @@ export default function RecurringExpensesSection({
       </div>
 
       {/* Search and Filter Bar - Matching Expenses Design */}
-      <div className="bg-white rounded-lg border p-4">
+      <div className="bg-white border-l border-r border-gray-200 p-3">
         <div className="flex items-center space-x-4">
           <div className="relative flex-1">
             <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -720,9 +720,9 @@ export default function RecurringExpensesSection({
         </div>
       ) : (
         /* Recurring Expenses Table View - Matching Expenses Design */
-        <div className="bg-white">
+        <div className="bg-white rounded-b-lg border border-t-0">
           {/* Table Header */}
-          <div className="px-6 py-3 border-b border-gray-200">
+          <div className="px-6 py-2 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-900">
                 All Recurring Expenses ({filteredRecurringExpenses.length})

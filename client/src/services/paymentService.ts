@@ -6,7 +6,7 @@ export interface Payment {
   billId?: string;
   billNumber?: string;
   paymentDate: string;
-  amount: number;
+    amount: number;
   paymentMethod: 'cash' | 'check' | 'bank_transfer' | 'credit_card' | 'other';
   reference?: string;
   notes?: string;

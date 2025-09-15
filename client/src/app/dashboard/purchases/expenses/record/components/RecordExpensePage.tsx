@@ -891,7 +891,7 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
     window.location.href = '/dashboard/purchases/expenses';
   };
 
-    return (
+  return (
       <>
         <style jsx>{`
           .custom-scrollbar {
@@ -916,20 +916,20 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
             display: none;
           }
         `}</style>
-        <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Page Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => window.history.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeftIcon className="h-4 w-4 mr-1" />
-            Back to Expenses
-          </button>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Add New Expense</h1>
-            <p className="text-gray-600">Record and manage your business expenses</p>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeftIcon className="h-4 w-4 mr-1" />
+              Back to Expenses
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Add New Expense</h1>
+              <p className="text-gray-600">Record and manage your business expenses</p>
           </div>
         </div>
       </div>
@@ -995,56 +995,56 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
             {/* Tab Content */}
             {activeTab === 'record' && (
               <>
-            {/* Date and Paid Through */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date*
-                </label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => handleInputChange('date', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paid Through*
-                </label>
-                <div className="relative">
-                  <select 
-                    value={formData.paidThrough}
-                    onChange={(e) => handleInputChange('paidThrough', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                  >
-                    <option value="" className="text-gray-500">Select an account</option>
-                    {paymentAccounts.map(account => (
-                      <option key={account} value={account} className="text-gray-900">{account}</option>
-                    ))}
-                  </select>
+                {/* Date and Paid Through */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date*
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => handleInputChange('date', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Paid Through*
+                    </label>
+                    <div className="relative">
+                      <select 
+                        value={formData.paidThrough}
+                        onChange={(e) => handleInputChange('paidThrough', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      >
+                        <option value="" className="text-gray-500">Select an account</option>
+                        {paymentAccounts.map(account => (
+                          <option key={account} value={account} className="text-gray-900">{account}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Expense Account and Amount */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Expense Account*
-                </label>
-                <div className="relative">
-                  <select
-                    value={formData.expenseAccount}
-                    onChange={(e) => handleInputChange('expenseAccount', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                  >
-                    <option value="" className="text-gray-500">Select an account</option>
-                    {expenseAccounts.map(account => (
-                      <option key={account} value={account} className="text-gray-900">{account}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* Expense Account and Amount */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expense Account*
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={formData.expenseAccount}
+                        onChange={(e) => handleInputChange('expenseAccount', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      >
+                        <option value="" className="text-gray-500">Select an account</option>
+                        {expenseAccounts.map(account => (
+                          <option key={account} value={account} className="text-gray-900">{account}</option>
+                        ))}
+                      </select>
+                    </div>
                     <button 
                       type="button"
                       onClick={handleItemsizeToggle}
@@ -1052,32 +1052,32 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                     >
                   Itemsize
                     </button>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount*
-                </label>
-                <div className="flex">
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => handleInputChange('currency', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                  >
-                    <option value="INR">INR</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                  </select>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.amount}
-                    onChange={(e) => handleInputChange('amount', e.target.value)}
-                    placeholder="0.00"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Amount*
+                    </label>
+                    <div className="flex">
+                      <select
+                        value={formData.currency}
+                        onChange={(e) => handleInputChange('currency', e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      >
+                        <option value="INR">INR</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                      </select>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.amount}
+                        onChange={(e) => handleInputChange('amount', e.target.value)}
+                        placeholder="0.00"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
             {/* Itemsized Expenses Table */}
             {showItemsizePanel && (
@@ -1256,99 +1256,99 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
               </div>
             )}
 
-            {/* Vendor and Invoice */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Vendor
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Q Search"
-                    value={formData.vendor}
-                    onChange={(e) => handleInputChange('vendor', e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                {/* Vendor and Invoice */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Vendor
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Q Search"
+                        value={formData.vendor}
+                        onChange={(e) => handleInputChange('vendor', e.target.value)}
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Invoice#
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Q Search"
+                        value={formData.invoiceNumber}
+                        onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Customer Name and Projects */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Customer Name
+                    </label>
+                    <div className="relative">
+                      <select 
+                        value={formData.customerName}
+                        onChange={(e) => handleInputChange('customerName', e.target.value)}
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      >
+                        <option value="" className="text-gray-500">Select or add a customer</option>
+                        {customers.map(customer => (
+                          <option key={customer.value} value={customer.value} className="text-gray-900">
+                            {customer.label}
+                          </option>
+                        ))}
+                      </select>
+                      <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Projects
+                    </label>
+                    <div className="relative">
+                      <select 
+                        value={formData.project}
+                        onChange={(e) => handleInputChange('project', e.target.value)}
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+                      >
+                        <option value="" className="text-gray-500">Select existing project</option>
+                        {projects.map(project => (
+                          <option key={project.value} value={project.value} className="text-gray-900">
+                            {project.label}
+                          </option>
+                        ))}
+                      </select>
+                      <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Max. 500 characters"
                   />
-                  <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Invoice#
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Q Search"
-                    value={formData.invoiceNumber}
-                    onChange={(e) => handleInputChange('invoiceNumber', e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Customer Name and Projects */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Customer Name
-                </label>
-                <div className="relative">
-                  <select 
-                    value={formData.customerName}
-                    onChange={(e) => handleInputChange('customerName', e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                  >
-                    <option value="" className="text-gray-500">Select or add a customer</option>
-                    {customers.map(customer => (
-                      <option key={customer.value} value={customer.value} className="text-gray-900">
-                        {customer.label}
-                      </option>
-                    ))}
-                  </select>
-                  <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Projects
-                </label>
-                <div className="relative">
-                  <select 
-                    value={formData.project}
-                    onChange={(e) => handleInputChange('project', e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
-                  >
-                    <option value="" className="text-gray-500">Select existing project</option>
-                    {projects.map(project => (
-                      <option key={project.value} value={project.value} className="text-gray-900">
-                        {project.label}
-                      </option>
-                    ))}
-                  </select>
-                  <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Max. 500 characters"
-              />
-            </div>
 
                 {/* File Upload Section - Compact */}
                 <div className="mb-6">
@@ -1438,31 +1438,31 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                   </div>
             </div>
 
-            {/* Reporting Tags */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reporting Tags
-              </label>
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-800">
-                Associate Tags
-              </a>
-            </div>
+                {/* Reporting Tags */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Reporting Tags
+                  </label>
+                  <a href="#" className="text-sm text-blue-600 hover:text-blue-800">
+                    Associate Tags
+                  </a>
+                </div>
 
-            {/* Billable Checkbox */}
-            <div className="mb-6">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="billable"
-                  checked={formData.billable}
-                  onChange={(e) => handleInputChange('billable', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="billable" className="text-sm font-medium text-gray-700">
-                  Billable
-                </label>
-              </div>
-            </div>
+                {/* Billable Checkbox */}
+                <div className="mb-6">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="billable"
+                      checked={formData.billable}
+                      onChange={(e) => handleInputChange('billable', e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="billable" className="text-sm font-medium text-gray-700">
+                      Billable
+                    </label>
+                  </div>
+                </div>
               </>
             )}
 
@@ -1493,7 +1493,7 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                         onChange={(e) => handleMileageChange('date', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
-                    </div>
+              </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Employee
@@ -1539,8 +1539,8 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                         />
                         Odometer readings
                       </label>
+                </div>
               </div>
-                  </div>
 
                   {/* Distance or Odometer fields */}
                   {mileageData.calculateUsing === 'distance' ? (
@@ -1560,8 +1560,8 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                         <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-sm text-gray-700">
                           {mileagePreferences.defaultUnit}
                         </span>
-                      </div>
-                    </div>
+          </div>
+        </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -1617,7 +1617,7 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                           placeholder="0.00"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
-                      </div>
+              </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1704,13 +1704,13 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-medium text-gray-900">Bulk Add Expenses</h3>
-                    <button
+                      <button
                       onClick={addBulkExpense}
                       className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-                    >
+                      >
                       <PlusIcon className="h-4 w-4 mr-1" />
                       Add More Expenses
-                    </button>
+                      </button>
                   </div>
                 </div>
 
@@ -1863,16 +1863,16 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                           
                           {/* Actions */}
                           <td className="px-4 py-3 whitespace-nowrap text-center text-sm font-medium">
-                            <button
+                      <button
                               onClick={() => removeBulkExpense(expense.id)}
                               className="text-red-600 hover:text-red-900 p-1"
                               title="Remove row"
                             >
                               <XMarkIcon className="h-4 w-4" />
-                            </button>
+                      </button>
                           </td>
                         </tr>
-                      ))}
+                ))}
                     </tbody>
                   </table>
                 </div>
@@ -1950,7 +1950,7 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
-            </div>
+    </div>
 
             {/* Modal Content */}
             <div className="p-6 space-y-6">
@@ -2094,5 +2094,5 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
         )}
         </div>
       </>
-    );
-  }
+  );
+}

@@ -13,6 +13,7 @@ const ExpensesPage = () => {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
 
   // Load expenses
   useEffect(() => {
@@ -65,6 +66,28 @@ const ExpensesPage = () => {
     }
   };
 
+  const handleBulkSelectionChange = (selectedIds: string[]) => {
+    setSelectedExpenseIds(selectedIds);
+  };
+
+  const handleBulkUpdate = () => {
+    // TODO: Implement bulk update functionality
+    console.log("Bulk update for expenses:", selectedExpenseIds);
+  };
+
+  const handleBulkDownload = () => {
+    // TODO: Implement bulk download functionality
+    console.log("Bulk download for expenses:", selectedExpenseIds);
+  };
+
+  const handleBulkDelete = () => {
+    if (confirm(`Are you sure you want to delete ${selectedExpenseIds.length} expenses?`)) {
+      // TODO: Implement bulk delete functionality
+      console.log("Bulk delete for expenses:", selectedExpenseIds);
+      setSelectedExpenseIds([]);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -90,9 +113,9 @@ const ExpensesPage = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="w-full h-full">
       {/* Main Content */}
-      <div className="flex -mt-6">
+      <div className="flex h-full">
         {/* Left Panel - Expenses List */}
         <div
           className={`transition-all duration-300 ${

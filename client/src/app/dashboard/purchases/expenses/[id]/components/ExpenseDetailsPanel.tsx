@@ -461,31 +461,31 @@ export default function ExpenseDetailsPanel({
             <PrinterIcon className="w-4 h-4 mr-2" />
             Print
           </button>
-          <button
-            onClick={() => setShowMoreActions(!showMoreActions)}
+            <button
+              onClick={() => setShowMoreActions(!showMoreActions)}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
             title="More options"
-          >
+            >
             <EllipsisHorizontalIcon className="h-5 w-5" />
-          </button>
+            </button>
         </div>
       </div>
 
       {/* More Actions Dropdown - Positioned absolutely */}
-      {showMoreActions && (
+            {showMoreActions && (
         <div className="absolute right-4 top-20 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-          <div className="py-1">
-            <button
-              onClick={() => {
-                setShowMoreActions(false);
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      setShowMoreActions(false);
                 handleClone();
-              }}
+                    }}
               data-action="clone"
               className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-            >
+                  >
               <DocumentDuplicateIcon className="h-4 w-4" />
               <span>Clone</span>
-            </button>
+                  </button>
                   <button
                     onClick={() => {
                       setShowMoreActions(false);
@@ -501,9 +501,9 @@ export default function ExpenseDetailsPanel({
                     onClick={() => {
                       setShowMoreActions(false);
                 handleViewJournal();
-              }}
+                    }}
               className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-            >
+                  >
               <BookOpenIcon className="h-4 w-4" />
               <span>View Journal</span>
                   </button>
@@ -522,7 +522,7 @@ export default function ExpenseDetailsPanel({
                 ₹{expense.amount.toFixed(2)} on {new Date(expense.date).toLocaleDateString()}
               </p>
               <p className="text-gray-500 text-sm mt-1 uppercase">{expense.status}</p>
-                </div>
+            </div>
 
             {/* Category Tag */}
             {expense.category && (
@@ -593,11 +593,11 @@ export default function ExpenseDetailsPanel({
                       </tr>
                     </tbody>
                   </table>
+                  </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
       </div>
 

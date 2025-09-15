@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
   PlusIcon,
   TrashIcon,
+  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { purchaseOrderService } from "@/services/purchaseOrderService";
+import { vendorService } from "@/services/vendorService";
+import { itemService } from "@/services/itemService";
 
 interface PurchaseOrderItem {
   itemId: string;
@@ -51,6 +54,29 @@ export default function NewPurchaseOrderForm() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
+  const [vendorSearchTerm, setVendorSearchTerm] = useState("");
+  const [items, setItems] = useState<any[]>([]);
+  const [showItemDropdowns, setShowItemDropdowns] = useState<{[key: number]: boolean}>({});
+  const [itemSearchTerms, setItemSearchTerms] = useState<{[key: number]: string}>({});
+
+  // Load vendors and items on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [vendorsData, itemsData] = await Promise.all([
+          vendorService.getVendors(),
+          itemService.getActiveItems()
+        ]);
+        setVendors(vendorsData);
+        setItems(itemsData);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      }
+    };
+    loadData();
+  }, []);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -58,6 +84,84 @@ export default function NewPurchaseOrderForm() {
       [field]: value,
     }));
   };
+
+  const handleVendorSelect = (vendor: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      vendorId: vendor._id,
+      vendorName: vendor.displayName || vendor.name,
+    }));
+    setVendorSearchTerm(vendor.displayName || vendor.name);
+    setShowVendorDropdown(false);
+  };
+
+  const filteredVendors = vendors.filter(vendor =>
+    (vendor.displayName || vendor.name).toLowerCase().includes(vendorSearchTerm.toLowerCase())
+  );
+
+  const handleItemSelect = (index: number, item: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((formItem, i) => 
+        i === index ? {
+          ...formItem,
+          itemId: item._id,
+          itemName: item.name,
+          description: item.description || '',
+          unitPrice: item.unitPrice || 0,
+          taxRate: item.taxRate || 0
+        } : formItem
+      ),
+    }));
+    setItemSearchTerms(prev => ({ ...prev, [index]: item.name }));
+    setShowItemDropdowns(prev => ({ ...prev, [index]: false }));
+  };
+
+  // Handle manual item entry (when user types but doesn't select from dropdown)
+  const handleItemNameChange = (index: number, value: string) => {
+    setItemSearchTerms(prev => ({ ...prev, [index]: value }));
+    setShowItemDropdowns(prev => ({ ...prev, [index]: true }));
+    
+    // If user is typing manually, clear the itemId and set itemName
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.map((formItem, i) => 
+        i === index ? {
+          ...formItem,
+          itemId: "", // Clear itemId for manual entry
+          itemName: value, // Set itemName to what user typed
+        } : formItem
+      ),
+    }));
+  };
+
+  const getFilteredItems = (index: number) => {
+    const searchTerm = itemSearchTerms[index] || '';
+    return items.filter(item =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.vendor-dropdown-container')) {
+        setShowVendorDropdown(false);
+      }
+      if (!target.closest('.item-dropdown-container')) {
+        setShowItemDropdowns({});
+      }
+    };
+
+    if (showVendorDropdown || Object.values(showItemDropdowns).some(Boolean)) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showVendorDropdown, showItemDropdowns]);
 
   const handleItemChange = (index: number, field: string, value: any) => {
     setFormData((prev) => ({
@@ -120,14 +224,14 @@ export default function NewPurchaseOrderForm() {
     setError(null);
 
     // Validate required fields
-    if (!formData.vendorName.trim()) {
-      setError('"vendorName" is required');
+    if (!formData.vendorId) {
+      setError('Please select a vendor');
       setLoading(false);
       return;
     }
 
-    if (formData.items.some(item => !item.itemName.trim())) {
-      setError('All items must have a name');
+    if (formData.items.some(item => !item.itemId && !item.itemName.trim())) {
+      setError('Please select an item or enter an item name for all rows');
       setLoading(false);
       return;
     }
@@ -188,17 +292,50 @@ export default function NewPurchaseOrderForm() {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Vendor Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="relative vendor-dropdown-container">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Vendor Name *
               </label>
-              <input
-                type="text"
-                value={formData.vendorName}
-                onChange={(e) => handleInputChange("vendorName", e.target.value)}
-                placeholder="Enter vendor name"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={vendorSearchTerm}
+                  onChange={(e) => {
+                    setVendorSearchTerm(e.target.value);
+                    setShowVendorDropdown(true);
+                  }}
+                  onFocus={() => setShowVendorDropdown(true)}
+                  placeholder="Search and select vendor"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                
+                {/* Vendor Dropdown */}
+                {showVendorDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {filteredVendors.length > 0 ? (
+                      filteredVendors.map((vendor) => (
+                        <div
+                          key={vendor._id}
+                          onClick={() => handleVendorSelect(vendor)}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="font-medium text-gray-900">
+                            {vendor.displayName || vendor.name}
+                          </div>
+                          {vendor.email && (
+                            <div className="text-sm text-gray-500">{vendor.email}</div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-gray-500 text-sm">
+                        No vendors found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -297,17 +434,59 @@ export default function NewPurchaseOrderForm() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
+                  <div className="relative item-dropdown-container">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Item Name *
+                      {item.itemId ? (
+                        <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                          Selected
+                        </span>
+                      ) : item.itemName.trim() ? (
+                        <span className="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                          Manual Entry
+                        </span>
+                      ) : null}
                     </label>
-                    <input
-                      type="text"
-                      value={item.itemName}
-                      onChange={(e) => handleItemChange(index, "itemName", e.target.value)}
-                      placeholder="Enter item name"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={itemSearchTerms[index] || ''}
+                        onChange={(e) => handleItemNameChange(index, e.target.value)}
+                        onFocus={() => setShowItemDropdowns(prev => ({ ...prev, [index]: true }))}
+                        placeholder="Search and select item or type manually"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <MagnifyingGlassIcon className="h-4 w-4 absolute right-3 top-3 text-gray-400" />
+                      
+                      {/* Item Dropdown */}
+                      {showItemDropdowns[index] && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                          {getFilteredItems(index).length > 0 ? (
+                            getFilteredItems(index).map((itemOption) => (
+                              <div
+                                key={itemOption._id}
+                                onClick={() => handleItemSelect(index, itemOption)}
+                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="font-medium text-gray-900">
+                                  {itemOption.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {itemOption.type} • ₹{itemOption.unitPrice}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-gray-500 text-sm">
+                              <div className="mb-2">No items found</div>
+                              <div className="text-xs text-blue-600">
+                                You can type manually to create a new item entry
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
