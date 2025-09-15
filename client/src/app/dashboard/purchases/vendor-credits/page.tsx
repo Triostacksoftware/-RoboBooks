@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import VendorCreditsSection from './components/VendorCreditsSection';
+import BulkImportModal from "@/components/modals/BulkImportModal";
+import BulkExportModal from "@/components/modals/BulkExportModal";
 import { VendorCredit, vendorCreditService } from "@/services/vendorCreditService";
 
 const VendorCreditsPage = () => {
@@ -12,6 +14,7 @@ const VendorCreditsPage = () => {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVendorCreditIds, setSelectedVendorCreditIds] = useState<string[]>([]);
 
   // Load vendor credits
   useEffect(() => {
@@ -64,6 +67,41 @@ const VendorCreditsPage = () => {
     }
   };
 
+  const handleBulkSelectionChange = (selectedIds: string[]) => {
+    setSelectedVendorCreditIds(selectedIds);
+  };
+
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
+
+  const handleBulkImport = () => {
+    setShowBulkImportModal(true);
+  };
+
+  const handleBulkExport = () => {
+    setShowBulkExportModal(true);
+  };
+
+  const closeBulkImportModal = () => {
+    setShowBulkImportModal(false);
+  };
+
+  const closeBulkExportModal = () => {
+    setShowBulkExportModal(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (confirm(`Are you sure you want to delete ${selectedVendorCreditIds.length} vendor credits?`)) {
+      // TODO: Implement bulk delete functionality
+      console.log("Bulk delete for vendor credits:", selectedVendorCreditIds);
+      setSelectedVendorCreditIds([]);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedVendorCreditIds([]);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -89,9 +127,9 @@ const VendorCreditsPage = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="w-full h-full">
       {/* Main Content */}
-      <div className="flex -mt-6">
+      <div className="flex h-full">
         {/* Left Panel - Vendor Credits List */}
         <div
           className={`transition-all duration-300 ${
@@ -103,6 +141,12 @@ const VendorCreditsPage = () => {
             selectedVendorCreditId={selectedVendorCredit?._id}
             onVendorCreditSelect={handleVendorCreditSelect}
             isCollapsed={showRightPanel}
+            selectedVendorCreditIds={selectedVendorCreditIds}
+            onBulkSelectionChange={handleBulkSelectionChange}
+            onBulkImport={handleBulkImport}
+            onBulkExport={handleBulkExport}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
           />
         </div>
 
@@ -281,6 +325,25 @@ const VendorCreditsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <BulkImportModal
+          selectedIds={selectedVendorCreditIds}
+          type="vendor-credits"
+          onClose={closeBulkImportModal}
+        />
+      )}
+
+      {/* Bulk Export Modal */}
+      {showBulkExportModal && (
+        <BulkExportModal
+          selectedIds={selectedVendorCreditIds}
+          selectedData={vendorCredits.filter(vc => selectedVendorCreditIds.includes(vc._id))}
+          type="vendor-credits"
+          onClose={closeBulkExportModal}
+        />
+      )}
     </div>
   );
 };

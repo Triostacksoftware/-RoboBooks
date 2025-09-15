@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import VendorsSection from './components/VendorsSection';
+import BulkImportModal from "@/components/modals/BulkImportModal";
+import BulkExportModal from "@/components/modals/BulkExportModal";
 import { Vendor, vendorService } from '@/services/vendorService';
 
 const VendorsPage = () => {
@@ -9,6 +11,7 @@ const VendorsPage = () => {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
 
   // Fetch vendors on component mount
   useEffect(() => {
@@ -48,6 +51,41 @@ const VendorsPage = () => {
     setSelectedVendor(null);
   };
 
+  const handleBulkSelectionChange = (selectedIds: string[]) => {
+    setSelectedVendorIds(selectedIds);
+  };
+
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
+
+  const handleBulkImport = () => {
+    setShowBulkImportModal(true);
+  };
+
+  const handleBulkExport = () => {
+    setShowBulkExportModal(true);
+  };
+
+  const closeBulkImportModal = () => {
+    setShowBulkImportModal(false);
+  };
+
+  const closeBulkExportModal = () => {
+    setShowBulkExportModal(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (confirm(`Are you sure you want to delete ${selectedVendorIds.length} vendors?`)) {
+      // TODO: Implement bulk delete functionality
+      console.log("Bulk delete for vendors:", selectedVendorIds);
+      setSelectedVendorIds([]);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedVendorIds([]);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -57,16 +95,23 @@ const VendorsPage = () => {
   }
 
   return (
-    <div className="flex h-full">
-      {/* Left Panel - Vendors List */}
-      <div className={`transition-all duration-300 ${showRightPanel ? 'w-1/3' : 'w-full'}`}>
-        <VendorsSection
-          vendors={vendors}
-          selectedVendorId={selectedVendor?._id}
-          onVendorSelect={handleVendorSelect}
-          isCollapsed={showRightPanel}
-        />
-      </div>
+    <div className="w-full h-full">
+      <div className="flex h-full">
+        {/* Left Panel - Vendors List */}
+        <div className={`transition-all duration-300 ${showRightPanel ? 'w-1/3' : 'w-full'}`}>
+          <VendorsSection
+            vendors={vendors}
+            selectedVendorId={selectedVendor?._id}
+            onVendorSelect={handleVendorSelect}
+            isCollapsed={showRightPanel}
+            selectedVendorIds={selectedVendorIds}
+            onBulkSelectionChange={handleBulkSelectionChange}
+            onBulkImport={handleBulkImport}
+            onBulkExport={handleBulkExport}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
+          />
+        </div>
 
       {/* Right Panel - Vendor Details */}
       {showRightPanel && selectedVendor && (
@@ -171,6 +216,26 @@ const VendorsPage = () => {
             </div>
           </div>
         </div>
+        )}
+      </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <BulkImportModal
+          selectedIds={selectedVendorIds}
+          type="vendors"
+          onClose={closeBulkImportModal}
+        />
+      )}
+
+      {/* Bulk Export Modal */}
+      {showBulkExportModal && (
+        <BulkExportModal
+          selectedIds={selectedVendorIds}
+          selectedData={vendors.filter(vendor => selectedVendorIds.includes(vendor._id))}
+          type="vendors"
+          onClose={closeBulkExportModal}
+        />
       )}
     </div>
   );

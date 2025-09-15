@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PaymentsMadeSection from "./components/PaymentsMadeSection";
 import PaymentDetailsPanel from "./components/PaymentDetailsPanel";
+import BulkImportModal from "@/components/modals/BulkImportModal";
+import BulkExportModal from "@/components/modals/BulkExportModal";
 import { Payment, paymentService } from "@/services/paymentService";
 
 const PaymentsMadePage = () => {
@@ -13,6 +15,7 @@ const PaymentsMadePage = () => {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState<string[]>([]);
 
   // Load payments
   useEffect(() => {
@@ -65,6 +68,41 @@ const PaymentsMadePage = () => {
     }
   };
 
+  const handleBulkSelectionChange = (selectedIds: string[]) => {
+    setSelectedPaymentIds(selectedIds);
+  };
+
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
+
+  const handleBulkImport = () => {
+    setShowBulkImportModal(true);
+  };
+
+  const handleBulkExport = () => {
+    setShowBulkExportModal(true);
+  };
+
+  const closeBulkImportModal = () => {
+    setShowBulkImportModal(false);
+  };
+
+  const closeBulkExportModal = () => {
+    setShowBulkExportModal(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (confirm(`Are you sure you want to delete ${selectedPaymentIds.length} payments?`)) {
+      // TODO: Implement bulk delete functionality
+      console.log("Bulk delete for payments:", selectedPaymentIds);
+      setSelectedPaymentIds([]);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedPaymentIds([]);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -90,9 +128,9 @@ const PaymentsMadePage = () => {
   }
 
   return (
-    <div className="p-6">
+    <div className="w-full h-full">
       {/* Main Content */}
-      <div className="flex -mt-6">
+      <div className="flex h-full">
         {/* Left Panel - Payments List */}
         <div
           className={`transition-all duration-300 ${
@@ -104,6 +142,12 @@ const PaymentsMadePage = () => {
             selectedPaymentId={selectedPayment?._id}
             onPaymentSelect={handlePaymentSelect}
             isCollapsed={showRightPanel}
+            selectedPaymentIds={selectedPaymentIds}
+            onBulkSelectionChange={handleBulkSelectionChange}
+            onBulkImport={handleBulkImport}
+            onBulkExport={handleBulkExport}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
           />
         </div>
 
@@ -119,6 +163,25 @@ const PaymentsMadePage = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <BulkImportModal
+          selectedIds={selectedPaymentIds}
+          type="payments"
+          onClose={closeBulkImportModal}
+        />
+      )}
+
+      {/* Bulk Export Modal */}
+      {showBulkExportModal && (
+        <BulkExportModal
+          selectedIds={selectedPaymentIds}
+          selectedData={payments.filter(payment => selectedPaymentIds.includes(payment._id))}
+          type="payments"
+          onClose={closeBulkExportModal}
+        />
+      )}
     </div>
   );
 };

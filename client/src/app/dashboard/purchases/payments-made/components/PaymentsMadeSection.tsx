@@ -29,6 +29,9 @@ import {
   DocumentArrowUpIcon,
   ChevronRightIcon,
   PlayIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  ArrowDownTrayIcon as DownloadIcon,
 } from "@heroicons/react/24/outline";
 import { Payment, paymentService } from "@/services/paymentService";
 import { formatCurrency } from "@/utils/currency";
@@ -41,13 +44,25 @@ interface PaymentsMadeSectionProps {
   selectedPaymentId?: string;
   onPaymentSelect?: (payment: Payment) => void;
   isCollapsed?: boolean;
+  selectedPaymentIds: string[];
+  onBulkSelectionChange: (selectedIds: string[]) => void;
+  onBulkImport: () => void;
+  onBulkExport: () => void;
+  onBulkDelete: () => void;
+  onClearSelection: () => void;
 }
 
 export default function PaymentsMadeSection({ 
   payments: propPayments, 
   selectedPaymentId, 
   onPaymentSelect,
-  isCollapsed = false 
+  isCollapsed = false,
+  selectedPaymentIds,
+  onBulkSelectionChange,
+  onBulkImport,
+  onBulkExport,
+  onBulkDelete,
+  onClearSelection
 }: PaymentsMadeSectionProps) {
   const [payments, setPayments] = useState<Payment[]>(propPayments || []);
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
@@ -578,6 +593,12 @@ export default function PaymentsMadeSection({
           onDelete={(paymentId: string) => console.log("Delete payment:", paymentId)}
           onPaymentClick={handlePaymentClick}
           isCollapsed={isCollapsed}
+          selectedPaymentIds={selectedPaymentIds}
+          onBulkSelectionChange={onBulkSelectionChange}
+        onBulkImport={onBulkImport}
+        onBulkExport={onBulkExport}
+          onBulkDelete={onBulkDelete}
+          onClearSelection={onClearSelection}
         />
       )}
     </div>

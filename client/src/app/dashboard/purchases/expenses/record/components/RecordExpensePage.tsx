@@ -1436,7 +1436,7 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                       </div>
                     )}
                   </div>
-            </div>
+                </div>
 
                 {/* Reporting Tags */}
                 <div className="mb-6">

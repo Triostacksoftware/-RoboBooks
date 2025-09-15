@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ExpensesSection from "./components/ExpensesSection";
 import ExpenseDetailsPanel from "./[id]/components/ExpenseDetailsPanel";
+import BulkImportModal from "@/components/modals/BulkImportModal";
+import BulkExportModal from "@/components/modals/BulkExportModal";
 import { expenseService, Expense } from "@/services/expenseService";
 
 const ExpensesPage = () => {
@@ -70,14 +72,23 @@ const ExpensesPage = () => {
     setSelectedExpenseIds(selectedIds);
   };
 
-  const handleBulkUpdate = () => {
-    // TODO: Implement bulk update functionality
-    console.log("Bulk update for expenses:", selectedExpenseIds);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
+
+  const handleBulkImport = () => {
+    setShowBulkImportModal(true);
   };
 
-  const handleBulkDownload = () => {
-    // TODO: Implement bulk download functionality
-    console.log("Bulk download for expenses:", selectedExpenseIds);
+  const handleBulkExport = () => {
+    setShowBulkExportModal(true);
+  };
+
+  const closeBulkImportModal = () => {
+    setShowBulkImportModal(false);
+  };
+
+  const closeBulkExportModal = () => {
+    setShowBulkExportModal(false);
   };
 
   const handleBulkDelete = () => {
@@ -86,6 +97,10 @@ const ExpensesPage = () => {
       console.log("Bulk delete for expenses:", selectedExpenseIds);
       setSelectedExpenseIds([]);
     }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedExpenseIds([]);
   };
 
   if (loading) {
@@ -127,6 +142,12 @@ const ExpensesPage = () => {
             selectedExpenseId={selectedExpense?._id}
             onExpenseSelect={handleExpenseSelect}
             isCollapsed={showRightPanel}
+            selectedExpenseIds={selectedExpenseIds}
+            onBulkSelectionChange={handleBulkSelectionChange}
+            onBulkImport={handleBulkImport}
+            onBulkExport={handleBulkExport}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
           />
         </div>
 
@@ -142,6 +163,25 @@ const ExpensesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <BulkImportModal
+          selectedIds={selectedExpenseIds}
+          type="expenses"
+          onClose={closeBulkImportModal}
+        />
+      )}
+
+      {/* Bulk Export Modal */}
+      {showBulkExportModal && (
+        <BulkExportModal
+          selectedIds={selectedExpenseIds}
+          selectedData={expenses.filter(expense => selectedExpenseIds.includes(expense._id))}
+          type="expenses"
+          onClose={closeBulkExportModal}
+        />
+      )}
     </div>
   );
 };

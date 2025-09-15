@@ -29,6 +29,9 @@ import {
   DocumentArrowUpIcon,
   ChevronRightIcon,
   PlayIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  ArrowDownTrayIcon as DownloadIcon,
 } from "@heroicons/react/24/outline";
 import { Bill, billService } from "@/services/billService";
 import { formatCurrency } from "@/utils/currency";
@@ -41,14 +44,27 @@ interface BillsSectionProps {
   selectedBillId?: string;
   onBillSelect?: (bill: Bill) => void;
   isCollapsed?: boolean;
+  selectedBillIds: string[];
+  onBulkSelectionChange: (selectedIds: string[]) => void;
+  onBulkImport: () => void;
+  onBulkExport: () => void;
+  onBulkDelete: () => void;
+  onClearSelection: () => void;
 }
 
 export default function BillsSection({ 
   bills: propBills, 
   selectedBillId, 
   onBillSelect,
-  isCollapsed = false 
+  isCollapsed = false,
+  selectedBillIds,
+  onBulkSelectionChange,
+  onBulkImport,
+  onBulkExport,
+  onBulkDelete,
+  onClearSelection
 }: BillsSectionProps) {
+  const router = useRouter();
   const [bills, setBills] = useState<Bill[]>(propBills || []);
   const [filteredBills, setFilteredBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(!propBills);
@@ -64,10 +80,9 @@ export default function BillsSection({
   const [sortBy, setSortBy] = useState('created_time');
   const [sortOrder, setSortOrder] = useState('desc');
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
-  const moreMenuRef = useRef<HTMLButtonElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const mainDropdownRef = useRef<HTMLButtonElement>(null);
   const filterRef = useRef<HTMLButtonElement>(null);
-  const router = useRouter();
 
   // Fetch bills from backend
   const fetchBills = async () => {
@@ -119,6 +134,7 @@ export default function BillsSection({
     { value: "overdue", label: "Overdue", icon: ExclamationTriangleIcon },
     { value: "paid", label: "Paid", icon: CheckIcon },
     { value: "cancelled", label: "Cancelled", icon: XMarkIcon },
+    { value: "custom", label: "New Custom View", icon: PlusIcon, isCustom: true },
   ];
 
   // Column options for sorting
@@ -252,7 +268,7 @@ export default function BillsSection({
   };
 
   // Function to calculate dropdown position
-  const calculateDropdownPosition = (buttonRef: React.RefObject<HTMLButtonElement>) => {
+  const calculateDropdownPosition = (buttonRef: React.RefObject<HTMLElement | null>) => {
     if (!buttonRef.current) return 'right';
     
     const buttonRect = buttonRef.current.getBoundingClientRect();
@@ -281,9 +297,9 @@ export default function BillsSection({
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <button
-                  ref={mainDropdownRef}
+                  ref={mainDropdownRef as React.RefObject<HTMLButtonElement>}
                   onClick={() => {
-                    const position = calculateDropdownPosition(mainDropdownRef);
+                    const position = calculateDropdownPosition(mainDropdownRef as React.RefObject<HTMLButtonElement>);
                     setDropdownPosition(position);
                     setShowMainDropdown(!showMainDropdown);
                   }}
@@ -303,16 +319,21 @@ export default function BillsSection({
                           <button
                             key={option.value}
                             onClick={() => {
-                              setSelectedFilter(option.value);
-                              setShowMainDropdown(false);
+                              if (option.isCustom) {
+                                router.push('/dashboard/purchases/bills/custom-view');
+                              } else {
+                                setSelectedFilter(option.value);
+                                setShowMainDropdown(false);
+                              }
                             }}
                             className={`w-full flex items-center space-x-3 px-4 py-2 text-left rounded-md hover:bg-gray-50 ${
+                              option.isCustom ? "text-blue-600 border-t border-gray-200 mt-1 pt-3" :
                               selectedFilter === option.value ? "bg-blue-50 text-blue-700" : "text-gray-700"
                             }`}
                           >
-                            <Icon className="h-4 w-4" />
-                            <span className="text-sm">{option.label}</span>
-                            {selectedFilter === option.value && (
+                            <Icon className={`h-4 w-4 ${option.isCustom ? "text-blue-600" : ""}`} />
+                            <span className={`text-sm ${option.isCustom ? "text-blue-600 font-medium" : ""}`}>{option.label}</span>
+                            {selectedFilter === option.value && !option.isCustom && (
                               <CheckIcon className="h-4 w-4 ml-auto" />
                             )}
                           </button>
@@ -477,16 +498,21 @@ export default function BillsSection({
                       <button
                         key={option.value}
                         onClick={() => {
-                          setSelectedFilter(option.value);
-                          setShowFilters(false);
+                          if (option.isCustom) {
+                            router.push('/dashboard/purchases/bills/custom-view');
+                          } else {
+                            setSelectedFilter(option.value);
+                            setShowFilters(false);
+                          }
                         }}
                         className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 ${
+                          option.isCustom ? "text-blue-600 border-t border-gray-200 mt-1 pt-3" :
                           selectedFilter === option.value ? "bg-blue-50 text-blue-700" : "text-gray-700"
                         }`}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span className="text-sm">{option.label}</span>
-                        {selectedFilter === option.value && (
+                        <Icon className={`h-4 w-4 ${option.isCustom ? "text-blue-600" : ""}`} />
+                        <span className={`text-sm ${option.isCustom ? "text-blue-600 font-medium" : ""}`}>{option.label}</span>
+                        {selectedFilter === option.value && !option.isCustom && (
                           <CheckIcon className="h-4 w-4 ml-auto" />
                         )}
                       </button>
@@ -590,6 +616,12 @@ export default function BillsSection({
           onDelete={(billId: string) => console.log("Delete bill:", billId)}
           onBillClick={handleBillClick}
           isCollapsed={isCollapsed}
+          selectedBillIds={selectedBillIds}
+          onBulkSelectionChange={onBulkSelectionChange}
+        onBulkImport={onBulkImport}
+        onBulkExport={onBulkExport}
+          onBulkDelete={onBulkDelete}
+          onClearSelection={onClearSelection}
         />
       )}
     </div>

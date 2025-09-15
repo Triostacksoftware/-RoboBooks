@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import RecurringExpensesSection from './components/RecurringExpensesSection';
+import BulkImportModal from "@/components/modals/BulkImportModal";
+import BulkExportModal from "@/components/modals/BulkExportModal";
 import { RecurringExpense, recurringExpenseService } from '@/services/recurringExpenseService';
 
 const RecurringExpensesPage = () => {
@@ -9,6 +11,7 @@ const RecurringExpensesPage = () => {
   const [selectedRecurringExpense, setSelectedRecurringExpense] = useState<RecurringExpense | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedRecurringExpenseIds, setSelectedRecurringExpenseIds] = useState<string[]>([]);
 
   // Fetch recurring expenses on component mount
   useEffect(() => {
@@ -48,6 +51,41 @@ const RecurringExpensesPage = () => {
     setSelectedRecurringExpense(null);
   };
 
+  const handleBulkSelectionChange = (selectedIds: string[]) => {
+    setSelectedRecurringExpenseIds(selectedIds);
+  };
+
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
+
+  const handleBulkImport = () => {
+    setShowBulkImportModal(true);
+  };
+
+  const handleBulkExport = () => {
+    setShowBulkExportModal(true);
+  };
+
+  const closeBulkImportModal = () => {
+    setShowBulkImportModal(false);
+  };
+
+  const closeBulkExportModal = () => {
+    setShowBulkExportModal(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (confirm(`Are you sure you want to delete ${selectedRecurringExpenseIds.length} recurring expenses?`)) {
+      // TODO: Implement bulk delete functionality
+      console.log("Bulk delete for recurring expenses:", selectedRecurringExpenseIds);
+      setSelectedRecurringExpenseIds([]);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedRecurringExpenseIds([]);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -57,19 +95,26 @@ const RecurringExpensesPage = () => {
   }
 
   return (
-    <div className="flex h-full">
-      {/* Left Panel - Recurring Expenses List */}
-      <div className={`transition-all duration-300 ${showRightPanel ? 'w-1/3' : 'w-full'}`}>
-        <RecurringExpensesSection
-          recurringExpenses={recurringExpenses}
-          selectedRecurringExpenseId={selectedRecurringExpense?._id}
-          onRecurringExpenseSelect={handleRecurringExpenseSelect}
-          isCollapsed={showRightPanel}
-        />
-      </div>
+    <div className="w-full h-full">
+      <div className="flex h-full">
+        {/* Left Panel - Recurring Expenses List */}
+        <div className={`transition-all duration-300 ${showRightPanel ? 'w-1/3' : 'w-full'}`}>
+          <RecurringExpensesSection
+            recurringExpenses={recurringExpenses}
+            selectedRecurringExpenseId={selectedRecurringExpense?._id}
+            onRecurringExpenseSelect={handleRecurringExpenseSelect}
+            isCollapsed={showRightPanel}
+            selectedRecurringExpenseIds={selectedRecurringExpenseIds}
+            onBulkSelectionChange={handleBulkSelectionChange}
+            onBulkImport={handleBulkImport}
+            onBulkExport={handleBulkExport}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
+          />
+        </div>
 
-      {/* Right Panel - Recurring Expense Details */}
-      {showRightPanel && selectedRecurringExpense && (
+        {/* Right Panel - Recurring Expense Details */}
+        {showRightPanel && selectedRecurringExpense && (
         <div className="w-2/3 border-l border-gray-200 bg-white">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -186,10 +231,29 @@ const RecurringExpensesPage = () => {
             </div>
           </div>
         </div>
+        )}
+      </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <BulkImportModal
+          selectedIds={selectedRecurringExpenseIds}
+          type="recurring-expenses"
+          onClose={closeBulkImportModal}
+        />
+      )}
+
+      {/* Bulk Export Modal */}
+      {showBulkExportModal && (
+        <BulkExportModal
+          selectedIds={selectedRecurringExpenseIds}
+          selectedData={recurringExpenses.filter(re => selectedRecurringExpenseIds.includes(re._id))}
+          type="recurring-expenses"
+          onClose={closeBulkExportModal}
+        />
       )}
     </div>
   );
 };
 
 export default RecurringExpensesPage;
-    

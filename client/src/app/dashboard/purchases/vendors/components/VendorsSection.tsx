@@ -20,6 +20,9 @@ import {
   PlayIcon,
   DocumentIcon,
   DocumentTextIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  ArrowDownTrayIcon as DownloadIcon,
 } from "@heroicons/react/24/outline";
 import { Vendor, vendorService } from "@/services/vendorService";
 import { formatCurrency } from "@/utils/currency";
@@ -29,6 +32,12 @@ interface VendorsSectionProps {
   selectedVendorId?: string;
   onVendorSelect?: (vendor: Vendor) => void;
   isCollapsed?: boolean;
+  selectedVendorIds: string[];
+  onBulkSelectionChange: (selectedIds: string[]) => void;
+  onBulkImport: () => void;
+  onBulkExport: () => void;
+  onBulkDelete: () => void;
+  onClearSelection: () => void;
 }
 
 const filters = ["All", "Active", "Inactive", "Business", "Individual"];
@@ -77,7 +86,13 @@ export default function VendorsSection({
   vendors: propVendors, 
   selectedVendorId, 
   onVendorSelect,
-  isCollapsed = false 
+  isCollapsed = false,
+  selectedVendorIds,
+  onBulkSelectionChange,
+  onBulkImport,
+  onBulkExport,
+  onBulkDelete,
+  onClearSelection
 }: VendorsSectionProps) {
   const [vendors, setVendors] = useState<Vendor[]>(propVendors || []);
   const [loading, setLoading] = useState(!propVendors);
@@ -258,7 +273,15 @@ export default function VendorsSection({
           <input
             type="checkbox"
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            onClick={(e) => e.stopPropagation()}
+            checked={selectedVendorIds.includes(vendor._id)}
+            onChange={(e) => {
+              e.stopPropagation();
+              if (e.target.checked) {
+                onBulkSelectionChange([...selectedVendorIds, vendor._id]);
+              } else {
+                onBulkSelectionChange(selectedVendorIds.filter(id => id !== vendor._id));
+              }
+            }}
           />
           <div>
             <div className="text-sm font-medium text-gray-900">
@@ -290,7 +313,15 @@ export default function VendorsSection({
         <input
           type="checkbox"
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          onClick={(e) => e.stopPropagation()}
+          checked={selectedVendorIds.includes(vendor._id)}
+          onChange={(e) => {
+            e.stopPropagation();
+            if (e.target.checked) {
+              onBulkSelectionChange([...selectedVendorIds, vendor._id]);
+            } else {
+              onBulkSelectionChange(selectedVendorIds.filter(id => id !== vendor._id));
+            }
+          }}
         />
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
@@ -645,6 +676,54 @@ export default function VendorsSection({
       ) : (
         /* Vendor Table View - Matching Expenses Design */
         <div className="bg-white rounded-b-lg border border-t-0">
+          {/* Bulk Actions Bar - Only show when items are selected */}
+          {selectedVendorIds.length > 0 && (
+            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={onBulkImport}
+                  className="group px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <div className="flex items-center space-x-2">
+                    <PencilSquareIcon className="w-4 h-4 text-blue-600" />
+                    <span>Bulk Import</span>
+                  </div>
+                </button>
+                <button
+                  onClick={onBulkExport}
+                  className="group px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 hover:border-emerald-300 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  title="Export"
+                >
+                  <div className="flex items-center space-x-2">
+                    <DownloadIcon className="w-4 h-4" />
+                    <span>Export</span>
+                  </div>
+                </button>
+                <button
+                  onClick={onBulkDelete}
+                  className="group px-4 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                >
+                  <div className="flex items-center space-x-2">
+                    <TrashIcon className="w-4 h-4 text-red-600" />
+                    <span>Delete</span>
+                  </div>
+                </button>
+              </div>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+                  {selectedVendorIds.length} Selected
+                </span>
+                <button
+                  onClick={onClearSelection}
+                  className="group p-2 text-orange-600 hover:text-orange-700 bg-orange-50 border border-orange-200 hover:bg-orange-100 hover:border-orange-300 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                  title="Clear Selection"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Table Header */}
           <div className="px-6 py-2 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -670,6 +749,14 @@ export default function VendorsSection({
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        checked={selectedVendorIds.length === filteredVendors.length && filteredVendors.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            onBulkSelectionChange(filteredVendors.map(vendor => vendor._id));
+                          } else {
+                            onBulkSelectionChange([]);
+                          }
+                        }}
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

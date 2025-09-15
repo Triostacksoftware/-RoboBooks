@@ -9,6 +9,9 @@ import {
   ClockIcon,
   ExclamationTriangleIcon,
   XMarkIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  ArrowDownTrayIcon as DownloadIcon,
 } from "@heroicons/react/24/outline";
 
 interface BillsListProps {
@@ -18,6 +21,12 @@ interface BillsListProps {
   onDelete: (billId: string) => void;
   onBillClick: (bill: Bill) => void;
   isCollapsed?: boolean; // New prop to determine if showing minimal info
+  selectedBillIds: string[];
+  onBulkSelectionChange: (selectedIds: string[]) => void;
+  onBulkImport: () => void;
+  onBulkExport: () => void;
+  onBulkDelete: () => void;
+  onClearSelection: () => void;
 }
 
 export default function BillsList({ 
@@ -26,9 +35,14 @@ export default function BillsList({
   onEdit, 
   onDelete, 
   onBillClick, 
-  isCollapsed = false 
+  isCollapsed = false,
+  selectedBillIds,
+  onBulkSelectionChange,
+  onBulkImport,
+  onBulkExport,
+  onBulkDelete,
+  onClearSelection
 }: BillsListProps) {
-  const [selectedBills, setSelectedBills] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -97,33 +111,76 @@ export default function BillsList({
 
   const handleSelectBill = (billId: string, checked: boolean) => {
     if (checked) {
-      setSelectedBills(prev => [...prev, billId]);
+      onBulkSelectionChange([...selectedBillIds, billId]);
     } else {
-      setSelectedBills(prev => prev.filter(id => id !== billId));
+      onBulkSelectionChange(selectedBillIds.filter(id => id !== billId));
     }
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedBills(bills.map(bill => bill._id));
+      onBulkSelectionChange(bills.map(bill => bill._id));
     } else {
-      setSelectedBills([]);
+      onBulkSelectionChange([]);
     }
   };
 
   return (
     <div className="bg-white rounded-b-lg border border-t-0">
+      {/* Bulk Actions Bar - Only show when items are selected */}
+      {selectedBillIds.length > 0 && (
+        <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center space-x-3">
+                <button
+                  onClick={onBulkImport}
+                  className="group px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <div className="flex items-center space-x-2">
+                    <PencilSquareIcon className="w-4 h-4 text-blue-600" />
+                    <span>Bulk Import</span>
+                  </div>
+                </button>
+                <button
+                  onClick={onBulkExport}
+                  className="group px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 hover:border-emerald-300 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  title="Export"
+                >
+                  <div className="flex items-center space-x-2">
+                    <DownloadIcon className="w-4 h-4" />
+                    <span>Export</span>
+                  </div>
+                </button>
+            <button
+              onClick={onBulkDelete}
+              className="group px-4 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/30"
+            >
+              <div className="flex items-center space-x-2">
+                <TrashIcon className="w-4 h-4 text-red-600" />
+                <span>Delete</span>
+              </div>
+            </button>
+          </div>
+          <div className="flex items-center space-x-3">
+            <span className="text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+              {selectedBillIds.length} Selected
+            </span>
+            <button
+              onClick={onClearSelection}
+              className="group p-2 text-orange-600 hover:text-orange-700 bg-orange-50 border border-orange-200 hover:bg-orange-100 hover:border-orange-300 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+              title="Clear Selection"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-900">
             All Bills ({bills.length})
           </h3>
-          {selectedBills.length > 0 && (
-            <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
-              {selectedBills.length} selected
-            </span>
-          )}
         </div>
       </div>
 
@@ -141,7 +198,7 @@ export default function BillsList({
               <div className="flex items-center space-x-3 flex-1 min-w-0">
                 <input
                   type="checkbox"
-                  checked={selectedBills.includes(bill._id)}
+                  checked={selectedBillIds.includes(bill._id)}
                   onChange={(e) => {
                     e.stopPropagation();
                     handleSelectBill(bill._id, e.target.checked);

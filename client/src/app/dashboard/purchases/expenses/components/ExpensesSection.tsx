@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   PlusIcon,
   ChevronDownIcon,
@@ -26,6 +27,9 @@ import {
   ArrowUpTrayIcon as ArrowUpTrayIconSolid,
   ClipboardDocumentListIcon,
   ArrowPathIcon as RefreshIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  ArrowDownTrayIcon as DownloadIcon,
 } from "@heroicons/react/24/outline";
 import { expenseService, Expense } from "../../../../../services/expenseService";
 import { formatCurrency } from "@/utils/currency";
@@ -46,14 +50,27 @@ interface ExpensesSectionProps {
   selectedExpenseId?: string;
   onExpenseSelect: (expense: Expense) => void;
   isCollapsed: boolean;
+  selectedExpenseIds: string[];
+  onBulkSelectionChange: (selectedIds: string[]) => void;
+  onBulkImport: () => void;
+  onBulkExport: () => void;
+  onBulkDelete: () => void;
+  onClearSelection: () => void;
 }
 
 export default function ExpensesSection({ 
   expenses, 
   selectedExpenseId, 
   onExpenseSelect, 
-  isCollapsed 
+  isCollapsed,
+  selectedExpenseIds,
+  onBulkSelectionChange,
+  onBulkImport,
+  onBulkExport,
+  onBulkDelete,
+  onClearSelection
 }: ExpensesSectionProps) {
+  const router = useRouter();
   const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +119,7 @@ export default function ExpensesSection({
     { value: "Non-Billable", label: "Non-Billable", icon: XMarkIcon },
     { value: "With Receipts", label: "With Receipts", icon: DocumentIcon },
     { value: "Without Receipts", label: "Without Receipts", icon: XMarkIcon },
+    { value: "custom", label: "New Custom View", icon: PlusIcon, isCustom: true },
   ];
 
   // Column options for sorting
@@ -206,40 +224,53 @@ export default function ExpensesSection({
 
   // Apply filters
   const applyFilters = () => {
-    let filtered = expenses;
+    let filtered = [...expenses];
+
 
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(expense =>
-        expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.account.toLowerCase().includes(searchTerm.toLowerCase())
+        (expense.description && expense.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (expense.vendor && expense.vendor.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (expense.account && expense.account.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (expense.reference && expense.reference.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (expense.category && expense.category.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
     // Status filter
     if (selectedFilter !== "All") {
+      const originalLength = filtered.length;
       switch (selectedFilter) {
         case "Unbilled":
-          filtered = filtered.filter(e => e.status === "unbilled");
+          filtered = filtered.filter(e => {
+            const status = e.status?.toString().toLowerCase();
+            return status === "unbilled" || status === "unbilled";
+          });
           break;
         case "Invoiced":
-          filtered = filtered.filter(e => e.status === "invoiced");
+          filtered = filtered.filter(e => {
+            const status = e.status?.toString().toLowerCase();
+            return status === "invoiced" || status === "invoiced";
+          });
           break;
         case "Reimbursed":
-          filtered = filtered.filter(e => e.status === "reimbursed");
+          filtered = filtered.filter(e => {
+            const status = e.status?.toString().toLowerCase();
+            return status === "reimbursed" || status === "reimbursed";
+          });
           break;
         case "Billable":
-          filtered = filtered.filter(e => e.billable);
+          filtered = filtered.filter(e => e.billable === true || e.billable === "true");
           break;
         case "Non-Billable":
-          filtered = filtered.filter(e => !e.billable);
+          filtered = filtered.filter(e => e.billable === false || e.billable === "false");
           break;
         case "With Receipts":
-          filtered = filtered.filter(e => e.hasReceipt);
+          filtered = filtered.filter(e => e.hasReceipt === true || e.hasReceipt === "true");
           break;
         case "Without Receipts":
-          filtered = filtered.filter(e => !e.hasReceipt);
+          filtered = filtered.filter(e => e.hasReceipt === false || e.hasReceipt === "false");
           break;
       }
     }
@@ -260,7 +291,7 @@ export default function ExpensesSection({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-menu') && !target.closest('.submenu')) {
+      if (!target.closest('.dropdown-menu') && !target.closest('.submenu') && !target.closest('[data-filter-dropdown]') && !filterRef.current?.contains(target)) {
         setShowMoreMenu(false);
         setShowSortMenu(false);
         setShowExportMenu(false);
@@ -543,18 +574,18 @@ export default function ExpensesSection({
               <button
               ref={filterRef}
               onClick={() => {
-                const position = calculateDropdownPosition(filterRef);
-                setDropdownPosition(position);
                 setShowFilters(!showFilters);
               }}
-                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
               <FunnelIcon className="h-4 w-4" />
               <span className="text-sm">Filter</span>
               </button>
 
               {showFilters && (
-              <div className={`absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 ${
+              <div 
+                data-filter-dropdown
+                className={`absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 ${
                 dropdownPosition === 'left' ? 'right-0' : 'left-0'
               }`}>
                   <div className="p-2">
@@ -564,27 +595,27 @@ export default function ExpensesSection({
                         <button
                           key={option.value}
                           onClick={() => {
-                            setSelectedFilter(option.value);
-                            setShowFilters(false);
+                            if (option.isCustom) {
+                              // Navigate to custom view page
+                              router.push('/dashboard/purchases/expenses/custom-view');
+                            } else {
+                              setSelectedFilter(option.value);
+                              setShowFilters(false);
+                            }
                           }}
                           className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 ${
+                            option.isCustom ? "text-blue-600 border-t border-gray-200 mt-1 pt-3" :
                             selectedFilter === option.value ? "bg-blue-50 text-blue-700" : "text-gray-700"
                           }`}
                         >
-                          <Icon className="h-4 w-4" />
-                          <span className="text-sm">{option.label}</span>
-                          {selectedFilter === option.value && (
+                          <Icon className={`h-4 w-4 ${option.isCustom ? "text-blue-600" : ""}`} />
+                          <span className={`text-sm ${option.isCustom ? "text-blue-600 font-medium" : ""}`}>{option.label}</span>
+                          {selectedFilter === option.value && !option.isCustom && (
                             <CheckIcon className="h-4 w-4 ml-auto" />
                           )}
                         </button>
                       );
                     })}
-                    <div className="border-t border-gray-200 mt-2 pt-2">
-                      <button className="w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 text-blue-600">
-                        <PlusIcon className="h-4 w-4" />
-                        <span className="text-sm">New Custom View</span>
-                      </button>
-                    </div>
                   </div>
                 </div>
               )}
@@ -599,7 +630,7 @@ export default function ExpensesSection({
                 <span className="text-sm">Upload Expense</span>
                 <ChevronDownIcon className="h-4 w-4" />
               </button>
-        </div>
+            </div>
       </div>
 
       {/* Main Content */}
@@ -773,6 +804,54 @@ export default function ExpensesSection({
       ) : (
         /* Expense Table View - Matching Vendors Design */
         <div className="bg-white rounded-b-lg border border-t-0">
+          {/* Bulk Actions Bar - Only show when items are selected */}
+          {selectedExpenseIds.length > 0 && (
+            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={onBulkImport}
+                  className="group px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                >
+                  <div className="flex items-center space-x-2">
+                    <PencilSquareIcon className="w-4 h-4 text-blue-600" />
+                    <span>Bulk Import</span>
+                  </div>
+                </button>
+                <button
+                  onClick={onBulkExport}
+                  className="group px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 hover:border-emerald-300 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  title="Export"
+                >
+                  <div className="flex items-center space-x-2">
+                    <DownloadIcon className="w-4 h-4" />
+                    <span>Export</span>
+                  </div>
+                </button>
+                <button
+                  onClick={onBulkDelete}
+                  className="group px-4 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/30"
+                >
+                  <div className="flex items-center space-x-2">
+                    <TrashIcon className="w-4 h-4 text-red-600" />
+                    <span>Delete</span>
+                  </div>
+                </button>
+              </div>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+                  {selectedExpenseIds.length} Selected
+                </span>
+                <button
+                  onClick={onClearSelection}
+                  className="group p-2 text-orange-600 hover:text-orange-700 bg-orange-50 border border-orange-200 hover:bg-orange-100 hover:border-orange-300 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                  title="Clear Selection"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Table Header */}
           <div className="px-6 py-2 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -800,7 +879,16 @@ export default function ExpensesSection({
                         <input
                           type="checkbox"
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          checked={selectedExpenseIds.includes(expense._id)}
                           onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (e.target.checked) {
+                              onBulkSelectionChange([...selectedExpenseIds, expense._id]);
+                            } else {
+                              onBulkSelectionChange(selectedExpenseIds.filter(id => id !== expense._id));
+                            }
+                          }}
                         />
                         <div>
                           <div className="text-sm font-medium text-gray-900">
@@ -832,6 +920,16 @@ export default function ExpensesSection({
                       <input
                         type="checkbox"
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        checked={selectedExpenseIds.length === filteredExpenses.length && filteredExpenses.length > 0}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (e.target.checked) {
+                            onBulkSelectionChange(filteredExpenses.map(expense => expense._id));
+                          } else {
+                            onBulkSelectionChange([]);
+                          }
+                        }}
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -873,7 +971,16 @@ export default function ExpensesSection({
                         <input
                           type="checkbox"
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          checked={selectedExpenseIds.includes(expense._id)}
                           onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (e.target.checked) {
+                              onBulkSelectionChange([...selectedExpenseIds, expense._id]);
+                            } else {
+                              onBulkSelectionChange(selectedExpenseIds.filter(id => id !== expense._id));
+                            }
+                          }}
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PurchaseOrdersSection from "./components/PurchaseOrdersSection";
 import PurchaseOrderDetailsPanel from "./components/PurchaseOrderDetailsPanel";
+import BulkImportModal from "@/components/modals/BulkImportModal";
+import BulkExportModal from "@/components/modals/BulkExportModal";
 import { PurchaseOrder, purchaseOrderService } from "@/services/purchaseOrderService";
 
 const PurchaseOrdersPage = () => {
@@ -13,6 +15,7 @@ const PurchaseOrdersPage = () => {
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<string[]>([]);
 
   useEffect(() => {
     const loadPurchaseOrders = async () => {
@@ -62,6 +65,41 @@ const PurchaseOrdersPage = () => {
     }
   };
 
+  const handleBulkSelectionChange = (selectedIds: string[]) => {
+    setSelectedPurchaseOrderIds(selectedIds);
+  };
+
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
+
+  const handleBulkImport = () => {
+    setShowBulkImportModal(true);
+  };
+
+  const handleBulkExport = () => {
+    setShowBulkExportModal(true);
+  };
+
+  const closeBulkImportModal = () => {
+    setShowBulkImportModal(false);
+  };
+
+  const closeBulkExportModal = () => {
+    setShowBulkExportModal(false);
+  };
+
+  const handleBulkDelete = () => {
+    if (confirm(`Are you sure you want to delete ${selectedPurchaseOrderIds.length} purchase orders?`)) {
+      // TODO: Implement bulk delete functionality
+      console.log("Bulk delete for purchase orders:", selectedPurchaseOrderIds);
+      setSelectedPurchaseOrderIds([]);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedPurchaseOrderIds([]);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -87,8 +125,8 @@ const PurchaseOrdersPage = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex -mt-6">
+    <div className="w-full h-full">
+      <div className="flex h-full">
         <div
           className={`transition-all duration-300 ${
             showRightPanel ? "w-[30%]" : "w-full"
@@ -99,6 +137,12 @@ const PurchaseOrdersPage = () => {
             selectedPurchaseOrderId={selectedPurchaseOrder?._id}
             onPurchaseOrderSelect={handlePurchaseOrderSelect}
             isCollapsed={showRightPanel}
+            selectedPurchaseOrderIds={selectedPurchaseOrderIds}
+            onBulkSelectionChange={handleBulkSelectionChange}
+            onBulkImport={handleBulkImport}
+            onBulkExport={handleBulkExport}
+            onBulkDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
           />
         </div>
 
@@ -113,6 +157,25 @@ const PurchaseOrdersPage = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <BulkImportModal
+          selectedIds={selectedPurchaseOrderIds}
+          type="purchase-orders"
+          onClose={closeBulkImportModal}
+        />
+      )}
+
+      {/* Bulk Export Modal */}
+      {showBulkExportModal && (
+        <BulkExportModal
+          selectedIds={selectedPurchaseOrderIds}
+          selectedData={purchaseOrders.filter(po => selectedPurchaseOrderIds.includes(po._id))}
+          type="purchase-orders"
+          onClose={closeBulkExportModal}
+        />
+      )}
     </div>
   );
 };
