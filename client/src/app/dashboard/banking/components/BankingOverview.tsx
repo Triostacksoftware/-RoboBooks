@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   BanknotesIcon,
   CreditCardIcon,
   ArrowTrendingDownIcon,
 } from "@heroicons/react/24/outline";
-import { bankingService } from "@/services/bankingService";
+import { useBanking } from "@/contexts/BankingContext";
 import { formatCurrency } from "@/utils/currency";
 
 interface BankingOverviewData {
@@ -23,38 +23,9 @@ interface BankingOverviewData {
 }
 
 export default function BankingOverview() {
-  const [overviewData, setOverviewData] = useState<BankingOverviewData | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const { overview, loading, errors, refreshOverview } = useBanking();
 
-  const loadBankingOverview = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = (await bankingService.getBankingOverview()) as {
-        data: BankingOverviewData;
-      };
-      setOverviewData(response.data);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to load banking overview"
-      );
-      console.error("Error loading banking overview:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    setIsHydrated(true);
-    loadBankingOverview();
-  }, []);
-
-  // Prevent hydration mismatch by not rendering until hydrated
-  if (!isHydrated) {
+  if (loading.overview) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -62,23 +33,15 @@ export default function BankingOverview() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (error) {
+  if (errors.overview) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center gap-2">
           <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
-          <p className="text-red-700">{error}</p>
+          <p className="text-red-700">{errors.overview}</p>
         </div>
         <button
-          onClick={loadBankingOverview}
+          onClick={refreshOverview}
           className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
         >
           Try again
@@ -87,13 +50,13 @@ export default function BankingOverview() {
     );
   }
 
-  if (!overviewData) {
+  if (!overview) {
     return (
       <div className="text-center text-gray-500">No banking data available</div>
     );
   }
 
-  const { totalBalance, totalAccounts, accounts } = overviewData;
+  const { totalBalance, totalAccounts, accounts } = overview;
 
   return (
     <div className="space-y-6">

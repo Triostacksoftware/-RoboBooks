@@ -13,9 +13,10 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import TransactionCategorizationModal from "./TransactionCategorizationModal";
-import { bankingService } from "@/services/bankingService";
+import { useBanking } from "@/contexts/BankingContext";
 import { useToast } from "@/contexts/ToastContext";
 
 interface Transaction {
@@ -30,20 +31,15 @@ interface Transaction {
   reference?: string;
 }
 
-interface TransactionManagerProps {
-  transactions: Transaction[];
-  onTransactionUpdate?: () => void;
-}
-
-export default function TransactionManager({
-  transactions,
-  onTransactionUpdate,
-}: TransactionManagerProps) {
+export default function TransactionManager() {
   const { addToast } = useToast();
+  const { transactions, accounts, users, loading, errors, refreshTransactions, reconcileTransaction, deleteTransaction } = useBanking();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedAccount, setSelectedAccount] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedDateRange, setSelectedDateRange] = useState("30");
+  const [selectedUser, setSelectedUser] = useState("all");
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [showCategorizationModal, setShowCategorizationModal] = useState(false);
@@ -75,12 +71,17 @@ export default function TransactionManager({
       transaction.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.account.toLowerCase().includes(searchTerm.toLowerCase());
 
+    const matchesAccount = selectedAccount === "" || transaction.accountId === selectedAccount;
     const matchesCategory =
       selectedCategory === "all" || transaction.category === selectedCategory;
     const matchesStatus =
       selectedStatus === "all" || transaction.status === selectedStatus;
+    const matchesUser = 
+      selectedUser === "all" || 
+      (selectedUser === "manual" && !transaction.importSource) ||
+      transaction.userId === selectedUser;
 
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesAccount && matchesCategory && matchesStatus && matchesUser;
   });
 
   const getStatusIcon = (status: string) => {
@@ -147,47 +148,44 @@ export default function TransactionManager({
     }
 
     try {
-      await bankingService.deleteTransaction(transaction.id.toString());
-      addToast({
-        title: "Success",
-        message: "Transaction deleted successfully!",
-        type: "success",
-        duration: 3000,
-      });
-      if (onTransactionUpdate) {
-        onTransactionUpdate();
-      }
+      await deleteTransaction(transaction.id.toString());
     } catch (err: any) {
-      addToast({
-        title: "Error",
-        message: "Failed to delete transaction",
-        type: "error",
-        duration: 5000,
-      });
+      console.error("Error deleting transaction:", err);
     }
   };
 
   const handleReconcileTransaction = async (transaction: Transaction) => {
     try {
-      await bankingService.reconcileTransaction(transaction.id.toString());
-      addToast({
-        title: "Success",
-        message: "Transaction reconciled successfully!",
-        type: "success",
-        duration: 3000,
-      });
-      if (onTransactionUpdate) {
-        onTransactionUpdate();
-      }
+      await reconcileTransaction(transaction.id.toString());
     } catch (err: any) {
-      addToast({
-        title: "Error",
-        message: "Failed to reconcile transaction",
-        type: "error",
-        duration: 5000,
-      });
+      console.error("Error reconciling transaction:", err);
     }
   };
+
+  if (loading.transactions) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (errors.transactions) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center gap-2">
+          <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />
+          <p className="text-red-700">{errors.transactions}</p>
+        </div>
+        <button
+          onClick={refreshTransactions}
+          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -205,6 +203,22 @@ export default function TransactionManager({
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <BanknotesIcon className="h-5 w-5 text-gray-400" />
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">All Accounts</option>
+              {accounts.map((account) => (
+                <option key={account._id} value={account._id}>
+                  {account.name} - {account.bankName || "N/A"}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center gap-2">
@@ -237,43 +251,99 @@ export default function TransactionManager({
             </select>
           </div>
 
+           <div className="flex items-center gap-2">
+             <select
+               value={selectedStatus}
+               onChange={(e) => setSelectedStatus(e.target.value)}
+               className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+             >
+               {statuses.map((status) => (
+                 <option key={status} value={status}>
+                   {status === "all"
+                     ? "All Status"
+                     : status.charAt(0).toUpperCase() + status.slice(1)}
+                 </option>
+               ))}
+             </select>
+           </div>
+
+           <div className="flex items-center gap-2">
+             <select
+               value={selectedUser}
+               onChange={(e) => setSelectedUser(e.target.value)}
+               className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+             >
+               <option value="all">All Users</option>
+               <option value="manual">Manual Entry</option>
+               {users && users.map((user) => (
+                 <option key={user._id} value={user._id}>
+                   {user.name || user.email}
+                 </option>
+               ))}
+             </select>
+           </div>
+
+          {/* Clear Filters Button */}
           <div className="flex items-center gap-2">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedAccount("");
+                setSelectedCategory("all");
+                setSelectedStatus("all");
+                setSelectedDateRange("30");
+                setSelectedUser("all");
+              }}
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {status === "all"
-                    ? "All Status"
-                    : status.charAt(0).toUpperCase() + status.slice(1)}
-                </option>
-              ))}
-            </select>
+              Clear Filters
+            </button>
           </div>
         </div>
 
         {/* Results Summary */}
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex justify-between items-center text-sm text-gray-600">
-            <span>{filteredTransactions.length} transactions found</span>
+             <div className="flex items-center gap-2">
+               <span>{filteredTransactions.length} transactions found</span>
+               {selectedAccount && (
+                 <>
+                   <span className="text-gray-500">•</span>
+                   <span className="text-blue-600 font-medium">
+                     for {accounts.find(acc => acc._id === selectedAccount)?.name || "Selected Account"}
+                   </span>
+                 </>
+               )}
+               {selectedUser !== "all" && (
+                 <>
+                   <span className="text-gray-500">•</span>
+                   <span className="text-purple-600 font-medium">
+                     by {selectedUser === "manual" ? "Manual Entry" : users?.find(u => u._id === selectedUser)?.name || "Selected User"}
+                   </span>
+                 </>
+               )}
+             </div>
             <div className="flex gap-4">
+              {selectedAccount && (
+                <span className="text-green-600 font-medium">
+                  Balance: ₹{accounts.find(acc => acc._id === selectedAccount)?.balance.toLocaleString() || "0"}
+                </span>
+              )}
               <span>
-                Total: ?
+                Total: ₹
                 {filteredTransactions
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toFixed(2)}
               </span>
               <span>
-                Income: ?
+                Income: ₹
                 {filteredTransactions
                   .filter((t) => t.amount > 0)
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toFixed(2)}
               </span>
               <span>
-                Expenses: ?
+                Expenses: ₹
                 {Math.abs(
                   filteredTransactions
                     .filter((t) => t.amount < 0)
@@ -329,17 +399,33 @@ export default function TransactionManager({
                     <h4 className="font-medium text-gray-900">
                       {transaction.description}
                     </h4>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                      <span>{transaction.category}</span>
-                      <span>•</span>
-                      <span>{transaction.account}</span>
-                      {transaction.reference && (
-                        <>
-                          <span>•</span>
-                          <span>Ref: {transaction.reference}</span>
-                        </>
-                      )}
-                    </div>
+                     <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                       <span>{transaction.category}</span>
+                       <span>•</span>
+                       <span>{transaction.account}</span>
+                       {transaction.reference && (
+                         <>
+                           <span>•</span>
+                           <span>Ref: {transaction.reference}</span>
+                         </>
+                       )}
+                       {transaction.userId && (
+                         <>
+                           <span>•</span>
+                           <span className="text-purple-600 font-medium">
+                             by {users?.find(u => u._id === transaction.userId)?.name || "User"}
+                           </span>
+                         </>
+                       )}
+                       {transaction.importSource && (
+                         <>
+                           <span>•</span>
+                           <span className="text-blue-600 font-medium">
+                             via {transaction.importSource.toUpperCase()}
+                           </span>
+                         </>
+                       )}
+                     </div>
                   </div>
                 </div>
 

@@ -104,6 +104,13 @@ const accountSchema = new Schema(
       },
     },
 
+    /** User ID for multi-tenant support */
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+
     /** Account Name */
     name: {
       type: String,

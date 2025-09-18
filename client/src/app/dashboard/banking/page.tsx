@@ -2,21 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { bankingService } from "@/services/bankingService";
 import { useToast } from "@/contexts/ToastContext";
 import {
   BanknotesIcon,
   CreditCardIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  CalendarIcon,
   ChartBarIcon,
   Cog6ToothIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
   XMarkIcon,
   ArrowLeftIcon,
   DocumentArrowUpIcon,
@@ -28,6 +20,7 @@ import TransactionManager from "./components/TransactionManager";
 import BankReconciliation from "./components/BankReconciliation";
 import BankAccountManager from "./components/BankAccountManager";
 import BankStatementImport from "./components/BankStatementImport";
+import { BankingProvider } from "@/contexts/BankingContext";
 
 // Define the BankAccount interface
 interface BankAccount {
@@ -79,7 +72,8 @@ interface ReconciliationItem {
   difference?: number;
 }
 
-export default function BankingPage() {
+// Internal component that uses the banking context
+function BankingPageContent() {
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [showConnectModal, setShowConnectModal] = useState(false);
@@ -93,10 +87,6 @@ export default function BankingPage() {
     selectedAccount: null,
   });
   const [isHydrated, setIsHydrated] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [realAccounts, setRealAccounts] = useState<BankAccount[]>([]);
-  const [realTransactions, setRealTransactions] = useState<Transaction[]>([]);
   const router = useRouter();
 
   const tabs = [
@@ -106,228 +96,11 @@ export default function BankingPage() {
     { id: "reconciliation", label: "Reconciliation", icon: Cog6ToothIcon },
   ];
 
-  // Load real banking data
-  const loadBankingData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Load accounts
-      const accountsResponse = await bankingService.getBankAccounts();
-      if (accountsResponse.data) {
-        setRealAccounts(accountsResponse.data);
-      }
-      
-      // Load transactions
-      const transactionsResponse = await bankingService.getTransactions();
-      if (transactionsResponse.data) {
-        setRealTransactions(transactionsResponse.data);
-      }
-      
-    } catch (err: any) {
-      const message = err?.message || "Failed to load banking data";
-      setError(message);
-      addToast({
-        title: "Error",
-        message: message,
-        type: "error",
-        duration: 5000,
-      });
-      console.error("Error loading banking data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     setIsHydrated(true);
-    loadBankingData();
   }, []);
 
-  const accounts: BankAccount[] = [
-    {
-      id: 1,
-      name: "Business Checking Account",
-      bank: "Chase Bank",
-      accountNumber: "****1234",
-      balance: 45230.5,
-      type: "checking",
-      status: "connected",
-      lastSync: "2 hours ago",
-      currency: "USD",
-      accountType: "Business Account",
-    },
-    {
-      id: 2,
-      name: "Business Credit Card",
-      bank: "American Express",
-      accountNumber: "****5678",
-      balance: -1250.75,
-      type: "credit",
-      status: "connected",
-      lastSync: "1 hour ago",
-      currency: "USD",
-      accountType: "Credit Card",
-    },
-    {
-      id: 3,
-      name: "Savings Account",
-      bank: "Wells Fargo",
-      accountNumber: "****9012",
-      balance: 150000.0,
-      type: "savings",
-      status: "pending",
-      lastSync: "Never",
-      currency: "USD",
-      accountType: "Savings Account",
-    },
-  ];
 
-  const recentTransactions: Transaction[] = [
-    {
-      id: 1,
-      description: "Office Supplies - Staples",
-      amount: -125.5,
-      type: "expense",
-      category: "Office Supplies",
-      date: "2024-01-15",
-      account: "Business Checking Account",
-      status: "reconciled",
-      reference: "STAPLES-001",
-    },
-    {
-      id: 2,
-      description: "Client Payment - ABC Corp",
-      amount: 2500.0,
-      type: "income",
-      category: "Client Payments",
-      date: "2024-01-14",
-      account: "Business Checking Account",
-      status: "reconciled",
-      reference: "INV-2024-001",
-    },
-    {
-      id: 3,
-      description: "Gas Station",
-      amount: -45.75,
-      type: "expense",
-      category: "Transportation",
-      date: "2024-01-14",
-      account: "Business Credit Card",
-      status: "pending",
-      reference: "SHELL-123",
-    },
-    {
-      id: 4,
-      description: "Software Subscription",
-      amount: -99.0,
-      type: "expense",
-      category: "Software",
-      date: "2024-01-13",
-      account: "Business Credit Card",
-      status: "reconciled",
-      reference: "SUBSCRIPTION-001",
-    },
-    {
-      id: 5,
-      description: "Marketing Services",
-      amount: -500.0,
-      type: "expense",
-      category: "Marketing",
-      date: "2024-01-12",
-      account: "Business Checking Account",
-      status: "unreconciled",
-      reference: "MARKETING-001",
-    },
-    {
-      id: 6,
-      description: "Utility Bill - Electricity",
-      amount: -150.25,
-      type: "expense",
-      category: "Utilities",
-      date: "2024-01-11",
-      account: "Business Checking Account",
-      status: "reconciled",
-      reference: "UTILITY-001",
-    },
-  ];
-
-  const reconciliationData: {
-    accountName: string;
-    bankBalance: number;
-    bookBalance: number;
-    difference: number;
-    items: ReconciliationItem[];
-  } = {
-    accountName: "Business Checking Account",
-    bankBalance: 45230.5,
-    bookBalance: 44979.75,
-    difference: 250.75,
-    items: [
-      {
-        id: 1,
-        bankTransaction: {
-          id: "BANK-001",
-          description: "Office Supplies - Staples",
-          amount: -125.5,
-          date: "2024-01-15",
-          reference: "STAPLES-001",
-        },
-        bookTransaction: {
-          id: "BOOK-001",
-          description: "Office Supplies - Staples",
-          amount: -125.5,
-          date: "2024-01-15",
-          type: "expense",
-        },
-        status: "matched",
-        difference: 0,
-      },
-      {
-        id: 2,
-        bankTransaction: {
-          id: "BANK-002",
-          description: "Client Payment - ABC Corp",
-          amount: 2500.0,
-          date: "2024-01-14",
-          reference: "INV-2024-001",
-        },
-        bookTransaction: {
-          id: "BOOK-002",
-          description: "Client Payment - ABC Corp",
-          amount: 2500.0,
-          date: "2024-01-14",
-          type: "payment",
-        },
-        status: "matched",
-        difference: 0,
-      },
-      {
-        id: 3,
-        bankTransaction: {
-          id: "BANK-003",
-          description: "Unknown Transaction",
-          amount: -250.75,
-          date: "2024-01-10",
-          reference: "UNKNOWN-001",
-        },
-        status: "unmatched",
-        difference: -250.75,
-      },
-      {
-        id: 4,
-        bankTransaction: {
-          id: "BANK-004",
-          description: "Marketing Services",
-          amount: -500.0,
-          date: "2024-01-12",
-          reference: "MARKETING-001",
-        },
-        status: "unmatched",
-        difference: -500.0,
-      },
-    ],
-  };
 
   // Handle import wizard state
   const handleImportStatement = () => {
@@ -518,15 +291,9 @@ export default function BankingPage() {
       case "accounts":
         return <BankAccountManager />;
       case "transactions":
-        return <TransactionManager 
-          transactions={realTransactions.length > 0 ? realTransactions : recentTransactions} 
-          onTransactionUpdate={loadBankingData}
-        />;
+        return <TransactionManager />;
       case "reconciliation":
-        return <BankReconciliation 
-          reconciliationData={reconciliationData} 
-          onReconciliationUpdate={loadBankingData}
-        />;
+        return <BankReconciliation />;
       default:
         return <BankingOverview />;
     }
@@ -619,5 +386,14 @@ export default function BankingPage() {
       {/* Modals */}
       {showConnectModal && <ConnectBankModal />}
     </div>
+  );
+}
+
+// Main export that provides the BankingProvider
+export default function BankingPage() {
+  return (
+    <BankingProvider>
+      <BankingPageContent />
+    </BankingProvider>
   );
 }

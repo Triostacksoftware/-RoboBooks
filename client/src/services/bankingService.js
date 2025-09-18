@@ -55,19 +55,12 @@ export const bankingService = {
     http.get("/banking/transactions/summary", { params }),
 
   // Bank Reconciliation
-  getReconciliations: () => http.get("/banking/reconciliations"),
-  getReconciliation: (id) => http.get(`/banking/reconciliations/${id}`),
-  createReconciliation: (data) => http.post("/banking/reconciliations", data),
-  updateReconciliation: (id, data) =>
-    http.put(`/banking/reconciliations/${id}`, data),
-  updateReconciliationItem: (id, itemId, data) =>
-    http.patch(`/banking/reconciliations/${id}/items/${itemId}`, data),
-  completeReconciliation: (id) =>
-    http.post(`/banking/reconciliations/${id}/complete`),
-  autoMatchReconciliation: (id) =>
-    http.post(`/banking/reconciliations/${id}/auto-match`),
+  getReconciliations: (params) => http.get("/banking/reconciliations", { params }),
   getAccountReconciliations: (accountId) =>
     http.get(`/banking/reconciliations/account/${accountId}`),
+  createReconciliation: (data) => http.post("/banking/reconciliations", data),
+  autoMatchReconciliation: (accountId) =>
+    http.post(`/banking/reconciliations/${accountId}/auto-match`),
 
   // Banking Overview & Analytics
   getBankingOverview: (params) => http.get("/banking/overview", { params }),
@@ -217,6 +210,21 @@ export const mockBankingData = {
         difference: 245.75,
       },
     ],
+  },
+
+  // Import transactions for specific account
+  importTransactions: async (formData) => {
+    const response = await fetch('/api/banking/import-transactions', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to import transactions');
+    }
+    
+    return await response.json();
   },
 };
 

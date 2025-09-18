@@ -53,6 +53,7 @@ import recurringBillRoutes from "./routes/recurringBillRoutes.js";
 import vendorCreditRoutes from "./routes/vendorCreditRoutes.js";
 import customViewRoutes from "./routes/customViewRoutes.js";
 import preferencesRoutes from "./routes/preferencesRoutes.js";
+import currencyRoutes from "./routes/currencyRoutes.js";
 // import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 const app = express();
@@ -142,6 +143,7 @@ app.use("/api/recurring-bills", recurringBillRoutes);
 app.use("/api/vendor-credits", vendorCreditRoutes);
 app.use("/api/custom-views", customViewRoutes);
 app.use("/api/preferences", preferencesRoutes);
+app.use("/api/currency", currencyRoutes);
 // app.use("/api/dashboard", dashboardRoutes);
 
 // Health check and welcome routes

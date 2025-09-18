@@ -602,6 +602,242 @@ class BankingController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
+  // Get reconciliations
+  async getReconciliations(req, res) {
+    try {
+      const { accountId } = req.query;
+      const query = { userId: req.user.id };
+      
+      if (accountId) {
+        query.accountId = accountId;
+      }
+      
+      const reconciliations = await BankTransaction.find({
+        ...query,
+        isReconciled: false
+      }).populate('accountId', 'name bankName');
+      
+      res.json({ success: true, data: reconciliations });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Get reconciliation for specific account
+  async getAccountReconciliations(req, res) {
+    try {
+      const { accountId } = req.params;
+      
+      // Verify account belongs to user
+      const account = await BankAccount.findOne({ _id: accountId, userId: req.user.id });
+      if (!account) {
+        return res.status(404).json({ success: false, message: 'Account not found' });
+      }
+      
+      // Get unreconciled transactions for this account
+      const unreconciledTransactions = await BankTransaction.find({
+        accountId,
+        userId: req.user.id,
+        isReconciled: false
+      }).sort({ date: -1 });
+      
+      // Calculate reconciliation summary
+      const totalUnreconciled = unreconciledTransactions.length;
+      const totalUnreconciledAmount = unreconciledTransactions.reduce((sum, t) => {
+        return sum + (t.type === 'credit' ? t.amount : -t.amount);
+      }, 0);
+      
+      const reconciliation = {
+        accountId,
+        accountName: account.name,
+        bankBalance: account.balance,
+        bookBalance: account.balance - totalUnreconciledAmount,
+        difference: totalUnreconciledAmount,
+        unreconciledItems: totalUnreconciled,
+        transactions: unreconciledTransactions
+      };
+      
+      res.json({ success: true, data: reconciliation });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Create reconciliation
+  async createReconciliation(req, res) {
+    try {
+      const { accountId, statementDate, statementBalance, transactions } = req.body;
+      
+      // Verify account belongs to user
+      const account = await BankAccount.findOne({ _id: accountId, userId: req.user.id });
+      if (!account) {
+        return res.status(404).json({ success: false, message: 'Account not found' });
+      }
+      
+      // Update transactions as reconciled
+      if (transactions && transactions.length > 0) {
+        await BankTransaction.updateMany(
+          { _id: { $in: transactions }, userId: req.user.id },
+          { isReconciled: true, reconciledAt: new Date() }
+        );
+      }
+      
+      // Update account balance if statement balance is provided
+      if (statementBalance !== undefined) {
+        await BankAccount.findByIdAndUpdate(accountId, { 
+          balance: statementBalance,
+          lastSync: new Date()
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'Reconciliation completed successfully',
+        data: {
+          reconciledTransactions: transactions?.length || 0,
+          newBalance: statementBalance || account.balance
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Auto-match reconciliation items
+  async autoMatchReconciliation(req, res) {
+    try {
+      const { accountId } = req.params;
+      
+      // Verify account belongs to user
+      const account = await BankAccount.findOne({ _id: accountId, userId: req.user.id });
+      if (!account) {
+        return res.status(404).json({ success: false, message: 'Account not found' });
+      }
+      
+      // Get unreconciled transactions
+      const unreconciledTransactions = await BankTransaction.find({
+        accountId,
+        userId: req.user.id,
+        isReconciled: false
+      });
+      
+      // Simple auto-matching logic (can be enhanced)
+      const matchedTransactions = [];
+      for (const transaction of unreconciledTransactions) {
+        // Auto-match transactions older than 30 days
+        const transactionDate = new Date(transaction.date);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        if (transactionDate < thirtyDaysAgo) {
+          await BankTransaction.findByIdAndUpdate(transaction._id, {
+            isReconciled: true,
+            reconciledAt: new Date()
+          });
+          matchedTransactions.push(transaction._id);
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: `Auto-matched ${matchedTransactions.length} transactions`,
+        data: {
+          matchedCount: matchedTransactions.length,
+          matchedTransactions
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // Import transactions for specific account and user
+  async importTransactions(req, res) {
+    try {
+      const { accountId, userId } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      if (!accountId || !userId) {
+        return res.status(400).json({ success: false, message: 'Account ID and User ID are required' });
+      }
+
+      // Verify account belongs to user
+      const account = await BankAccount.findOne({ _id: accountId, userId: userId });
+      if (!account) {
+        return res.status(404).json({ success: false, message: 'Account not found or access denied' });
+      }
+
+      // Process the file based on its type
+      let transactions = [];
+      const fileExtension = path.extname(file.originalname).toLowerCase();
+
+      try {
+        if (fileExtension === '.csv') {
+          transactions = await fileProcessingService.processCSV(file.path);
+        } else if (['.xlsx', '.xls'].includes(fileExtension)) {
+          transactions = await fileProcessingService.processExcel(file.path);
+        } else if (fileExtension === '.pdf') {
+          transactions = await fileProcessingService.processPDF(file.path);
+        } else {
+          throw new Error(`Unsupported file type: ${fileExtension}`);
+        }
+
+        // Transform transactions to match our schema
+        const transformedTransactions = transactions.map(transaction => ({
+          accountId: accountId,
+          userId: userId,
+          date: transaction.date || new Date(),
+          description: transaction.description || 'Imported Transaction',
+          payee: transaction.payee,
+          referenceNumber: transaction.referenceNumber,
+          withdrawals: transaction.withdrawals || 0,
+          deposits: transaction.deposits || 0,
+          amount: transaction.amount || 0,
+          type: transaction.amount >= 0 ? 'credit' : 'debit',
+          category: transaction.category || 'Uncategorized',
+          subcategory: transaction.subcategory,
+          isReconciled: false,
+          status: 'pending',
+          importSource: fileExtension.substring(1), // Remove the dot
+          importBatchId: `batch_${Date.now()}`,
+        }));
+
+        // Save transactions to database
+        const savedTransactions = await BankTransaction.insertMany(transformedTransactions);
+
+        // Clean up uploaded file
+        fs.unlinkSync(file.path);
+
+        res.json({
+          success: true,
+          message: `Successfully imported ${savedTransactions.length} transactions`,
+          data: {
+            count: savedTransactions.length,
+            accountId: accountId,
+            userId: userId,
+            importSource: fileExtension.substring(1),
+            transactions: savedTransactions
+          }
+        });
+
+      } catch (processingError) {
+        // Clean up uploaded file on error
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+        throw processingError;
+      }
+
+    } catch (error) {
+      console.error('Error importing transactions:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 }
 
 export default new BankingController();

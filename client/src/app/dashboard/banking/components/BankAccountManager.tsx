@@ -15,10 +15,12 @@ import {
   TrashIcon,
   LinkIcon,
   NoSymbolIcon,
+  DocumentArrowUpIcon,
 } from "@heroicons/react/24/outline";
-import { bankingService } from "@/services/bankingService";
+import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+// import bankingService from "@/services/bankingService";
 
 interface BankAccount {
   _id: string;
@@ -56,6 +58,7 @@ const AddAccountModal = ({
   onSubmit,
   submitting,
   nameInputRef,
+  onImportTransactions,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -64,6 +67,7 @@ const AddAccountModal = ({
   onSubmit: () => void;
   submitting: boolean;
   nameInputRef: React.RefObject<HTMLInputElement | null>;
+  onImportTransactions: (file: File, accountId: string) => void;
 }) => {
   if (!isOpen) return null;
 
@@ -281,6 +285,61 @@ const AddAccountModal = ({
               Make this primary
             </label>
           </div>
+
+          {/* Import Transactions Section */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-medium text-gray-900 mb-3">Import Existing Transactions</h4>
+            <p className="text-xs text-gray-600 mb-3">
+              Import transactions for this account. You can import after creating the account.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  // This will trigger file input for import
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.csv,.xlsx,.xls,.pdf';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      // We'll need to create the account first, then import
+                      // For now, we'll store the file and import after account creation
+                      setForm((prev) => ({ ...prev, importFile: file }));
+                    }
+                  };
+                  input.click();
+                }}
+                className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <DocumentArrowUpIcon className="h-4 w-4" />
+                {form.importFile ? "Change File" : "Select File to Import"}
+              </button>
+            </div>
+            {form.importFile && (
+              <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <DocumentArrowUpIcon className="h-4 w-4 text-green-600" />
+                  <p className="text-xs text-green-700 font-medium">
+                    Selected: {form.importFile.name}
+                  </p>
+                </div>
+                <p className="text-xs text-green-600 mt-1">
+                  File will be imported automatically after account creation
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, importFile: null }))}
+                  className="text-xs text-red-600 hover:text-red-800 mt-1 underline"
+                >
+                  Remove file
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              Supported formats: CSV, Excel (.xlsx, .xls), PDF
+            </p>
+          </div>
         </div>
 
         {/* Footer */}
@@ -313,7 +372,8 @@ const EditAccountModal = ({
   onSubmit, 
   submitting, 
   nameInputRef, 
-  account 
+  account,
+  onImportTransactions
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -333,6 +393,7 @@ const EditAccountModal = ({
   submitting: boolean;
   nameInputRef: React.RefObject<HTMLInputElement | null>;
   account: BankAccount | null;
+  onImportTransactions: (file: File, accountId: string) => void;
 }) => {
   if (!isOpen) return null;
 
@@ -492,6 +553,39 @@ const EditAccountModal = ({
             <label htmlFor="isPrimary" className="text-sm text-gray-700">
               Make this primary
             </label>
+          </div>
+
+          {/* Import Transactions Section */}
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Import Transactions</h3>
+            <p className="text-xs text-gray-600 mb-3">
+              Import transactions for this account. Files will be automatically associated with this account.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  // This will trigger file input for import
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.csv,.xlsx,.xls,.pdf';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      onImportTransactions(file, account?._id || '');
+                    }
+                  };
+                  input.click();
+                }}
+                className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <DocumentArrowUpIcon className="h-4 w-4" />
+                Import Transactions
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Supported formats: CSV, Excel (.xlsx, .xls), PDF
+            </p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
@@ -682,9 +776,7 @@ const AccountDetailsModal = ({
 export default function BankAccountManager() {
   const { user } = useAuth();
   const { addToast } = useToast();
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const banking = useBanking();
   const [selectedAccount, setSelectedAccount] = useState<BankAccount | null>(
     null
   );
@@ -707,84 +799,32 @@ export default function BankAccountManager() {
     description: "",
     isPrimary: false,
     accountType: "bank" as "bank" | "credit_card",
+    importFile: null as File | null,
   });
 
   const statuses = ["all", "active", "inactive", "closed"];
   const accountTypes = ["checking", "savings", "credit", "loan"];
 
-  const filteredAccounts = Array.isArray(accounts) ? accounts.filter(
+  const filteredAccounts = Array.isArray(banking.accounts) ? banking.accounts.filter(
     (account) => {
       const matches = filterStatus === "all" || account.status === filterStatus;
-      console.log(`🔍 Filter - Account ${account.name} (status: ${account.status}) matches filter "${filterStatus}": ${matches}`);
       return matches;
     }
   ) : [];
-  
-  console.log("🔍 Filter - Total accounts:", accounts?.length || 0);
-  console.log("🔍 Filter - Accounts array:", accounts);
-  console.log("🔍 Filter - Filtered accounts:", filteredAccounts.length);
-  console.log("🔍 Filter - Current filter status:", filterStatus);
 
-  // Load bank accounts
-  const loadBankAccounts = async () => {
-    try {
-      console.log("🔍 Frontend - Loading bank accounts...");
-      setLoading(true);
-      setError(null);
-      const response = (await bankingService.getBankAccounts()) as {
-        data: BankAccount[];
-      };
-      console.log("🔍 Frontend - Response received:", response);
-      console.log("🔍 Frontend - Accounts data:", response.data);
-      console.log("🔍 Frontend - Accounts data type:", typeof response.data);
-      console.log("🔍 Frontend - Accounts data is array:", Array.isArray(response.data));
-      
-      if (Array.isArray(response.data)) {
-        setAccounts(response.data);
-        console.log("🔍 Frontend - Accounts set successfully:", response.data.length, "accounts");
-        // If there are no accounts yet, prompt user to add one
-        if (response.data.length === 0) {
-          setShowAddAccount(true);
-        }
-      } else {
-        console.error("🔍 Frontend - Invalid data format:", response.data);
-        setError("Invalid data format received from server");
-      }
-    } catch (err: any) {
-      console.error("🔍 Frontend - Error loading bank accounts:", err);
-      const message =
-        err?.message ||
-        err.response?.data?.message ||
-        "Failed to load bank accounts";
-      setError(message);
-      console.error("Error loading bank accounts:", err);
-    } finally {
-      setLoading(false);
+  // Check if we need to show add account modal when no accounts exist
+  React.useEffect(() => {
+    if (banking.accounts.length === 0 && !banking.loading.accounts) {
+      setShowAddAccount(true);
     }
-  };
+  }, [banking.accounts.length, banking.loading.accounts]);
 
   // Sync bank account
   const handleSyncAccount = async (accountId: string) => {
     try {
       setSyncingAccount(accountId);
-      await bankingService.syncBankAccount(accountId);
-      addToast({
-        title: "Success",
-        message: "Bank account synced successfully!",
-        type: "success",
-        duration: 3000,
-      });
-      await loadBankAccounts(); // Reload accounts to get updated data
+      await banking.syncAccount(accountId);
     } catch (err: any) {
-      const message =
-        err?.message || err.response?.data?.message || "Failed to sync account";
-      addToast({
-        title: "Error",
-        message: message,
-        type: "error",
-        duration: 5000,
-      });
-      setError(message);
       console.error("Error syncing account:", err);
     } finally {
       setSyncingAccount(null);
@@ -793,7 +833,7 @@ export default function BankAccountManager() {
 
   // Bulk sync all accounts
   const handleBulkSync = async () => {
-    if (!Array.isArray(accounts) || accounts.length === 0) {
+    if (!Array.isArray(banking.accounts) || banking.accounts.length === 0) {
       addToast({
         title: "Info",
         message: "No accounts to sync",
@@ -803,7 +843,7 @@ export default function BankAccountManager() {
       return;
     }
 
-    const activeAccounts = accounts.filter(account => account.status === "active");
+    const activeAccounts = banking.accounts.filter(account => account.status === "active");
     if (activeAccounts.length === 0) {
       addToast({
         title: "Info",
@@ -821,7 +861,7 @@ export default function BankAccountManager() {
 
       for (const account of activeAccounts) {
         try {
-          await bankingService.syncBankAccount(account._id);
+          await banking.syncAccount(account._id);
           successCount++;
         } catch (err) {
           errorCount++;
@@ -836,7 +876,6 @@ export default function BankAccountManager() {
           type: "success",
           duration: 3000,
         });
-        await loadBankAccounts(); // Reload accounts to get updated data
       }
 
       if (errorCount > 0) {
@@ -871,26 +910,8 @@ export default function BankAccountManager() {
     }
 
     try {
-      await bankingService.deleteBankAccount(accountId);
-      addToast({
-        title: "Success",
-        message: "Bank account deleted successfully!",
-        type: "success",
-        duration: 3000,
-      });
-      await loadBankAccounts(); // Reload accounts
+      await banking.deleteAccount(accountId);
     } catch (err: any) {
-      const message =
-        err?.message ||
-        err.response?.data?.message ||
-        "Failed to delete account";
-      addToast({
-        title: "Error",
-        message: message,
-        type: "error",
-        duration: 5000,
-      });
-      setError(message);
       console.error("Error deleting account:", err);
     }
   };
@@ -898,24 +919,17 @@ export default function BankAccountManager() {
   // Create bank account
   const handleAddAccount = async () => {
     if (!form.name || !form.accountType) {
-      setError("Please fill in account name and select account type");
+      addToast({
+        title: "Error",
+        message: "Please fill in account name and select account type",
+        type: "error",
+        duration: 3000,
+      });
       return;
     }
     try {
-      console.log("🔍 Frontend - Creating bank account with data:", {
-        name: form.name,
-        accountCode: form.accountCode,
-        currency: form.currency,
-        accountNumber: form.accountNumber,
-        bankName: form.bankName,
-        ifsc: form.ifsc,
-        description: form.description,
-        isPrimary: form.isPrimary,
-        accountType: form.accountType,
-      });
       setSubmitting(true);
-      setError(null);
-      const result = await bankingService.createBankAccount({
+      const newAccount = await banking.createAccount({
         name: form.name,
         accountCode: form.accountCode,
         currency: form.currency,
@@ -926,13 +940,28 @@ export default function BankAccountManager() {
         isPrimary: form.isPrimary,
         accountType: form.accountType,
       });
-      console.log("🔍 Frontend - Account creation result:", result);
-      addToast({
-        title: "Success",
-        message: "Bank account created successfully!",
-        type: "success",
-        duration: 3000,
-      });
+
+      // If there's an import file, import transactions after account creation
+      if (form.importFile && newAccount) {
+        try {
+          await handleImportTransactions(form.importFile, newAccount._id);
+          addToast({
+            title: "Success",
+            message: `Account created and transactions imported successfully!`,
+            type: "success",
+            duration: 5000,
+          });
+        } catch (importError) {
+          console.error("Error importing transactions:", importError);
+          addToast({
+            title: "Warning",
+            message: `Account created but failed to import transactions. You can import them later from the account edit page.`,
+            type: "warning",
+            duration: 5000,
+          });
+        }
+      }
+
       setShowAddAccount(false);
       setForm({
         name: "",
@@ -944,21 +973,9 @@ export default function BankAccountManager() {
         description: "",
         isPrimary: false,
         accountType: "bank",
+        importFile: null,
       });
-      console.log("🔍 Frontend - Reloading accounts after creation...");
-      await loadBankAccounts();
     } catch (err: any) {
-      const message =
-        err?.message ||
-        err.response?.data?.message ||
-        "Failed to create bank account";
-      addToast({
-        title: "Error",
-        message: message,
-        type: "error",
-        duration: 5000,
-      });
-      setError(message);
       console.error("Error creating account:", err);
     } finally {
       setSubmitting(false);
@@ -968,25 +985,17 @@ export default function BankAccountManager() {
   // Edit bank account
   const handleEditAccount = async () => {
     if (!selectedAccount || !form.name || !form.accountType) {
-      setError("Please fill in account name and select account type");
+      addToast({
+        title: "Error",
+        message: "Please fill in account name and select account type",
+        type: "error",
+        duration: 3000,
+      });
       return;
     }
     try {
-      console.log("🔍 Frontend - Updating bank account with data:", {
-        id: selectedAccount._id,
-        name: form.name,
-        accountCode: form.accountCode,
-        currency: form.currency,
-        accountNumber: form.accountNumber,
-        bankName: form.bankName,
-        ifsc: form.ifsc,
-        description: form.description,
-        isPrimary: form.isPrimary,
-        accountType: form.accountType,
-      });
       setSubmitting(true);
-      setError(null);
-      const result = await bankingService.updateBankAccount(selectedAccount._id, {
+      await banking.updateAccount(selectedAccount._id, {
         name: form.name,
         accountCode: form.accountCode,
         currency: form.currency,
@@ -996,13 +1005,6 @@ export default function BankAccountManager() {
         description: form.description,
         isPrimary: form.isPrimary,
         accountType: form.accountType,
-      });
-      console.log("🔍 Frontend - Account update result:", result);
-      addToast({
-        title: "Success",
-        message: "Bank account updated successfully!",
-        type: "success",
-        duration: 3000,
       });
       setShowEditAccount(false);
       setSelectedAccount(null);
@@ -1016,24 +1018,62 @@ export default function BankAccountManager() {
         description: "",
         isPrimary: false,
         accountType: "bank",
+        importFile: null,
       });
-      console.log("🔍 Frontend - Reloading accounts after update...");
-      await loadBankAccounts();
     } catch (err: any) {
-      const message =
-        err?.message ||
-        err.response?.data?.message ||
-        "Failed to update bank account";
-      addToast({
-        title: "Error",
-        message: message,
-        type: "error",
-        duration: 5000,
-      });
-      setError(message);
       console.error("Error updating account:", err);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle import transactions for specific account
+  const handleImportTransactions = async (file: File, accountId: string) => {
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('accountId', accountId);
+      formData.append('userId', user?.id || '');
+
+      addToast({
+        title: "Importing...",
+        message: `Processing ${file.name} for account transactions`,
+        type: "info",
+        duration: 3000,
+      });
+
+      // Import transactions using fetch directly
+      const response = await fetch('/api/banking/import-transactions', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to import transactions');
+      }
+
+      const result = await response.json();
+      
+      addToast({
+        title: "Success",
+        message: `Successfully imported ${result.data?.count || 0} transactions from ${file.name}`,
+        type: "success",
+        duration: 5000,
+      });
+      
+      // Refresh transactions to show the newly imported ones
+      banking.refreshTransactions();
+    } catch (err: any) {
+      console.error("Error importing transactions:", err);
+      addToast({
+        title: "Error",
+        message: `Failed to import transactions from ${file.name}`,
+        type: "error",
+        duration: 5000,
+      });
     }
   };
 
@@ -1050,13 +1090,13 @@ export default function BankAccountManager() {
       description: account.description || "",
       isPrimary: account.isPrimary,
       accountType: account.accountType,
+      importFile: null,
     });
     setShowEditAccount(true);
   };
 
   useEffect(() => {
     setIsHydrated(true);
-    loadBankAccounts();
   }, []);
 
   // Listen for a global event to open the Add Account modal (triggered from parent page)
@@ -1145,7 +1185,7 @@ export default function BankAccountManager() {
     );
   }
 
-  if (loading) {
+  if (banking.loading.accounts) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -1187,18 +1227,18 @@ export default function BankAccountManager() {
       </div>
 
       {/* Error */}
-      {error && (
+      {banking.errors.accounts && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 flex items-center gap-2">
           <ExclamationTriangleIcon className="h-5 w-5" />
-          <span>{error}</span>
-          <button onClick={loadBankAccounts} className="ml-auto underline">
+          <span>{banking.errors.accounts}</span>
+          <button onClick={banking.refreshAccounts} className="ml-auto underline">
             Retry
           </button>
         </div>
       )}
 
       {/* Empty state */}
-      {Array.isArray(accounts) && accounts.length === 0 && !error && (
+      {Array.isArray(banking.accounts) && banking.accounts.length === 0 && !banking.errors.accounts && (
         <div className="border border-dashed border-gray-300 rounded-lg p-8 text-center">
           <h4 className="text-gray-900 font-semibold mb-2">
             No bank accounts connected yet
@@ -1216,7 +1256,7 @@ export default function BankAccountManager() {
       )}
 
       {/* Accounts Grid */}
-      {Array.isArray(accounts) && accounts.length > 0 && (
+      {Array.isArray(banking.accounts) && banking.accounts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAccounts.map((account) => (
             <div
@@ -1323,7 +1363,7 @@ export default function BankAccountManager() {
       )}
 
       {/* Summary Stats */}
-      {Array.isArray(accounts) && accounts.length > 0 && (
+      {Array.isArray(banking.accounts) && banking.accounts.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
           <div className="p-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -1334,25 +1374,25 @@ export default function BankAccountManager() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-900 mb-2">
-                  {Array.isArray(accounts) ? accounts.length : 0}
+                  {Array.isArray(banking.accounts) ? banking.accounts.length : 0}
                 </div>
                 <div className="text-sm text-gray-600">Total Accounts</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600 mb-2">
-                  {Array.isArray(accounts) ? accounts.filter((a) => a.status === "active").length : 0}
+                  {Array.isArray(banking.accounts) ? banking.accounts.filter((a) => a.status === "active").length : 0}
                 </div>
                 <div className="text-sm text-gray-600">Active</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600 mb-2">
-                  {Array.isArray(accounts) ? accounts.filter((a) => a.status === "inactive").length : 0}
+                  {Array.isArray(banking.accounts) ? banking.accounts.filter((a) => a.status === "inactive").length : 0}
                 </div>
                 <div className="text-sm text-gray-600">Inactive</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600 mb-2">
-                  {Array.isArray(accounts) ? accounts.filter((a) => a.status === "closed").length : 0}
+                  {Array.isArray(banking.accounts) ? banking.accounts.filter((a) => a.status === "closed").length : 0}
                 </div>
                 <div className="text-sm text-gray-600">Closed</div>
               </div>
@@ -1363,12 +1403,27 @@ export default function BankAccountManager() {
 
       <AddAccountModal
         isOpen={showAddAccount}
-        onClose={() => setShowAddAccount(false)}
+        onClose={() => {
+          setShowAddAccount(false);
+          setForm({
+            name: "",
+            accountCode: "",
+            currency: "INR",
+            accountNumber: "",
+            bankName: "",
+            ifsc: "",
+            description: "",
+            isPrimary: false,
+            accountType: "bank",
+            importFile: null,
+          });
+        }}
         form={form}
         setForm={setForm}
         onSubmit={handleAddAccount}
         submitting={submitting}
         nameInputRef={nameInputRef}
+        onImportTransactions={handleImportTransactions}
       />
       <AccountDetailsModal
         isOpen={showAccountDetails}
@@ -1395,6 +1450,7 @@ export default function BankAccountManager() {
             description: "",
             isPrimary: false,
             accountType: "bank",
+            importFile: null,
           });
         }}
         form={form}
@@ -1403,6 +1459,7 @@ export default function BankAccountManager() {
         submitting={submitting}
         nameInputRef={nameInputRef}
         account={selectedAccount}
+        onImportTransactions={handleImportTransactions}
       />
     </div>
   );
