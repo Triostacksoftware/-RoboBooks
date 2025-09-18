@@ -3,10 +3,10 @@ import { apiClient } from "./apiClient";
 // Customer API endpoints
 const ENDPOINTS = {
   CUSTOMERS: "/api/customers",
-  CUSTOMER: (id) => `/api/customers/?{id}`,
+  CUSTOMER: (id) => `/api/customers/${id}`,
   CREATE_CUSTOMER: "/api/customers",
-  UPDATE_CUSTOMER: (id) => `/api/customers/?{id}`,
-  DELETE_CUSTOMER: (id) => `/api/customers/?{id}`,
+  UPDATE_CUSTOMER: (id) => `/api/customers/${id}`,
+  DELETE_CUSTOMER: (id) => `/api/customers/${id}`,
 };
 
 // HTTP wrapper functions
@@ -55,7 +55,7 @@ export const customerService = {
   getCustomers: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams(params).toString();
-      const url = queryParams ? `?{ENDPOINTS.CUSTOMERS}??{queryParams}` : ENDPOINTS.CUSTOMERS;
+      const url = queryParams ? `${ENDPOINTS.CUSTOMERS}?${queryParams}` : ENDPOINTS.CUSTOMERS;
       const response = await http.get(url);
       return response.data;
     } catch (error) {
@@ -79,7 +79,7 @@ export const customerService = {
       const response = await http.get(ENDPOINTS.CUSTOMER(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to fetch customer ?{id}:`, error);
+      console.error(`Failed to fetch customer ${id}:`, error);
       throw error;
     }
   },
@@ -101,7 +101,7 @@ export const customerService = {
       const response = await http.put(ENDPOINTS.UPDATE_CUSTOMER(id), customerData);
       return response.data;
     } catch (error) {
-      console.error(`Failed to update customer ?{id}:`, error);
+      console.error(`Failed to update customer ${id}:`, error);
       throw error;
     }
   },
@@ -112,7 +112,7 @@ export const customerService = {
       const response = await http.delete(ENDPOINTS.DELETE_CUSTOMER(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to delete customer ?{id}:`, error);
+      console.error(`Failed to delete customer ${id}:`, error);
       throw error;
     }
   },

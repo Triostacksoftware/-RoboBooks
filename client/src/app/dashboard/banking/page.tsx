@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { bankingService } from "@/services/bankingService";
+import { useToast } from "@/contexts/ToastContext";
 import {
   BanknotesIcon,
   CreditCardIcon,
@@ -78,6 +80,7 @@ interface ReconciliationItem {
 }
 
 export default function BankingPage() {
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [showImportWizard, setShowImportWizard] = useState(false);
@@ -90,6 +93,10 @@ export default function BankingPage() {
     selectedAccount: null,
   });
   const [isHydrated, setIsHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [realAccounts, setRealAccounts] = useState<BankAccount[]>([]);
+  const [realTransactions, setRealTransactions] = useState<Transaction[]>([]);
   const router = useRouter();
 
   const tabs = [
@@ -99,8 +106,42 @@ export default function BankingPage() {
     { id: "reconciliation", label: "Reconciliation", icon: Cog6ToothIcon },
   ];
 
+  // Load real banking data
+  const loadBankingData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Load accounts
+      const accountsResponse = await bankingService.getBankAccounts();
+      if (accountsResponse.data) {
+        setRealAccounts(accountsResponse.data);
+      }
+      
+      // Load transactions
+      const transactionsResponse = await bankingService.getTransactions();
+      if (transactionsResponse.data) {
+        setRealTransactions(transactionsResponse.data);
+      }
+      
+    } catch (err: any) {
+      const message = err?.message || "Failed to load banking data";
+      setError(message);
+      addToast({
+        title: "Error",
+        message: message,
+        type: "error",
+        duration: 5000,
+      });
+      console.error("Error loading banking data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     setIsHydrated(true);
+    loadBankingData();
   }, []);
 
   const accounts: BankAccount[] = [
@@ -477,9 +518,15 @@ export default function BankingPage() {
       case "accounts":
         return <BankAccountManager />;
       case "transactions":
-        return <TransactionManager transactions={recentTransactions} />;
+        return <TransactionManager 
+          transactions={realTransactions.length > 0 ? realTransactions : recentTransactions} 
+          onTransactionUpdate={loadBankingData}
+        />;
       case "reconciliation":
-        return <BankReconciliation reconciliationData={reconciliationData} />;
+        return <BankReconciliation 
+          reconciliationData={reconciliationData} 
+          onReconciliationUpdate={loadBankingData}
+        />;
       default:
         return <BankingOverview />;
     }

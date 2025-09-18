@@ -15,6 +15,8 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import TransactionCategorizationModal from "./TransactionCategorizationModal";
+import { bankingService } from "@/services/bankingService";
+import { useToast } from "@/contexts/ToastContext";
 
 interface Transaction {
   id: number;
@@ -30,11 +32,14 @@ interface Transaction {
 
 interface TransactionManagerProps {
   transactions: Transaction[];
+  onTransactionUpdate?: () => void;
 }
 
 export default function TransactionManager({
   transactions,
+  onTransactionUpdate,
 }: TransactionManagerProps) {
+  const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -114,6 +119,74 @@ export default function TransactionManager({
     // Here you would typically make an API call to save the categorization
     setShowCategorizationModal(false);
     setTransactionForCategorization(null);
+  };
+
+  // Transaction management handlers
+  const handleEditTransaction = async (transaction: Transaction) => {
+    try {
+      // For now, just show a toast - implement edit modal later
+      addToast({
+        title: "Info",
+        message: "Edit transaction functionality coming soon!",
+        type: "info",
+        duration: 3000,
+      });
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to edit transaction",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleDeleteTransaction = async (transaction: Transaction) => {
+    if (!confirm("Are you sure you want to delete this transaction?")) {
+      return;
+    }
+
+    try {
+      await bankingService.deleteTransaction(transaction.id.toString());
+      addToast({
+        title: "Success",
+        message: "Transaction deleted successfully!",
+        type: "success",
+        duration: 3000,
+      });
+      if (onTransactionUpdate) {
+        onTransactionUpdate();
+      }
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to delete transaction",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleReconcileTransaction = async (transaction: Transaction) => {
+    try {
+      await bankingService.reconcileTransaction(transaction.id.toString());
+      addToast({
+        title: "Success",
+        message: "Transaction reconciled successfully!",
+        type: "success",
+        duration: 3000,
+      });
+      if (onTransactionUpdate) {
+        onTransactionUpdate();
+      }
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to reconcile transaction",
+        type: "error",
+        duration: 5000,
+      });
+    }
   };
 
   return (
@@ -306,10 +379,22 @@ export default function TransactionManager({
                     >
                       <EyeIcon className="h-4 w-4" />
                     </button>
-                    <button className="p-1 text-gray-400 hover:text-gray-600 rounded">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditTransaction(transaction);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                    >
                       <PencilIcon className="h-4 w-4" />
                     </button>
-                    <button className="p-1 text-gray-400 hover:text-red-600 rounded">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTransaction(transaction);
+                      }}
+                      className="p-1 text-gray-400 hover:text-red-600 rounded"
+                    >
                       <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>

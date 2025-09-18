@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { bankingService } from "@/services/bankingService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
 
 interface BankAccount {
   _id: string;
@@ -73,7 +74,7 @@ const AddAccountModal = ({
       onKeyDown={(e) => e.stopPropagation()}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -97,10 +98,10 @@ const AddAccountModal = ({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5">
+        <div className="px-6 py-4">
           {/* Account Type Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Account Type *
             </label>
             <div className="flex space-x-6">
@@ -139,7 +140,7 @@ const AddAccountModal = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Account Name *
@@ -151,7 +152,7 @@ const AddAccountModal = ({
                   const v = e.target.value;
                   setForm((prev) => ({ ...prev, name: v }));
                 }}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="e.g., Business Checking"
                 autoComplete="off"
                 ref={nameInputRef}
@@ -169,7 +170,7 @@ const AddAccountModal = ({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, accountCode: e.target.value }))
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="e.g., ACC001"
                 autoComplete="off"
               />
@@ -184,7 +185,7 @@ const AddAccountModal = ({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, currency: e.target.value }))
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 required
               >
                 {CURRENCY_OPTIONS.map((option) => (
@@ -208,7 +209,7 @@ const AddAccountModal = ({
                     accountNumber: e.target.value,
                   }))
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="e.g., 1234567890"
                 autoComplete="off"
               />
@@ -224,7 +225,7 @@ const AddAccountModal = ({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, bankName: e.target.value }))
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="e.g., Chase Bank"
                 autoComplete="off"
               />
@@ -240,14 +241,14 @@ const AddAccountModal = ({
                 onChange={(e) =>
                   setForm((prev) => ({ ...prev, ifsc: e.target.value }))
                 }
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 placeholder="e.g., CHAS0000123"
                 autoComplete="off"
               />
             </div>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
             </label>
@@ -256,14 +257,14 @@ const AddAccountModal = ({
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, description: e.target.value }))
               }
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              rows={2}
+              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               placeholder="Max. 500 characters"
               maxLength={500}
             />
           </div>
 
-          <div className="mt-5 flex items-center">
+          <div className="mt-4 flex items-center">
             <input
               id="isPrimary"
               type="checkbox"
@@ -298,6 +299,218 @@ const AddAccountModal = ({
             {submitting ? "Adding..." : "Add Account"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Account Modal Component
+const EditAccountModal = ({ 
+  isOpen, 
+  onClose, 
+  form, 
+  setForm, 
+  onSubmit, 
+  submitting, 
+  nameInputRef, 
+  account 
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  form: {
+    name: string;
+    accountCode: string;
+    currency: string;
+    accountNumber: string;
+    bankName: string;
+    ifsc: string;
+    description: string;
+    isPrimary: boolean;
+    accountType: "bank" | "credit_card";
+  };
+  setForm: (form: any) => void;
+  onSubmit: () => void;
+  submitting: boolean;
+  nameInputRef: React.RefObject<HTMLInputElement | null>;
+  account: BankAccount | null;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Edit Bank Account</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account Type
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="bank"
+                  checked={form.accountType === "bank"}
+                  onChange={(e) => setForm({ ...form, accountType: e.target.value })}
+                  className="mr-2"
+                />
+                Bank
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="credit_card"
+                  checked={form.accountType === "credit_card"}
+                  onChange={(e) => setForm({ ...form, accountType: e.target.value })}
+                  className="mr-2"
+                />
+                Credit Card
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account Name *
+            </label>
+            <input
+              ref={nameInputRef}
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g., Business Checking"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account Code
+            </label>
+            <input
+              type="text"
+              value={form.accountCode}
+              onChange={(e) => setForm({ ...form, accountCode: e.target.value })}
+              placeholder="e.g., ACC001"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Currency
+            </label>
+            <select
+              value={form.currency}
+              onChange={(e) => setForm({ ...form, currency: e.target.value })}
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              {CURRENCY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account Number
+            </label>
+            <input
+              type="text"
+              value={form.accountNumber}
+              onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
+              placeholder="e.g., 1234567890"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bank Name
+            </label>
+            <input
+              type="text"
+              value={form.bankName}
+              onChange={(e) => setForm({ ...form, bankName: e.target.value })}
+              placeholder="e.g., Chase Bank"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              IFSC
+            </label>
+            <input
+              type="text"
+              value={form.ifsc}
+              onChange={(e) => setForm({ ...form, ifsc: e.target.value })}
+              placeholder="e.g., CHAS0000123"
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Optional description"
+              rows={2}
+              maxLength={500}
+              className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Max. 500 characters
+            </p>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="isPrimary"
+              checked={form.isPrimary}
+              onChange={(e) => setForm({ ...form, isPrimary: e.target.checked })}
+              className="mr-2"
+            />
+            <label htmlFor="isPrimary" className="text-sm text-gray-700">
+              Make this primary
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {submitting ? "Updating..." : "Update Account"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -468,6 +681,7 @@ const AccountDetailsModal = ({
 
 export default function BankAccountManager() {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -476,6 +690,7 @@ export default function BankAccountManager() {
   );
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAccountDetails, setShowAccountDetails] = useState(false);
+  const [showEditAccount, setShowEditAccount] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
   const [syncingAccount, setSyncingAccount] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -505,7 +720,8 @@ export default function BankAccountManager() {
     }
   ) : [];
   
-  console.log("🔍 Filter - Total accounts:", accounts.length);
+  console.log("🔍 Filter - Total accounts:", accounts?.length || 0);
+  console.log("🔍 Filter - Accounts array:", accounts);
   console.log("🔍 Filter - Filtered accounts:", filteredAccounts.length);
   console.log("🔍 Filter - Current filter status:", filterStatus);
 
@@ -520,10 +736,19 @@ export default function BankAccountManager() {
       };
       console.log("🔍 Frontend - Response received:", response);
       console.log("🔍 Frontend - Accounts data:", response.data);
-      setAccounts(response.data);
-      // If there are no accounts yet, prompt user to add one
-      if (response.data.length === 0) {
-        setShowAddAccount(true);
+      console.log("🔍 Frontend - Accounts data type:", typeof response.data);
+      console.log("🔍 Frontend - Accounts data is array:", Array.isArray(response.data));
+      
+      if (Array.isArray(response.data)) {
+        setAccounts(response.data);
+        console.log("🔍 Frontend - Accounts set successfully:", response.data.length, "accounts");
+        // If there are no accounts yet, prompt user to add one
+        if (response.data.length === 0) {
+          setShowAddAccount(true);
+        }
+      } else {
+        console.error("🔍 Frontend - Invalid data format:", response.data);
+        setError("Invalid data format received from server");
       }
     } catch (err: any) {
       console.error("🔍 Frontend - Error loading bank accounts:", err);
@@ -543,12 +768,93 @@ export default function BankAccountManager() {
     try {
       setSyncingAccount(accountId);
       await bankingService.syncBankAccount(accountId);
+      addToast({
+        title: "Success",
+        message: "Bank account synced successfully!",
+        type: "success",
+        duration: 3000,
+      });
       await loadBankAccounts(); // Reload accounts to get updated data
     } catch (err: any) {
       const message =
         err?.message || err.response?.data?.message || "Failed to sync account";
+      addToast({
+        title: "Error",
+        message: message,
+        type: "error",
+        duration: 5000,
+      });
       setError(message);
       console.error("Error syncing account:", err);
+    } finally {
+      setSyncingAccount(null);
+    }
+  };
+
+  // Bulk sync all accounts
+  const handleBulkSync = async () => {
+    if (!Array.isArray(accounts) || accounts.length === 0) {
+      addToast({
+        title: "Info",
+        message: "No accounts to sync",
+        type: "info",
+        duration: 3000,
+      });
+      return;
+    }
+
+    const activeAccounts = accounts.filter(account => account.status === "active");
+    if (activeAccounts.length === 0) {
+      addToast({
+        title: "Info",
+        message: "No active accounts to sync",
+        type: "info",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      setSyncingAccount("bulk");
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const account of activeAccounts) {
+        try {
+          await bankingService.syncBankAccount(account._id);
+          successCount++;
+        } catch (err) {
+          errorCount++;
+          console.error(`Failed to sync account ${account.name}:`, err);
+        }
+      }
+
+      if (successCount > 0) {
+        addToast({
+          title: "Success",
+          message: `Successfully synced ${successCount} account(s)`,
+          type: "success",
+          duration: 3000,
+        });
+        await loadBankAccounts(); // Reload accounts to get updated data
+      }
+
+      if (errorCount > 0) {
+        addToast({
+          title: "Warning",
+          message: `Failed to sync ${errorCount} account(s)`,
+          type: "error",
+          duration: 5000,
+        });
+      }
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to perform bulk sync",
+        type: "error",
+        duration: 5000,
+      });
+      console.error("Error during bulk sync:", err);
     } finally {
       setSyncingAccount(null);
     }
@@ -566,12 +872,24 @@ export default function BankAccountManager() {
 
     try {
       await bankingService.deleteBankAccount(accountId);
+      addToast({
+        title: "Success",
+        message: "Bank account deleted successfully!",
+        type: "success",
+        duration: 3000,
+      });
       await loadBankAccounts(); // Reload accounts
     } catch (err: any) {
       const message =
         err?.message ||
         err.response?.data?.message ||
         "Failed to delete account";
+      addToast({
+        title: "Error",
+        message: message,
+        type: "error",
+        duration: 5000,
+      });
       setError(message);
       console.error("Error deleting account:", err);
     }
@@ -609,6 +927,12 @@ export default function BankAccountManager() {
         accountType: form.accountType,
       });
       console.log("🔍 Frontend - Account creation result:", result);
+      addToast({
+        title: "Success",
+        message: "Bank account created successfully!",
+        type: "success",
+        duration: 3000,
+      });
       setShowAddAccount(false);
       setForm({
         name: "",
@@ -628,11 +952,106 @@ export default function BankAccountManager() {
         err?.message ||
         err.response?.data?.message ||
         "Failed to create bank account";
+      addToast({
+        title: "Error",
+        message: message,
+        type: "error",
+        duration: 5000,
+      });
       setError(message);
       console.error("Error creating account:", err);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Edit bank account
+  const handleEditAccount = async () => {
+    if (!selectedAccount || !form.name || !form.accountType) {
+      setError("Please fill in account name and select account type");
+      return;
+    }
+    try {
+      console.log("🔍 Frontend - Updating bank account with data:", {
+        id: selectedAccount._id,
+        name: form.name,
+        accountCode: form.accountCode,
+        currency: form.currency,
+        accountNumber: form.accountNumber,
+        bankName: form.bankName,
+        ifsc: form.ifsc,
+        description: form.description,
+        isPrimary: form.isPrimary,
+        accountType: form.accountType,
+      });
+      setSubmitting(true);
+      setError(null);
+      const result = await bankingService.updateBankAccount(selectedAccount._id, {
+        name: form.name,
+        accountCode: form.accountCode,
+        currency: form.currency,
+        accountNumber: form.accountNumber,
+        bankName: form.bankName,
+        ifsc: form.ifsc,
+        description: form.description,
+        isPrimary: form.isPrimary,
+        accountType: form.accountType,
+      });
+      console.log("🔍 Frontend - Account update result:", result);
+      addToast({
+        title: "Success",
+        message: "Bank account updated successfully!",
+        type: "success",
+        duration: 3000,
+      });
+      setShowEditAccount(false);
+      setSelectedAccount(null);
+      setForm({
+        name: "",
+        accountCode: "",
+        currency: "INR",
+        accountNumber: "",
+        bankName: "",
+        ifsc: "",
+        description: "",
+        isPrimary: false,
+        accountType: "bank",
+      });
+      console.log("🔍 Frontend - Reloading accounts after update...");
+      await loadBankAccounts();
+    } catch (err: any) {
+      const message =
+        err?.message ||
+        err.response?.data?.message ||
+        "Failed to update bank account";
+      addToast({
+        title: "Error",
+        message: message,
+        type: "error",
+        duration: 5000,
+      });
+      setError(message);
+      console.error("Error updating account:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Open edit modal with account data
+  const openEditModal = (account: BankAccount) => {
+    setSelectedAccount(account);
+    setForm({
+      name: account.name,
+      accountCode: account.accountCode || "",
+      currency: account.currency,
+      accountNumber: account.accountNumber || "",
+      bankName: account.bankName || "",
+      ifsc: account.ifsc || "",
+      description: account.description || "",
+      isPrimary: account.isPrimary,
+      accountType: account.accountType,
+    });
+    setShowEditAccount(true);
   };
 
   useEffect(() => {
@@ -744,13 +1163,27 @@ export default function BankAccountManager() {
             Manage your connected bank accounts and their settings
           </p>
         </div>
-        <button
-          onClick={() => setShowAddAccount(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <PlusIcon className="h-5 w-5" />
-          Add Account
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleBulkSync}
+            disabled={syncingAccount === "bulk"}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            {syncingAccount === "bulk" ? (
+              <ArrowPathIcon className="h-5 w-5 animate-spin" />
+            ) : (
+              <ArrowPathIcon className="h-5 w-5" />
+            )}
+            {syncingAccount === "bulk" ? "Syncing..." : "Sync All"}
+          </button>
+          <button
+            onClick={() => setShowAddAccount(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          >
+            <PlusIcon className="h-5 w-5" />
+            Add Account
+          </button>
+        </div>
       </div>
 
       {/* Error */}
@@ -852,7 +1285,10 @@ export default function BankAccountManager() {
                   >
                     <EyeIcon className="h-4 w-4" />
                   </button>
-                  <button className="flex-1 p-2 text-gray-400 hover:text-gray-600 rounded border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <button
+                    onClick={() => openEditModal(account)}
+                    className="flex-1 p-2 text-gray-400 hover:text-gray-600 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
@@ -943,6 +1379,30 @@ export default function BankAccountManager() {
         getAccountTypeColor={getAccountTypeColor}
         getStatusIcon={getStatusIcon}
         getStatusColor={getStatusColor}
+      />
+      <EditAccountModal
+        isOpen={showEditAccount}
+        onClose={() => {
+          setShowEditAccount(false);
+          setSelectedAccount(null);
+          setForm({
+            name: "",
+            accountCode: "",
+            currency: "INR",
+            accountNumber: "",
+            bankName: "",
+            ifsc: "",
+            description: "",
+            isPrimary: false,
+            accountType: "bank",
+          });
+        }}
+        form={form}
+        setForm={setForm}
+        onSubmit={handleEditAccount}
+        submitting={submitting}
+        nameInputRef={nameInputRef}
+        account={selectedAccount}
       />
     </div>
   );

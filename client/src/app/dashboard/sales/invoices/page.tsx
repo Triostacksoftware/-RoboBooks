@@ -271,9 +271,9 @@ const AllInvoicesPage = () => {
           <div className="flex items-center space-x-4">
             {/* Back Button */}
             <button
-              onClick={() => router.push("/dashboard/sales")}
+              onClick={() => router.push("/dashboard")}
               className="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-all duration-200 text-gray-700 hover:text-gray-900"
-              aria-label="Go back to Sales"
+              aria-label="Go back to Home"
             >
               <ArrowLeftIcon className="h-4 w-4" />
               <span className="text-sm font-medium">Back</span>

@@ -4,21 +4,21 @@ import { api } from "../lib/api";
 const http = {
   get: async (path, options = {}) => {
     const params = options.params || undefined;
-    const query = params ? `??{new URLSearchParams(params).toString()}` : "";
-    const data = await api(`/api?{path}?{query}`);
-    return { data };
+    const query = params ? `?${new URLSearchParams(params).toString()}` : "";
+    const response = await api(`/api${path}${query}`);
+    return { data: response.data || response };
   },
   post: async (path, body) => {
-    const data = await api(`/api?{path}`, { method: "POST", json: body });
-    return { data };
+    const response = await api(`/api${path}`, { method: "POST", json: body });
+    return { data: response.data || response };
   },
   put: async (path, body) => {
-    const data = await api(`/api?{path}`, { method: "PUT", json: body });
-    return { data };
+    const response = await api(`/api${path}`, { method: "PUT", json: body });
+    return { data: response.data || response };
   },
   delete: async (path) => {
-    const data = await api(`/api?{path}`, { method: "DELETE" });
-    return { data };
+    const response = await api(`/api${path}`, { method: "DELETE" });
+    return { data: response.data || response };
   },
 };
 
@@ -28,7 +28,7 @@ export const accountService = {
   getAccounts: (params) => http.get("/accounts", { params }),
 
   // Get account by ID
-  getAccount: (id) => http.get(`/accounts/?{id}`),
+  getAccount: (id) => http.get(`/accounts/${id}`),
 
   // Get accounts by category (asset, liability, equity, income, expense)
   getAccountsByCategory: (category) =>

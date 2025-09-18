@@ -13,6 +13,8 @@ import {
 } from "@heroicons/react/24/outline";
 import TransactionCategorizationModal from "./TransactionCategorizationModal";
 import { formatCurrency } from "@/utils/currency";
+import { bankingService } from "@/services/bankingService";
+import { useToast } from "@/contexts/ToastContext";
 
 interface ReconciliationItem {
   id: number;
@@ -42,11 +44,14 @@ interface BankReconciliationProps {
     difference: number;
     items: ReconciliationItem[];
   };
+  onReconciliationUpdate?: () => void;
 }
 
 export default function BankReconciliation({
   reconciliationData,
+  onReconciliationUpdate,
 }: BankReconciliationProps) {
+  const { addToast } = useToast();
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -134,6 +139,81 @@ export default function BankReconciliation({
     // Here you would typically make an API call to save the categorization
     setShowCategorizationModal(false);
     setSelectedTransaction(null);
+  };
+
+  // Reconciliation management handlers
+  const handleMatchTransaction = async (item: ReconciliationItem) => {
+    try {
+      // For now, just show a toast - implement matching logic later
+      addToast({
+        title: "Info",
+        message: "Transaction matching functionality coming soon!",
+        type: "info",
+        duration: 3000,
+      });
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to match transaction",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleReconcileItem = async (item: ReconciliationItem) => {
+    try {
+      // For now, just show a toast - implement reconciliation logic later
+      addToast({
+        title: "Info",
+        message: "Transaction reconciliation functionality coming soon!",
+        type: "info",
+        duration: 3000,
+      });
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to reconcile transaction",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleAutoMatch = async () => {
+    try {
+      addToast({
+        title: "Info",
+        message: "Auto-matching functionality coming soon!",
+        type: "info",
+        duration: 3000,
+      });
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to auto-match transactions",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleCompleteReconciliation = async () => {
+    try {
+      addToast({
+        title: "Info",
+        message: "Complete reconciliation functionality coming soon!",
+        type: "info",
+        duration: 3000,
+      });
+    } catch (err: any) {
+      addToast({
+        title: "Error",
+        message: "Failed to complete reconciliation",
+        type: "error",
+        duration: 5000,
+      });
+    }
   };
 
   const ManualEntryModal = () => (
@@ -285,7 +365,10 @@ export default function BankReconciliation({
           )}
 
           <div className="mt-6 flex gap-3">
-            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button 
+              onClick={handleCompleteReconciliation}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
               <ArrowPathIcon className="h-4 w-4" />
               Start Reconciliation
             </button>
@@ -346,8 +429,11 @@ export default function BankReconciliation({
               <button className="text-sm text-blue-600 hover:text-blue-700">
                 Export
               </button>
-              <button className="text-sm text-blue-600 hover:text-blue-700">
-                Bulk Actions
+              <button 
+                onClick={handleAutoMatch}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                Auto Match
               </button>
             </div>
           </div>
@@ -433,10 +519,22 @@ export default function BankReconciliation({
                     </button>
                     {item.status === "unmatched" && (
                       <>
-                        <button className="p-1 text-green-400 hover:text-green-600 rounded">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMatchTransaction(item);
+                          }}
+                          className="p-1 text-green-400 hover:text-green-600 rounded"
+                        >
                           <CheckCircleIcon className="h-4 w-4" />
                         </button>
-                        <button className="p-1 text-red-400 hover:text-red-600 rounded">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReconcileItem(item);
+                          }}
+                          className="p-1 text-red-400 hover:text-red-600 rounded"
+                        >
                           <XMarkIcon className="h-4 w-4" />
                         </button>
                       </>
