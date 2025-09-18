@@ -17,3 +17,5 @@ router.delete('/:id', organizationController.deleteOrganization);
 router.post('/:id/activate', organizationController.setActiveOrganization);
 
 export default router;
+
+

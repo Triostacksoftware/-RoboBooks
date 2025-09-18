@@ -1,184 +1,278 @@
+import { api } from '../lib/api';
+
 export interface RecurringExpense {
   _id: string;
   name: string;
   description?: string;
   amount: number;
   frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-  startDate: string;
-  endDate?: string;
   category: string;
   vendor?: string;
-  account: string;
-  isActive: boolean;
-  lastProcessed?: string;
   nextDue?: string;
-  totalOccurrences?: number;
-  processedOccurrences?: number;
+  isActive: boolean;
+  organizationId: string;
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateRecurringExpenseData {
-  name: string;
-  description?: string;
-  amount: number;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-  startDate: string;
-  endDate?: string;
-  category: string;
-  vendor?: string;
-  account: string;
-  isActive?: boolean;
-  totalOccurrences?: number;
+export interface RecurringExpenseStats {
+  total: number;
+  active: number;
+  inactive: number;
+  totalAmount: number;
+  byFrequency: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+    quarterly: number;
+    yearly: number;
+  };
+  byCategory: { [key: string]: number };
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-export const recurringExpenseService = {
+class RecurringExpenseService {
+  // Get all recurring expenses
   async getRecurringExpenses(): Promise<RecurringExpense[]> {
-    const response = await fetch(`${API_BASE_URL}/api/recurring-expenses`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch recurring expenses');
+    try {
+      const response = await api.get('/api/recurring-expenses');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recurring expenses:', error);
+      throw error;
     }
+  }
 
-    const result = await response.json();
-    return result.data || [];
-  },
-
-  async getRecurringExpenseById(id: string): Promise<RecurringExpense> {
-    const response = await fetch(`${API_BASE_URL}/api/recurring-expenses/${id}`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch recurring expense');
+  // Get recurring expense by ID
+  async getRecurringExpense(id: string): Promise<RecurringExpense> {
+    try {
+      const response = await api.get(`/api/recurring-expenses/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recurring expense:', error);
+      throw error;
     }
+  }
 
-    const result = await response.json();
-    return result.data;
-  },
-
-  async createRecurringExpense(data: CreateRecurringExpenseData): Promise<RecurringExpense> {
-    // Transform camelCase to snake_case for backend
-    const transformedData = {
-      name: data.name,
-      description: data.description,
-      amount: data.amount,
-      frequency: data.frequency,
-      start_date: data.startDate,
-      end_date: data.endDate,
-      category: data.category,
-      vendor: data.vendor,
-      account: data.account,
-      is_active: data.isActive,
-    };
-
-    const response = await fetch(`${API_BASE_URL}/api/recurring-expenses`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(transformedData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create recurring expense');
+  // Create new recurring expense
+  async createRecurringExpense(expense: Omit<RecurringExpense, '_id' | 'organizationId' | 'createdBy' | 'createdAt' | 'updatedAt'>): Promise<RecurringExpense> {
+    try {
+      const response = await api.post('/api/recurring-expenses', expense);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating recurring expense:', error);
+      throw error;
     }
+  }
 
-    const result = await response.json();
-    return result.data;
-  },
-
-  async updateRecurringExpense(id: string, data: Partial<CreateRecurringExpenseData>): Promise<RecurringExpense> {
-    // Transform camelCase to snake_case for backend
-    const transformedData: any = {};
-    if (data.name !== undefined) transformedData.name = data.name;
-    if (data.description !== undefined) transformedData.description = data.description;
-    if (data.amount !== undefined) transformedData.amount = data.amount;
-    if (data.frequency !== undefined) transformedData.frequency = data.frequency;
-    if (data.startDate !== undefined) transformedData.start_date = data.startDate;
-    if (data.endDate !== undefined) transformedData.end_date = data.endDate;
-    if (data.category !== undefined) transformedData.category = data.category;
-    if (data.vendor !== undefined) transformedData.vendor = data.vendor;
-    if (data.account !== undefined) transformedData.account = data.account;
-    if (data.isActive !== undefined) transformedData.is_active = data.isActive;
-
-    const response = await fetch(`${API_BASE_URL}/api/recurring-expenses/${id}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(transformedData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update recurring expense');
+  // Update recurring expense
+  async updateRecurringExpense(id: string, expense: Partial<RecurringExpense>): Promise<RecurringExpense> {
+    try {
+      const response = await api.put(`/api/recurring-expenses/${id}`, expense);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating recurring expense:', error);
+      throw error;
     }
+  }
 
-    const result = await response.json();
-    return result.data;
-  },
-
+  // Delete recurring expense
   async deleteRecurringExpense(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/recurring-expenses/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to delete recurring expense');
+    try {
+      await api.delete(`/api/recurring-expenses/${id}`);
+    } catch (error) {
+      console.error('Error deleting recurring expense:', error);
+      throw error;
     }
-  },
+  }
 
-  async searchRecurringExpenses(query: string): Promise<RecurringExpense[]> {
-    const response = await fetch(`${API_BASE_URL}/api/recurring-expenses/search?query=${encodeURIComponent(query)}`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to search recurring expenses');
-    }
-
-    const result = await response.json();
-    return result.data || [];
-  },
-
+  // Toggle recurring expense active status
   async toggleRecurringExpense(id: string, isActive: boolean): Promise<RecurringExpense> {
-    const response = await fetch(`${API_BASE_URL}/api/recurring-expenses/${id}/toggle`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ isActive }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to toggle recurring expense');
+    try {
+      const response = await api.patch(`/api/recurring-expenses/${id}/toggle`, { isActive });
+      return response.data;
+    } catch (error) {
+      console.error('Error toggling recurring expense:', error);
+      throw error;
     }
+  }
 
-    const result = await response.json();
-    return result.data;
-  },
-};
+  // Get recurring expense statistics
+  async getRecurringExpenseStats(): Promise<RecurringExpenseStats> {
+    try {
+      const response = await api.get('/api/recurring-expenses/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recurring expense stats:', error);
+      throw error;
+    }
+  }
+
+  // Import recurring expenses from CSV
+  async importRecurringExpenses(file: File): Promise<RecurringExpense[]> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await api.post('/api/recurring-expenses/import', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error importing recurring expenses:', error);
+      throw error;
+    }
+  }
+
+  // Export recurring expenses to CSV
+  async exportRecurringExpenses(): Promise<Blob> {
+    try {
+      const response = await api.get('/api/recurring-expenses/export', {
+        responseType: 'blob',
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error exporting recurring expenses:', error);
+      throw error;
+    }
+  }
+
+  // Convert recurring expenses to CSV format
+  convertToCSV(expenses: RecurringExpense[]): string {
+    const headers = [
+      'Name',
+      'Description',
+      'Amount',
+      'Frequency',
+      'Category',
+      'Vendor',
+      'Next Due',
+      'Status',
+      'Created At'
+    ];
+
+    const rows = expenses.map(expense => [
+      expense.name,
+      expense.description || '',
+      expense.amount.toString(),
+      expense.frequency,
+      expense.category,
+      expense.vendor || '',
+      expense.nextDue ? new Date(expense.nextDue).toLocaleDateString() : '',
+      expense.isActive ? 'Active' : 'Inactive',
+      new Date(expense.createdAt).toLocaleDateString()
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+
+    return csvContent;
+  }
+
+  // Download CSV file
+  downloadCSV(csvContent: string, filename: string = 'recurring-expenses.csv'): void {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Mock data for development
+  getMockRecurringExpenses(): RecurringExpense[] {
+    return [
+      {
+        _id: '1',
+        name: 'Office Rent',
+        description: 'Monthly office space rental',
+        amount: 2500,
+        frequency: 'monthly',
+        category: 'Rent',
+        vendor: 'ABC Properties',
+        nextDue: '2024-02-01',
+        isActive: true,
+        organizationId: 'org1',
+        createdBy: 'user1',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      },
+      {
+        _id: '2',
+        name: 'Internet Service',
+        description: 'Monthly internet subscription',
+        amount: 99,
+        frequency: 'monthly',
+        category: 'Utilities',
+        vendor: 'TechCom',
+        nextDue: '2024-02-15',
+        isActive: true,
+        organizationId: 'org1',
+        createdBy: 'user1',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      },
+      {
+        _id: '3',
+        name: 'Software License',
+        description: 'Annual software subscription',
+        amount: 1200,
+        frequency: 'yearly',
+        category: 'Software',
+        vendor: 'SoftwareCorp',
+        nextDue: '2024-12-31',
+        isActive: true,
+        organizationId: 'org1',
+        createdBy: 'user1',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      },
+      {
+        _id: '4',
+        name: 'Cleaning Service',
+        description: 'Weekly office cleaning',
+        amount: 150,
+        frequency: 'weekly',
+        category: 'Maintenance',
+        vendor: 'CleanPro',
+        nextDue: '2024-01-29',
+        isActive: false,
+        organizationId: 'org1',
+        createdBy: 'user1',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z'
+      }
+    ];
+  }
+
+  // Mock stats for development
+  getMockStats(): RecurringExpenseStats {
+    return {
+      total: 4,
+      active: 3,
+      inactive: 1,
+      totalAmount: 3949,
+      byFrequency: {
+        daily: 0,
+        weekly: 1,
+        monthly: 2,
+        quarterly: 0,
+        yearly: 1
+      },
+      byCategory: {
+        'Rent': 1,
+        'Utilities': 1,
+        'Software': 1,
+        'Maintenance': 1
+      }
+    };
+  }
+}
+
+export const recurringExpenseService = new RecurringExpenseService();

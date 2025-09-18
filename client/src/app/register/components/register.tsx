@@ -389,7 +389,7 @@ export default function Register() {
       setError("Please enter your company name.");
       return;
     }
-    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+    if (!/^\S+@\S+\.\S+?/.test(form.email)) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -1011,7 +1011,7 @@ export default function Register() {
 
           {/* Login link */}
           <p className="mt-6 text-sm text-slate-600">
-            Already have a Robo Books account?{" "}
+            Already have a Robo Books account${" "}
             <a
               className="font-semibold text-blue-700 hover:underline"
               href="/signin"

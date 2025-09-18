@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ChevronDownIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   FunnelIcon,
   XMarkIcon,
   PencilIcon,
@@ -24,9 +24,16 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ArrowDownTrayIcon as DownloadIcon,
+  ArrowsUpDownIcon,
+  ArrowDownTrayIcon as ArrowDownTrayIconSolid,
+  ArrowUpTrayIcon as ArrowUpTrayIconSolid,
+  ClipboardDocumentListIcon,
+  ArrowPathIcon as RefreshIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { RecurringExpense, recurringExpenseService } from "@/services/recurringExpenseService";
 import { formatCurrency } from "@/utils/currency";
+import ImportRecurringExpensesModal from "../import/components/ImportRecurringExpensesModal";
 
 interface RecurringExpensesSectionProps {
   recurringExpenses?: RecurringExpense[];
@@ -54,38 +61,6 @@ const filterOptions = [
   { value: "yearly", label: "Yearly", icon: DocumentIcon },
 ];
 
-const moreMenuOptions = [
-  { id: "all", label: "All", icon: StarIcon },
-  { 
-    id: "sort", 
-    label: "Sort by", 
-    icon: ChevronDownIcon, 
-    hasSubmenu: true,
-    submenu: [
-      { value: "name", label: "Name" },
-      { value: "amount", label: "Amount" },
-      { value: "frequency", label: "Frequency" },
-      { value: "category", label: "Category" },
-      { value: "next-due", label: "Next Due" },
-      { value: "created", label: "Created Date" },
-    ]
-  },
-  { id: "import", label: "Import Recurring Expenses", icon: DocumentArrowUpIcon },
-  { 
-    id: "export", 
-    label: "Export", 
-    icon: DocumentArrowUpIcon, 
-    hasSubmenu: true,
-    submenu: [
-      { value: "export-expenses", label: "Export Recurring Expenses" },
-      { value: "export-current", label: "Export Current View" },
-    ]
-  },
-  { id: "preferences", label: "Preferences", icon: PencilIcon },
-  { id: "custom-fields", label: "Manage Custom Fields", icon: DocumentIcon },
-  { id: "refresh", label: "Refresh List", icon: ArrowPathIcon },
-  { id: "reset-columns", label: "Reset Column Width", icon: ArrowPathIcon },
-];
 
 export default function RecurringExpensesSection({ 
   recurringExpenses: propRecurringExpenses, 
@@ -113,11 +88,16 @@ export default function RecurringExpensesSection({
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [filteredRecurringExpenses, setFilteredRecurringExpenses] = useState<RecurringExpense[]>([]);
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [sortBy, setSortBy] = useState('created_time');
+  const [sortOrder, setSortOrder] = useState('desc');
   const router = useRouter();
 
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const mainDropdownRef = useRef<HTMLDivElement>(null);
+  const mainDropdownRef = useRef<HTMLButtonElement>(null);
   const filterRef = useRef<HTMLButtonElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch recurring expenses from backend
   const fetchRecurringExpenses = async () => {
@@ -202,19 +182,23 @@ export default function RecurringExpensesSection({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-menu') && !target.closest('.submenu')) {
+      if (!target.closest('.dropdown-menu') && !target.closest('.submenu') && !target.closest('[data-filter-dropdown]') && !filterRef.current?.contains(target)) {
         setShowMoreMenu(false);
         setShowSortMenu(false);
         setShowExportMenu(false);
         setShowColumnMenu(false);
         setShowMainDropdown(false);
         setShowFilters(false);
+        setHoveredSubmenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -225,30 +209,78 @@ export default function RecurringExpensesSection({
   };
 
   const handleMoreMenuAction = (option: any) => {
-    switch (option.id) {
-      case 'all':
-        setSelectedFilter('all');
-        break;
-      case 'import':
-        window.location.href = '/dashboard/purchases/recurring-expenses/import';
-        break;
-      case 'preferences':
-        console.log('Preferences clicked');
-        break;
-      case 'custom-fields':
-        console.log('Custom fields clicked');
-        break;
-      case 'refresh':
-        fetchRecurringExpenses();
-        break;
-      case 'reset-columns':
-        console.log('Reset columns clicked');
-        break;
-      default:
-        console.log('Action clicked:', option.id);
+    if (option.action) {
+      option.action();
     }
     setShowMoreMenu(false);
   };
+
+  // More menu options - Defined inside component with proper state access
+  const moreMenuOptions = [
+    {
+      id: "all",
+      label: "All",
+      icon: StarIcon,
+      action: () => {
+        setSelectedFilter("all");
+        setShowMoreMenu(false);
+      }
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      icon: ArrowsUpDownIcon,
+      hasSubmenu: true,
+      submenu: [
+        { value: "name", label: "Name" },
+        { value: "amount", label: "Amount" },
+        { value: "frequency", label: "Frequency" },
+        { value: "category", label: "Category" },
+        { value: "next-due", label: "Next Due" },
+        { value: "created", label: "Created Date" },
+      ]
+    },
+    {
+      id: "import",
+      label: "Import Recurring Expenses",
+      icon: ArrowDownTrayIconSolid,
+      action: () => handleImportRecurringExpensesClick()
+    },
+    {
+      id: "export",
+      label: "Export",
+      icon: ArrowUpTrayIconSolid,
+      hasSubmenu: true,
+      submenu: [
+        { value: "export-expenses", label: "Export Recurring Expenses" },
+        { value: "export-current", label: "Export Current View" },
+      ]
+    },
+    {
+      id: "preferences",
+      label: "Preferences",
+      icon: Cog6ToothIcon,
+      action: () => handlePreferences()
+    },
+    {
+      id: "custom-fields",
+      label: "Manage Custom Fields",
+      icon: ClipboardDocumentListIcon,
+      action: () => handleCustomFields()
+    },
+    {
+      id: "refresh",
+      label: "Refresh List",
+      icon: RefreshIcon,
+      action: () => handleRefresh()
+    },
+    {
+      id: "reset-columns",
+      label: "Reset Column Width",
+      icon: ArrowPathIcon,
+      action: () => handleResetColumns()
+    },
+  ];
 
   const handleSortChange = (sortValue: string) => {
     console.log('Sort by:', sortValue);
@@ -258,6 +290,90 @@ export default function RecurringExpensesSection({
   const handleExportOption = (exportValue: string) => {
     console.log('Export:', exportValue);
     setShowExportMenu(false);
+  };
+
+  // Additional handler functions for comprehensive menu
+  const handleImportRecurringExpensesClick = () => {
+    setShowImportModal(true);
+    setShowMoreMenu(false);
+  };
+
+  const handleImportRecurringExpenses = async (importedExpenses: RecurringExpense[]) => {
+    try {
+      setRecurringExpenses(prev => [...prev, ...importedExpenses]);
+      setShowImportModal(false);
+    } catch (error) {
+      console.error('Error importing recurring expenses:', error);
+    }
+  };
+
+  const handleCustomFields = async () => {
+    try {
+      router.push('/dashboard/settings/custom-fields');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to custom fields:', error);
+    }
+  };
+
+  const handlePreferences = () => {
+    router.push('/dashboard/settings/preferences/recurring-expenses');
+    setShowMoreMenu(false);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      await fetchRecurringExpenses();
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error refreshing recurring expenses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetColumns = () => {
+    window.location.reload();
+    setShowMoreMenu(false);
+  };
+
+  const handleExport = async (exportType: string) => {
+    try {
+      setShowExportMenu(false);
+      
+      if (exportType === 'export-expenses') {
+        await handleExportOption('export-expenses');
+      } else if (exportType === 'export-current') {
+        await handleExportOption('export-current');
+      }
+    } catch (error) {
+      console.error('Error exporting recurring expenses:', error);
+    }
+  };
+
+  // Hover handlers for submenus
+  const handleSubmenuHover = (optionId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredSubmenu(optionId);
+    if (optionId === 'sort') {
+      setShowSortMenu(true);
+      setShowExportMenu(false);
+    } else if (optionId === 'export') {
+      setShowExportMenu(true);
+      setShowSortMenu(false);
+    }
+  };
+
+  const handleSubmenuLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubmenu(null);
+      setShowSortMenu(false);
+      setShowExportMenu(false);
+    }, 200);
   };
 
   const handleToggleActive = async (expense: RecurringExpense) => {
@@ -536,7 +652,7 @@ export default function RecurringExpensesSection({
                   }}
                   className="p-2 text-gray-400 hover:text-gray-600"
                 >
-                  <EllipsisVerticalIcon className="h-5 w-5" />
+                  <EllipsisHorizontalIcon className="h-5 w-5" />
                 </button>
                 {showMoreMenu && (
                   <div className={`absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10 ${
@@ -546,28 +662,39 @@ export default function RecurringExpensesSection({
                       {moreMenuOptions.map((option) => (
                         <div key={option.id}>
                           {option.hasSubmenu ? (
-                            <div className="relative">
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => handleSubmenuHover(option.id)}
+                              onMouseLeave={handleSubmenuLeave}
+                            >
                               <button
                                 onClick={() => {
-                                  if (option.id === 'sort') setShowSortMenu(!showSortMenu);
-                                  if (option.id === 'export') setShowExportMenu(!showExportMenu);
+                                  if (option.id === 'sort') {
+                                    setShowSortMenu(!showSortMenu);
+                                    setShowExportMenu(false); // Close export menu when opening sort
+                                  }
+                                  if (option.id === 'export') {
+                                    setShowExportMenu(!showExportMenu);
+                                    setShowSortMenu(false); // Close sort menu when opening export
+                                  }
                                 }}
-                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                               >
                                 <option.icon className="h-4 w-4" />
                                 <span>{option.label}</span>
                                 <ChevronRightIcon className="h-4 w-4 ml-auto" />
                               </button>
                               {option.id === 'sort' && showSortMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -576,15 +703,16 @@ export default function RecurringExpensesSection({
                                 </div>
                               )}
                               {option.id === 'export' && showExportMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleExportOption(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -596,9 +724,7 @@ export default function RecurringExpensesSection({
                           ) : (
                             <button
                               onClick={() => handleMoreMenuAction(option)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                option.id === 'import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                              }`}
+                              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                             >
                               <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
@@ -642,6 +768,7 @@ export default function RecurringExpensesSection({
           <div className="relative">
             <button
               ref={filterRef}
+              data-filter-dropdown
               onClick={() => {
                 const position = calculateDropdownPosition(filterRef);
                 setDropdownPosition(position);
@@ -867,6 +994,12 @@ export default function RecurringExpensesSection({
         </div>
       )}
 
+      {/* Import Modal */}
+      <ImportRecurringExpensesModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={handleImportRecurringExpenses}
+      />
     </div>
   );
 }

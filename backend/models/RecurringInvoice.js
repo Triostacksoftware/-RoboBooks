@@ -158,3 +158,5 @@ schema.index({ nextGenerationDate: 1 });
 
 const RecurringInvoice = mongoose.model("RecurringInvoice", schema);
 export default RecurringInvoice;
+
+

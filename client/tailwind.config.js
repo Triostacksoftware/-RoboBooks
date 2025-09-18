@@ -5,7 +5,7 @@ module.exports = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  // Ensure classes built via template strings (e.g. `${item.color}`) are not purged in production
+  // Ensure classes built via template strings (e.g. `?{item.color}`) are not purged in production
   safelist: [
     {
       pattern:

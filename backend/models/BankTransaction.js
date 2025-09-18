@@ -92,3 +92,5 @@ bankTransactionSchema.index({ userId: 1, status: 1 });
 bankTransactionSchema.index({ importBatchId: 1 });
 
 export default mongoose.model('BankTransaction', bankTransactionSchema);
+
+

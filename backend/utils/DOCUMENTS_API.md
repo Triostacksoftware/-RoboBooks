@@ -344,7 +344,7 @@ formData.append('isPublic', 'false');
 const response = await fetch('/api/documents/upload', {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': `Bearer ?{token}`,
   },
   body: formData,
 });
@@ -354,16 +354,16 @@ const response = await fetch('/api/documents/upload', {
 ```javascript
 const response = await fetch('/api/documents?search=invoice&page=1&limit=10', {
   headers: {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': `Bearer ?{token}`,
   },
 });
 ```
 
 ### Download a Document
 ```javascript
-const response = await fetch(`/api/documents/${documentId}/download`, {
+const response = await fetch(`/api/documents/?{documentId}/download`, {
   headers: {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': `Bearer ?{token}`,
   },
 });
 

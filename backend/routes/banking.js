@@ -36,3 +36,5 @@ router.get("/import/:importId/status", bankingController.getImportStatus);
 router.get("/overview", bankingController.getBankingOverview);
 
 export default router;
+
+

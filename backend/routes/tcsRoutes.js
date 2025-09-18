@@ -30,3 +30,5 @@ router.put("/:id", authGuard, tcsController.updateTCS);
 router.delete("/:id", authGuard, tcsController.deleteTCS);
 
 export default router;
+
+

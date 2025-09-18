@@ -39,3 +39,5 @@ router.put("/:id", validate(updatePaymentMadeSchema), updatePaymentMade);
 router.delete("/:id", deletePaymentMade);
 
 export default router;
+
+

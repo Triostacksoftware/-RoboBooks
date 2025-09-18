@@ -80,3 +80,5 @@ async function cleanAllAndCreate() {
 
 // Run the script
 cleanAllAndCreate();
+
+

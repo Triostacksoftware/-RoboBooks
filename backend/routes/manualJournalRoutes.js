@@ -25,3 +25,5 @@ router.post("/:id/post", postManualJournal);
 router.delete("/:id", deleteManualJournal);
 
 export default router;
+
+

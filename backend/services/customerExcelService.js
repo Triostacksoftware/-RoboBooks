@@ -38,7 +38,7 @@ export class CustomerExcelService {
       errors.push(`Row ${rowNumber}: Email is required`);
     } else {
       // Email format validation
-      const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+      const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+?/;
       if (!emailRegex.test(customerData.email)) {
         errors.push(`Row ${rowNumber}: Invalid email format`);
       }
@@ -159,7 +159,7 @@ export class CustomerExcelService {
             h.toLowerCase() === normalizedHeader ||
             h
               .toLowerCase()
-              .replace(/([A-Z])/g, "_$1")
+              .replace(/([A-Z])/g, "_?1")
               .toLowerCase() === normalizedHeader ||
             normalizedHeader.includes(h.toLowerCase()) ||
             h.toLowerCase().includes(normalizedHeader)
@@ -383,10 +383,10 @@ export class CustomerExcelService {
         // Check if customer exists
         const existingCustomer = await Customer.findOne({
           $or: [
-            { email: { $regex: new RegExp(`^${customerData.email}$`, "i") } },
+            { email: { $regex: new RegExp(`^${customerData.email}?`, "i") } },
             {
               displayName: {
-                $regex: new RegExp(`^${customerData.displayName}$`, "i"),
+                $regex: new RegExp(`^${customerData.displayName}?`, "i"),
               },
             },
           ],
@@ -653,3 +653,5 @@ export class CustomerExcelService {
     return buffer;
   }
 }
+
+

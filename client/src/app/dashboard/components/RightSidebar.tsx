@@ -1047,7 +1047,7 @@ export default function RightSidebar() {
                         <>
                           Love using Zoho Books? Refer and earn 20% as referral
                           credits on every customer you refer this month. Your
-                          contact also receives $100 in wallet credits. There is
+                          contact also receives ?100 in wallet credits. There is
                           no limit to how much you can earn—start referring
                           today!
                           <button

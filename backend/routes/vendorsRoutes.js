@@ -120,3 +120,5 @@ router.put('/:id', validate(updateVendorSchema), updateVendor);
 router.delete('/:id', deleteVendor);
 
 export default router;
+
+

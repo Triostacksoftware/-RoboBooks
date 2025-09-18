@@ -32,6 +32,7 @@ import {
   ArrowDownTrayIcon as DownloadIcon,
 } from "@heroicons/react/24/outline";
 import { expenseService, Expense } from "../../../../../services/expenseService";
+import { preferencesService } from "../../../../../services/preferencesService";
 import { formatCurrency } from "@/utils/currency";
 import ImportExpensesModal from "./ImportExpensesModal";
 import ExpenseFilters from "./ExpenseFilters";
@@ -83,6 +84,8 @@ export default function ExpensesSection({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showMainDropdown, setShowMainDropdown] = useState(false);
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [sortBy, setSortBy] = useState('created_time');
   const [sortOrder, setSortOrder] = useState('desc');
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
@@ -96,6 +99,9 @@ export default function ExpensesSection({
     billableAmount: 0,
     nonBillableAmount: 0,
   });
+
+  // Add missing state for expenses management
+  const [expensesList, setExpensesList] = useState<Expense[]>(expenses);
 
   // Main dropdown options (All Expenses dropdown)
   const mainDropdownOptions = [
@@ -162,7 +168,7 @@ export default function ExpensesSection({
       id: "import",
       label: "Import Expenses",
       icon: ArrowDownTrayIconSolid,
-      action: () => window.location.href = '/dashboard/purchases/expenses/import'
+      action: () => handleImportExpensesClick()
     },
     {
       id: "export",
@@ -178,25 +184,25 @@ export default function ExpensesSection({
       id: "preferences",
       label: "Preferences",
       icon: Cog6ToothIcon,
-      action: () => console.log("Open preferences")
+      action: () => handlePreferences()
     },
     {
       id: "custom_fields",
       label: "Manage Custom Fields",
       icon: ClipboardDocumentListIcon,
-      action: () => console.log("Manage custom fields")
+      action: () => handleCustomFields()
     },
     {
       id: "refresh",
       label: "Refresh List",
       icon: RefreshIcon,
-      action: () => window.location.reload()
+      action: () => handleRefresh()
     },
     {
       id: "reset_columns",
       label: "Reset Column Width",
       icon: ArrowPathIcon,
-      action: () => console.log("Reset column width")
+      action: () => handleResetColumns()
     },
   ];
 
@@ -222,9 +228,24 @@ export default function ExpensesSection({
       });
   };
 
+  // Fetch expenses function
+  const fetchExpenses = async () => {
+    try {
+      setLoading(true);
+      const fetchedExpenses = await expenseService.getExpenses();
+      setExpensesList(fetchedExpenses);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching expenses:", err);
+      setError("Failed to load expenses");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Apply filters
   const applyFilters = () => {
-    let filtered = [...expenses];
+    let filtered = [...expensesList];
 
 
     // Search filter
@@ -261,16 +282,16 @@ export default function ExpensesSection({
           });
           break;
         case "Billable":
-          filtered = filtered.filter(e => e.billable === true || e.billable === "true");
+          filtered = filtered.filter(e => Boolean(e.billable) === true);
           break;
         case "Non-Billable":
-          filtered = filtered.filter(e => e.billable === false || e.billable === "false");
+          filtered = filtered.filter(e => Boolean(e.billable) === false);
           break;
         case "With Receipts":
-          filtered = filtered.filter(e => e.hasReceipt === true || e.hasReceipt === "true");
+          filtered = filtered.filter(e => Boolean(e.hasReceipt) === true);
           break;
         case "Without Receipts":
-          filtered = filtered.filter(e => e.hasReceipt === false || e.hasReceipt === "false");
+          filtered = filtered.filter(e => Boolean(e.hasReceipt) === false);
           break;
       }
     }
@@ -279,13 +300,36 @@ export default function ExpensesSection({
   };
 
   useEffect(() => {
-    calculateStats(expenses);
+    calculateStats(expensesList);
     applyFilters();
-  }, [expenses]);
+  }, [expensesList]);
 
   useEffect(() => {
     applyFilters();
   }, [searchTerm, selectedFilter]);
+
+  // Load user preferences on component mount
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      try {
+        const preferences = await preferencesService.getPreferences('expenses');
+        if (preferences) {
+          // Apply saved sort preference
+          if (preferences.preferences.defaultSortBy) {
+            setSortBy(preferences.preferences.defaultSortBy);
+          }
+          // Apply other preferences as needed
+        }
+      } catch (error) {
+        console.error('Error loading user preferences:', error);
+        // Use default preferences if loading fails
+        const defaultPrefs = preferencesService.getDefaultPreferences('expenses');
+        setSortBy(defaultPrefs.defaultSortBy || 'createdAt');
+      }
+    };
+
+    loadUserPreferences();
+  }, []);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -298,12 +342,17 @@ export default function ExpensesSection({
         setShowColumnMenu(false);
         setShowMainDropdown(false);
         setShowFilters(false);
+        setHoveredSubmenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      // Cleanup timeout on unmount
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -317,6 +366,12 @@ export default function ExpensesSection({
     } catch (err) {
       console.error("Error importing expenses:", err);
     }
+  };
+
+  // Import Expenses Click Handler
+  const handleImportExpensesClick = () => {
+    setShowImportModal(true);
+    setShowMoreMenu(false);
   };
 
   const handleExportExpenses = async () => {
@@ -335,19 +390,172 @@ export default function ExpensesSection({
     }
   };
 
-  const handleSortChange = (sortField: string) => {
+  const handleSortChange = async (sortField: string) => {
+    try {
     setSortBy(sortField);
+      
+      // Map sort values to actual field names
+      const sortFieldMap: { [key: string]: string } = {
+        'date': 'date',
+        'expense_account': 'expenseAccount',
+        'vendor_name': 'vendorName',
+        'paid_through': 'paidThrough',
+        'customer_name': 'customerName',
+        'amount': 'amount',
+        'created_time': 'createdAt'
+      };
+
+      const actualField = sortFieldMap[sortField] || 'createdAt';
+      
+      // Update local state with sorted expenses
+      setExpensesList(prev => {
+        const sorted = [...prev].sort((a, b) => {
+          let aValue = a[actualField as keyof Expense];
+          let bValue = b[actualField as keyof Expense];
+          
+          // Handle different data types
+          if (actualField === 'amount') {
+            aValue = Number(aValue) || 0;
+            bValue = Number(bValue) || 0;
+          } else if (actualField === 'date' || actualField === 'createdAt') {
+            aValue = new Date(aValue as string).getTime();
+            bValue = new Date(bValue as string).getTime();
+          } else {
+            aValue = String(aValue || '').toLowerCase();
+            bValue = String(bValue || '').toLowerCase();
+          }
+          
+          if (aValue < bValue) return -1;
+          if (aValue > bValue) return 1;
+          return 0;
+        });
+        
+        return sorted;
+      });
+
+      // Save sort preference to localStorage
+      localStorage.setItem('expenses-sort', sortField);
+      
+      console.log('Sorted by:', sortField);
+    } catch (error) {
+      console.error('Error sorting expenses:', error);
+    }
     setShowSortMenu(false);
-    // Apply sorting logic here
+  };
+
+
+  // Export Handler
+  const handleExport = async (exportType: string) => {
+    try {
+    setShowExportMenu(false);
+      
+      if (exportType === 'export_all') {
+        // Export all expenses
+        const allExpenses = await expenseService.getExpenses();
+        await exportExpenses(allExpenses, 'all-expenses');
+      } else if (exportType === 'export_current') {
+        // Export current filtered view
+        await exportExpenses(filteredExpenses, 'current-view');
+      }
+    } catch (error) {
+      console.error('Error exporting expenses:', error);
+    }
+  };
+
+  // Export Expenses Function
+  const exportExpenses = async (expensesToExport: Expense[], filename: string) => {
+    try {
+      const csvContent = generateCSV(expensesToExport);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${filename}-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error generating CSV:', error);
+    }
+  };
+
+  // Generate CSV Content
+  const generateCSV = (expenses: Expense[]) => {
+    const headers = ['Date', 'Description', 'Amount', 'Vendor', 'Account', 'Category', 'Status', 'Billable'];
+    const rows = expenses.map(expense => [
+      expense.date || '',
+      expense.description || '',
+      expense.amount || 0,
+      expense.vendor || '',
+      expense.account || '',
+      expense.category || '',
+      expense.status || '',
+      expense.billable ? 'Yes' : 'No'
+    ]);
+    
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+    
+    return csvContent;
+  };
+
+  // Preferences Handler
+  const handlePreferences = async () => {
+    try {
+      // Save current sort preference
+      await preferencesService.savePreferences('expenses', {
+        defaultSortBy: sortBy,
+        defaultSortOrder: 'desc'
+      });
+      
+      // Navigate to expenses preferences page
+      router.push('/dashboard/settings/preferences/expenses');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      // Still navigate even if saving fails
+      router.push('/dashboard/settings/preferences/expenses');
+      setShowMoreMenu(false);
+    }
+  };
+
+  // Custom Fields Handler
+  const handleCustomFields = async () => {
+    try {
+      // Navigate to custom fields management page
+      router.push('/dashboard/settings/custom-fields');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to custom fields:', error);
+    }
+  };
+
+  // Refresh Handler
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      await fetchExpenses();
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error refreshing expenses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset Columns Handler
+  const handleResetColumns = () => {
+    // Reset column widths to default
+    localStorage.removeItem('expenses-column-widths');
+    // Trigger a re-render to apply default column widths
+    window.location.reload();
+    setShowMoreMenu(false);
   };
 
   const handleExportOption = (option: string) => {
-    setShowExportMenu(false);
-    if (option === 'export_all') {
-      handleExportExpenses();
-    } else if (option === 'export_current') {
-      handleExportCurrentView();
-    }
+    handleExport(option);
   };
 
   const handleMoreMenuAction = (option: any) => {
@@ -357,8 +565,36 @@ export default function ExpensesSection({
     setShowMoreMenu(false);
   };
 
+  // Hover handlers for submenus
+  const handleSubmenuHover = (optionId: string) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    setHoveredSubmenu(optionId);
+    if (optionId === 'sort') {
+      setShowSortMenu(true);
+      setShowExportMenu(false);
+    } else if (optionId === 'export') {
+      setShowExportMenu(true);
+      setShowSortMenu(false);
+    }
+  };
+
+  const handleSubmenuLeave = () => {
+    // Add a delay before closing to allow moving to submenu
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubmenu(null);
+      setShowSortMenu(false);
+      setShowExportMenu(false);
+    }, 200);
+  };
+
+
   // Function to calculate dropdown position
-  const calculateDropdownPosition = (buttonRef: React.RefObject<HTMLButtonElement>) => {
+  const calculateDropdownPosition = (buttonRef: React.RefObject<HTMLButtonElement | null>) => {
     if (!buttonRef.current) return 'right';
     
     const buttonRect = buttonRef.current.getBoundingClientRect();
@@ -384,9 +620,9 @@ export default function ExpensesSection({
         <div className="px-6 py-4 border-b border-gray-200">
       <div className="flex items-center justify-between">
             {/* Left side - Title with dropdown */}
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <button
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <button
                   ref={mainDropdownRef}
                   onClick={() => {
                     const position = calculateDropdownPosition(mainDropdownRef);
@@ -397,7 +633,7 @@ export default function ExpensesSection({
                 >
                   <span>All Expenses</span>
                   <ChevronDownIcon className="h-5 w-5" />
-                </button>
+              </button>
                 {showMainDropdown && (
                   <div className={`absolute top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-10 ${
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
@@ -411,7 +647,7 @@ export default function ExpensesSection({
                             setSelectedFilter(option.value === "all" ? "All" : option.label);
                             setShowMainDropdown(false);
                           }}
-                          className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                          className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-blue-600 hover:text-white ${
                             (option.value === "all" && selectedFilter === "All") || selectedFilter === option.label ? "bg-blue-50 text-blue-700" : "text-gray-700"
                           }`}
                         >
@@ -423,10 +659,10 @@ export default function ExpensesSection({
                         </button>
                       );
                     })}
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+          </div>
 
             {/* Right side - Action buttons */}
             <div className="flex items-center space-x-2">
@@ -437,15 +673,15 @@ export default function ExpensesSection({
                 <ArrowPathIcon className="h-4 w-4" />
                 <span>Refresh</span>
               </button>
-              <button
-                onClick={() => window.location.href = '/dashboard/purchases/expenses/record'}
+            <button
+              onClick={() => window.location.href = '/dashboard/purchases/expenses/record'}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-              >
-                <PlusIcon className="h-4 w-4" />
+            >
+              <PlusIcon className="h-4 w-4" />
                 <span>New Expense</span>
-              </button>
+            </button>
               <div className="relative">
-                <button
+              <button
                   ref={moreMenuRef}
                   onClick={() => {
                     const position = calculateDropdownPosition(moreMenuRef);
@@ -456,86 +692,90 @@ export default function ExpensesSection({
                   title="More Options"
                 >
                   <EllipsisHorizontalIcon className="h-5 w-5" />
-                </button>
-                {showMoreMenu && (
+              </button>
+              {showMoreMenu && (
                   <div className={`absolute top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10 dropdown-menu ${
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
                   }`}>
                     <div className="py-1">
-                      {moreMenuOptions.map((option) => (
+                    {moreMenuOptions.map((option) => (
                         <div key={option.id}>
                           {option.hasSubmenu ? (
-                            <div className="relative">
-                      <button
-                        onClick={() => {
-                                  if (option.id === 'sort') {
-                                    setShowSortMenu(!showSortMenu);
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => handleSubmenuHover(option.id)}
+                              onMouseLeave={handleSubmenuLeave}
+                            >
+                        <button
+                          onClick={() => {
+                              if (option.id === 'sort') {
+                                setShowSortMenu(!showSortMenu);
                                     setShowExportMenu(false); // Close export menu when opening sort
                                   }
                                   if (option.id === 'export') {
-                                    setShowExportMenu(!showExportMenu);
+                                setShowExportMenu(!showExportMenu);
                                     setShowSortMenu(false); // Close sort menu when opening export
                                   }
                                 }}
-                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                               >
                                 <option.icon className="h-4 w-4" />
                                 <span>{option.label}</span>
                                 <ChevronRightIcon className="h-4 w-4 ml-auto" />
-                              </button>
-                              {option.id === 'sort' && showSortMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                        </button>
+                        {option.id === 'sort' && showSortMenu && (
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
                                   dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
                                 }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
-                                      <button
+                                <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                       >
                                         {subOption.label}
-                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {option.id === 'export' && showExportMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {option.id === 'export' && showExportMenu && (
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
                                   dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
                                 }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
-                      <button
+                                <button
                                         key={subOption.value}
                                         onClick={() => handleExportOption(subOption.value)}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                       >
                                         {subOption.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                               )}
                             </div>
                           ) : (
                             <button
                               onClick={() => handleMoreMenuAction(option)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                option.id === 'import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                              }`}
+                              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                             >
                               <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
                       </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+          </div>
         </div>
       </div>
 
@@ -603,7 +843,7 @@ export default function ExpensesSection({
                               setShowFilters(false);
                             }
                           }}
-                          className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 ${
+                          className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-blue-600 hover:text-white ${
                             option.isCustom ? "text-blue-600 border-t border-gray-200 mt-1 pt-3" :
                             selectedFilter === option.value ? "bg-blue-50 text-blue-700" : "text-gray-700"
                           }`}
@@ -630,7 +870,7 @@ export default function ExpensesSection({
                 <span className="text-sm">Upload Expense</span>
                 <ChevronDownIcon className="h-4 w-4" />
               </button>
-            </div>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -998,7 +1238,7 @@ export default function ExpensesSection({
                         {expense.vendor}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {expense.paidThrough || '-'}
+                        {expense.paymentMethod || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {expense.customer || '-'}

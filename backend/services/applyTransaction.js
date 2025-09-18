@@ -15,3 +15,5 @@ export const applyTransaction = async (txn, session) => {
   account.balance += txn.type === 'deposit' ? txn.amount : -txn.amount;
   await account.save({ session });
 };
+
+

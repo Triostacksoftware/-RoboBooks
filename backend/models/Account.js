@@ -96,7 +96,6 @@ const accountSchema = new Schema(
     code: {
       type: String,
       required: true,
-      unique: true,
       validate: {
         validator: function (v) {
           return /^\d{8}$/.test(v); // Exactly 8 digits
@@ -283,3 +282,5 @@ accountSchema.statics.getHierarchy = function () {
 };
 
 export default mongoose.model("Account", accountSchema);
+
+

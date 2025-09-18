@@ -232,7 +232,7 @@ dotenv.config();
 
 async function cleanup() {
   await mongoose.connect(process.env.MONGODB_URI);
-  await Admin.deleteMany({ email: { \$regex: /@robobooks\.com$/ } });
+  await Admin.deleteMany({ email: { \?regex: /@robobooks\.com?/ } });
   console.log('Mock admins removed');
   await mongoose.disconnect();
 }

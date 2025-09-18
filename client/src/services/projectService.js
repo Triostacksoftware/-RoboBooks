@@ -3,10 +3,10 @@ import { apiClient } from "./apiClient";
 // Project API endpoints
 const ENDPOINTS = {
   PROJECTS: "/api/projects",
-  PROJECT: (id) => `/api/projects/${id}`,
+  PROJECT: (id) => `/api/projects/?{id}`,
   CREATE_PROJECT: "/api/projects",
-  UPDATE_PROJECT: (id) => `/api/projects/${id}`,
-  DELETE_PROJECT: (id) => `/api/projects/${id}`,
+  UPDATE_PROJECT: (id) => `/api/projects/?{id}`,
+  DELETE_PROJECT: (id) => `/api/projects/?{id}`,
 };
 
 // HTTP wrapper functions
@@ -55,7 +55,7 @@ export const projectService = {
   getProjects: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams(params).toString();
-      const url = queryParams ? `${ENDPOINTS.PROJECTS}?${queryParams}` : ENDPOINTS.PROJECTS;
+      const url = queryParams ? `?{ENDPOINTS.PROJECTS}??{queryParams}` : ENDPOINTS.PROJECTS;
       const response = await http.get(url);
       return response.data;
     } catch (error) {
@@ -79,7 +79,7 @@ export const projectService = {
       const response = await http.get(ENDPOINTS.PROJECT(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to fetch project ${id}:`, error);
+      console.error(`Failed to fetch project ?{id}:`, error);
       throw error;
     }
   },
@@ -101,7 +101,7 @@ export const projectService = {
       const response = await http.put(ENDPOINTS.UPDATE_PROJECT(id), projectData);
       return response.data;
     } catch (error) {
-      console.error(`Failed to update project ${id}:`, error);
+      console.error(`Failed to update project ?{id}:`, error);
       throw error;
     }
   },
@@ -112,7 +112,7 @@ export const projectService = {
       const response = await http.delete(ENDPOINTS.DELETE_PROJECT(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to delete project ${id}:`, error);
+      console.error(`Failed to delete project ?{id}:`, error);
       throw error;
     }
   },

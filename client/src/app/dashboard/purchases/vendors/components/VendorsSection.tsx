@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ChevronDownIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   FunnelIcon,
   StarIcon,
   XMarkIcon,
@@ -23,9 +23,18 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ArrowDownTrayIcon as DownloadIcon,
+  ArrowUpTrayIcon,
+  ArrowDownTrayIcon as ArrowDownTrayIconSolid,
+  ArrowUpTrayIcon as ArrowUpTrayIconSolid,
+  ClipboardDocumentListIcon,
+  ArrowPathIcon as RefreshIcon,
+  Cog6ToothIcon,
+  ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import { Vendor, vendorService } from "@/services/vendorService";
+import { preferencesService } from "@/services/preferencesService";
 import { formatCurrency } from "@/utils/currency";
+import ImportVendorsModal from "./ImportVendorsModal";
 
 interface VendorsSectionProps {
   vendors?: Vendor[];
@@ -50,37 +59,17 @@ const filterOptions = [
   { value: "individual", label: "Individual", icon: PencilIcon },
 ];
 
-const moreMenuOptions = [
-  { id: "all", label: "All", icon: StarIcon },
-  { 
-    id: "sort", 
-    label: "Sort by", 
-    icon: ChevronDownIcon, 
-    hasSubmenu: true,
-    submenu: [
-      { value: "name", label: "Name" },
-      { value: "company", label: "Company Name" },
-      { value: "email", label: "Email" },
-      { value: "payables", label: "Payables" },
-      { value: "created", label: "Created Date" },
-    ]
-  },
-  { id: "import", label: "Import Vendors", icon: DocumentArrowUpIcon },
-  { 
-    id: "export", 
-    label: "Export", 
-    icon: DocumentArrowUpIcon, 
-    hasSubmenu: true,
-    submenu: [
-      { value: "export-vendors", label: "Export Vendors" },
-      { value: "export-current", label: "Export Current View" },
-    ]
-  },
-  { id: "preferences", label: "Preferences", icon: PencilIcon },
-  { id: "custom-fields", label: "Manage Custom Fields", icon: DocumentIcon },
-  { id: "refresh", label: "Refresh List", icon: ArrowPathIcon },
-  { id: "reset-columns", label: "Reset Column Width", icon: ArrowPathIcon },
+// Main dropdown options (All Vendors dropdown)
+const mainDropdownOptions = [
+  { value: "all", label: "All Vendors", icon: StarIcon },
+  { value: "active", label: "Active", icon: CheckIcon },
+  { value: "inactive", label: "Inactive", icon: XMarkIcon },
+  { value: "business", label: "Business", icon: DocumentIcon },
+  { value: "individual", label: "Individual", icon: PencilIcon },
+  { value: "with-balance", label: "With Balance", icon: DocumentTextIcon },
+  { value: "without-balance", label: "Without Balance", icon: XMarkIcon },
 ];
+
 
 export default function VendorsSection({ 
   vendors: propVendors, 
@@ -102,17 +91,22 @@ export default function VendorsSection({
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showMainDropdown, setShowMainDropdown] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedView, setSelectedView] = useState("All Vendors");
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState("All");
+  const [sortBy, setSortBy] = useState('created_time');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
-  const router = useRouter();
-
-  const moreMenuRef = useRef<HTMLDivElement>(null);
-  const mainDropdownRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const moreMenuRef = useRef<HTMLButtonElement>(null);
+  const mainDropdownRef = useRef<HTMLButtonElement>(null);
   const filterRef = useRef<HTMLButtonElement>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [selectedView, setSelectedView] = useState("All Vendors");
+  const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
+  const [vendorsList, setVendorsList] = useState<Vendor[]>(vendors || []);
+  const router = useRouter();
 
   // Fetch vendors from backend
   const fetchVendors = async () => {
@@ -121,6 +115,7 @@ export default function VendorsSection({
       setError(null);
       const vendorsData = await vendorService.getVendors();
       setVendors(vendorsData);
+      setVendorsList(vendorsData);
     } catch (error) {
       console.error("Error fetching vendors:", error);
       setError("Failed to fetch vendors. Please try again.");
@@ -142,17 +137,18 @@ export default function VendorsSection({
   // Update filtered vendors when vendors or search changes
   useEffect(() => {
     applyFilters();
-  }, [vendors, searchTerm, selectedFilter]);
+  }, [vendorsList, searchTerm, selectedFilter]);
 
   const applyFilters = () => {
-    let filtered = vendors;
+    let filtered = [...vendorsList];
 
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter((vendor) =>
         vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (vendor.gstin && vendor.gstin.toLowerCase().includes(searchTerm.toLowerCase()))
+        (vendor.gstin && vendor.gstin.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (vendor.companyName && vendor.companyName.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -168,6 +164,10 @@ export default function VendorsSection({
             return vendor.type === "business";
           case "individual":
             return vendor.type === "individual";
+          case "with-balance":
+            return (vendor.payables || 0) > 0;
+          case "without-balance":
+            return (vendor.payables || 0) === 0;
           default:
             return true;
         }
@@ -177,33 +177,287 @@ export default function VendorsSection({
     setFilteredVendors(filtered);
   };
 
+  // Handler functions for menu actions
+  const handleImportVendorsClick = () => {
+    setShowImportModal(true);
+    setShowMoreMenu(false);
+  };
+
+  const handleImportVendors = async (file: File) => {
+    try {
+      const importedVendors = await vendorService.importVendors(file);
+      setVendorsList(prev => [...prev, ...importedVendors]);
+      setVendors(prev => [...prev, ...importedVendors]);
+      setShowImportModal(false);
+    } catch (err) {
+      console.error("Error importing vendors:", err);
+    }
+  };
+
+  const handleExportVendors = async () => {
+    try {
+      await vendorService.exportVendors(vendorsList);
+    } catch (err) {
+      console.error("Error exporting vendors:", err);
+    }
+  };
+
+  const handleExportCurrentView = async () => {
+    try {
+      await vendorService.exportVendors(filteredVendors);
+    } catch (err) {
+      console.error("Error exporting current view:", err);
+    }
+  };
+
+  const handleSortChange = async (sortField: string) => {
+    try {
+      setSortBy(sortField);
+      
+      // Map sort values to actual field names
+      const sortFieldMap: { [key: string]: string } = {
+        'name': 'name',
+        'company': 'companyName',
+        'email': 'email',
+        'payables': 'payables',
+        'created': 'createdAt'
+      };
+
+      const actualField = sortFieldMap[sortField] || 'createdAt';
+      
+      // Update local state with sorted vendors
+      setVendorsList(prev => {
+        const sorted = [...prev].sort((a, b) => {
+          let aValue = a[actualField as keyof Vendor];
+          let bValue = b[actualField as keyof Vendor];
+          
+          // Handle different data types
+          if (actualField === 'payables') {
+            aValue = Number(aValue) || 0;
+            bValue = Number(bValue) || 0;
+          } else if (actualField === 'createdAt') {
+            aValue = new Date(aValue as string).getTime();
+            bValue = new Date(bValue as string).getTime();
+          } else {
+            aValue = String(aValue || '').toLowerCase();
+            bValue = String(bValue || '').toLowerCase();
+          }
+          
+          if (aValue < bValue) return -1;
+          if (aValue > bValue) return 1;
+          return 0;
+        });
+        
+        return sorted;
+      });
+
+      // Save sort preference to localStorage
+      localStorage.setItem('vendors-sort', sortField);
+      
+      console.log('Sorted by:', sortField);
+    } catch (error) {
+      console.error('Error sorting vendors:', error);
+    }
+    setShowSortMenu(false);
+  };
+
+  const handleExport = async (exportType: string) => {
+    try {
+      setShowExportMenu(false);
+      
+      if (exportType === 'export_all') {
+        await handleExportVendors();
+      } else if (exportType === 'export_current') {
+        await handleExportCurrentView();
+      }
+    } catch (error) {
+      console.error('Error exporting vendors:', error);
+    }
+  };
+
+  const handlePreferences = async () => {
+    try {
+      // Save current sort preference
+      await preferencesService.savePreferences('vendors', {
+        defaultSortBy: sortBy,
+        defaultSortOrder: 'desc'
+      });
+      
+      // Navigate to vendors preferences page
+      router.push('/dashboard/settings/preferences/vendors');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      // Still navigate even if saving fails
+      router.push('/dashboard/settings/preferences/vendors');
+      setShowMoreMenu(false);
+    }
+  };
+
+  const handleCustomFields = async () => {
+    try {
+      // Navigate to custom fields management page
+      router.push('/dashboard/settings/custom-fields');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to custom fields:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      await fetchVendors();
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error refreshing vendors:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetColumns = () => {
+    // Reset column widths to default
+    localStorage.removeItem('vendors-column-widths');
+    // Trigger a re-render to apply default column widths
+    window.location.reload();
+    setShowMoreMenu(false);
+  };
+
+  const handleExportOption = (option: string) => {
+    handleExport(option);
+  };
+
+  const handleMoreMenuAction = (option: any) => {
+    if (option.action) {
+      option.action();
+    }
+    setShowMoreMenu(false);
+  };
+
+  // More menu options - Matching Zoho Books exactly
+  const moreMenuOptions = [
+    {
+      id: "all",
+      label: "All",
+      icon: StarIcon,
+      action: () => {
+        setSelectedFilter("all");
+        setShowMoreMenu(false);
+      }
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      icon: ArrowsUpDownIcon,
+      hasSubmenu: true,
+      submenu: [
+        { value: "name", label: "Name" },
+        { value: "company", label: "Company Name" },
+        { value: "email", label: "Email" },
+        { value: "payables", label: "Payables" },
+        { value: "created", label: "Created Date" },
+      ]
+    },
+    {
+      id: "import",
+      label: "Import Vendors",
+      icon: ArrowDownTrayIconSolid,
+      action: () => handleImportVendorsClick()
+    },
+    {
+      id: "export",
+      label: "Export",
+      icon: ArrowUpTrayIconSolid,
+      hasSubmenu: true,
+      submenu: [
+        { label: "Export Vendors", value: "export_all" },
+        { label: "Export Current View", value: "export_current" },
+      ]
+    },
+    {
+      id: "preferences",
+      label: "Preferences",
+      icon: Cog6ToothIcon,
+      action: () => handlePreferences()
+    },
+    {
+      id: "custom_fields",
+      label: "Manage Custom Fields",
+      icon: ClipboardDocumentListIcon,
+      action: () => handleCustomFields()
+    },
+    {
+      id: "refresh",
+      label: "Refresh List",
+      icon: RefreshIcon,
+      action: () => handleRefresh()
+    },
+    {
+      id: "reset_columns",
+      label: "Reset Column Width",
+      icon: ArrowPathIcon,
+      action: () => handleResetColumns()
+    },
+  ];
+
+  // Hover handlers for submenus
+  const handleSubmenuHover = (optionId: string) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    setHoveredSubmenu(optionId);
+    if (optionId === 'sort') {
+      setShowSortMenu(true);
+      setShowExportMenu(false);
+    } else if (optionId === 'export') {
+      setShowExportMenu(true);
+      setShowSortMenu(false);
+    }
+  };
+
+  const handleSubmenuLeave = () => {
+    // Add a delay before closing to allow moving to submenu
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubmenu(null);
+      setShowSortMenu(false);
+      setShowExportMenu(false);
+    }, 200);
+  };
+
   // Calculate dropdown position
   const calculateDropdownPosition = (ref: React.RefObject<HTMLElement>) => {
     if (!ref.current) return 'right';
     const rect = ref.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
-    const spaceOnRight = viewportWidth - rect.right;
-    const spaceOnLeft = rect.left;
-    return spaceOnRight < 200 && spaceOnLeft > 200 ? 'left' : 'right';
+    return rect.right > viewportWidth - 200 ? 'left' : 'right';
   };
 
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-menu') && !target.closest('.submenu')) {
+      if (!target.closest('.dropdown-menu') && !target.closest('.submenu') && !target.closest('[data-filter-dropdown]') && !filterRef.current?.contains(target)) {
         setShowMoreMenu(false);
         setShowSortMenu(false);
         setShowExportMenu(false);
         setShowColumnMenu(false);
         setShowMainDropdown(false);
         setShowFilters(false);
+        setHoveredSubmenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      // Cleanup timeout on unmount
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -213,41 +467,8 @@ export default function VendorsSection({
     }
   };
 
-  const handleMoreMenuAction = (option: any) => {
-    switch (option.id) {
-      case 'all':
-        setSelectedFilter('all');
-        break;
-      case 'import':
-        window.location.href = '/dashboard/purchases/vendors/import';
-        break;
-      case 'preferences':
-        console.log('Preferences clicked');
-        break;
-      case 'custom-fields':
-        console.log('Custom fields clicked');
-        break;
-      case 'refresh':
-        fetchVendors();
-        break;
-      case 'reset-columns':
-        console.log('Reset columns clicked');
-        break;
-      default:
-        console.log('Action clicked:', option.id);
-    }
-    setShowMoreMenu(false);
-  };
 
-  const handleSortChange = (sortValue: string) => {
-    console.log('Sort by:', sortValue);
-    setShowSortMenu(false);
-  };
 
-  const handleExportOption = (exportValue: string) => {
-    console.log('Export:', exportValue);
-    setShowExportMenu(false);
-  };
 
   const getVendorType = (vendor: Vendor) => {
     return vendor.type || "Business";
@@ -460,38 +681,49 @@ export default function VendorsSection({
                   }}
                   className="p-2 text-gray-400 hover:text-gray-600"
                 >
-                  <EllipsisVerticalIcon className="h-5 w-5" />
+                  <EllipsisHorizontalIcon className="h-5 w-5" />
                 </button>
                 {showMoreMenu && (
-                  <div className={`absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10 ${
+                  <div className={`absolute top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10 dropdown-menu ${
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
                   }`}>
                     <div className="py-1">
                       {moreMenuOptions.map((option) => (
                         <div key={option.id}>
                           {option.hasSubmenu ? (
-                            <div className="relative">
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => handleSubmenuHover(option.id)}
+                              onMouseLeave={handleSubmenuLeave}
+                            >
                               <button
                                 onClick={() => {
-                                  if (option.id === 'sort') setShowSortMenu(!showSortMenu);
-                                  if (option.id === 'export') setShowExportMenu(!showExportMenu);
+                                  if (option.id === 'sort') {
+                                    setShowSortMenu(!showSortMenu);
+                                    setShowExportMenu(false); // Close export menu when opening sort
+                                  }
+                                  if (option.id === 'export') {
+                                    setShowExportMenu(!showExportMenu);
+                                    setShowSortMenu(false); // Close sort menu when opening export
+                                  }
                                 }}
-                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                               >
                                 <option.icon className="h-4 w-4" />
                                 <span>{option.label}</span>
                                 <ChevronRightIcon className="h-4 w-4 ml-auto" />
                               </button>
                               {option.id === 'sort' && showSortMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -500,15 +732,16 @@ export default function VendorsSection({
                                 </div>
                               )}
                               {option.id === 'export' && showExportMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleExportOption(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -520,9 +753,7 @@ export default function VendorsSection({
                           ) : (
                             <button
                               onClick={() => handleMoreMenuAction(option)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                option.id === 'import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                              }`}
+                              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                             >
                               <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
@@ -578,9 +809,11 @@ export default function VendorsSection({
             </button>
             
             {showFilters && (
-              <div className={`absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 ${
-                dropdownPosition === 'left' ? 'right-0' : 'left-0'
-              }`}>
+              <div 
+                data-filter-dropdown
+                className={`absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 ${
+                  dropdownPosition === 'left' ? 'right-0' : 'left-0'
+                }`}>
                 <div className="p-2">
                   {filterOptions.map((option) => {
                     const Icon = option.icon;
@@ -786,6 +1019,14 @@ export default function VendorsSection({
             )}
           </div>
         </div>
+      )}
+
+      {/* Modals */}
+      {showImportModal && (
+        <ImportVendorsModal
+          onClose={() => setShowImportModal(false)}
+          onSubmit={handleImportVendors}
+        />
       )}
     </div>
   );

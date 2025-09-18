@@ -8,12 +8,14 @@ import { verifyAccessToken } from "../utils/token.js";
  */
 export const authenticateToken = (req, res, next) => {
   // Check for token in cookie first, then Authorization header
-  const token =
-    req.cookies?.rb_session ||
-    req.headers.authorization?.replace("Bearer ", "");
+  const cookieToken = req.cookies?.rb_session;
+  const headerToken = req.headers.authorization?.replace("Bearer ", "");
+  const token = cookieToken || headerToken;
 
   console.log("🔐 Auth middleware - Cookies:", req.cookies);
-  console.log("🔐 Auth middleware - Token found:", !!token);
+  console.log("🔐 Auth middleware - Cookie token found:", !!cookieToken);
+  console.log("🔐 Auth middleware - Header token found:", !!headerToken);
+  console.log("🔐 Auth middleware - Final token found:", !!token);
 
   if (!token) {
     console.log("❌ No token found in cookies or Authorization header");
@@ -61,3 +63,5 @@ export const authorize = (...allowedRoles) => {
 
 // Default export for backward compatibility
 export default authenticateToken;
+
+

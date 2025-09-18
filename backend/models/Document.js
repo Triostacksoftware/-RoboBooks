@@ -80,3 +80,5 @@ documentSchema.index({ uploadedBy: 1, isActive: 1 });
 const Document = mongoose.model("Document", documentSchema);
 
 export default Document;
+
+

@@ -21,12 +21,12 @@ function removeDir(dirPath) {
   if (fs.existsSync(dirPath)) {
     try {
       fs.rmSync(dirPath, { recursive: true, force: true });
-      console.log(`✅ Removed: ${dirPath}`);
+      console.log(`✅ Removed: ?{dirPath}`);
     } catch (error) {
-      console.log(`⚠️  Could not remove ${dirPath}: ${error.message}`);
+      console.log(`⚠️  Could not remove ?{dirPath}: ?{error.message}`);
     }
   } else {
-    console.log(`ℹ️  Directory not found: ${dirPath}`);
+    console.log(`ℹ️  Directory not found: ?{dirPath}`);
   }
 }
 

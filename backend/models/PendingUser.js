@@ -27,3 +27,5 @@ pendingUserSchema.index({ email: 1 }, { unique: true, sparse: true });
 pendingUserSchema.index({ phone: 1 }, { unique: true, sparse: true });
 
 export default model("PendingUser", pendingUserSchema);
+
+

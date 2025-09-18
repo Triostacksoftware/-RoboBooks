@@ -25,7 +25,7 @@ async function testUserApproval() {
         firstName: "Test",
         lastName: "Admin",
         email: "admin@test.com",
-        passwordHash: "$2a$12$test.hash.for.testing",
+        passwordHash: "?2a?12$test.hash.for.testing",
         role: "admin",
         permissions: ["manage_users", "view_analytics"]
       });
@@ -49,7 +49,7 @@ async function testUserApproval() {
       phone: "9876543210",
       phoneDialCode: "+91",
       phoneIso2: "IN",
-      passwordHash: "$2a$12$test.hash.for.testing",
+      passwordHash: "?2a?12$test.hash.for.testing",
       country: "India",
       state: "Maharashtra",
       status: "pending"
@@ -131,3 +131,5 @@ async function testUserApproval() {
 
 // Run the test
 testUserApproval();
+
+

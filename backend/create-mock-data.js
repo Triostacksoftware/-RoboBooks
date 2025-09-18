@@ -17,17 +17,17 @@ async function createMockData() {
 
     // Clean up existing mock data
     console.log("🧹 Cleaning up existing mock data...");
-    await Admin.deleteMany({ email: { $regex: /@robobooks\.com$/ } });
+    await Admin.deleteMany({ email: { $regex: /@robobooks\.com?/ } });
     await User.deleteMany({
       email: {
         $regex:
-          /@(techstart|digitalinnovations|globalenterprises|startuphub|establishedcorp|professionalservices|enterprisesolutions|suspiciouscompany|testcompany)\.com$/,
+          /@(techstart|digitalinnovations|globalenterprises|startuphub|establishedcorp|professionalservices|enterprisesolutions|suspiciouscompany|testcompany)\.com?/,
       },
     });
     await PendingUser.deleteMany({
       email: {
         $regex:
-          /@(techstart|digitalinnovations|globalenterprises|startuphub|establishedcorp|professionalservices|enterprisesolutions|suspiciouscompany|testcompany)\.com$/,
+          /@(techstart|digitalinnovations|globalenterprises|startuphub|establishedcorp|professionalservices|enterprisesolutions|suspiciouscompany|testcompany)\.com?/,
       },
     });
     console.log("✅ Cleanup completed\n");
@@ -329,3 +329,5 @@ async function createMockData() {
 
 // Run the script
 createMockData();
+
+

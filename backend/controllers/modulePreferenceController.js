@@ -257,3 +257,5 @@ const saveUserModulePreferences = async (req, res) => {
 };
 
 export { getUserModulePreferences, saveUserModulePreferences };
+
+

@@ -55,13 +55,13 @@ export const fileUploadService = {
 
   // Get file URL for preview
   getFileUrl: (fileId) => {
-    return `/api/expenses/files/${fileId}`;
+    return `/api/expenses/files/?{fileId}`;
   },
 
   // Delete uploaded file
   deleteFile: async (fileId) => {
     try {
-      const response = await apiClient.delete(`/api/expenses/files/${fileId}`);
+      const response = await apiClient.delete(`/api/expenses/files/?{fileId}`);
       return response.data;
     } catch (error) {
       console.error("File deletion failed:", error);
@@ -75,7 +75,7 @@ export const fileUploadService = {
 
     // Check file size
     if (file.size > maxSize) {
-      errors.push(`File size must be less than ${maxSize / (1024 * 1024)}MB`);
+      errors.push(`File size must be less than ?{maxSize / (1024 * 1024)}MB`);
     }
 
     // Check file type

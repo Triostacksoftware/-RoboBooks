@@ -18,10 +18,10 @@ export const generateClientPDF = (invoice) => {
     30,
     { align: "center" }
   );
-  doc.text(`Phone: ${invoice.sellerPhone || "+91 98765 43210"}`, 105, 37, {
+  doc.text(`Phone: ?{invoice.sellerPhone || "+91 98765 43210"}`, 105, 37, {
     align: "center",
   });
-  doc.text(`GSTIN: ${invoice.sellerGstin || "29ABCDE1234F1Z5"}`, 105, 44, {
+  doc.text(`GSTIN: ?{invoice.sellerGstin || "29ABCDE1234F1Z5"}`, 105, 44, {
     align: "center",
   });
 
@@ -31,22 +31,22 @@ export const generateClientPDF = (invoice) => {
 
   // Invoice details
   doc.setFontSize(10);
-  doc.text(`Invoice No.: ${invoice.invoiceNumber}`, 20, 80);
+  doc.text(`Invoice No.: ?{invoice.invoiceNumber}`, 20, 80);
   doc.text(
-    `Date: ${new Date(invoice.invoiceDate).toLocaleDateString()}`,
+    `Date: ?{new Date(invoice.invoiceDate).toLocaleDateString()}`,
     20,
     87
   );
-  doc.text(`Customer: ${invoice.buyerName || invoice.customerName}`, 20, 94);
+  doc.text(`Customer: ?{invoice.buyerName || invoice.customerName}`, 20, 94);
 
   // Items table
   const tableData = invoice.items.map((item, index) => [
     index + 1,
     item.details,
     item.quantity,
-    `₹${item.rate.toFixed(2)}`,
-    `₹${item.taxAmount.toFixed(2)}`,
-    `₹${item.amount.toFixed(2)}`,
+    `₹?{item.rate.toFixed(2)}`,
+    `₹?{item.taxAmount.toFixed(2)}`,
+    `₹?{item.amount.toFixed(2)}`,
   ]);
 
   doc.autoTable({
@@ -59,10 +59,10 @@ export const generateClientPDF = (invoice) => {
 
   // Total
   const finalY = doc.lastAutoTable.finalY + 10;
-  doc.text(`Total: ₹${invoice.total.toFixed(2)}`, 150, finalY);
+  doc.text(`Total: ₹?{invoice.total.toFixed(2)}`, 150, finalY);
 
   // Save the PDF
-  doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
+  doc.save(`Invoice_?{invoice.invoiceNumber}.pdf`);
 
   return doc;
 };

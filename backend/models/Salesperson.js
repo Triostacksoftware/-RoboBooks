@@ -24,3 +24,5 @@ salespersonSchema.index({ name: 1, email: 1 });
 
 const Salesperson = mongoose.model("Salesperson", salespersonSchema);
 export default Salesperson;
+
+

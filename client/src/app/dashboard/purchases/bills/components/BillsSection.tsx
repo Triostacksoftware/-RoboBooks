@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ChevronDownIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   FunnelIcon,
   XMarkIcon,
   PencilIcon,
@@ -32,10 +32,12 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ArrowDownTrayIcon as DownloadIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { Bill, billService } from "@/services/billService";
 import { formatCurrency } from "@/utils/currency";
 import BillsList from "./BillsList";
+import ImportBillsModal from "../import/components/ImportBillsModal";
 
 const filters = ["All", "Draft", "Sent", "Received", "Overdue", "Paid", "Cancelled"];
 
@@ -80,9 +82,12 @@ export default function BillsSection({
   const [sortBy, setSortBy] = useState('created_time');
   const [sortOrder, setSortOrder] = useState('desc');
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const mainDropdownRef = useRef<HTMLButtonElement>(null);
   const filterRef = useRef<HTMLButtonElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch bills from backend
   const fetchBills = async () => {
@@ -114,26 +119,16 @@ export default function BillsSection({
     applyFilters();
   }, [bills, searchTerm, selectedFilter]);
 
+
   // Main dropdown options (All Bills dropdown)
   const mainDropdownOptions = [
-    { value: "all", label: "All Bills", icon: StarIcon },
-    { value: "draft", label: "Draft", icon: PencilIcon },
-    { value: "sent", label: "Sent", icon: ClockIcon },
-    { value: "received", label: "Received", icon: CheckIcon },
-    { value: "overdue", label: "Overdue", icon: ExclamationTriangleIcon },
-    { value: "paid", label: "Paid", icon: CheckIcon },
-    { value: "cancelled", label: "Cancelled", icon: XMarkIcon },
-  ];
-
-  // Filter options matching Zoho Books
-  const filterOptions = [
-    { value: "all", label: "All Bills", icon: StarIcon },
-    { value: "draft", label: "Draft", icon: PencilIcon },
-    { value: "sent", label: "Sent", icon: ClockIcon },
-    { value: "received", label: "Received", icon: CheckIcon },
-    { value: "overdue", label: "Overdue", icon: ExclamationTriangleIcon },
-    { value: "paid", label: "Paid", icon: CheckIcon },
-    { value: "cancelled", label: "Cancelled", icon: XMarkIcon },
+    { value: "all", label: "All Bills", icon: StarIcon, isCustom: false },
+    { value: "draft", label: "Draft", icon: PencilIcon, isCustom: false },
+    { value: "sent", label: "Sent", icon: ClockIcon, isCustom: false },
+    { value: "received", label: "Received", icon: CheckIcon, isCustom: false },
+    { value: "overdue", label: "Overdue", icon: ExclamationTriangleIcon, isCustom: false },
+    { value: "paid", label: "Paid", icon: CheckIcon, isCustom: false },
+    { value: "cancelled", label: "Cancelled", icon: XMarkIcon, isCustom: false },
     { value: "custom", label: "New Custom View", icon: PlusIcon, isCustom: true },
   ];
 
@@ -146,13 +141,21 @@ export default function BillsSection({
     { value: "due_date", label: "Due Date" },
   ];
 
-  // More menu options - Matching Expenses Design
+  // More menu options - Comprehensive like other sections
   const moreMenuOptions = [
-    { id: "all", label: "All", icon: StarIcon },
-    { 
-      id: "sort", 
-      label: "Sort by", 
-      icon: ChevronDownIcon, 
+    {
+      id: "all",
+      label: "All",
+      icon: StarIcon,
+      action: () => {
+        setSelectedFilter("all");
+        setShowMoreMenu(false);
+      }
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      icon: ArrowsUpDownIcon,
       hasSubmenu: true,
       submenu: [
         { value: "date", label: "Date" },
@@ -163,21 +166,46 @@ export default function BillsSection({
         { value: "created", label: "Created Date" },
       ]
     },
-    { id: "import", label: "Import Bills", icon: ArrowDownTrayIconSolid },
-    { 
-      id: "export", 
-      label: "Export", 
-      icon: ArrowUpTrayIconSolid, 
+    {
+      id: "import",
+      label: "Import Bills",
+      icon: ArrowDownTrayIconSolid,
+      action: () => handleImportBillsClick()
+    },
+    {
+      id: "export",
+      label: "Export",
+      icon: ArrowUpTrayIconSolid,
       hasSubmenu: true,
       submenu: [
-        { value: "export-bills", label: "Export Bills" },
-        { value: "export-current", label: "Export Current View" },
+        { label: "Export Bills", value: "export_all" },
+        { label: "Export Current View", value: "export_current" },
       ]
     },
-    { id: "preferences", label: "Preferences", icon: ClockIcon },
-    { id: "custom-fields", label: "Manage Custom Fields", icon: ClipboardDocumentListIcon },
-    { id: "refresh", label: "Refresh List", icon: RefreshIcon },
-    { id: "reset-columns", label: "Reset Column Width", icon: ArrowPathIcon },
+    {
+      id: "preferences",
+      label: "Preferences",
+      icon: Cog6ToothIcon,
+      action: () => handlePreferences()
+    },
+    {
+      id: "custom_fields",
+      label: "Manage Custom Fields",
+      icon: ClipboardDocumentListIcon,
+      action: () => handleCustomFields()
+    },
+    {
+      id: "refresh",
+      label: "Refresh List",
+      icon: RefreshIcon,
+      action: () => handleRefresh()
+    },
+    {
+      id: "reset_columns",
+      label: "Reset Column Width",
+      icon: ArrowPathIcon,
+      action: () => handleResetColumns()
+    },
   ];
 
   // Apply filters
@@ -215,47 +243,26 @@ export default function BillsSection({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-menu')) {
+      if (!target.closest('.dropdown-menu') && !target.closest('.submenu') && !target.closest('[data-filter-dropdown]') && !filterRef.current?.contains(target)) {
         setShowMoreMenu(false);
         setShowSortMenu(false);
         setShowExportMenu(false);
         setShowColumnMenu(false);
         setShowMainDropdown(false);
         setShowFilters(false);
+        setHoveredSubmenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
-  const handleMoreMenuAction = (option: any) => {
-    switch (option.id) {
-      case 'all':
-        setSelectedFilter('all');
-        break;
-      case 'import':
-        window.location.href = '/dashboard/purchases/bills/import';
-        break;
-      case 'preferences':
-        console.log('Preferences clicked');
-        break;
-      case 'custom-fields':
-        console.log('Custom fields clicked');
-        break;
-      case 'refresh':
-        fetchBills();
-        break;
-      case 'reset-columns':
-        console.log('Reset columns clicked');
-        break;
-      default:
-        console.log('Action clicked:', option.id);
-    }
-    setShowMoreMenu(false);
-  };
 
   const handleSortChange = (sortValue: string) => {
     console.log('Sort by:', sortValue);
@@ -267,24 +274,133 @@ export default function BillsSection({
     setShowExportMenu(false);
   };
 
-  // Function to calculate dropdown position
-  const calculateDropdownPosition = (buttonRef: React.RefObject<HTMLElement | null>) => {
-    if (!buttonRef.current) return 'right';
-    
-    const buttonRect = buttonRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const dropdownWidth = 224; // w-56 = 14rem = 224px
-    
-    // If button is in the right half of screen, open left
-    if (buttonRect.left + dropdownWidth > viewportWidth) {
-      return 'left';
-    }
-    
-    // If button is in the left half of screen, open right
-    return 'right';
+  // Additional handler functions for comprehensive menu
+  const handleImportBillsClick = () => {
+    setShowImportModal(true);
+    setShowMoreMenu(false);
   };
 
-  const selectedFilterOption = filterOptions.find(opt => opt.value === selectedFilter);
+  const handleImportBills = async (importedBills: Bill[]) => {
+    try {
+      setBills(prevBills => [...prevBills, ...importedBills]);
+      setShowImportModal(false);
+    } catch (error) {
+      console.error('Error importing bills:', error);
+    }
+  };
+
+  const handleCustomFields = async () => {
+    try {
+      router.push('/dashboard/settings/custom-fields');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to custom fields:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      await fetchBills();
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error refreshing bills:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetColumns = () => {
+    console.log('Reset columns clicked');
+    setShowMoreMenu(false);
+  };
+
+
+
+  const handleSubmenuHover = (optionId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredSubmenu(optionId);
+    if (optionId === 'sort') {
+      setShowSortMenu(true);
+      setShowExportMenu(false);
+    } else if (optionId === 'export') {
+      setShowExportMenu(true);
+      setShowSortMenu(false);
+    }
+  };
+
+  const handleSubmenuLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubmenu(null);
+      setShowSortMenu(false);
+      setShowExportMenu(false);
+    }, 200);
+  };
+
+  const calculateDropdownPosition = (): 'left' | 'right' => {
+    if (moreMenuRef.current) {
+      const rect = moreMenuRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const dropdownWidth = 200; // Approximate dropdown width
+      const submenuWidth = 200; // Approximate submenu width
+      
+      // Check if main dropdown would overflow
+      if (rect.right + dropdownWidth > viewportWidth) {
+        return 'left';
+      }
+      
+      // Check if submenu would overflow when positioned to the right
+      if (rect.right + dropdownWidth + submenuWidth > viewportWidth) {
+        return 'left';
+      }
+      
+      return 'right';
+    }
+    return 'right'; // Default fallback
+  };
+
+  const handlePreferences = () => {
+    try {
+      // Navigate to a general preferences page or bills-specific preferences
+      router.push('/dashboard/settings/preferences');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to preferences:', error);
+      // Fallback to a more general settings page
+      router.push('/dashboard/settings');
+      setShowMoreMenu(false);
+    }
+  };
+
+  const handleExport = async (exportType: string) => {
+    try {
+      setShowExportMenu(false);
+      
+      if (exportType === 'export_all') {
+        await handleExportOption('export-bills');
+      } else if (exportType === 'export_current') {
+        await handleExportOption('export-current');
+      }
+    } catch (error) {
+      console.error('Error exporting bills:', error);
+    }
+  };
+
+  const handleMoreMenuAction = (option: any) => {
+    if (option.action) {
+      option.action();
+    }
+    setShowMoreMenu(false);
+  };
+
+  // Hover handlers for submenus
+
+
+
+  const selectedFilterOption = mainDropdownOptions.find(opt => opt.value === selectedFilter);
 
   return (
     <div className="space-y-0">
@@ -297,15 +413,14 @@ export default function BillsSection({
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <button
-                  ref={mainDropdownRef as React.RefObject<HTMLButtonElement>}
+                  ref={mainDropdownRef}
                   onClick={() => {
-                    const position = calculateDropdownPosition(mainDropdownRef as React.RefObject<HTMLButtonElement>);
-                    setDropdownPosition(position);
+                    setDropdownPosition(calculateDropdownPosition());
                     setShowMainDropdown(!showMainDropdown);
                   }}
                   className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-gray-700"
                 >
-                  <span>{filterOptions.find(opt => opt.value === selectedFilter)?.label || "All Bills"}</span>
+                  <span>{mainDropdownOptions.find(opt => opt.value === selectedFilter)?.label || "All Bills"}</span>
                   <ChevronDownIcon className="h-5 w-5" />
                 </button>
                 {showMainDropdown && (
@@ -313,7 +428,7 @@ export default function BillsSection({
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
                   }`}>
                     <div className="py-1">
-                      {filterOptions.map((option) => {
+                      {mainDropdownOptions.map((option) => {
                         const Icon = option.icon;
                         return (
                           <button
@@ -364,13 +479,12 @@ export default function BillsSection({
               <div className="relative dropdown-menu" ref={moreMenuRef}>
                 <button
                   onClick={() => {
-                    const position = calculateDropdownPosition(moreMenuRef);
-                    setDropdownPosition(position);
+                    setDropdownPosition(calculateDropdownPosition());
                     setShowMoreMenu(!showMoreMenu);
                   }}
                   className="p-2 text-gray-400 hover:text-gray-600"
                 >
-                  <EllipsisVerticalIcon className="h-5 w-5" />
+                  <EllipsisHorizontalIcon className="h-5 w-5" />
                 </button>
                 {showMoreMenu && (
                   <div className={`absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10 ${
@@ -380,28 +494,39 @@ export default function BillsSection({
                       {moreMenuOptions.map((option) => (
                         <div key={option.id}>
                           {option.hasSubmenu ? (
-                            <div className="relative">
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => handleSubmenuHover(option.id)}
+                              onMouseLeave={handleSubmenuLeave}
+                            >
                               <button
                                 onClick={() => {
-                                  if (option.id === 'sort') setShowSortMenu(!showSortMenu);
-                                  if (option.id === 'export') setShowExportMenu(!showExportMenu);
+                                  if (option.id === 'sort') {
+                                    setShowSortMenu(!showSortMenu);
+                                    setShowExportMenu(false); // Close export menu when opening sort
+                                  }
+                                  if (option.id === 'export') {
+                                    setShowExportMenu(!showExportMenu);
+                                    setShowSortMenu(false); // Close sort menu when opening export
+                                  }
                                 }}
-                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                               >
                                 <option.icon className="h-4 w-4" />
                                 <span>{option.label}</span>
                                 <ChevronRightIcon className="h-4 w-4 ml-auto" />
                               </button>
                               {option.id === 'sort' && showSortMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -410,15 +535,16 @@ export default function BillsSection({
                                 </div>
                               )}
                               {option.id === 'export' && showExportMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
-                                        onClick={() => handleExportOption(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        onClick={() => handleExport(subOption.value)}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -429,10 +555,8 @@ export default function BillsSection({
                             </div>
                           ) : (
                             <button
-                              onClick={() => handleMoreMenuAction(option)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                option.id === 'import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                              }`}
+                              onClick={() => option.action && option.action()}
+                              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                             >
                               <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
@@ -477,8 +601,7 @@ export default function BillsSection({
             <button
               ref={filterRef}
               onClick={() => {
-                const position = calculateDropdownPosition(filterRef);
-                setDropdownPosition(position);
+                setDropdownPosition(calculateDropdownPosition());
                 setShowFilters(!showFilters);
               }}
               className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -492,7 +615,7 @@ export default function BillsSection({
                 dropdownPosition === 'left' ? 'right-0' : 'left-0'
               }`}>
                 <div className="p-2">
-                  {filterOptions.map((option) => {
+                  {mainDropdownOptions.map((option) => {
                     const Icon = option.icon;
                     return (
                       <button
@@ -624,6 +747,13 @@ export default function BillsSection({
           onClearSelection={onClearSelection}
         />
       )}
+      
+      {/* Import Modal */}
+      <ImportBillsModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={handleImportBills}
+      />
     </div>
   );
 }

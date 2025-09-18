@@ -108,7 +108,7 @@ async function testVendorsAPI() {
 
       // Test 5: Search vendors
       console.log('\n5. Searching vendors...');
-      const searchResponse = await fetch(`${BASE_URL}/vendors/search?query=Test`);
+      const searchResponse = await fetch(`${BASE_URL}/vendors/search$query=Test`);
       if (searchResponse.ok) {
         const searchResults = await searchResponse.json();
         console.log(`✅ Search found ${searchResults.data.length} vendors`);
@@ -138,3 +138,5 @@ async function testVendorsAPI() {
 
 // Run the test
 testVendorsAPI();
+
+

@@ -11,3 +11,5 @@ export const validStatusTransitions = {
 export function canTransition(from, to) {
   return validStatusTransitions[from]?.includes(to);
 }
+
+

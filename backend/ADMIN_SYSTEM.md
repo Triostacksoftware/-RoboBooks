@@ -175,7 +175,7 @@ const response = await fetch('/api/admin/admins', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${adminToken}`
+    'Authorization': `Bearer ?{adminToken}`
   },
   body: JSON.stringify({
     firstName: "John",
@@ -193,7 +193,7 @@ const response = await fetch('/api/admin/admins', {
 ```javascript
 const response = await fetch('/api/admin/dashboard/stats', {
   headers: {
-    'Authorization': `Bearer ${adminToken}`
+    'Authorization': `Bearer ?{adminToken}`
   }
 });
 
@@ -216,7 +216,7 @@ const response = await fetch('/api/admin/users/user_id/status', {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${adminToken}`
+    'Authorization': `Bearer ?{adminToken}`
   },
   body: JSON.stringify({
     isActive: false

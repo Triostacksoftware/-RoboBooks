@@ -87,3 +87,5 @@ auditTrailSchema.index({ timestamp: -1 });
 const AuditTrail = mongoose.model("AuditTrail", auditTrailSchema);
 
 export default AuditTrail;
+
+

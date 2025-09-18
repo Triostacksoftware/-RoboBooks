@@ -60,3 +60,5 @@ console.log('   4. The API will be available at http://localhost:5000\n');
 
 console.log('🔗 Frontend should be configured with:');
 console.log('   NEXT_PUBLIC_BACKEND_URL=http://localhost:5000\n'); 
+
+

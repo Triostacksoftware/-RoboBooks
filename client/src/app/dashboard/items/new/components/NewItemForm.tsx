@@ -737,7 +737,7 @@ export default function NewItemForm() {
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">Inventory Tracking</p>
             <p>
-              Do you want to keep track of this item?{" "}
+              Do you want to keep track of this item${" "}
               <span className="font-semibold text-blue-900 cursor-pointer hover:underline">
                 Enable Inventory
               </span>{" "}

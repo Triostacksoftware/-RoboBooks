@@ -22,3 +22,5 @@ router.get("/stats", getBillStats);
 router.get("/:id", getBillById);
 
 export default router;
+
+

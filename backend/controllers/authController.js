@@ -52,3 +52,5 @@ export const logout = async (req, res) => {
   res.clearCookie("jid", COOKIE_OPTS);
   res.json({ message: "Logged out" });
 };
+
+

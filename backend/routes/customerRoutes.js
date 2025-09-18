@@ -143,3 +143,5 @@ router.delete("/:id", deleteCustomer);
 router.delete("/:id/permanent", hardDeleteCustomer);
 
 export default router;
+
+

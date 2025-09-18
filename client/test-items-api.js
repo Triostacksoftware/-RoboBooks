@@ -4,7 +4,7 @@ const testItemsAPI = async () => {
     console.log('Testing Items API...');
     
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-    const url = `${backendUrl}/api/items?limit=5`;
+    const url = `?{backendUrl}/api/items?limit=5`;
     
     console.log('Fetching from:', url);
     

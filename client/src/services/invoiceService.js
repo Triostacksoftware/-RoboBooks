@@ -3,10 +3,10 @@ import { apiClient } from "./apiClient";
 // Invoice API endpoints
 const ENDPOINTS = {
   INVOICES: "/api/invoices",
-  INVOICE: (id) => `/api/invoices/${id}`,
+  INVOICE: (id) => `/api/invoices/?{id}`,
   CREATE_INVOICE: "/api/invoices",
-  UPDATE_INVOICE: (id) => `/api/invoices/${id}`,
-  DELETE_INVOICE: (id) => `/api/invoices/${id}`,
+  UPDATE_INVOICE: (id) => `/api/invoices/?{id}`,
+  DELETE_INVOICE: (id) => `/api/invoices/?{id}`,
 };
 
 // HTTP wrapper functions
@@ -55,7 +55,7 @@ export const invoiceService = {
   getInvoices: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams(params).toString();
-      const url = queryParams ? `${ENDPOINTS.INVOICES}?${queryParams}` : ENDPOINTS.INVOICES;
+      const url = queryParams ? `?{ENDPOINTS.INVOICES}??{queryParams}` : ENDPOINTS.INVOICES;
       const response = await http.get(url);
       return response.data;
     } catch (error) {
@@ -78,7 +78,7 @@ export const invoiceService = {
       const response = await http.get(ENDPOINTS.INVOICE(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to fetch invoice ${id}:`, error);
+      console.error(`Failed to fetch invoice ?{id}:`, error);
       throw error;
     }
   },
@@ -100,7 +100,7 @@ export const invoiceService = {
       const response = await http.put(ENDPOINTS.UPDATE_INVOICE(id), invoiceData);
       return response.data;
     } catch (error) {
-      console.error(`Failed to update invoice ${id}:`, error);
+      console.error(`Failed to update invoice ?{id}:`, error);
       throw error;
     }
   },
@@ -111,7 +111,7 @@ export const invoiceService = {
       const response = await http.delete(ENDPOINTS.DELETE_INVOICE(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to delete invoice ${id}:`, error);
+      console.error(`Failed to delete invoice ?{id}:`, error);
       throw error;
     }
   },
@@ -122,7 +122,7 @@ export const invoiceService = {
       const invoices = await invoiceService.getInvoices();
       return invoices.data?.map(invoice => ({
         value: invoice.invoiceNumber,
-        label: `${invoice.invoiceNumber} - ${invoice.customer} (₹${invoice.amount})`,
+        label: `?{invoice.invoiceNumber} - ?{invoice.customer} (₹?{invoice.amount})`,
         invoice: invoice
       })) || [];
     } catch (error) {

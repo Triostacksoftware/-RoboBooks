@@ -37,7 +37,7 @@ function testFormValidation() {
   const hasValidItems = validItems.length > 0 && validItems.every(item => 
     item.expenseAccount && item.amount > 0
   );
-  console.log(`✅ Valid expense items: ${hasValidItems ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Valid expense items: ?{hasValidItems ? 'Pass' : 'Fail'}`);
   
   // Test invalid expense items
   const invalidItems = [
@@ -45,11 +45,11 @@ function testFormValidation() {
     { id: "2", expenseAccount: "Office Supplies", notes: "No amount", amount: 0 }
   ];
   const hasInvalidItems = invalidItems.some(item => !item.expenseAccount || item.amount <= 0);
-  console.log(`✅ Invalid expense items detection: ${hasInvalidItems ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Invalid expense items detection: ?{hasInvalidItems ? 'Pass' : 'Fail'}`);
   
   // Test payment method validation
   const hasPaymentMethod = testFormData.paidThrough && testFormData.paidThrough.trim() !== '';
-  console.log(`✅ Payment method validation: ${hasPaymentMethod ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Payment method validation: ?{hasPaymentMethod ? 'Pass' : 'Fail'}`);
 }
 
 // Test 2: Customer and Project data handling
@@ -65,8 +65,8 @@ function testDataHandling() {
     email: 'test@example.com'
   };
   
-  const customerLabel = testCustomer.displayName || `${testCustomer.firstName || ''} ${testCustomer.lastName || ''}`.trim();
-  console.log(`✅ Customer label generation: ${customerLabel === 'Test Customer' ? 'Pass' : 'Fail'}`);
+  const customerLabel = testCustomer.displayName || `?{testCustomer.firstName || ''} ?{testCustomer.lastName || ''}`.trim();
+  console.log(`✅ Customer label generation: ?{customerLabel === 'Test Customer' ? 'Pass' : 'Fail'}`);
   
   // Test project data structure
   const testProject = {
@@ -77,7 +77,7 @@ function testDataHandling() {
   };
   
   const projectLabel = testProject.name;
-  console.log(`✅ Project label generation: ${projectLabel === 'Test Project' ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project label generation: ?{projectLabel === 'Test Project' ? 'Pass' : 'Fail'}`);
   
   // Test null/undefined handling
   const nullCustomer = null;
@@ -86,8 +86,8 @@ function testDataHandling() {
   const nullCustomerCheck = !nullCustomer || !nullCustomer._id;
   const nullProjectCheck = !nullProject || !nullProject._id || !nullProject.name;
   
-  console.log(`✅ Null customer handling: ${nullCustomerCheck ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Null project handling: ${nullProjectCheck ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Null customer handling: ?{nullCustomerCheck ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Null project handling: ?{nullProjectCheck ? 'Pass' : 'Fail'}`);
 }
 
 // Test 3: Dropdown functionality
@@ -103,7 +103,7 @@ function testDropdownFunctionality() {
   const hasDefaultOption = customers.some(customer => customer.value === '');
   const hasCustomerOptions = customers.length > 0;
   
-  console.log(`✅ Customer dropdown structure: ${hasCustomerOptions ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer dropdown structure: ?{hasCustomerOptions ? 'Pass' : 'Fail'}`);
   
   // Test project dropdown options
   const projects = [
@@ -112,7 +112,7 @@ function testDropdownFunctionality() {
   ];
   
   const hasProjectOptions = projects.length > 0;
-  console.log(`✅ Project dropdown structure: ${hasProjectOptions ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project dropdown structure: ?{hasProjectOptions ? 'Pass' : 'Fail'}`);
   
   // Test loading states
   const isLoadingCustomers = false;
@@ -121,8 +121,8 @@ function testDropdownFunctionality() {
   const customerLoadingText = isLoadingCustomers ? 'Loading customers...' : 'Select existing customer';
   const projectLoadingText = isLoadingProjects ? 'Loading projects...' : 'Select existing project';
   
-  console.log(`✅ Customer loading state: ${customerLoadingText === 'Select existing customer' ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Project loading state: ${projectLoadingText === 'Loading projects...' ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer loading state: ?{customerLoadingText === 'Select existing customer' ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project loading state: ?{projectLoadingText === 'Loading projects...' ? 'Pass' : 'Fail'}`);
 }
 
 // Test 4: Error handling
@@ -137,14 +137,14 @@ function testErrorHandling() {
   const invalidItemsError = invalidItems.some(item => !item.expenseAccount || item.amount <= 0) ? 
     'Please fill in all required fields for expense items (Account and Amount are required)' : '';
   
-  console.log(`✅ Empty items error: ${emptyItemsError ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Invalid items error: ${invalidItemsError ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Empty items error: ?{emptyItemsError ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Invalid items error: ?{invalidItemsError ? 'Pass' : 'Fail'}`);
   
   // Test payment method error
   const noPaymentMethod = !testFormData.paidThrough;
   const paymentMethodError = noPaymentMethod ? 'Please select a payment method' : '';
   
-  console.log(`✅ Payment method error: ${paymentMethodError ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Payment method error: ?{paymentMethodError ? 'Pass' : 'Fail'}`);
 }
 
 // Test 5: File upload validation
@@ -172,7 +172,7 @@ function testFileUploadValidation() {
   };
   
   const validFileCheck = validFile.size <= maxSize && allowedTypes.includes(validFile.type);
-  console.log(`✅ Valid file validation: ${validFileCheck ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Valid file validation: ?{validFileCheck ? 'Pass' : 'Fail'}`);
   
   // Test invalid file size
   const largeFile = {
@@ -182,7 +182,7 @@ function testFileUploadValidation() {
   };
   
   const largeFileCheck = largeFile.size > maxSize;
-  console.log(`✅ Large file detection: ${largeFileCheck ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Large file detection: ?{largeFileCheck ? 'Pass' : 'Fail'}`);
   
   // Test invalid file type
   const invalidTypeFile = {
@@ -192,7 +192,7 @@ function testFileUploadValidation() {
   };
   
   const invalidTypeCheck = !allowedTypes.includes(invalidTypeFile.type);
-  console.log(`✅ Invalid type detection: ${invalidTypeCheck ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Invalid type detection: ?{invalidTypeCheck ? 'Pass' : 'Fail'}`);
 }
 
 // Test 6: Form data structure
@@ -202,7 +202,7 @@ function testFormDataStructure() {
   const requiredFields = ['date', 'paidThrough', 'vendor'];
   const hasRequiredFields = requiredFields.every(field => testFormData.hasOwnProperty(field));
   
-  console.log(`✅ Required fields present: ${hasRequiredFields ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Required fields present: ?{hasRequiredFields ? 'Pass' : 'Fail'}`);
   
   // Test expense items structure
   const requiredItemFields = ['id', 'expenseAccount', 'notes', 'amount'];
@@ -210,7 +210,7 @@ function testFormDataStructure() {
     requiredItemFields.every(field => item.hasOwnProperty(field))
   );
   
-  console.log(`✅ Expense item structure: ${hasRequiredItemFields ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Expense item structure: ?{hasRequiredItemFields ? 'Pass' : 'Fail'}`);
 }
 
 // Test 7: UI state management
@@ -227,16 +227,16 @@ function testUIStateManagement() {
   };
   
   const hasLoadingStates = Object.keys(loadingStates).length > 0;
-  console.log(`✅ Loading states defined: ${hasLoadingStates ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Loading states defined: ?{hasLoadingStates ? 'Pass' : 'Fail'}`);
   
   // Test form data state
   const formDataKeys = Object.keys(testFormData);
   const hasFormDataKeys = formDataKeys.length > 0;
-  console.log(`✅ Form data keys: ${hasFormDataKeys ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Form data keys: ?{hasFormDataKeys ? 'Pass' : 'Fail'}`);
   
   // Test expense items state
   const expenseItemsKeys = testExpenseItems.length > 0;
-  console.log(`✅ Expense items state: ${expenseItemsKeys ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Expense items state: ?{expenseItemsKeys ? 'Pass' : 'Fail'}`);
 }
 
 // Run all tests

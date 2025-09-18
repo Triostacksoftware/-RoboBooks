@@ -388,7 +388,7 @@ const AccountDetailsModal = ({
                       : "text-red-600"
                   }`}
                 >
-                  {selectedAccount.balance >= 0 ? "+" : ""}$
+                  {selectedAccount.balance >= 0 ? "+" : ""}?
                   {selectedAccount.balance.toLocaleString()}
                 </p>
               </div>
@@ -824,7 +824,7 @@ export default function BankAccountManager() {
                     account.balance >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {account.balance >= 0 ? "+" : ""}$
+                  {account.balance >= 0 ? "+" : ""}?
                   {account.balance.toLocaleString()}
                 </span>
               </div>

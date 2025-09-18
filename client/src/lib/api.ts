@@ -94,6 +94,9 @@ export async function api<T = unknown>(
   // Add Authorization header if token exists (fallback for non-cookie auth)
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+    console.log("🔐 Adding Authorization header with token");
+  } else {
+    console.log("⚠️ No token found in localStorage - relying on cookies");
   }
 
   const res = await fetch(`${backendUrl}${path}`, {

@@ -71,3 +71,5 @@ async function cleanupAndCreateUser() {
 
 // Run the script
 cleanupAndCreateUser();
+
+

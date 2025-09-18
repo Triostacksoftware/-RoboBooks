@@ -281,7 +281,7 @@ const applyCustomView = async (req, res) => {
             query[field] = { $regex: `^${value}`, $options: 'i' };
             break;
           case 'endsWith':
-            query[field] = { $regex: `${value}$`, $options: 'i' };
+            query[field] = { $regex: `${value}?`, $options: 'i' };
             break;
           case 'greaterThan':
             query[field] = { $gt: parseFloat(value) || value };
@@ -354,3 +354,5 @@ export {
   deleteCustomView,
   applyCustomView
 };
+
+

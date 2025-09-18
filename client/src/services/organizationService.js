@@ -3,11 +3,11 @@ import { apiClient } from "./apiClient";
 // Organization API endpoints
 const ENDPOINTS = {
   ORGANIZATIONS: "/api/organizations",
-  ORGANIZATION: (id) => `/api/organizations/${id}`,
+  ORGANIZATION: (id) => `/api/organizations/?{id}`,
   CREATE_ORGANIZATION: "/api/organizations",
-  UPDATE_ORGANIZATION: (id) => `/api/organizations/${id}`,
-  DELETE_ORGANIZATION: (id) => `/api/organizations/${id}`,
-  SET_ACTIVE_ORGANIZATION: (id) => `/api/organizations/${id}/activate`,
+  UPDATE_ORGANIZATION: (id) => `/api/organizations/?{id}`,
+  DELETE_ORGANIZATION: (id) => `/api/organizations/?{id}`,
+  SET_ACTIVE_ORGANIZATION: (id) => `/api/organizations/?{id}/activate`,
 };
 
 // HTTP wrapper functions
@@ -73,7 +73,7 @@ export const organizationService = {
       const response = await http.get(ENDPOINTS.ORGANIZATION(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to fetch organization ${id}:`, error);
+      console.error(`Failed to fetch organization ?{id}:`, error);
       throw error;
     }
   },
@@ -101,7 +101,7 @@ export const organizationService = {
       );
       return response.data;
     } catch (error) {
-      console.error(`Failed to update organization ${id}:`, error);
+      console.error(`Failed to update organization ?{id}:`, error);
       throw error;
     }
   },
@@ -112,7 +112,7 @@ export const organizationService = {
       const response = await http.delete(ENDPOINTS.DELETE_ORGANIZATION(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to delete organization ${id}:`, error);
+      console.error(`Failed to delete organization ?{id}:`, error);
       throw error;
     }
   },
@@ -123,7 +123,7 @@ export const organizationService = {
       const response = await http.post(ENDPOINTS.SET_ACTIVE_ORGANIZATION(id));
       return response.data;
     } catch (error) {
-      console.error(`Failed to set organization ${id} as active:`, error);
+      console.error(`Failed to set organization ?{id} as active:`, error);
       throw error;
     }
   },

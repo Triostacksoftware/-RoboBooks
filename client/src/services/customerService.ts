@@ -151,7 +151,7 @@ class CustomerService {
       errors.push('Customer name is required');
     }
 
-    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+?/.test(data.email)) {
       errors.push('Valid email is required');
     }
 

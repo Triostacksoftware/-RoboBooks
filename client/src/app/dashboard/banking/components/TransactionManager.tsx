@@ -187,20 +187,20 @@ export default function TransactionManager({
             <span>{filteredTransactions.length} transactions found</span>
             <div className="flex gap-4">
               <span>
-                Total: $
+                Total: ?
                 {filteredTransactions
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toFixed(2)}
               </span>
               <span>
-                Income: $
+                Income: ?
                 {filteredTransactions
                   .filter((t) => t.amount > 0)
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toFixed(2)}
               </span>
               <span>
-                Expenses: $
+                Expenses: ?
                 {Math.abs(
                   filteredTransactions
                     .filter((t) => t.amount < 0)
@@ -279,7 +279,7 @@ export default function TransactionManager({
                           : "text-red-600"
                       }`}
                     >
-                      {transaction.amount >= 0 ? "+" : ""}$
+                      {transaction.amount >= 0 ? "+" : ""}?
                       {Math.abs(transaction.amount).toFixed(2)}
                     </p>
                     <p className="text-sm text-gray-500">{transaction.date}</p>
@@ -358,7 +358,7 @@ export default function TransactionManager({
                         : "text-red-600"
                     }`}
                   >
-                    {selectedTransaction.amount >= 0 ? "+" : ""}$
+                    {selectedTransaction.amount >= 0 ? "+" : ""}?
                     {Math.abs(selectedTransaction.amount).toFixed(2)}
                   </p>
                 </div>

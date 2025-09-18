@@ -360,7 +360,7 @@ export default function BankingPage() {
 
         <div className="text-center">
           <p className="text-gray-500 text-sm">
-            Don&#39;t use banking for your business?{" "}
+            Don&#39;t use banking for your business${" "}
             <button
               onClick={() => setShowConnectModal(false)}
               className="text-blue-600 hover:underline"

@@ -110,7 +110,7 @@ export const createTDS = async (req, res) => {
 
     // Check for duplicate TDS
     const existingTDS = await TDS.findOne({
-      name: { $regex: new RegExp(`^${name}$`, "i") },
+      name: { $regex: new RegExp(`^${name}?`, "i") },
       section: section,
       rate: rate,
     });
@@ -193,7 +193,7 @@ export const updateTDS = async (req, res) => {
 
       const existingTDS = await TDS.findOne({
         _id: { $ne: req.params.id },
-        name: { $regex: new RegExp(`^${checkName}$`, "i") },
+        name: { $regex: new RegExp(`^${checkName}?`, "i") },
         section: checkSection,
         rate: checkRate,
       });
@@ -329,7 +329,7 @@ export const seedDefaultTDS = async (req, res) => {
 
     for (const tdsData of defaultTDS) {
       const existing = await TDS.findOne({
-        name: { $regex: new RegExp(`^${tdsData.name}$`, "i") },
+        name: { $regex: new RegExp(`^${tdsData.name}?`, "i") },
         section: tdsData.section,
         rate: tdsData.rate,
       });
@@ -358,3 +358,5 @@ export const seedDefaultTDS = async (req, res) => {
     });
   }
 };
+
+

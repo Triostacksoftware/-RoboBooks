@@ -1,6 +1,6 @@
 import express from 'express';
 import { recordPayment } from '../services/invoiceservice.js';
-import { auth } from '../middleware/auth.js';
+import auth from '../middleware/auth.js';
 import { getInvoiceStats } from '../controllers/invoicecontroller.js';
 
 const router = express.Router();
@@ -49,3 +49,5 @@ router.post('/:id/record-payment', async (req, res) => {
 });
 
 export default router;
+
+

@@ -138,10 +138,10 @@ export default function MockDashboard() {
             {typeof value === "number" && value >= 1000
               ? `${(value / 1000).toFixed(1)}k`
               : typeof value === "number" && value >= 1000000
-              ? `$${(value / 1000000).toFixed(1)}M`
+              ? `?${(value / 1000000).toFixed(1)}M`
               : typeof value === "number" &&
                 title.toLowerCase().includes("revenue")
-              ? `$${value.toLocaleString()}`
+              ? `?${value.toLocaleString()}`
               : value}
           </p>
           {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}

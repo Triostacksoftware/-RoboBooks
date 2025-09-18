@@ -24,3 +24,5 @@ export const searchVendors = (query) => {
     ]
   }).sort({ createdAt: -1 });
 };
+
+

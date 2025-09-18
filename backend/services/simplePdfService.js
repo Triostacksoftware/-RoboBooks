@@ -81,3 +81,5 @@ function extractTextFromHTML(html) {
 }
 
 export default { generateSimplePDF };
+
+

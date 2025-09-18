@@ -33,3 +33,5 @@ router.delete("/:id", deleteSalespersonController);
 router.patch("/:id/status", updateSalespersonStatusController);
 
 export default router;
+
+

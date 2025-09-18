@@ -51,10 +51,10 @@ const testAPI = async () => {
     console.log("\n" + "=".repeat(50) + "\n");
 
     // Test 3: Get accounts by category
-    console.log("3️⃣ Testing GET /api/chart-of-accounts?category=asset");
+    console.log("3️⃣ Testing GET /api/chart-of-accounts$category=asset");
     try {
       const response = await fetch(
-        `${BASE_URL}/chart-of-accounts?category=asset`
+        `${BASE_URL}/chart-of-accounts$category=asset`
       );
       const data = await response.json();
 
@@ -73,9 +73,9 @@ const testAPI = async () => {
     console.log("\n" + "=".repeat(50) + "\n");
 
     // Test 4: Search accounts
-    console.log("4️⃣ Testing GET /api/chart-of-accounts?search=cash");
+    console.log("4️⃣ Testing GET /api/chart-of-accounts$search=cash");
     try {
-      const response = await fetch(`${BASE_URL}/chart-of-accounts?search=cash`);
+      const response = await fetch(`${BASE_URL}/chart-of-accounts$search=cash`);
       const data = await response.json();
 
       if (response.ok) {
@@ -117,10 +117,10 @@ const testAPI = async () => {
     console.log("\n" + "=".repeat(50) + "\n");
 
     // Test 6: Test pagination
-    console.log("6️⃣ Testing GET /api/chart-of-accounts?page=1&limit=5");
+    console.log("6️⃣ Testing GET /api/chart-of-accounts$page=1&limit=5");
     try {
       const response = await fetch(
-        `${BASE_URL}/chart-of-accounts?page=1&limit=5`
+        `${BASE_URL}/chart-of-accounts$page=1&limit=5`
       );
       const data = await response.json();
 
@@ -149,3 +149,5 @@ const testAPI = async () => {
 
 // Run the test
 testAPI();
+
+

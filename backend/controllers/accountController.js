@@ -112,7 +112,7 @@ export const getAccountById = async (req, res) => {
 
 /**
  * POST /api/accounts
- * Body: { code?, name, accountHead, accountGroup?, parent?, openingBalance?, currency? }
+ * Body: { code$, name, accountHead, accountGroup$, parent$, openingBalance$, currency$ }
  */
 export const createAccount = async (req, res) => {
   const {
@@ -197,7 +197,7 @@ export const updateAccount = async (req, res) => {
 /**
  * DELETE /api/accounts/:id
  * (soft-delete by default: set is_active=false to preserve history)
- * ?force=true  – hard delete; allowed only if balance = 0
+ * $force=true  – hard delete; allowed only if balance = 0
  */
 export const deleteAccount = async (req, res) => {
   const { id } = req.params;
@@ -228,3 +228,5 @@ export const deleteAccount = async (req, res) => {
   await account.save();
   res.status(204).end();
 };
+
+

@@ -41,7 +41,7 @@ function issueCookie(res, token) {
 
 // Validation helper
 function validateEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+?/;
   return emailRegex.test(email);
 }
 
@@ -559,3 +559,5 @@ router.post("/logout", (_req, res) => {
 });
 
 export default router;
+
+

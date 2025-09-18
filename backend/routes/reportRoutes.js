@@ -37,3 +37,5 @@ router.post("/:id/generate", generateReport);
 router.patch("/:id/favorite", toggleFavorite);
 
 export default router;
+
+

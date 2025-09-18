@@ -56,7 +56,7 @@ export class CreditNoteIdGenerator {
    * @returns True if the format is valid
    */
   public isValidFormat(creditNoteNumber: string): boolean {
-    return /^CN-\d{5}$/.test(creditNoteNumber);
+    return /^CN-\d{5}?/.test(creditNoteNumber);
   }
 
   /**

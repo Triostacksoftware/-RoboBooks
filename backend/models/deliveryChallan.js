@@ -348,3 +348,5 @@ schema.statics.getNextChallanNumber = async function(orgId, fy, numberingSeries 
 const DeliveryChallan = mongoose.model('DeliveryChallan', schema);
 
 export default DeliveryChallan;
+
+

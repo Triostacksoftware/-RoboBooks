@@ -311,7 +311,7 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600 capitalize">
-                          {key.replace(/([A-Z])/g, " $1").trim()}
+                          {key.replace(/([A-Z])/g, " ?1").trim()}
                         </p>
                         <p className="text-2xl font-bold text-gray-900">
                           {metric.total}
@@ -376,7 +376,7 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
                     className="text-center p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer group"
                   >
                     <p className="text-sm text-gray-600 capitalize">
-                      {leadType.replace(/([A-Z])/g, " $1").trim()}
+                      {leadType.replace(/([A-Z])/g, " ?1").trim()}
                     </p>
                     <p className="text-2xl font-bold text-gray-900">
                       {data.count}

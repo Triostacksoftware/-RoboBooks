@@ -16,14 +16,14 @@ function testCustomerModalFixes() {
   
   // Test validation
   const hasRequiredFields = customerFormData.firstName && customerFormData.lastName && customerFormData.email;
-  console.log(`✅ Customer form validation: ${hasRequiredFields ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer form validation: ?{hasRequiredFields ? 'Pass' : 'Fail'}`);
   
   // Test data transformation
   const transformedData = {
     customerType: "Individual",
     firstName: customerFormData.firstName.trim(),
     lastName: customerFormData.lastName.trim(),
-    displayName: `${customerFormData.firstName.trim()} ${customerFormData.lastName.trim()}`,
+    displayName: `?{customerFormData.firstName.trim()} ?{customerFormData.lastName.trim()}`,
     email: customerFormData.email.trim(),
     mobile: customerFormData.phone.trim() || undefined,
     billingAddress: {
@@ -33,7 +33,7 @@ function testCustomerModalFixes() {
   };
   
   const hasTransformedData = transformedData.firstName && transformedData.lastName && transformedData.email;
-  console.log(`✅ Customer data transformation: ${hasTransformedData ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer data transformation: ?{hasTransformedData ? 'Pass' : 'Fail'}`);
 }
 
 // Test 2: Project Modal Fixes
@@ -50,7 +50,7 @@ function testProjectModalFixes() {
   
   // Test validation
   const hasRequiredFields = projectFormData.name && projectFormData.client;
-  console.log(`✅ Project form validation: ${hasRequiredFields ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project form validation: ?{hasRequiredFields ? 'Pass' : 'Fail'}`);
   
   // Test data transformation
   const transformedData = {
@@ -63,7 +63,7 @@ function testProjectModalFixes() {
   };
   
   const hasTransformedData = transformedData.name && transformedData.client;
-  console.log(`✅ Project data transformation: ${hasTransformedData ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project data transformation: ?{hasTransformedData ? 'Pass' : 'Fail'}`);
 }
 
 // Test 3: Expense Form Fixes
@@ -87,19 +87,19 @@ function testExpenseFormFixes() {
   // Test valid project
   const validProject = { _id: '123', name: 'Test Project' };
   const validResult = handleProjectCreated(validProject);
-  console.log(`✅ Valid project handling: ${validResult ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Valid project handling: ?{validResult ? 'Pass' : 'Fail'}`);
   
   // Test invalid project
   const invalidProject = null;
   const invalidResult = handleProjectCreated(invalidProject);
-  console.log(`✅ Invalid project handling: ${invalidResult === null ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Invalid project handling: ?{invalidResult === null ? 'Pass' : 'Fail'}`);
   
   // Test customer selection with null checks
   const handleCustomerCreated = (customer) => {
     if (customer && customer._id) {
       return {
         value: customer._id,
-        label: customer.displayName || customer.name || `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
+        label: customer.displayName || customer.name || `?{customer.firstName || ''} ?{customer.lastName || ''}`.trim(),
         customer: customer
       };
     } else {
@@ -111,12 +111,12 @@ function testExpenseFormFixes() {
   // Test valid customer
   const validCustomer = { _id: '123', displayName: 'Test Customer' };
   const validCustomerResult = handleCustomerCreated(validCustomer);
-  console.log(`✅ Valid customer handling: ${validCustomerResult ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Valid customer handling: ?{validCustomerResult ? 'Pass' : 'Fail'}`);
   
   // Test invalid customer
   const invalidCustomer = undefined;
   const invalidCustomerResult = handleCustomerCreated(invalidCustomer);
-  console.log(`✅ Invalid customer handling: ${invalidCustomerResult === null ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Invalid customer handling: ?{invalidCustomerResult === null ? 'Pass' : 'Fail'}`);
 }
 
 // Test 4: Dropdown Styling Fixes
@@ -129,9 +129,9 @@ function testDropdownStylingFixes() {
   const hasBackgroundColor = customerDropdownClasses.includes('bg-white');
   const hasDisabledState = customerDropdownClasses.includes('disabled:opacity-50');
   
-  console.log(`✅ Customer dropdown text color: ${hasTextColor ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Customer dropdown background: ${hasBackgroundColor ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Customer dropdown disabled state: ${hasDisabledState ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer dropdown text color: ?{hasTextColor ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer dropdown background: ?{hasBackgroundColor ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer dropdown disabled state: ?{hasDisabledState ? 'Pass' : 'Fail'}`);
   
   // Test project dropdown classes
   const projectDropdownClasses = "flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white disabled:opacity-50 disabled:cursor-not-allowed";
@@ -139,9 +139,9 @@ function testDropdownStylingFixes() {
   const hasProjectBackgroundColor = projectDropdownClasses.includes('bg-white');
   const hasProjectDisabledState = projectDropdownClasses.includes('disabled:opacity-50');
   
-  console.log(`✅ Project dropdown text color: ${hasProjectTextColor ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Project dropdown background: ${hasProjectBackgroundColor ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Project dropdown disabled state: ${hasProjectDisabledState ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project dropdown text color: ?{hasProjectTextColor ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project dropdown background: ?{hasProjectBackgroundColor ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project dropdown disabled state: ?{hasProjectDisabledState ? 'Pass' : 'Fail'}`);
 }
 
 // Test 5: Expense Validation Fixes
@@ -151,7 +151,7 @@ function testExpenseValidationFixes() {
   // Test empty expense items
   const emptyItems = [];
   const emptyItemsError = emptyItems.length === 0 ? 'Please add at least one expense item' : '';
-  console.log(`✅ Empty items validation: ${emptyItemsError ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Empty items validation: ?{emptyItemsError ? 'Pass' : 'Fail'}`);
   
   // Test invalid expense items
   const invalidItems = [
@@ -160,7 +160,7 @@ function testExpenseValidationFixes() {
   ];
   const invalidItemsError = invalidItems.some(item => !item.expenseAccount || item.amount <= 0) ? 
     'Please fill in all required fields for expense items (Account and Amount are required)' : '';
-  console.log(`✅ Invalid items validation: ${invalidItemsError ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Invalid items validation: ?{invalidItemsError ? 'Pass' : 'Fail'}`);
   
   // Test valid expense items
   const validItems = [
@@ -168,7 +168,7 @@ function testExpenseValidationFixes() {
     { id: "2", expenseAccount: "Travel", notes: "Another valid item", amount: 50 }
   ];
   const validItemsCheck = validItems.length > 0 && validItems.every(item => item.expenseAccount && item.amount > 0);
-  console.log(`✅ Valid items validation: ${validItemsCheck ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Valid items validation: ?{validItemsCheck ? 'Pass' : 'Fail'}`);
 }
 
 // Test 6: Loading States
@@ -185,14 +185,14 @@ function testLoadingStates() {
   };
   
   const hasLoadingStates = Object.keys(loadingStates).length > 0;
-  console.log(`✅ Loading states defined: ${hasLoadingStates ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Loading states defined: ?{hasLoadingStates ? 'Pass' : 'Fail'}`);
   
   // Test loading text generation
   const customerLoadingText = loadingStates.isLoadingCustomers ? 'Loading customers...' : 'Select existing customer';
   const projectLoadingText = loadingStates.isLoadingProjects ? 'Loading projects...' : 'Select existing project';
   
-  console.log(`✅ Customer loading text: ${customerLoadingText === 'Loading customers...' ? 'Pass' : 'Fail'}`);
-  console.log(`✅ Project loading text: ${projectLoadingText === 'Select existing project' ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Customer loading text: ?{customerLoadingText === 'Loading customers...' ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Project loading text: ?{projectLoadingText === 'Select existing project' ? 'Pass' : 'Fail'}`);
 }
 
 // Test 7: File Upload Fixes
@@ -221,7 +221,7 @@ function testFileUploadFixes() {
   };
   
   const validFileCheck = validFile.size <= maxSize && allowedTypes.includes(validFile.type);
-  console.log(`✅ Valid file validation: ${validFileCheck ? 'Pass' : 'Fail'}`);
+  console.log(`✅ Valid file validation: ?{validFileCheck ? 'Pass' : 'Fail'}`);
   
   // Test FormData creation
   try {
@@ -229,7 +229,7 @@ function testFileUploadFixes() {
     formData.append('file', validFile);
     console.log(`✅ FormData creation: Pass`);
   } catch (error) {
-    console.log(`❌ FormData creation: Fail - ${error.message}`);
+    console.log(`❌ FormData creation: Fail - ?{error.message}`);
   }
 }
 
@@ -239,7 +239,7 @@ function testErrorHandling() {
   
   // Test toast notifications
   const addToast = (message, type) => {
-    console.log(`Toast: ${type.toUpperCase()} - ${message}`);
+    console.log(`Toast: ?{type.toUpperCase()} - ?{message}`);
   };
   
   // Test error scenarios
@@ -252,10 +252,10 @@ function testErrorHandling() {
   errorScenarios.forEach((scenario, index) => {
     if (scenario.condition) {
       addToast(scenario.message, scenario.type);
-      console.log(`✅ Error scenario ${index + 1}: Pass`);
+      console.log(`✅ Error scenario ?{index + 1}: Pass`);
     } else {
       addToast(scenario.message, scenario.type);
-      console.log(`✅ Success scenario ${index + 1}: Pass`);
+      console.log(`✅ Success scenario ?{index + 1}: Pass`);
     }
   });
 }

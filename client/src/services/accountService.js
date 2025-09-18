@@ -4,20 +4,20 @@ import { api } from "../lib/api";
 const http = {
   get: async (path, options = {}) => {
     const params = options.params || undefined;
-    const query = params ? `?${new URLSearchParams(params).toString()}` : "";
-    const data = await api(`/api${path}${query}`);
+    const query = params ? `??{new URLSearchParams(params).toString()}` : "";
+    const data = await api(`/api?{path}?{query}`);
     return { data };
   },
   post: async (path, body) => {
-    const data = await api(`/api${path}`, { method: "POST", json: body });
+    const data = await api(`/api?{path}`, { method: "POST", json: body });
     return { data };
   },
   put: async (path, body) => {
-    const data = await api(`/api${path}`, { method: "PUT", json: body });
+    const data = await api(`/api?{path}`, { method: "PUT", json: body });
     return { data };
   },
   delete: async (path) => {
-    const data = await api(`/api${path}`, { method: "DELETE" });
+    const data = await api(`/api?{path}`, { method: "DELETE" });
     return { data };
   },
 };
@@ -28,7 +28,7 @@ export const accountService = {
   getAccounts: (params) => http.get("/accounts", { params }),
 
   // Get account by ID
-  getAccount: (id) => http.get(`/accounts/${id}`),
+  getAccount: (id) => http.get(`/accounts/?{id}`),
 
   // Get accounts by category (asset, liability, equity, income, expense)
   getAccountsByCategory: (category) =>

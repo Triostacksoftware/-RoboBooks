@@ -63,3 +63,5 @@ async function fixUserIndexes() {
 
 // Run the fix
 fixUserIndexes();
+
+

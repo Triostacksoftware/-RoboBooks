@@ -367,3 +367,5 @@ async function generateAccountingReport(filters, userId) {
     message: "Accounting report - to be implemented with full accounting system",
   };
 }
+
+

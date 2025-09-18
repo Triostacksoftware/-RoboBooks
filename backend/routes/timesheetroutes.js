@@ -33,3 +33,5 @@ router.post("/log", ctrl.log);
 router.get("/list", ctrl.list);
 
 export default router;
+
+

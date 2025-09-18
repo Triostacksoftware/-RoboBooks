@@ -95,3 +95,5 @@ reportSchema.index({ isFavorite: 1, createdBy: 1 });
 const Report = mongoose.model("Report", reportSchema);
 
 export default Report;
+
+

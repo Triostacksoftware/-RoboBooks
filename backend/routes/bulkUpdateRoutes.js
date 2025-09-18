@@ -27,3 +27,5 @@ router.delete("/:id", deleteBulkUpdate);
 router.post("/preview", previewBulkUpdate);
 
 export default router;
+
+

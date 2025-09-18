@@ -403,7 +403,7 @@ const createDummyData = async () => {
     });
     console.log('\n📋 Invoice List:');
     createdInvoices.forEach((invoice, index) => {
-      console.log(`   ${index + 1}. ${invoice.invoiceNumber} - ${invoice.customerName} - $${invoice.total}`);
+      console.log(`   ${index + 1}. ${invoice.invoiceNumber} - ${invoice.customerName} - ?${invoice.total}`);
     });
 
   } catch (error) {
@@ -419,3 +419,5 @@ const createDummyData = async () => {
 
 // Run the script
 createDummyData();
+
+

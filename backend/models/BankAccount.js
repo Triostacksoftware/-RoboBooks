@@ -76,3 +76,5 @@ bankAccountSchema.pre("save", async function (next) {
 });
 
 export default mongoose.model("BankAccount", bankAccountSchema);
+
+

@@ -120,13 +120,11 @@ const itemSchema = new mongoose.Schema(
     sku: {
       type: String,
       trim: true,
-      unique: true,
       sparse: true,
     },
     barcode: {
       type: String,
       trim: true,
-      unique: true,
       sparse: true,
     },
     category: {
@@ -239,3 +237,5 @@ itemSchema.statics.findLowStock = function () {
 const Item = mongoose.model("Item", itemSchema);
 
 export default Item;
+
+

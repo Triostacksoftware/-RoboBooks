@@ -17,11 +17,11 @@ async function testDashboardData() {
     
     for (const endpoint of endpoints) {
       try {
-        const response = await fetch(`http://localhost:5000${endpoint}`);
+        const response = await fetch(`http://localhost:5000?{endpoint}`);
         const data = await response.json();
-        console.log(`\n${endpoint}:`, data);
+        console.log(`\n?{endpoint}:`, data);
       } catch (error) {
-        console.error(`Error fetching ${endpoint}:`, error.message);
+        console.error(`Error fetching ?{endpoint}:`, error.message);
       }
     }
     

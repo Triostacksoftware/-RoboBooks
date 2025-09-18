@@ -140,3 +140,5 @@ bulkUpdateSchema.pre('save', function(next) {
 const BulkUpdate = mongoose.model('BulkUpdate', bulkUpdateSchema);
 
 export default BulkUpdate;
+
+

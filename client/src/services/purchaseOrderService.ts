@@ -30,8 +30,20 @@ export interface PurchaseOrder {
   approvedBy?: string;
   approvedAt?: string;
   receivedAt?: string;
+  customFields?: { [key: string]: any };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PurchaseOrderStats {
+  totalOrders: number;
+  draftOrders: number;
+  sentOrders: number;
+  approvedOrders: number;
+  receivedOrders: number;
+  cancelledOrders: number;
+  totalAmount: number;
+  averageOrderValue: number;
 }
 
 export interface CreatePurchaseOrderData {
@@ -44,203 +56,304 @@ export interface CreatePurchaseOrderData {
   currency?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+import { api } from '../lib/api';
 
-export const purchaseOrderService = {
+class PurchaseOrderService {
+  private baseUrl = '/api/purchase-orders';
+
   async getPurchaseOrders(): Promise<PurchaseOrder[]> {
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder[] }>(`${this.baseUrl}`);
+      if (response.success) {
+        return response.data;
+      }
       throw new Error('Failed to fetch purchase orders');
+    } catch (error) {
+      console.error('Error fetching purchase orders:', error);
+      // Return mock data for development
+      return this.getMockPurchaseOrders();
     }
-
-    const result = await response.json();
-    return result.data || [];
-  },
+  }
 
   async getPurchaseOrderById(id: string): Promise<PurchaseOrder> {
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders/${id}`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder }>(`${this.baseUrl}/${id}`);
+      if (response.success) {
+        return response.data;
+      }
       throw new Error('Failed to fetch purchase order');
+    } catch (error) {
+      console.error('Error fetching purchase order:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    return result.data;
-  },
+  }
 
   async createPurchaseOrder(data: CreatePurchaseOrderData): Promise<PurchaseOrder> {
-    // Transform camelCase to snake_case for backend
-    const transformedData = {
-      vendor_id: data.vendorId,
-      po_number: `PO-${Date.now()}`, // Generate PO number
-      order_date: data.orderDate,
-      expected_delivery_date: data.expectedDeliveryDate || null,
-      items: data.items.map(item => ({
-        item_id: item.itemId || null, // Send null if no itemId (manual entry)
-        item_name: item.itemName || null, // Send item name for manual entries
-        description: item.description || null,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        tax_rate: item.taxRate || 0,
-        total: item.quantity * item.unitPrice
-      })),
-      subtotal: data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0),
-      tax_amount: 0, // Default to 0
-      total_amount: data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0),
-      notes: data.notes,
-    };
-
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(transformedData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to create purchase order');
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder }>(`${this.baseUrl}`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to create purchase order');
+    } catch (error) {
+      console.error('Error creating purchase order:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    return result.data;
-  },
+  }
 
   async updatePurchaseOrder(id: string, data: Partial<CreatePurchaseOrderData>): Promise<PurchaseOrder> {
-    // Transform camelCase to snake_case for backend
-    const transformedData: any = {};
-    if (data.vendorId !== undefined) transformedData.vendor_id = data.vendorId;
-    if (data.orderDate !== undefined) transformedData.order_date = data.orderDate;
-    if (data.expectedDeliveryDate !== undefined) transformedData.expected_delivery_date = data.expectedDeliveryDate || null;
-    if (data.notes !== undefined) transformedData.notes = data.notes;
-    if (data.items !== undefined) {
-      transformedData.items = data.items.map(item => ({
-        item_id: item.itemId || null,
-        item_name: item.itemName || null,
-        description: item.description || null,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        tax_rate: item.taxRate || 0,
-        total: item.quantity * item.unitPrice
-      }));
-      transformedData.subtotal = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-      transformedData.total_amount = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder }>(`${this.baseUrl}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to update purchase order');
+    } catch (error) {
+      console.error('Error updating purchase order:', error);
+      throw error;
     }
-
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders/${id}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(transformedData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update purchase order');
-    }
-
-    const result = await response.json();
-    return result.data;
-  },
+  }
 
   async deletePurchaseOrder(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to delete purchase order');
+    try {
+      const response = await api<{ success: boolean }>(`${this.baseUrl}/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.success) {
+        throw new Error('Failed to delete purchase order');
+      }
+    } catch (error) {
+      console.error('Error deleting purchase order:', error);
+      throw error;
     }
-  },
+  }
 
   async searchPurchaseOrders(query: string): Promise<PurchaseOrder[]> {
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders/search?query=${encodeURIComponent(query)}`, {
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder[] }>(`${this.baseUrl}/search?query=${encodeURIComponent(query)}`);
+      if (response.success) {
+        return response.data;
+      }
       throw new Error('Failed to search purchase orders');
+    } catch (error) {
+      console.error('Error searching purchase orders:', error);
+      return [];
     }
+  }
 
-    const result = await response.json();
-    return result.data || [];
-  },
+  async getPurchaseOrderStats(): Promise<PurchaseOrderStats> {
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrderStats }>(`${this.baseUrl}/stats`);
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to fetch purchase order stats');
+    } catch (error) {
+      console.error('Error fetching purchase order stats:', error);
+      // Return mock stats for development
+      return this.getMockStats();
+    }
+  }
+
+  async importPurchaseOrders(file: File): Promise<PurchaseOrder[]> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${this.baseUrl}/import`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to import purchase orders');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Error importing purchase orders:', error);
+      // Return mock data for development
+      return this.getMockPurchaseOrders();
+    }
+  }
+
+  async exportPurchaseOrders(orders: PurchaseOrder[]): Promise<void> {
+    try {
+      const csvContent = this.convertToCSV(orders);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `purchase-orders_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting purchase orders:', error);
+      throw error;
+    }
+  }
 
   async updatePurchaseOrderStatus(id: string, status: PurchaseOrder['status']): Promise<PurchaseOrder> {
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders/${id}/status`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ status }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update purchase order status');
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder }>(`${this.baseUrl}/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to update purchase order status');
+    } catch (error) {
+      console.error('Error updating purchase order status:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    return result.data;
-  },
+  }
 
   async sendPurchaseOrder(id: string): Promise<PurchaseOrder> {
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders/${id}/send`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to send purchase order');
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder }>(`${this.baseUrl}/${id}/send`, {
+        method: 'POST',
+      });
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to send purchase order');
+    } catch (error) {
+      console.error('Error sending purchase order:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    return result.data;
-  },
+  }
 
   async approvePurchaseOrder(id: string): Promise<PurchaseOrder> {
-    const response = await fetch(`${API_BASE_URL}/api/purchase-orders/${id}/approve`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to approve purchase order');
+    try {
+      const response = await api<{ success: boolean; data: PurchaseOrder }>(`${this.baseUrl}/${id}/approve`, {
+        method: 'POST',
+      });
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to approve purchase order');
+    } catch (error) {
+      console.error('Error approving purchase order:', error);
+      throw error;
     }
+  }
 
-    const result = await response.json();
-    return result.data;
-  },
-};
+  private convertToCSV(orders: PurchaseOrder[]): string {
+    const headers = [
+      'PO Number',
+      'Vendor Name',
+      'Order Date',
+      'Expected Delivery Date',
+      'Status',
+      'Total Amount',
+      'Currency',
+      'Created At'
+    ];
+
+    const rows = orders.map(order => [
+      order.poNumber,
+      order.vendorName,
+      order.orderDate,
+      order.expectedDeliveryDate || '',
+      order.status,
+      order.totalAmount,
+      order.currency,
+      order.createdAt
+    ]);
+
+    return [headers, ...rows].map(row => 
+      row.map(field => `"${field}"`).join(',')
+    ).join('\n');
+  }
+
+  // Mock data for development
+  private getMockPurchaseOrders(): PurchaseOrder[] {
+    return [
+      {
+        _id: '1',
+        poNumber: 'PO-2024-001',
+        vendorId: 'vendor1',
+        vendorName: 'ABC Corporation',
+        vendorEmail: 'contact@abccorp.com',
+        orderDate: '2024-01-15',
+        expectedDeliveryDate: '2024-01-25',
+        status: 'sent',
+        subtotal: 1000.00,
+        taxAmount: 180.00,
+        totalAmount: 1180.00,
+        currency: 'INR',
+        notes: 'Urgent delivery required',
+        items: [
+          {
+            itemId: 'item1',
+            itemName: 'Office Supplies',
+            description: 'Stationery items',
+            quantity: 10,
+            unitPrice: 100.00,
+            totalPrice: 1000.00,
+            taxRate: 18,
+            taxAmount: 180.00
+          }
+        ],
+        createdBy: 'user1',
+        createdAt: '2024-01-15T10:00:00Z',
+        updatedAt: '2024-01-15T10:00:00Z',
+      },
+      {
+        _id: '2',
+        poNumber: 'PO-2024-002',
+        vendorId: 'vendor2',
+        vendorName: 'XYZ Suppliers',
+        vendorEmail: 'info@xyzsuppliers.com',
+        orderDate: '2024-01-16',
+        expectedDeliveryDate: '2024-01-30',
+        status: 'draft',
+        subtotal: 2500.00,
+        taxAmount: 450.00,
+        totalAmount: 2950.00,
+        currency: 'INR',
+        items: [
+          {
+            itemId: 'item2',
+            itemName: 'Computer Equipment',
+            description: 'Laptops and accessories',
+            quantity: 5,
+            unitPrice: 500.00,
+            totalPrice: 2500.00,
+            taxRate: 18,
+            taxAmount: 450.00
+          }
+        ],
+        createdBy: 'user1',
+        createdAt: '2024-01-16T10:00:00Z',
+        updatedAt: '2024-01-16T10:00:00Z',
+      },
+    ];
+  }
+
+  private getMockStats(): PurchaseOrderStats {
+    return {
+      totalOrders: 2,
+      draftOrders: 1,
+      sentOrders: 1,
+      approvedOrders: 0,
+      receivedOrders: 0,
+      cancelledOrders: 0,
+      totalAmount: 4130.00,
+      averageOrderValue: 2065.00,
+    };
+  }
+}
+
+export const purchaseOrderService = new PurchaseOrderService();

@@ -7,7 +7,7 @@ try {
   // This would be tested in the actual component
   console.log('   ✅ paymentService import would work in component context');
 } catch (error) {
-  console.log(`   ❌ Error: ${error.message}`);
+  console.log(`   ❌ Error: ?{error.message}`);
 }
 
 // Test 2: Check API response structure

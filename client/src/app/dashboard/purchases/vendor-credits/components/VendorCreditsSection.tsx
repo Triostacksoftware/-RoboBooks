@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ChevronDownIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   FunnelIcon,
   XMarkIcon,
   PencilIcon,
@@ -32,9 +32,11 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ArrowDownTrayIcon as DownloadIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { VendorCredit, vendorCreditService } from "@/services/vendorCreditService";
 import { formatCurrency } from "@/utils/currency";
+import ImportVendorCreditsModal from "../import/components/ImportVendorCreditsModal";
 
 interface VendorCreditsSectionProps {
   vendorCredits?: VendorCredit[];
@@ -76,9 +78,12 @@ export default function VendorCreditsSection({
   const [sortBy, setSortBy] = useState('created_time');
   const [sortOrder, setSortOrder] = useState('desc');
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
-  const moreMenuRef = useRef<HTMLButtonElement>(null);
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const mainDropdownRef = useRef<HTMLButtonElement>(null);
   const filterRef = useRef<HTMLButtonElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   // Fetch vendor credits from backend
@@ -111,22 +116,30 @@ export default function VendorCreditsSection({
     applyFilters();
   }, [vendorCredits, searchTerm, selectedFilter]);
 
-  // Filter options matching Expenses Design
-  const filterOptions = [
-    { value: "all", label: "All Vendor Credits", icon: StarIcon },
-    { value: "draft", label: "Draft", icon: PencilIcon },
-    { value: "issued", label: "Issued", icon: ClockIcon },
-    { value: "applied", label: "Applied", icon: CheckIcon },
-    { value: "cancelled", label: "Cancelled", icon: XCircleIcon },
+  // Main dropdown options (All Vendor Credits dropdown)
+  const mainDropdownOptions = [
+    { value: "all", label: "All Vendor Credits", icon: StarIcon, isCustom: false },
+    { value: "draft", label: "Draft", icon: PencilIcon, isCustom: false },
+    { value: "issued", label: "Issued", icon: ClockIcon, isCustom: false },
+    { value: "applied", label: "Applied", icon: CheckIcon, isCustom: false },
+    { value: "cancelled", label: "Cancelled", icon: XCircleIcon, isCustom: false },
   ];
 
-  // More menu options - Matching Expenses Design
+  // More menu options - Comprehensive like other sections
   const moreMenuOptions = [
-    { id: "all", label: "All", icon: StarIcon },
-    { 
-      id: "sort", 
-      label: "Sort by", 
-      icon: ChevronDownIcon, 
+    {
+      id: "all",
+      label: "All",
+      icon: StarIcon,
+      action: () => {
+        setSelectedFilter("all");
+        setShowMoreMenu(false);
+      }
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      icon: ArrowsUpDownIcon,
       hasSubmenu: true,
       submenu: [
         { value: "credit-number", label: "Credit Number" },
@@ -137,21 +150,46 @@ export default function VendorCreditsSection({
         { value: "created", label: "Created Date" },
       ]
     },
-    { id: "import", label: "Import Vendor Credits", icon: ArrowDownTrayIconSolid },
-    { 
-      id: "export", 
-      label: "Export", 
-      icon: ArrowUpTrayIconSolid, 
+    {
+      id: "import",
+      label: "Import Vendor Credits",
+      icon: ArrowDownTrayIconSolid,
+      action: () => handleImportVendorCreditsClick()
+    },
+    {
+      id: "export",
+      label: "Export",
+      icon: ArrowUpTrayIconSolid,
       hasSubmenu: true,
       submenu: [
-        { value: "export-credits", label: "Export Vendor Credits" },
-        { value: "export-current", label: "Export Current View" },
+        { label: "Export Vendor Credits", value: "export_all" },
+        { label: "Export Current View", value: "export_current" },
       ]
     },
-    { id: "preferences", label: "Preferences", icon: ClockIcon },
-    { id: "custom-fields", label: "Manage Custom Fields", icon: ClipboardDocumentListIcon },
-    { id: "refresh", label: "Refresh List", icon: RefreshIcon },
-    { id: "reset-columns", label: "Reset Column Width", icon: ArrowPathIcon },
+    {
+      id: "preferences",
+      label: "Preferences",
+      icon: Cog6ToothIcon,
+      action: () => handlePreferences()
+    },
+    {
+      id: "custom_fields",
+      label: "Manage Custom Fields",
+      icon: ClipboardDocumentListIcon,
+      action: () => handleCustomFields()
+    },
+    {
+      id: "refresh",
+      label: "Refresh List",
+      icon: RefreshIcon,
+      action: () => handleRefresh()
+    },
+    {
+      id: "reset_columns",
+      label: "Reset Column Width",
+      icon: ArrowPathIcon,
+      action: () => handleResetColumns()
+    },
   ];
 
   // Apply filters
@@ -182,31 +220,6 @@ export default function VendorCreditsSection({
     }
   };
 
-  const handleMoreMenuAction = (option: any) => {
-    switch (option.id) {
-      case 'all':
-        setSelectedFilter('all');
-        break;
-      case 'import':
-        window.location.href = '/dashboard/purchases/vendor-credits/import';
-        break;
-      case 'preferences':
-        console.log('Preferences clicked');
-        break;
-      case 'custom-fields':
-        console.log('Custom fields clicked');
-        break;
-      case 'refresh':
-        fetchVendorCredits();
-        break;
-      case 'reset-columns':
-        console.log('Reset columns clicked');
-        break;
-      default:
-        console.log('Action clicked:', option.id);
-    }
-    setShowMoreMenu(false);
-  };
 
   const handleSortChange = (sortValue: string) => {
     console.log('Sort by:', sortValue);
@@ -216,6 +229,97 @@ export default function VendorCreditsSection({
   const handleExportOption = (exportValue: string) => {
     console.log('Export:', exportValue);
     setShowExportMenu(false);
+  };
+
+  // Additional handler functions for comprehensive menu
+  const handleImportVendorCreditsClick = () => {
+    setShowImportModal(true);
+    setShowMoreMenu(false);
+  };
+
+  const handleImportVendorCredits = async (importedCredits: VendorCredit[]) => {
+    try {
+      setVendorCredits(prev => [...prev, ...importedCredits]);
+      setShowImportModal(false);
+    } catch (error) {
+      console.error('Error importing vendor credits:', error);
+    }
+  };
+
+  const handleCustomFields = async () => {
+    try {
+      router.push('/dashboard/settings/custom-fields');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to custom fields:', error);
+    }
+  };
+
+  const handlePreferences = () => {
+    router.push('/dashboard/settings/preferences/vendor-credits');
+    setShowMoreMenu(false);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      await fetchVendorCredits();
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error refreshing vendor credits:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetColumns = () => {
+    window.location.reload();
+    setShowMoreMenu(false);
+  };
+
+  const handleExport = async (exportType: string) => {
+    try {
+      setShowExportMenu(false);
+      
+      if (exportType === 'export_all') {
+        await handleExportOption('export-credits');
+      } else if (exportType === 'export_current') {
+        await handleExportOption('export-current');
+      }
+    } catch (error) {
+      console.error('Error exporting vendor credits:', error);
+    }
+  };
+
+  const handleMoreMenuAction = (option: any) => {
+    if (option.action) {
+      option.action();
+    }
+    setShowMoreMenu(false);
+  };
+
+  // Hover handlers for submenus
+  const handleSubmenuHover = (optionId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredSubmenu(optionId);
+    if (optionId === 'sort') {
+      setShowSortMenu(true);
+      setShowExportMenu(false);
+    } else if (optionId === 'export') {
+      setShowExportMenu(true);
+      setShowSortMenu(false);
+    }
+  };
+
+  const handleSubmenuLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubmenu(null);
+      setShowSortMenu(false);
+      setShowExportMenu(false);
+    }, 200);
   };
 
   // Function to calculate dropdown position
@@ -239,19 +343,23 @@ export default function VendorCreditsSection({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-menu') && !target.closest('.submenu')) {
+      if (!target.closest('.dropdown-menu') && !target.closest('.submenu') && !target.closest('[data-filter-dropdown]') && !filterRef.current?.contains(target)) {
         setShowMoreMenu(false);
         setShowSortMenu(false);
         setShowExportMenu(false);
         setShowColumnMenu(false);
         setShowMainDropdown(false);
         setShowFilters(false);
+        setHoveredSubmenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -326,7 +434,7 @@ export default function VendorCreditsSection({
                   }}
                   className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-gray-700"
                 >
-                  <span>{filterOptions.find(opt => opt.value === selectedFilter)?.label || "All Vendor Credits"}</span>
+                  <span>{mainDropdownOptions.find(opt => opt.value === selectedFilter)?.label || "All Vendor Credits"}</span>
                   <ChevronDownIcon className="h-5 w-5" />
                 </button>
                 {showMainDropdown && (
@@ -334,7 +442,7 @@ export default function VendorCreditsSection({
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
                   }`}>
                     <div className="py-1">
-                      {filterOptions.map((option) => {
+                      {mainDropdownOptions.map((option) => {
                         const Icon = option.icon;
                         return (
                           <button
@@ -386,7 +494,7 @@ export default function VendorCreditsSection({
                   }}
                   className="p-2 text-gray-400 hover:text-gray-600"
                 >
-                  <EllipsisVerticalIcon className="h-5 w-5" />
+                  <EllipsisHorizontalIcon className="h-5 w-5" />
                 </button>
                 {showMoreMenu && (
                   <div className={`absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10 ${
@@ -396,28 +504,39 @@ export default function VendorCreditsSection({
                       {moreMenuOptions.map((option) => (
                         <div key={option.id}>
                           {option.hasSubmenu ? (
-                            <div className="relative">
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => handleSubmenuHover(option.id)}
+                              onMouseLeave={handleSubmenuLeave}
+                            >
                               <button
                                 onClick={() => {
-                                  if (option.id === 'sort') setShowSortMenu(!showSortMenu);
-                                  if (option.id === 'export') setShowExportMenu(!showExportMenu);
+                                  if (option.id === 'sort') {
+                                    setShowSortMenu(!showSortMenu);
+                                    setShowExportMenu(false); // Close export menu when opening sort
+                                  }
+                                  if (option.id === 'export') {
+                                    setShowExportMenu(!showExportMenu);
+                                    setShowSortMenu(false); // Close sort menu when opening export
+                                  }
                                 }}
-                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                               >
                                 <option.icon className="h-4 w-4" />
                                 <span>{option.label}</span>
                                 <ChevronRightIcon className="h-4 w-4 ml-auto" />
                               </button>
                               {option.id === 'sort' && showSortMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -426,15 +545,16 @@ export default function VendorCreditsSection({
                                 </div>
                               )}
                               {option.id === 'export' && showExportMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleExportOption(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -446,7 +566,7 @@ export default function VendorCreditsSection({
                           ) : (
                             <button
                               onClick={() => handleMoreMenuAction(option)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-blue-600 hover:text-white ${
                                 option.id === 'import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                               }`}
                             >
@@ -492,6 +612,7 @@ export default function VendorCreditsSection({
           <div className="relative">
             <button
               ref={filterRef}
+              data-filter-dropdown
               onClick={() => {
                 const position = calculateDropdownPosition(filterRef);
                 setDropdownPosition(position);
@@ -508,7 +629,7 @@ export default function VendorCreditsSection({
                 dropdownPosition === 'left' ? 'right-0' : 'left-0'
               }`}>
                 <div className="p-2">
-                  {filterOptions.map((option) => {
+                  {mainDropdownOptions.map((option) => {
                     const Icon = option.icon;
                     return (
                       <button
@@ -816,6 +937,13 @@ export default function VendorCreditsSection({
           )}
         </div>
       )}
+
+      {/* Import Modal */}
+      <ImportVendorCreditsModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={handleImportVendorCredits}
+      />
     </div>
   );
 }

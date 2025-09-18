@@ -86,3 +86,5 @@ schema.index({ status: 1 });
 schema.index({ billable: 1 });
 
 export default mongoose.model('TimeEntry', schema);
+
+

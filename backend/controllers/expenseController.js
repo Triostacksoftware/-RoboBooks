@@ -433,7 +433,7 @@ export const importExpenses = async (req, res) => {
           account: row.Account,
           category: row.Category || 'Other',
           paymentMethod: row['Payment Method'] || 'Cash',
-          reference: row.Reference || `REF-${Date.now()}-${i}`,
+          reference: row.Reference || `REF-₹{Date.now()}-₹{i}`,
           notes: row.Notes || '',
           billable: row.Billable === 'Yes' || row.Billable === 'true',
           customer: row.Customer || '',
@@ -445,13 +445,13 @@ export const importExpenses = async (req, res) => {
 
         // Validate required fields
         if (!expenseData.description || !expenseData.amount || !expenseData.vendor || !expenseData.account) {
-          errors.push(`Row ${i + 1}: Missing required fields`);
+          errors.push(`Row ₹{i + 1}: Missing required fields`);
           continue;
         }
 
         expenses.push(expenseData);
       } catch (error) {
-        errors.push(`Row ${i + 1}: ${error.message}`);
+        errors.push(`Row ₹{i + 1}: ₹{error.message}`);
       }
     }
 
@@ -472,7 +472,7 @@ export const importExpenses = async (req, res) => {
     res.json({
       success: true,
       data: createdExpenses,
-      message: `${createdExpenses.length} expenses imported successfully`
+      message: `₹{createdExpenses.length} expenses imported successfully`
     });
   } catch (error) {
     console.error('Error importing expenses:', error);
@@ -515,7 +515,7 @@ export const exportExpenses = async (req, res) => {
     // Convert to CSV
     const csv = require('csv-writer').createObjectCsvWriter;
 
-    const filename = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
+    const filename = `expenses_₹{new Date().toISOString().split('T')[0]}.csv`;
     const filepath = path.join(__dirname, '../uploads', filename);
 
     // Ensure uploads directory exists
@@ -619,7 +619,7 @@ export const bulkUpdateExpenses = async (req, res) => {
     res.json({
       success: true,
       data: { modifiedCount: result.modifiedCount },
-      message: `${result.modifiedCount} expenses updated successfully`
+      message: `₹{result.modifiedCount} expenses updated successfully`
     });
   } catch (error) {
     console.error('Error bulk updating expenses:', error);
@@ -660,7 +660,7 @@ export const bulkDeleteExpenses = async (req, res) => {
     res.json({
       success: true,
       data: { modifiedCount: result.modifiedCount },
-      message: `${result.modifiedCount} expenses deleted successfully`
+      message: `₹{result.modifiedCount} expenses deleted successfully`
     });
   } catch (error) {
     console.error('Error bulk deleting expenses:', error);
@@ -763,3 +763,5 @@ export const deleteFile = async (req, res) => {
     });
   }
 };
+
+

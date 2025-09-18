@@ -113,8 +113,8 @@ router.post("/create-simple", async (req, res) => {
       email: email.toLowerCase().trim(),
       role: role,
       permissions: permissions || [],
-      department: department?.trim(),
-      phone: phone?.trim(),
+      department: department$.trim(),
+      phone: phone$.trim(),
       isActive: isActive,
     });
 
@@ -216,8 +216,8 @@ router.post("/create-bulk", async (req, res) => {
           email: email.toLowerCase().trim(),
           role: role,
           permissions: permissions || [],
-          department: department?.trim(),
-          phone: phone?.trim(),
+          department: department$.trim(),
+          phone: phone$.trim(),
           isActive: isActive,
         });
 
@@ -617,3 +617,5 @@ router.put(
 );
 
 export default router;
+
+

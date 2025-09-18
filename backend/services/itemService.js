@@ -339,7 +339,7 @@ class ItemService {
     const duplicates = [];
 
     // Check name
-    const nameFilter = { name: { $regex: new RegExp(`^${itemData.name}$`, 'i') }, isActive: true };
+    const nameFilter = { name: { $regex: new RegExp(`^${itemData.name}?`, 'i') }, isActive: true };
     if (excludeId) nameFilter._id = { $ne: excludeId };
     
     const existingName = await Item.findOne(nameFilter);
@@ -377,3 +377,5 @@ export default ItemService;
 
 // Export static methods for dashboard
 export const getItemStats = ItemService.getItemStats; 
+
+

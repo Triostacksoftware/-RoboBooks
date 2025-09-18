@@ -14,7 +14,7 @@ const testComponents = () => {
   ];
   
   components.forEach(component => {
-    console.log(`  ✓ ${component} component exists`);
+    console.log(`  ✓ ?{component} component exists`);
   });
 };
 
@@ -34,7 +34,7 @@ const testFormData = () => {
   ];
   
   expectedFields.forEach(field => {
-    console.log(`  ✓ Form field: ${field}`);
+    console.log(`  ✓ Form field: ?{field}`);
   });
 };
 
@@ -52,7 +52,7 @@ const testPaymentModes = () => {
   ];
   
   paymentModes.forEach(mode => {
-    console.log(`  ✓ Payment mode: ${mode}`);
+    console.log(`  ✓ Payment mode: ?{mode}`);
   });
 };
 
@@ -73,7 +73,7 @@ const testTableColumns = () => {
   ];
   
   columns.forEach(column => {
-    console.log(`  ✓ Table column: ${column}`);
+    console.log(`  ✓ Table column: ?{column}`);
   });
 };
 
@@ -82,7 +82,7 @@ const testNavigation = () => {
   console.log('✅ Testing navigation integration...');
   
   const expectedRoute = '/dashboard/sales/payments-received';
-  console.log(`  ✓ Route: ${expectedRoute}`);
+  console.log(`  ✓ Route: ?{expectedRoute}`);
   console.log(`  ✓ Navigation: Dashboard → Sales → Payments Received`);
 };
 

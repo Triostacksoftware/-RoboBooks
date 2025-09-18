@@ -82,3 +82,5 @@ customViewSchema.index({ organizationId: 1, module: 1, isDefault: 1 }, {
 });
 
 export default mongoose.model('CustomView', customViewSchema);
+
+

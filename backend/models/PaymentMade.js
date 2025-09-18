@@ -57,3 +57,5 @@ paymentMadeSchema.pre('save', function(next) {
 });
 
 export default mongoose.model("PaymentMade", paymentMadeSchema);
+
+

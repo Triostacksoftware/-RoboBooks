@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ChevronDownIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   FunnelIcon,
   XMarkIcon,
   PencilIcon,
@@ -32,10 +32,12 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ArrowDownTrayIcon as DownloadIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { Payment, paymentService } from "@/services/paymentService";
 import { formatCurrency } from "@/utils/currency";
 import PaymentsList from "./PaymentsList";
+import ImportPaymentsModal from "../import/components/ImportPaymentsModal";
 
 const filters = ["All", "Pending", "Completed", "Failed", "Cancelled"];
 
@@ -79,9 +81,12 @@ export default function PaymentsMadeSection({
   const [sortBy, setSortBy] = useState('created_time');
   const [sortOrder, setSortOrder] = useState('desc');
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
-  const moreMenuRef = useRef<HTMLButtonElement>(null);
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const mainDropdownRef = useRef<HTMLButtonElement>(null);
   const filterRef = useRef<HTMLButtonElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   // Fetch payments from backend
@@ -114,13 +119,13 @@ export default function PaymentsMadeSection({
     applyFilters();
   }, [payments, searchTerm, selectedFilter]);
 
-  // Filter options matching Expenses Design
-  const filterOptions = [
-    { value: "all", label: "All Payments", icon: StarIcon },
-    { value: "pending", label: "Pending", icon: ClockIcon },
-    { value: "completed", label: "Completed", icon: CheckIcon },
-    { value: "failed", label: "Failed", icon: XCircleIcon },
-    { value: "cancelled", label: "Cancelled", icon: XMarkIcon },
+  // Main dropdown options (All Payments dropdown)
+  const mainDropdownOptions = [
+    { value: "all", label: "All Payments", icon: StarIcon, isCustom: false },
+    { value: "pending", label: "Pending", icon: ClockIcon, isCustom: false },
+    { value: "completed", label: "Completed", icon: CheckIcon, isCustom: false },
+    { value: "failed", label: "Failed", icon: XCircleIcon, isCustom: false },
+    { value: "cancelled", label: "Cancelled", icon: XMarkIcon, isCustom: false },
   ];
 
   // Column options for sorting
@@ -132,13 +137,21 @@ export default function PaymentsMadeSection({
     { value: "payment_method", label: "Payment Method" },
   ];
 
-  // More menu options - Matching Expenses Design
+  // More menu options - Comprehensive like other sections
   const moreMenuOptions = [
-    { id: "all", label: "All", icon: StarIcon },
-    { 
-      id: "sort", 
-      label: "Sort by", 
-      icon: ChevronDownIcon, 
+    {
+      id: "all",
+      label: "All",
+      icon: StarIcon,
+      action: () => {
+        setSelectedFilter("all");
+        setShowMoreMenu(false);
+      }
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      icon: ArrowsUpDownIcon,
       hasSubmenu: true,
       submenu: [
         { value: "date", label: "Date" },
@@ -149,21 +162,50 @@ export default function PaymentsMadeSection({
         { value: "created", label: "Created Date" },
       ]
     },
-    { id: "import", label: "Import Payments", icon: ArrowDownTrayIconSolid },
-    { 
-      id: "export", 
-      label: "Export", 
-      icon: ArrowUpTrayIconSolid, 
+    {
+      id: "import",
+      label: "Import Payments",
+      icon: ArrowDownTrayIconSolid,
+      action: () => handleImportPaymentsClick()
+    },
+    {
+      id: "export",
+      label: "Export",
+      icon: ArrowUpTrayIconSolid,
       hasSubmenu: true,
       submenu: [
-        { value: "export-payments", label: "Export Payments" },
-        { value: "export-current", label: "Export Current View" },
+        { label: "Export Payments", value: "export_all" },
+        { label: "Export Current View", value: "export_current" },
       ]
     },
-    { id: "preferences", label: "Preferences", icon: ClockIcon },
-    { id: "custom-fields", label: "Manage Custom Fields", icon: ClipboardDocumentListIcon },
-    { id: "refresh", label: "Refresh List", icon: RefreshIcon },
-    { id: "reset-columns", label: "Reset Column Width", icon: ArrowPathIcon },
+    {
+      id: "preferences",
+      label: "Preferences",
+      icon: Cog6ToothIcon,
+      hasSubmenu: true,
+      submenu: [
+        { label: "Column Settings", value: "columns" },
+        { label: "Default Settings", value: "defaults" },
+      ]
+    },
+    {
+      id: "custom_fields",
+      label: "Manage Custom Fields",
+      icon: ClipboardDocumentListIcon,
+      action: () => handleCustomFields()
+    },
+    {
+      id: "refresh",
+      label: "Refresh List",
+      icon: RefreshIcon,
+      action: () => handleRefresh()
+    },
+    {
+      id: "reset_columns",
+      label: "Reset Column Width",
+      icon: ArrowPathIcon,
+      action: () => handleResetColumns()
+    },
   ];
 
   // Apply filters
@@ -202,47 +244,26 @@ export default function PaymentsMadeSection({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-menu')) {
+      if (!target.closest('.dropdown-menu') && !target.closest('.submenu') && !target.closest('[data-filter-dropdown]') && !filterRef.current?.contains(target)) {
         setShowMoreMenu(false);
         setShowSortMenu(false);
         setShowExportMenu(false);
         setShowColumnMenu(false);
         setShowMainDropdown(false);
         setShowFilters(false);
+        setHoveredSubmenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
-  const handleMoreMenuAction = (option: any) => {
-    switch (option.id) {
-      case 'all':
-        setSelectedFilter('all');
-        break;
-      case 'import':
-        window.location.href = '/dashboard/purchases/payments-made/import';
-        break;
-      case 'preferences':
-        console.log('Preferences clicked');
-        break;
-      case 'custom-fields':
-        console.log('Custom fields clicked');
-        break;
-      case 'refresh':
-        fetchPayments();
-        break;
-      case 'reset-columns':
-        console.log('Reset columns clicked');
-        break;
-      default:
-        console.log('Action clicked:', option.id);
-    }
-    setShowMoreMenu(false);
-  };
 
   const handleSortChange = (sortValue: string) => {
     console.log('Sort by:', sortValue);
@@ -254,24 +275,118 @@ export default function PaymentsMadeSection({
     setShowExportMenu(false);
   };
 
-  // Function to calculate dropdown position
-  const calculateDropdownPosition = (buttonRef: React.RefObject<HTMLButtonElement>) => {
-    if (!buttonRef.current) return 'right';
-    
-    const buttonRect = buttonRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const dropdownWidth = 224; // w-56 = 14rem = 224px
-    
-    // If button is in the right half of screen, open left
-    if (buttonRect.left + dropdownWidth > viewportWidth) {
-      return 'left';
-    }
-    
-    // If button is in the left half of screen, open right
-    return 'right';
+  // Additional handler functions for comprehensive menu
+  const handleImportPaymentsClick = () => {
+    setShowImportModal(true);
+    setShowMoreMenu(false);
   };
 
-  const selectedFilterOption = filterOptions.find(opt => opt.value === selectedFilter);
+  const handleImportPayments = async (importedPayments: Payment[]) => {
+    try {
+      setPayments(prevPayments => [...prevPayments, ...importedPayments]);
+      setShowImportModal(false);
+    } catch (error) {
+      console.error('Error importing payments:', error);
+    }
+  };
+
+  const handleCustomFields = async () => {
+    try {
+      router.push('/dashboard/settings/custom-fields');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to custom fields:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      await fetchPayments();
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error refreshing payments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetColumns = () => {
+    console.log('Reset columns clicked');
+    setShowMoreMenu(false);
+  };
+
+
+
+  const handleSubmenuHover = (optionId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredSubmenu(optionId);
+    if (optionId === 'sort') {
+      setShowSortMenu(true);
+      setShowExportMenu(false);
+    } else if (optionId === 'export') {
+      setShowExportMenu(true);
+      setShowSortMenu(false);
+    }
+  };
+
+  const handleSubmenuLeave = () => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubmenu(null);
+      setShowSortMenu(false);
+      setShowExportMenu(false);
+    }, 200);
+  };
+
+  const calculateDropdownPosition = (): 'left' | 'right' => {
+    if (moreMenuRef.current) {
+      const rect = moreMenuRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const dropdownWidth = 200; // Approximate dropdown width
+      
+      if (rect.right + dropdownWidth > viewportWidth) {
+        return 'left';
+      } else {
+        return 'right';
+      }
+    }
+    return 'right'; // Default fallback
+  };
+
+  const handlePreferences = () => {
+    router.push('/dashboard/settings/preferences/payments-made');
+    setShowMoreMenu(false);
+  };
+
+  const handleExport = async (exportType: string) => {
+    try {
+      setShowExportMenu(false);
+      
+      if (exportType === 'export_all') {
+        await handleExportOption('export-payments');
+      } else if (exportType === 'export_current') {
+        await handleExportOption('export-current');
+      }
+    } catch (error) {
+      console.error('Error exporting payments:', error);
+    }
+  };
+
+  const handleMoreMenuAction = (option: any) => {
+    if (option.action) {
+      option.action();
+    }
+    setShowMoreMenu(false);
+  };
+
+  // Hover handlers for submenus
+
+
+
+  const selectedFilterOption = mainDropdownOptions.find(opt => opt.value === selectedFilter);
 
   return (
     <div className="space-y-0">
@@ -286,13 +401,12 @@ export default function PaymentsMadeSection({
                 <button
                   ref={mainDropdownRef}
                   onClick={() => {
-                    const position = calculateDropdownPosition(mainDropdownRef);
-                    setDropdownPosition(position);
+                    setDropdownPosition(calculateDropdownPosition());
                     setShowMainDropdown(!showMainDropdown);
                   }}
                   className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-gray-700"
                 >
-                  <span>{filterOptions.find(opt => opt.value === selectedFilter)?.label || "All Payments"}</span>
+                  <span>{mainDropdownOptions.find(opt => opt.value === selectedFilter)?.label || "All Payments"}</span>
                   <ChevronDownIcon className="h-5 w-5" />
                 </button>
                 {showMainDropdown && (
@@ -300,7 +414,7 @@ export default function PaymentsMadeSection({
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
                   }`}>
                     <div className="py-1">
-                      {filterOptions.map((option) => {
+                      {mainDropdownOptions.map((option) => {
                         const Icon = option.icon;
                         return (
                           <button
@@ -346,13 +460,12 @@ export default function PaymentsMadeSection({
               <div className="relative dropdown-menu" ref={moreMenuRef}>
                 <button
                   onClick={() => {
-                    const position = calculateDropdownPosition(moreMenuRef);
-                    setDropdownPosition(position);
+                    setDropdownPosition(calculateDropdownPosition());
                     setShowMoreMenu(!showMoreMenu);
                   }}
                   className="p-2 text-gray-400 hover:text-gray-600"
                 >
-                  <EllipsisVerticalIcon className="h-5 w-5" />
+                  <EllipsisHorizontalIcon className="h-5 w-5" />
                 </button>
                 {showMoreMenu && (
                   <div className={`absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10 ${
@@ -362,28 +475,39 @@ export default function PaymentsMadeSection({
                       {moreMenuOptions.map((option) => (
                         <div key={option.id}>
                           {option.hasSubmenu ? (
-                            <div className="relative">
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => handleSubmenuHover(option.id)}
+                              onMouseLeave={handleSubmenuLeave}
+                            >
                               <button
                                 onClick={() => {
-                                  if (option.id === 'sort') setShowSortMenu(!showSortMenu);
-                                  if (option.id === 'export') setShowExportMenu(!showExportMenu);
+                                  if (option.id === 'sort') {
+                                    setShowSortMenu(!showSortMenu);
+                                    setShowExportMenu(false); // Close export menu when opening sort
+                                  }
+                                  if (option.id === 'export') {
+                                    setShowExportMenu(!showExportMenu);
+                                    setShowSortMenu(false); // Close sort menu when opening export
+                                  }
                                 }}
-                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                               >
                                 <option.icon className="h-4 w-4" />
                                 <span>{option.label}</span>
                                 <ChevronRightIcon className="h-4 w-4 ml-auto" />
                               </button>
                               {option.id === 'sort' && showSortMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -392,15 +516,16 @@ export default function PaymentsMadeSection({
                                 </div>
                               )}
                               {option.id === 'export' && showExportMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleExportOption(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -412,7 +537,7 @@ export default function PaymentsMadeSection({
                           ) : (
                             <button
                               onClick={() => handleMoreMenuAction(option)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-blue-600 hover:text-white ${
                                 option.id === 'import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                               }`}
                             >
@@ -459,8 +584,7 @@ export default function PaymentsMadeSection({
             <button
               ref={filterRef}
               onClick={() => {
-                const position = calculateDropdownPosition(filterRef);
-                setDropdownPosition(position);
+                setDropdownPosition(calculateDropdownPosition());
                 setShowFilters(!showFilters);
               }}
               className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -474,7 +598,7 @@ export default function PaymentsMadeSection({
                 dropdownPosition === 'left' ? 'right-0' : 'left-0'
               }`}>
                 <div className="p-2">
-                  {filterOptions.map((option) => {
+                  {mainDropdownOptions.map((option) => {
                     const Icon = option.icon;
                     return (
                       <button
@@ -601,6 +725,12 @@ export default function PaymentsMadeSection({
           onClearSelection={onClearSelection}
         />
       )}
+      {/* Import Modal */}
+      <ImportPaymentsModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={handleImportPayments}
+      />
     </div>
   );
 }

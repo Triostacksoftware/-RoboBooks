@@ -36,7 +36,6 @@ const manualJournalSchema = new mongoose.Schema(
     journalNumber: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     journalDate: {
@@ -131,3 +130,5 @@ manualJournalSchema.pre("save", function (next) {
 const ManualJournal = mongoose.model("ManualJournal", manualJournalSchema);
 
 export default ManualJournal;
+
+

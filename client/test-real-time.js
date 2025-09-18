@@ -109,7 +109,7 @@ function testRealTimeUpdates() {
     });
     
     document.dispatchEvent(event);
-    console.log(`📨 Simulated ${type} event:`, payment);
+    console.log(`📨 Simulated ?{type} event:`, payment);
   };
   
   // Simulate different payment events

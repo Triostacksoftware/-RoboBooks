@@ -180,7 +180,7 @@ const BulkExportModal: React.FC<BulkExportModalProps> = ({ selectedIds, selected
               value = item.date ? new Date(item.date).toISOString().split('T')[0] : 'N/A';
               break;
             case 'amount':
-              value = item.amount ? `$${parseFloat(item.amount).toFixed(2)}` : '$0.00';
+              value = item.amount ? `?${parseFloat(item.amount).toFixed(2)}` : '?0.00';
               break;
             case 'status':
               value = item.status || 'N/A';
@@ -255,7 +255,7 @@ const BulkExportModal: React.FC<BulkExportModalProps> = ({ selectedIds, selected
             case 'date':
               return new Date().toISOString().split('T')[0];
             case 'amount':
-              return `$${(Math.random() * 1000 + 100).toFixed(2)}`;
+              return `?${(Math.random() * 1000 + 100).toFixed(2)}`;
             case 'status':
               return ['Active', 'Pending', 'Completed'][Math.floor(Math.random() * 3)];
             case 'vendor':

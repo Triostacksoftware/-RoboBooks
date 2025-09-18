@@ -42,3 +42,5 @@ userSchema.index({ email: 1 }, { unique: true, sparse: true });
 userSchema.index({ phone: 1 }, { unique: true, sparse: true });
 
 export default model("User", userSchema);
+
+

@@ -1,41 +1,39 @@
-import express from "express";
-import Joi from "joi";
-import { authGuard } from "../utils/jwt.js";
-import validate from "../middlewares/validation.middleware.js";
-import { 
-  createVendorCredit, 
-  getVendorCredits, 
-  getVendorCreditById, 
-  updateVendorCredit, 
-  deleteVendorCredit 
-} from "../controllers/vendorCreditController.js";
+import express from 'express';
+import {
+  getVendorCredits,
+  getVendorCreditById,
+  createVendorCredit,
+  updateVendorCredit,
+  deleteVendorCredit,
+  searchVendorCredits,
+  getVendorCreditStats,
+  updateVendorCreditStatus,
+  issueVendorCredit,
+  applyVendorCredit,
+  cancelVendorCredit,
+  importVendorCredits
+} from '../controllers/vendorCreditController.js';
+import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Apply authentication to all vendor credit routes
-router.use(authGuard);
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
 
-const vendorCreditSchema = Joi.object({
-  vendor_id: Joi.string().required(),
-  credit_number: Joi.string().required(),
-  credit_date: Joi.date().required(),
-  amount: Joi.number().precision(2).required(),
-  reason: Joi.string().required(),
-  reference: Joi.string().optional(),
-  status: Joi.string().valid("pending", "applied", "expired").default("pending"),
-  notes: Joi.string().optional()
-});
-
-const updateVendorCreditSchema = vendorCreditSchema.fork(
-  Object.keys(vendorCreditSchema.describe().keys),
-  (schema) => schema.optional()
-);
-
-// Routes
-router.post("/", validate(vendorCreditSchema), createVendorCredit);
-router.get("/", getVendorCredits);
-router.get("/:id", getVendorCreditById);
-router.put("/:id", validate(updateVendorCreditSchema), updateVendorCredit);
-router.delete("/:id", deleteVendorCredit);
+// Vendor credit routes
+router.get('/', getVendorCredits);
+router.get('/stats', getVendorCreditStats);
+router.get('/search', searchVendorCredits);
+router.get('/:id', getVendorCreditById);
+router.post('/', createVendorCredit);
+router.put('/:id', updateVendorCredit);
+router.delete('/:id', deleteVendorCredit);
+router.patch('/:id/status', updateVendorCreditStatus);
+router.post('/:id/issue', issueVendorCredit);
+router.post('/:id/apply', applyVendorCredit);
+router.post('/:id/cancel', cancelVendorCredit);
+router.post('/import', importVendorCredits);
 
 export default router;
+
+

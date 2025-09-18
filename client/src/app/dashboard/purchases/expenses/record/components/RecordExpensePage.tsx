@@ -13,11 +13,12 @@ import {
   EyeIcon,
   ArrowLeftIcon,
   PaperClipIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   DocumentDuplicateIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { expenseService, Expense } from "@/services/expenseService";
+import { preferencesService, CustomField } from "@/services/preferencesService";
 import { useToast } from "@/contexts/ToastContext";
 
 interface RecordExpensePageProps {
@@ -65,6 +66,29 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
   const [showItemsizeAnimation, setShowItemsizeAnimation] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
+  // Fetch custom fields on component mount
+  useEffect(() => {
+    const fetchCustomFields = async () => {
+      try {
+        const fields = await preferencesService.getCustomFields('expenses');
+        setCustomFields(fields);
+        
+        // Initialize custom field values with defaults
+        const initialValues: { [key: string]: any } = {};
+        fields.forEach(field => {
+          if (field.defaultValue !== undefined) {
+            initialValues[field.fieldName] = field.defaultValue;
+          }
+        });
+        setCustomFieldValues(initialValues);
+      } catch (error) {
+        console.error('Error fetching custom fields:', error);
+      }
+    };
+
+    fetchCustomFields();
+  }, []);
+
   // Initialize form with initial data when in edit mode
   useEffect(() => {
     if (initialData && mode === 'edit') {
@@ -81,6 +105,11 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
         notes: initialData.description || '',
         currency: 'INR'
       });
+
+      // Initialize custom field values from existing data
+      if (initialData.customFields) {
+        setCustomFieldValues(initialData.customFields);
+      }
     }
   }, [initialData, mode]);
 
@@ -168,6 +197,10 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
     ]
   });
 
+  // Custom fields state
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<{ [key: string]: any }>({});
+
   const employees = [
     { value: 'emp1', label: 'John Doe' },
     { value: 'emp2', label: 'Jane Smith' },
@@ -239,6 +272,11 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
   // Form submission handlers
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Custom field handlers
+  const handleCustomFieldChange = (fieldName: string, value: any) => {
+    setCustomFieldValues(prev => ({ ...prev, [fieldName]: value }));
   };
 
   // Tab switching
@@ -787,6 +825,84 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
         throw new Error('Please select a payment method');
       }
 
+      // Validate custom fields
+      for (const field of customFields) {
+        if (field.isRequired && (!customFieldValues[field.fieldName] || customFieldValues[field.fieldName] === '')) {
+          throw new Error(`${field.fieldLabel} is required`);
+        }
+        
+        // Validate numeric fields (number, decimal, amount, currency, percentage)
+        if (['number', 'decimal', 'amount', 'currency', 'percentage'].includes(field.fieldType) && customFieldValues[field.fieldName]) {
+          const value = parseFloat(customFieldValues[field.fieldName]);
+          if (isNaN(value)) {
+            throw new Error(`${field.fieldLabel} must be a valid number`);
+          }
+          if (field.validation?.min !== undefined && value < field.validation.min) {
+            throw new Error(`${field.fieldLabel} must be at least ${field.validation.min}`);
+          }
+          if (field.validation?.max !== undefined && value > field.validation.max) {
+            throw new Error(`${field.fieldLabel} must be at most ${field.validation.max}`);
+          }
+        }
+        
+        // Validate text fields with pattern (text, text-box-multi-line, textarea, email, url, phone)
+        if (['text', 'text-box-multi-line', 'textarea', 'email', 'url', 'phone'].includes(field.fieldType) && customFieldValues[field.fieldName] && field.validation?.pattern) {
+          const regex = new RegExp(field.validation.pattern);
+          if (!regex.test(customFieldValues[field.fieldName])) {
+            throw new Error(`${field.fieldLabel} format is invalid`);
+          }
+        }
+        
+        // Validate email fields
+        if (field.fieldType === 'email' && customFieldValues[field.fieldName]) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(customFieldValues[field.fieldName])) {
+            throw new Error(`${field.fieldLabel} must be a valid email address`);
+          }
+        }
+        
+        // Validate URL fields
+        if (field.fieldType === 'url' && customFieldValues[field.fieldName]) {
+          try {
+            new URL(customFieldValues[field.fieldName]);
+          } catch {
+            throw new Error(`${field.fieldLabel} must be a valid URL`);
+          }
+        }
+        
+        // Validate phone fields
+        if (field.fieldType === 'phone' && customFieldValues[field.fieldName]) {
+          const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+          if (!phoneRegex.test(customFieldValues[field.fieldName].replace(/[\s\-\(\)]/g, ''))) {
+            throw new Error(`${field.fieldLabel} must be a valid phone number`);
+          }
+        }
+        
+        // Validate checkbox fields
+        if (field.fieldType === 'checkbox' && field.isRequired) {
+          const value = customFieldValues[field.fieldName];
+          if (value !== true && value !== 'true') {
+            throw new Error(`${field.fieldLabel} is required`);
+          }
+        }
+        
+        // Validate attachment fields
+        if (field.fieldType === 'attachment' && field.isRequired) {
+          const value = customFieldValues[field.fieldName];
+          if (!value || value === '') {
+            throw new Error(`${field.fieldLabel} is required`);
+          }
+        }
+        
+        // Validate multiselect fields
+        if (field.fieldType === 'multiselect' && field.isRequired) {
+          const values = customFieldValues[field.fieldName];
+          if (!Array.isArray(values) || values.length === 0) {
+            throw new Error(`${field.fieldLabel} is required`);
+          }
+        }
+      }
+
       // Prepare expense data
       const totalAmount = isItemsized 
         ? expenseItems.reduce((total, item) => total + (parseFloat(item.amount) || 0), 0)
@@ -821,7 +937,8 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
           account: item.account,
           notes: item.notes,
           amount: parseFloat(item.amount) || 0
-        })) : undefined
+        })) : undefined,
+        customFields: customFieldValues
       };
 
       console.log(`💾 Expense data prepared for ${mode}:`, expenseData);
@@ -1161,7 +1278,7 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                               onClick={(e) => handleMenuToggle(item.id, e)}
                               className="text-gray-400 hover:text-gray-600 p-1"
                             >
-                              <EllipsisVerticalIcon className="h-4 w-4" />
+                              <EllipsisHorizontalIcon className="h-4 w-4" />
                             </button>
                           </td>
                         </tr>
@@ -1463,6 +1580,337 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
                     </label>
                   </div>
                 </div>
+
+                {/* Custom Fields */}
+                {customFields.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Custom Fields</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {customFields.map((field) => (
+                        <div key={field._id}>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {field.fieldLabel}
+                            {field.isRequired && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          
+              {/* Text Fields */}
+              {field.fieldType === 'text' && (
+                <input
+                  type="text"
+                  value={customFieldValues[field.fieldName] || ''}
+                  onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                  required={field.isRequired}
+                />
+              )}
+              
+              {field.fieldType === 'text-box-multi-line' && (
+                <textarea
+                  value={customFieldValues[field.fieldName] || ''}
+                  onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                  rows={3}
+                  required={field.isRequired}
+                />
+              )}
+                          
+                          {field.fieldType === 'textarea' && (
+                            <textarea
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                              rows={3}
+                              required={field.isRequired}
+                            />
+                          )}
+                          
+                          {field.fieldType === 'email' && (
+                            <input
+                              type="email"
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                              required={field.isRequired}
+                            />
+                          )}
+                          
+                          {field.fieldType === 'url' && (
+                            <input
+                              type="url"
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                              required={field.isRequired}
+                            />
+                          )}
+                          
+                          {field.fieldType === 'phone' && (
+                            <input
+                              type="tel"
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                              required={field.isRequired}
+                            />
+                          )}
+                          
+              {/* Numeric Fields */}
+              {field.fieldType === 'number' && (
+                <input
+                  type="number"
+                  step="1"
+                  value={customFieldValues[field.fieldName] || ''}
+                  onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                  required={field.isRequired}
+                  min={field.validation?.min}
+                  max={field.validation?.max}
+                />
+              )}
+              
+              {field.fieldType === 'decimal' && (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={customFieldValues[field.fieldName] || ''}
+                  onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={`Enter ${field.fieldLabel.toLowerCase()}`}
+                  required={field.isRequired}
+                  min={field.validation?.min}
+                  max={field.validation?.max}
+                />
+              )}
+              
+              {field.fieldType === 'amount' && (
+                <div className="flex">
+                  <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md text-sm text-gray-700">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={customFieldValues[field.fieldName] || ''}
+                    onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0.00"
+                    required={field.isRequired}
+                    min={field.validation?.min}
+                    max={field.validation?.max}
+                  />
+                </div>
+              )}
+              
+              {field.fieldType === 'auto-generate-number' && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={customFieldValues[field.fieldName] || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                    placeholder="Auto-generated"
+                    readOnly
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCustomFieldChange(field.fieldName, `AUTO-${Date.now()}`)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                  >
+                    Generate
+                  </button>
+                </div>
+              )}
+                          
+                          {field.fieldType === 'currency' && (
+                            <div className="flex">
+                              <span className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md text-sm text-gray-700">
+                                ₹
+                              </span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={customFieldValues[field.fieldName] || ''}
+                                onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="0.00"
+                                required={field.isRequired}
+                                min={field.validation?.min}
+                                max={field.validation?.max}
+                              />
+                            </div>
+                          )}
+                          
+                          {field.fieldType === 'percentage' && (
+                            <div className="flex">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={customFieldValues[field.fieldName] || ''}
+                                onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="0.00"
+                                required={field.isRequired}
+                                min={field.validation?.min}
+                                max={field.validation?.max}
+                              />
+                              <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md text-sm text-gray-700">
+                                %
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Date & Time Fields */}
+                          {field.fieldType === 'date' && (
+                            <input
+                              type="date"
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              required={field.isRequired}
+                            />
+                          )}
+                          
+                          {field.fieldType === 'datetime' && (
+                            <input
+                              type="datetime-local"
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              required={field.isRequired}
+                            />
+                          )}
+                          
+                          {field.fieldType === 'time' && (
+                            <input
+                              type="time"
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              required={field.isRequired}
+                            />
+                          )}
+                          
+                          {/* Selection Fields */}
+                          {field.fieldType === 'select' && (
+                            <select
+                              value={customFieldValues[field.fieldName] || ''}
+                              onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              required={field.isRequired}
+                            >
+                              <option value="">Select {field.fieldLabel.toLowerCase()}</option>
+                              {field.options?.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          
+                          {field.fieldType === 'multiselect' && (
+                            <select
+                              multiple
+                              value={Array.isArray(customFieldValues[field.fieldName]) ? customFieldValues[field.fieldName] : []}
+                              onChange={(e) => {
+                                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                                handleCustomFieldChange(field.fieldName, selectedOptions);
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              required={field.isRequired}
+                            >
+                              {field.options?.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          
+              {field.fieldType === 'boolean' && (
+                <select
+                  value={customFieldValues[field.fieldName] || ''}
+                  onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required={field.isRequired}
+                >
+                  <option value="">Select {field.fieldLabel.toLowerCase()}</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              )}
+              
+              {field.fieldType === 'checkbox' && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={customFieldValues[field.fieldName] === true || customFieldValues[field.fieldName] === 'true'}
+                    onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    required={field.isRequired}
+                  />
+                  <label className="text-sm text-gray-700">
+                    {field.fieldLabel}
+                  </label>
+                </div>
+              )}
+              
+              {field.fieldType === 'attachment' && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <input
+                    type="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleCustomFieldChange(field.fieldName, file.name);
+                      }
+                    }}
+                    className="hidden"
+                    id={`attachment-${field.fieldName}`}
+                    required={field.isRequired}
+                  />
+                  <label
+                    htmlFor={`attachment-${field.fieldName}`}
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span className="mt-2 block text-sm font-medium text-gray-900">
+                      {customFieldValues[field.fieldName] ? customFieldValues[field.fieldName] : 'Click to upload file'}
+                    </span>
+                    <span className="mt-1 block text-xs text-gray-500">
+                      PNG, JPG, PDF up to 10MB
+                    </span>
+                  </label>
+                </div>
+              )}
+              
+              {field.fieldType === 'lookup' && (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={customFieldValues[field.fieldName] || ''}
+                    onChange={(e) => handleCustomFieldChange(field.fieldName, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={`Search ${field.fieldLabel.toLowerCase()}`}
+                    required={field.isRequired}
+                  />
+                  <div className="text-xs text-gray-500">
+                    Lookup field - references data from other modules
+                  </div>
+                </div>
+              )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
 

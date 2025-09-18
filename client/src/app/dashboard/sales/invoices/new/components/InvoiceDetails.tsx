@@ -148,7 +148,7 @@ const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({
                       formData.invoiceNumber.replace(/\D/g, "")
                     );
                     const nextNumber = currentNumber + 1;
-                    const prefix = formData.invoiceNumber.replace(/\d+$/, "");
+                    const prefix = formData.invoiceNumber.replace(/\d+?/, "");
                     onFormDataChange({
                       ...formData,
                       invoiceNumber: `${prefix}${nextNumber

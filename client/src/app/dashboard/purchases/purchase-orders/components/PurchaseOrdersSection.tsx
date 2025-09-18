@@ -7,7 +7,7 @@ import Link from "next/link";
 import {
   ChevronDownIcon,
   PlusIcon,
-  EllipsisVerticalIcon,
+  EllipsisHorizontalIcon,
   FunnelIcon,
   XMarkIcon,
   PencilIcon,
@@ -32,9 +32,12 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ArrowDownTrayIcon as DownloadIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { PurchaseOrder, purchaseOrderService } from "@/services/purchaseOrderService";
+import { preferencesService } from "@/services/preferencesService";
 import { formatCurrency } from "@/utils/currency";
+import ImportPurchaseOrdersModal from "./ImportPurchaseOrdersModal";
 
 interface PurchaseOrdersSectionProps {
   purchaseOrders?: PurchaseOrder[];
@@ -51,7 +54,11 @@ interface PurchaseOrdersSectionProps {
 
 const filters = ["All", "Draft", "Sent", "Approved", "Partially Received", "Received", "Cancelled"];
 
-const filterOptions = [
+// Handler functions (defined before menu options to avoid hoisting issues)
+// These will be properly defined inside the component
+
+// Main dropdown options (All Purchase Orders dropdown)
+const mainDropdownOptions = [
   { value: "all", label: "All Purchase Orders", icon: StarIcon },
   { value: "draft", label: "Draft", icon: PencilIcon },
   { value: "sent", label: "Sent", icon: PaperAirplaneIcon },
@@ -59,40 +66,10 @@ const filterOptions = [
   { value: "partially_received", label: "Partially Received", icon: CheckIcon },
   { value: "received", label: "Received", icon: CheckIcon },
   { value: "cancelled", label: "Cancelled", icon: XMarkIcon },
+  { value: "overdue", label: "Overdue", icon: XIcon },
 ];
 
-const moreMenuOptions = [
-  { id: "all", label: "All", icon: StarIcon },
-  { 
-    id: "sort", 
-    label: "Sort by", 
-    icon: ChevronDownIcon, 
-    hasSubmenu: true,
-    submenu: [
-      { value: "po-number", label: "PO Number" },
-      { value: "vendor", label: "Vendor" },
-      { value: "amount", label: "Amount" },
-      { value: "status", label: "Status" },
-      { value: "date", label: "Date" },
-      { value: "created", label: "Created Date" },
-    ]
-  },
-  { id: "import", label: "Import Purchase Orders", icon: DocumentArrowUpIcon },
-  { 
-    id: "export", 
-    label: "Export", 
-    icon: DocumentArrowUpIcon, 
-    hasSubmenu: true,
-    submenu: [
-      { value: "export-orders", label: "Export Purchase Orders" },
-      { value: "export-current", label: "Export Current View" },
-    ]
-  },
-  { id: "preferences", label: "Preferences", icon: PencilIcon },
-  { id: "custom-fields", label: "Manage Custom Fields", icon: DocumentIcon },
-  { id: "refresh", label: "Refresh List", icon: ArrowPathIcon },
-  { id: "reset-columns", label: "Reset Column Width", icon: ArrowPathIcon },
-];
+// More menu options - Will be defined inside component with proper state access
 
 export default function PurchaseOrdersSection({ 
   purchaseOrders: propPurchaseOrders, 
@@ -120,11 +97,84 @@ export default function PurchaseOrdersSection({
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [filteredPurchaseOrders, setFilteredPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right');
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState('created_time');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [purchaseOrdersList, setPurchaseOrdersList] = useState<PurchaseOrder[]>(purchaseOrders || []);
   const router = useRouter();
 
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const mainDropdownRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLButtonElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // More menu options - Defined inside component with proper state access
+  const moreMenuOptions = [
+    {
+      id: "all",
+      label: "All",
+      icon: StarIcon,
+      action: () => {
+        setSelectedFilter("all");
+        setShowMoreMenu(false);
+      }
+    },
+    {
+      id: "sort",
+      label: "Sort by",
+      icon: ArrowsUpDownIcon,
+      hasSubmenu: true,
+      submenu: [
+        { value: "po-number", label: "PO Number" },
+        { value: "vendor", label: "Vendor" },
+        { value: "amount", label: "Amount" },
+        { value: "status", label: "Status" },
+        { value: "date", label: "Date" },
+        { value: "created", label: "Created Date" },
+      ]
+    },
+    {
+      id: "import",
+      label: "Import Purchase Orders",
+      icon: ArrowDownTrayIconSolid,
+      action: () => handleImportPurchaseOrdersClick()
+    },
+    {
+      id: "export",
+      label: "Export",
+      icon: ArrowUpTrayIconSolid,
+      hasSubmenu: true,
+      submenu: [
+        { label: "Export Purchase Orders", value: "export_all" },
+        { label: "Export Current View", value: "export_current" },
+      ]
+    },
+    {
+      id: "preferences",
+      label: "Preferences",
+      icon: Cog6ToothIcon,
+      action: () => handlePreferences()
+    },
+    {
+      id: "custom_fields",
+      label: "Manage Custom Fields",
+      icon: ClipboardDocumentListIcon,
+      action: () => handleCustomFields()
+    },
+    {
+      id: "refresh",
+      label: "Refresh List",
+      icon: RefreshIcon,
+      action: () => handleRefresh()
+    },
+    {
+      id: "reset_columns",
+      label: "Reset Column Width",
+      icon: ArrowPathIcon,
+      action: () => handleResetColumns()
+    },
+  ];
 
   // Fetch purchase orders from backend
   const fetchPurchaseOrders = async () => {
@@ -133,6 +183,7 @@ export default function PurchaseOrdersSection({
       setError(null);
       const ordersData = await purchaseOrderService.getPurchaseOrders();
       setPurchaseOrders(ordersData);
+      setPurchaseOrdersList(ordersData);
     } catch (error) {
       console.error("Error fetching purchase orders:", error);
       setError("Failed to fetch purchase orders. Please try again.");
@@ -154,10 +205,10 @@ export default function PurchaseOrdersSection({
   // Update filtered purchase orders when orders or search changes
   useEffect(() => {
     applyFilters();
-  }, [purchaseOrders, searchTerm, selectedFilter]);
+  }, [purchaseOrdersList, searchTerm, selectedFilter]);
 
   const applyFilters = () => {
-    let filtered = purchaseOrders;
+    let filtered = [...purchaseOrdersList];
 
     // Apply search filter
     if (searchTerm) {
@@ -177,7 +228,7 @@ export default function PurchaseOrdersSection({
   };
 
   // Calculate dropdown position
-  const calculateDropdownPosition = (ref: React.RefObject<HTMLElement>) => {
+  const calculateDropdownPosition = (ref: React.RefObject<HTMLElement | null>) => {
     if (!ref.current) return 'right';
     const rect = ref.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
@@ -190,19 +241,24 @@ export default function PurchaseOrdersSection({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.dropdown-menu') && !target.closest('.submenu')) {
+      if (!target.closest('.dropdown-menu') && !target.closest('.submenu') && !target.closest('[data-filter-dropdown]') && !filterRef.current?.contains(target)) {
         setShowMoreMenu(false);
         setShowSortMenu(false);
         setShowExportMenu(false);
         setShowColumnMenu(false);
         setShowMainDropdown(false);
         setShowFilters(false);
+        setHoveredSubmenu(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      // Cleanup timeout on unmount
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -212,41 +268,179 @@ export default function PurchaseOrdersSection({
     }
   };
 
-  const handleMoreMenuAction = (option: any) => {
-    switch (option.id) {
-      case 'all':
-        setSelectedFilter('all');
-        break;
-      case 'import':
-        window.location.href = '/dashboard/purchases/purchase-orders/import';
-        break;
-      case 'preferences':
-        console.log('Preferences clicked');
-        break;
-      case 'custom-fields':
-        console.log('Custom fields clicked');
-        break;
-      case 'refresh':
-        fetchPurchaseOrders();
-        break;
-      case 'reset-columns':
-        console.log('Reset columns clicked');
-        break;
-      default:
-        console.log('Action clicked:', option.id);
-    }
-    setShowMoreMenu(false);
-  };
 
   const handleSortChange = (sortValue: string) => {
     console.log('Sort by:', sortValue);
     setShowSortMenu(false);
   };
 
-  const handleExportOption = (exportValue: string) => {
-    console.log('Export:', exportValue);
+  const handleExportOption = async (exportValue: string) => {
+    try {
+      let dataToExport = filteredPurchaseOrders;
+      
+      if (exportValue === 'export-current') {
+        // Export current filtered view
+        dataToExport = filteredPurchaseOrders;
+      } else if (exportValue === 'export-orders') {
+        // Export all purchase orders
+        dataToExport = purchaseOrders;
+      }
+
+      // Prepare data for export
+      const exportData = dataToExport.map(order => ({
+        'PO Number': order.poNumber || '',
+        'Date': order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '',
+        'Vendor': order.vendorName || '',
+        'Amount': order.totalAmount || 0,
+        'Status': order.status || '',
+        'Created': order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''
+      }));
+
+      // Create CSV content
+      const headers = Object.keys(exportData[0] || {});
+      const csvContent = [
+        headers.join(','),
+        ...exportData.map(row => 
+          headers.map(header => {
+            const value = row[header as keyof typeof row];
+            // Escape commas and quotes in CSV
+            return typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+              ? `"${value.replace(/"/g, '""')}"` 
+              : value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `purchase-orders-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('Export completed:', exportValue);
+    } catch (error) {
+      console.error('Error exporting purchase orders:', error);
+      alert('Error exporting data. Please try again.');
+    }
     setShowExportMenu(false);
   };
+
+  // Additional handler functions for comprehensive menu
+  const handleImportPurchaseOrdersClick = () => {
+    setShowImportModal(true);
+    setShowMoreMenu(false);
+  };
+
+  const handleImportPurchaseOrders = async (file: File) => {
+    try {
+      const importedOrders = await purchaseOrderService.importPurchaseOrders(file);
+      setPurchaseOrdersList(prev => [...prev, ...importedOrders]);
+      setPurchaseOrders(prev => [...prev, ...importedOrders]);
+      setShowImportModal(false);
+    } catch (err) {
+      console.error("Error importing purchase orders:", err);
+    }
+  };
+
+  const handlePreferences = async () => {
+    try {
+      // Save current sort preference
+      await preferencesService.savePreferences('purchase-orders', {
+        defaultSortBy: sortBy,
+        defaultSortOrder: 'desc'
+      });
+      
+      // Navigate to purchase orders preferences page
+      router.push('/dashboard/settings/preferences/purchase-orders');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      // Still navigate even if saving fails
+      router.push('/dashboard/settings/preferences/purchase-orders');
+      setShowMoreMenu(false);
+    }
+  };
+
+  const handleCustomFields = async () => {
+    try {
+      router.push('/dashboard/settings/custom-fields');
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error navigating to custom fields:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      await fetchPurchaseOrders();
+      setShowMoreMenu(false);
+    } catch (error) {
+      console.error('Error refreshing purchase orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetColumns = () => {
+    // Reset column widths logic
+    window.location.reload();
+    setShowMoreMenu(false);
+  };
+
+  const handleExport = async (exportType: string) => {
+    try {
+      setShowExportMenu(false);
+      
+      if (exportType === 'export_all') {
+        await handleExportOption('export-orders');
+      } else if (exportType === 'export_current') {
+        await handleExportOption('export-current');
+      }
+    } catch (error) {
+      console.error('Error exporting purchase orders:', error);
+    }
+  };
+
+  const handleMoreMenuAction = (option: any) => {
+    if (option.action) {
+      option.action();
+    }
+    setShowMoreMenu(false);
+  };
+
+  // Hover handlers for submenus
+  const handleSubmenuHover = (optionId: string) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    setHoveredSubmenu(optionId);
+    if (optionId === 'sort') {
+      setShowSortMenu(true);
+      setShowExportMenu(false);
+    } else if (optionId === 'export') {
+      setShowExportMenu(true);
+      setShowSortMenu(false);
+    }
+  };
+
+  const handleSubmenuLeave = () => {
+    // Add a delay before closing to allow moving to submenu
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubmenu(null);
+      setShowSortMenu(false);
+      setShowExportMenu(false);
+    }, 200);
+  };
+
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -429,7 +623,7 @@ export default function PurchaseOrdersSection({
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
                   }`}>
                     <div className="py-1">
-                      {filterOptions.map((option) => {
+                      {mainDropdownOptions.map((option) => {
                         const Icon = option.icon;
                         return (
                           <button
@@ -480,38 +674,49 @@ export default function PurchaseOrdersSection({
                   }}
                   className="p-2 text-gray-400 hover:text-gray-600"
                 >
-                  <EllipsisVerticalIcon className="h-5 w-5" />
+                  <EllipsisHorizontalIcon className="h-5 w-5" />
                 </button>
                 {showMoreMenu && (
-                  <div className={`absolute top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10 ${
+                  <div className={`absolute top-full mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-10 dropdown-menu ${
                     dropdownPosition === 'left' ? 'right-0' : 'left-0'
                   }`}>
                     <div className="py-1">
                       {moreMenuOptions.map((option) => (
                         <div key={option.id}>
                           {option.hasSubmenu ? (
-                            <div className="relative">
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => handleSubmenuHover(option.id)}
+                              onMouseLeave={handleSubmenuLeave}
+                            >
                               <button
                                 onClick={() => {
-                                  if (option.id === 'sort') setShowSortMenu(!showSortMenu);
-                                  if (option.id === 'export') setShowExportMenu(!showExportMenu);
+                                  if (option.id === 'sort') {
+                                    setShowSortMenu(!showSortMenu);
+                                    setShowExportMenu(false); // Close export menu when opening sort
+                                  }
+                                  if (option.id === 'export') {
+                                    setShowExportMenu(!showExportMenu);
+                                    setShowSortMenu(false); // Close sort menu when opening export
+                                  }
                                 }}
-                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                               >
                                 <option.icon className="h-4 w-4" />
                                 <span>{option.label}</span>
                                 <ChevronRightIcon className="h-4 w-4 ml-auto" />
                               </button>
                               {option.id === 'sort' && showSortMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleSortChange(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -520,15 +725,16 @@ export default function PurchaseOrdersSection({
                                 </div>
                               )}
                               {option.id === 'export' && showExportMenu && (
-                                <div className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
-                                  dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
-                                }`}>
+                                <div 
+                                  className={`absolute top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-30 submenu ${
+                                    dropdownPosition === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                  }`}>
                                   <div className="py-1">
                                     {option.submenu?.map((subOption) => (
                                       <button
                                         key={subOption.value}
                                         onClick={() => handleExportOption(subOption.value)}
-                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                                       >
                                         {subOption.label}
                                       </button>
@@ -540,9 +746,7 @@ export default function PurchaseOrdersSection({
                           ) : (
                             <button
                               onClick={() => handleMoreMenuAction(option)}
-                              className={`w-full flex items-center space-x-3 px-4 py-2 text-left text-sm hover:bg-gray-100 ${
-                                option.id === 'import' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                              }`}
+                              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-blue-600 hover:text-white"
                             >
                               <option.icon className="h-4 w-4" />
                               <span>{option.label}</span>
@@ -598,11 +802,13 @@ export default function PurchaseOrdersSection({
             </button>
             
             {showFilters && (
-              <div className={`absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 ${
-                dropdownPosition === 'left' ? 'right-0' : 'left-0'
-              }`}>
+              <div 
+                data-filter-dropdown
+                className={`absolute top-full mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 ${
+                  dropdownPosition === 'left' ? 'right-0' : 'left-0'
+                }`}>
                 <div className="p-2">
-                  {filterOptions.map((option) => {
+                  {mainDropdownOptions.map((option) => {
                     const Icon = option.icon;
                     return (
                       <button
@@ -803,6 +1009,14 @@ export default function PurchaseOrdersSection({
             )}
           </div>
         </div>
+      )}
+
+      {/* Modals */}
+      {showImportModal && (
+        <ImportPurchaseOrdersModal
+          onClose={() => setShowImportModal(false)}
+          onSubmit={handleImportPurchaseOrders}
+        />
       )}
     </div>
   );

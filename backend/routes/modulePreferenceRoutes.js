@@ -92,3 +92,5 @@ router.get("/preferences", getUserModulePreferences);
 router.post("/preferences", saveUserModulePreferences);
 
 export default router;
+
+

@@ -76,3 +76,5 @@ organizationSchema.index({ 'members.user': 1 });
 organizationSchema.index({ active: 1 });
 
 export default mongoose.model('Organization', organizationSchema);
+
+

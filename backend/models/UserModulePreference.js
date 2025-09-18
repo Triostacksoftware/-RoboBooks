@@ -38,3 +38,5 @@ const userModulePreferenceSchema = new mongoose.Schema({
 userModulePreferenceSchema.index({ userId: 1, moduleName: 1 }, { unique: true });
 
 export default mongoose.model('UserModulePreference', userModulePreferenceSchema);
+
+

@@ -52,6 +52,7 @@ import paymentMadeRoutes from "./routes/paymentMadeRoutes.js";
 import recurringBillRoutes from "./routes/recurringBillRoutes.js";
 import vendorCreditRoutes from "./routes/vendorCreditRoutes.js";
 import customViewRoutes from "./routes/customViewRoutes.js";
+import preferencesRoutes from "./routes/preferencesRoutes.js";
 // import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 const app = express();
@@ -75,6 +76,7 @@ app.use(
       "https://robobookss.com",
       "https://www.robobookss.com",
       "http://localhost:3000",
+      "http://localhost:3001",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -139,6 +141,7 @@ app.use("/api/payments-made", paymentMadeRoutes);
 app.use("/api/recurring-bills", recurringBillRoutes);
 app.use("/api/vendor-credits", vendorCreditRoutes);
 app.use("/api/custom-views", customViewRoutes);
+app.use("/api/preferences", preferencesRoutes);
 // app.use("/api/dashboard", dashboardRoutes);
 
 // Health check and welcome routes
@@ -172,3 +175,5 @@ server.on("error", (error) => {
 server.on("listening", () => {
   console.log("✅ Server is ready to accept connections");
 });
+
+

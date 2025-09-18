@@ -39,7 +39,7 @@ const schema = new mongoose.Schema({
   sellerAddress: { type: String },
 
   // Sales Order Details
-  salesOrderNumber: { type: String, required: true, unique: true },
+  salesOrderNumber: { type: String, required: true },
   reference: { type: String },
   orderDate: { type: Date, required: true, default: Date.now },
   deliveryDate: { type: Date, required: true },
@@ -160,3 +160,5 @@ schema.index({ createdAt: -1 });
 const SalesOrder = mongoose.model("SalesOrder", schema);
 
 export default SalesOrder;
+
+

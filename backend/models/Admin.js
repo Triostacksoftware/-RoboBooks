@@ -16,7 +16,6 @@ const adminSchema = new Schema(
     email: { 
       type: String, 
       required: true, 
-      unique: true, 
       lowercase: true, 
       trim: true 
     },
@@ -94,3 +93,5 @@ adminSchema.pre('save', async function(next) {
 });
 
 export default model("Admin", adminSchema);
+
+

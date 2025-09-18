@@ -39,10 +39,10 @@ function testFileValidation() {
     const typeValid = allowedTypes.includes(file.type);
     const isValid = sizeValid && typeValid;
 
-    console.log(`File ${index + 1} (${file.name}):`);
-    console.log(`  - Size: ${(file.size / 1024).toFixed(2)} KB (Max: ${(maxSize / 1024).toFixed(2)} KB)`);
-    console.log(`  - Type: ${file.type} (Allowed: ${typeValid ? 'Yes' : 'No'})`);
-    console.log(`  - Valid: ${isValid ? '✅' : '❌'}`);
+    console.log(`File ?{index + 1} (?{file.name}):`);
+    console.log(`  - Size: ?{(file.size / 1024).toFixed(2)} KB (Max: ?{(maxSize / 1024).toFixed(2)} KB)`);
+    console.log(`  - Type: ?{file.type} (Allowed: ?{typeValid ? 'Yes' : 'No'})`);
+    console.log(`  - Valid: ?{isValid ? '✅' : '❌'}`);
     console.log('');
   });
 }
@@ -56,16 +56,16 @@ function testFormDataCreation() {
       const formData = new FormData();
       formData.append('file', file);
       
-      console.log(`✅ FormData created successfully for file ${index + 1} (${file.name})`);
+      console.log(`✅ FormData created successfully for file ?{index + 1} (?{file.name})`);
       
       // Test if we can iterate through FormData entries
       const entries = Array.from(formData.entries());
-      console.log(`  - FormData entries: ${entries.length}`);
+      console.log(`  - FormData entries: ?{entries.length}`);
       entries.forEach(([key, value]) => {
-        console.log(`    - ${key}: ${value instanceof File ? value.name : value}`);
+        console.log(`    - ?{key}: ?{value instanceof File ? value.name : value}`);
       });
     } catch (error) {
-      console.log(`❌ FormData creation failed for file ${index + 1}: ${error.message}`);
+      console.log(`❌ FormData creation failed for file ?{index + 1}: ?{error.message}`);
     }
   });
 }
@@ -111,22 +111,22 @@ async function testFileUploadService() {
       // Test validation function
       const validFile = testFiles[0]; // PDF file
       const validation = fileUploadService.validateFile(validFile);
-      console.log(`✅ File validation test: ${validation.isValid ? 'Passed' : 'Failed'}`);
+      console.log(`✅ File validation test: ?{validation.isValid ? 'Passed' : 'Failed'}`);
       
       if (!validation.isValid) {
-        console.log(`  - Validation errors: ${validation.errors.join(', ')}`);
+        console.log(`  - Validation errors: ?{validation.errors.join(', ')}`);
       }
       
       // Test file size formatting
       const formattedSize = fileUploadService.formatFileSize(validFile.size);
-      console.log(`✅ File size formatting: ${validFile.size} bytes = ${formattedSize}`);
+      console.log(`✅ File size formatting: ?{validFile.size} bytes = ?{formattedSize}`);
       
       // Test file icon
       const icon = fileUploadService.getFileIcon(validFile.type);
-      console.log(`✅ File icon: ${icon}`);
+      console.log(`✅ File icon: ?{icon}`);
       
     } catch (error) {
-      console.log(`❌ File upload service test failed: ${error.message}`);
+      console.log(`❌ File upload service test failed: ?{error.message}`);
     }
   } else {
     console.log('❌ Cannot test file upload service in non-browser environment');
@@ -150,10 +150,10 @@ async function testUploadEndpoint() {
     if (response.status === 400 || response.status === 401 || response.status === 405) {
       console.log('✅ Upload endpoint is available (returned expected error)');
     } else {
-      console.log(`⚠️ Upload endpoint returned unexpected status: ${response.status}`);
+      console.log(`⚠️ Upload endpoint returned unexpected status: ?{response.status}`);
     }
   } catch (error) {
-    console.log(`❌ Upload endpoint test failed: ${error.message}`);
+    console.log(`❌ Upload endpoint test failed: ?{error.message}`);
   }
 }
 

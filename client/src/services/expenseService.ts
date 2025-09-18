@@ -16,6 +16,7 @@ export interface Expense {
   paymentMethod: string;
   reference: string;
   notes?: string;
+  customFields?: { [key: string]: any };
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +35,7 @@ export interface CreateExpenseData {
   customer?: string;
   project?: string;
   hasReceipt?: boolean;
+  customFields?: { [key: string]: any };
 }
 
 export interface ExpenseStats {

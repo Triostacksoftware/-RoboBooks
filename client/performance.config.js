@@ -84,7 +84,7 @@ console.log('📋 Copy these environment variables to your .env.local file:');
 console.log('');
 Object.entries(module.exports).forEach(([key, value]) => {
   if (typeof value === 'string' && !key.includes('instructions')) {
-    console.log(`${key}=${value}`);
+    console.log(`?{key}=?{value}`);
   }
 });
 console.log('');

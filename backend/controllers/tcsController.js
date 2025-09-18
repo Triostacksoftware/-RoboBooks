@@ -131,7 +131,7 @@ export const createTCS = async (req, res) => {
       section: section ? section.trim() : undefined,
       status: status || "Active",
       isHigherRate: isHigherRate || false,
-      createdBy: req.user?.id,
+      createdBy: req.user.id,
     };
 
     if (applicableFrom) {
@@ -296,3 +296,5 @@ export const getNatureOfCollectionOptions = async (req, res) => {
     });
   }
 };
+
+

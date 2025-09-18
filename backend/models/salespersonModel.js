@@ -54,3 +54,5 @@ schema.index({ createdAt: -1 });
 const Salesperson = mongoose.model("Salesperson", schema);
 
 export default Salesperson;
+
+

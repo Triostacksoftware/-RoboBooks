@@ -197,3 +197,5 @@ export async function getUserActivitySummary(userId, startDate, endDate) {
     throw error;
   }
 }
+
+
