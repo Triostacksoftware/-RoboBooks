@@ -23,7 +23,7 @@ interface ReconciliationData {
 }
 
 export default function BankReconciliation() {
-  const { accounts, transactions, getUnreconciledTransactions, reconcileTransaction, autoMatchReconciliation } = useBanking();
+  const { accounts, transactions, getUnreconciledTransactions, reconcileTransaction, autoMatchReconciliation, createTransaction, refreshTransactions } = useBanking();
   const { addToast } = useToast();
   
   const [selectedAccount, setSelectedAccount] = useState<string>("");
@@ -31,6 +31,15 @@ export default function BankReconciliation() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showManualEntryModal, setShowManualEntryModal] = useState(false);
+  const [manualEntryForm, setManualEntryForm] = useState({
+    description: "",
+    amount: "",
+    type: "debit",
+    date: new Date().toISOString().split('T')[0],
+    payee: "",
+    referenceNumber: ""
+  });
 
   // Calculate reconciliation data for selected account
   useEffect(() => {
@@ -111,6 +120,73 @@ export default function BankReconciliation() {
     }
   };
 
+  const handleManualEntrySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedAccount) {
+      addToast({
+        title: "Error",
+        message: "Please select an account first",
+        type: "error",
+        duration: 3000,
+      });
+      return;
+    }
+
+    if (!manualEntryForm.description || !manualEntryForm.amount) {
+      addToast({
+        title: "Error",
+        message: "Please fill in description and amount",
+        type: "error",
+        duration: 3000,
+      });
+      return;
+    }
+
+    try {
+      const transactionData = {
+        accountId: selectedAccount,
+        description: manualEntryForm.description,
+        amount: parseFloat(manualEntryForm.amount),
+        type: manualEntryForm.type,
+        date: new Date(manualEntryForm.date),
+        payee: manualEntryForm.payee || undefined,
+        referenceNumber: manualEntryForm.referenceNumber || undefined,
+        importSource: "manual"
+      };
+
+      await createTransaction(transactionData);
+      
+      // Refresh transactions to show the newly created one
+      await refreshTransactions();
+      
+      addToast({
+        title: "Success",
+        message: "Manual entry created successfully",
+        type: "success",
+        duration: 3000,
+      });
+
+      // Reset form and close modal
+      setManualEntryForm({
+        description: "",
+        amount: "",
+        type: "debit",
+        date: new Date().toISOString().split('T')[0],
+        payee: "",
+        referenceNumber: ""
+      });
+      setShowManualEntryModal(false);
+    } catch (error: any) {
+      addToast({
+        title: "Error",
+        message: error.message || "Failed to create manual entry",
+        type: "error",
+        duration: 5000,
+      });
+    }
+  };
+
   const filteredTransactions = reconciliationData?.transactions.filter(transaction => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.payee?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -141,7 +217,10 @@ export default function BankReconciliation() {
             )}
             {loading ? "Processing..." : "Start Reconciliation"}
           </button>
-          <button className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-2">
+          <button 
+            onClick={() => setShowManualEntryModal(true)}
+            className="bg-white text-gray-700 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
             <PlusIcon className="h-5 w-5" />
             Add Manual Entry
           </button>
@@ -327,6 +406,124 @@ export default function BankReconciliation() {
                     )}
                   </div>
                 </div>
+      )}
+
+      {/* Manual Entry Modal */}
+      {showManualEntryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add Manual Entry</h3>
+              <button
+                onClick={() => setShowManualEntryModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleManualEntrySubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description *
+                </label>
+                <input
+                  type="text"
+                  value={manualEntryForm.description}
+                  onChange={(e) => setManualEntryForm({...manualEntryForm, description: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter transaction description"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={manualEntryForm.amount}
+                  onChange={(e) => setManualEntryForm({...manualEntryForm, amount: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type
+                </label>
+                <select
+                  value={manualEntryForm.type}
+                  onChange={(e) => setManualEntryForm({...manualEntryForm, type: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="debit">Debit (Money Out)</option>
+                  <option value="credit">Credit (Money In)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={manualEntryForm.date}
+                  onChange={(e) => setManualEntryForm({...manualEntryForm, date: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payee
+                </label>
+                <input
+                  type="text"
+                  value={manualEntryForm.payee}
+                  onChange={(e) => setManualEntryForm({...manualEntryForm, payee: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter payee name (optional)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reference Number
+                </label>
+                <input
+                  type="text"
+                  value={manualEntryForm.referenceNumber}
+                  onChange={(e) => setManualEntryForm({...manualEntryForm, referenceNumber: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter reference number (optional)"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowManualEntryModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Entry
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

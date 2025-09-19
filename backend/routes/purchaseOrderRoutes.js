@@ -7,7 +7,8 @@ import {
   getPurchaseOrders, 
   getPurchaseOrderById, 
   updatePurchaseOrder, 
-  deletePurchaseOrder 
+  deletePurchaseOrder,
+  getPurchaseOrderStats
 } from "../controllers/purchaseOrderController.js";
 
 const router = express.Router();
@@ -52,6 +53,7 @@ const updatePurchaseOrderSchema = purchaseOrderSchema.fork(
 // Routes
 router.post("/", validate(purchaseOrderSchema), createPurchaseOrder);
 router.get("/", getPurchaseOrders);
+router.get("/stats", getPurchaseOrderStats);
 router.get("/:id", getPurchaseOrderById);
 router.put("/:id", validate(updatePurchaseOrderSchema), updatePurchaseOrder);
 router.delete("/:id", deletePurchaseOrder);

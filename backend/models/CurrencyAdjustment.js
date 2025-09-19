@@ -4,7 +4,7 @@ const currencyAdjustmentSchema = new mongoose.Schema({
   accountId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
-    required: true
+    required: false
   },
   accountName: {
     type: String,

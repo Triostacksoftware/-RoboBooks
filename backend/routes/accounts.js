@@ -4,13 +4,13 @@ import {
   createAccount,
   updateAccount
 } from "../controllers/accountController.js";
-import { authGuard } from "../utils/jwt.js";
+import auth from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.get("/", authGuard, getAccounts);
-router.post("/", authGuard, createAccount);
-router.put("/:id", authGuard, updateAccount);
+router.get("/", auth, getAccounts);
+router.post("/", auth, createAccount);
+router.put("/:id", auth, updateAccount);
 
 export default router;
 

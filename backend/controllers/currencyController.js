@@ -1,6 +1,16 @@
 import CurrencyRate from '../models/CurrencyRate.js';
 import CurrencyAdjustment from '../models/CurrencyAdjustment.js';
 import Account from '../models/Account.js';
+import { 
+  fetchRealTimeRate, 
+  fetchMultipleRates, 
+  getSupportedCurrencies,
+  fetchHistoricalRate 
+} from '../services/exchangeRateService.js';
+import { 
+  initializeDefaultRatesForUser,
+  triggerManualUpdate 
+} from '../services/scheduledRatesService.js';
 
 // Get all exchange rates
 export const getExchangeRates = async (req, res) => {
@@ -200,13 +210,50 @@ export const createCurrencyAdjustment = async (req, res) => {
       adjustmentType
     } = req.body;
 
-    // Validate account exists and belongs to user
-    const account = await Account.findOne({ _id: accountId, userId });
-    if (!account) {
-      return res.status(404).json({
-        success: false,
-        message: 'Account not found'
+    console.log('🔍 Creating currency adjustment:', {
+      userId,
+      accountId,
+      fromCurrency,
+      toCurrency,
+      originalAmount,
+      exchangeRate
+    });
+
+    // Handle optional account
+    let account = null;
+    if (accountId) {
+      // First check if account exists at all
+      const accountExists = await Account.findById(accountId);
+      if (!accountExists) {
+        console.log('❌ Account not found with ID:', accountId);
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found'
+        });
+      }
+
+      console.log('🔍 Found account:', {
+        id: accountExists._id,
+        name: accountExists.name,
+        userId: accountExists.userId,
+        requestedUserId: userId
       });
+
+      // Validate account belongs to user
+      if (accountExists.userId.toString() !== userId.toString()) {
+        console.log('❌ Account does not belong to user:', {
+          accountUserId: accountExists.userId.toString(),
+          requestUserId: userId.toString()
+        });
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found'
+        });
+      }
+
+      account = accountExists;
+    } else {
+      console.log('ℹ️ No account selected - creating adjustment without account');
     }
 
     // Calculate converted amount and adjustment
@@ -214,8 +261,8 @@ export const createCurrencyAdjustment = async (req, res) => {
     const amount = Math.abs(convertedAmount - originalAmount);
 
     const adjustment = new CurrencyAdjustment({
-      accountId,
-      accountName: account.name,
+      accountId: accountId || null,
+      accountName: account ? account.name : 'No Account Selected',
       fromCurrency: fromCurrency.toUpperCase(),
       toCurrency: toCurrency.toUpperCase(),
       originalAmount,
@@ -240,6 +287,117 @@ export const createCurrencyAdjustment = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create currency adjustment',
+      error: error.message
+    });
+  }
+};
+
+// Update currency adjustment
+export const updateCurrencyAdjustment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const {
+      accountId,
+      fromCurrency,
+      toCurrency,
+      originalAmount,
+      exchangeRate,
+      adjustmentDate,
+      description,
+      adjustmentType
+    } = req.body;
+
+    console.log('🔍 Updating currency adjustment:', {
+      id,
+      userId,
+      accountId,
+      fromCurrency,
+      toCurrency,
+      originalAmount,
+      exchangeRate
+    });
+
+    // Find the adjustment and verify ownership
+    const existingAdjustment = await CurrencyAdjustment.findOne({ _id: id, userId });
+    if (!existingAdjustment) {
+      console.log('❌ Currency adjustment not found or not owned by user');
+      return res.status(404).json({
+        success: false,
+        message: 'Currency adjustment not found'
+      });
+    }
+
+    // Only allow editing if status is pending
+    if (existingAdjustment.status !== 'pending') {
+      console.log('❌ Cannot edit approved/rejected adjustment');
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot edit approved or rejected adjustments'
+      });
+    }
+
+    // Handle optional account
+    let account = null;
+    if (accountId) {
+      const accountExists = await Account.findById(accountId);
+      if (!accountExists) {
+        console.log('❌ Account not found with ID:', accountId);
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found'
+        });
+      }
+
+      // Validate account belongs to user
+      if (accountExists.userId.toString() !== userId.toString()) {
+        console.log('❌ Account does not belong to user');
+        return res.status(404).json({
+          success: false,
+          message: 'Account not found'
+        });
+      }
+
+      account = accountExists;
+    } else {
+      console.log('ℹ️ No account selected - updating adjustment without account');
+    }
+
+    // Calculate converted amount and adjustment
+    const convertedAmount = originalAmount * exchangeRate;
+    const amount = Math.abs(convertedAmount - originalAmount);
+
+    // Update the adjustment
+    const updatedAdjustment = await CurrencyAdjustment.findByIdAndUpdate(
+      id,
+      {
+        accountId: accountId || null,
+        accountName: account ? account.name : 'No Account Selected',
+        fromCurrency: fromCurrency.toUpperCase(),
+        toCurrency: toCurrency.toUpperCase(),
+        originalAmount,
+        convertedAmount,
+        exchangeRate,
+        adjustmentDate: adjustmentDate || new Date(),
+        description,
+        adjustmentType,
+        amount
+      },
+      { new: true, runValidators: true }
+    );
+
+    console.log('✅ Currency adjustment updated successfully');
+
+    res.json({
+      success: true,
+      data: updatedAdjustment,
+      message: 'Currency adjustment updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating currency adjustment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update currency adjustment',
       error: error.message
     });
   }
@@ -484,6 +642,334 @@ export const importCurrencyData = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to import currency data',
+      error: error.message
+    });
+  }
+};
+
+// Fetch real-time exchange rate from external API
+export const fetchRealTimeExchangeRate = async (req, res) => {
+  try {
+    const { fromCurrency, toCurrency } = req.params;
+    const userId = req.user.id;
+
+    if (!fromCurrency || !toCurrency) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both fromCurrency and toCurrency are required'
+      });
+    }
+
+    console.log(`🔄 Fetching real-time rate for user ${userId}: ${fromCurrency} → ${toCurrency}`);
+
+    const result = await fetchRealTimeRate(fromCurrency, toCurrency);
+    
+    if (result.success) {
+      // Save the real-time rate to database
+      const rateData = {
+        ...result.data,
+        userId: userId
+      };
+
+      // Check if rate already exists for today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const existingRate = await CurrencyRate.findOne({
+        fromCurrency: rateData.fromCurrency,
+        toCurrency: rateData.toCurrency,
+        userId: userId,
+        date: { $gte: today, $lt: tomorrow }
+      });
+
+      let savedRate;
+      if (existingRate) {
+        // Update existing rate
+        savedRate = await CurrencyRate.findByIdAndUpdate(
+          existingRate._id,
+          { 
+            rate: rateData.rate,
+            source: rateData.source,
+            notes: rateData.notes,
+            updatedAt: new Date()
+          },
+          { new: true }
+        );
+        console.log(`✅ Updated existing real-time rate: ${savedRate._id}`);
+      } else {
+        // Create new rate
+        savedRate = new CurrencyRate(rateData);
+        await savedRate.save();
+        console.log(`✅ Created new real-time rate: ${savedRate._id}`);
+      }
+
+      res.json({
+        success: true,
+        data: savedRate,
+        message: 'Real-time exchange rate fetched and saved successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Failed to fetch real-time exchange rate',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching real-time exchange rate:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch real-time exchange rate',
+      error: error.message
+    });
+  }
+};
+
+// Fetch multiple real-time exchange rates
+export const fetchMultipleRealTimeRates = async (req, res) => {
+  try {
+    const { currencyPairs } = req.body;
+    const userId = req.user.id;
+
+    if (!currencyPairs || !Array.isArray(currencyPairs) || currencyPairs.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'currencyPairs array is required'
+      });
+    }
+
+    console.log(`🔄 Fetching ${currencyPairs.length} real-time rates for user ${userId}`);
+
+    const result = await fetchMultipleRates(currencyPairs);
+    
+    if (result.success) {
+      const savedRates = [];
+      
+      for (const rateData of result.data) {
+        // Save each rate to database
+        const rateToSave = {
+          ...rateData,
+          userId: userId
+        };
+
+        // Check if rate already exists for today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const existingRate = await CurrencyRate.findOne({
+          fromCurrency: rateData.fromCurrency,
+          toCurrency: rateData.toCurrency,
+          userId: userId,
+          date: { $gte: today, $lt: tomorrow }
+        });
+
+        let savedRate;
+        if (existingRate) {
+          // Update existing rate
+          savedRate = await CurrencyRate.findByIdAndUpdate(
+            existingRate._id,
+            { 
+              rate: rateData.rate,
+              source: rateData.source,
+              notes: rateData.notes,
+              updatedAt: new Date()
+            },
+            { new: true }
+          );
+        } else {
+          // Create new rate
+          savedRate = new CurrencyRate(rateToSave);
+          await savedRate.save();
+        }
+
+        savedRates.push(savedRate);
+      }
+
+      console.log(`✅ Successfully saved ${savedRates.length} real-time rates`);
+
+      res.json({
+        success: true,
+        data: savedRates,
+        message: `${savedRates.length} real-time exchange rates fetched and saved successfully`,
+        errors: result.errors
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Failed to fetch real-time exchange rates',
+        error: result.error,
+        errors: result.errors
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching multiple real-time exchange rates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch real-time exchange rates',
+      error: error.message
+    });
+  }
+};
+
+// Get supported currencies from external API
+export const getSupportedCurrenciesFromAPI = async (req, res) => {
+  try {
+    console.log('🔄 Fetching supported currencies from external API');
+
+    const result = await getSupportedCurrencies();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: result.data,
+        message: 'Supported currencies fetched successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Failed to fetch supported currencies',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching supported currencies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch supported currencies',
+      error: error.message
+    });
+  }
+};
+
+// Fetch historical exchange rate
+export const fetchHistoricalExchangeRate = async (req, res) => {
+  try {
+    const { fromCurrency, toCurrency, date } = req.params;
+    const userId = req.user.id;
+
+    if (!fromCurrency || !toCurrency || !date) {
+      return res.status(400).json({
+        success: false,
+        message: 'fromCurrency, toCurrency, and date are required'
+      });
+    }
+
+    const historicalDate = new Date(date);
+    if (isNaN(historicalDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format. Use YYYY-MM-DD'
+      });
+    }
+
+    console.log(`🔄 Fetching historical rate for user ${userId}: ${fromCurrency} → ${toCurrency} on ${date}`);
+
+    const result = await fetchHistoricalRate(fromCurrency, toCurrency, historicalDate);
+    
+    if (result.success) {
+      // Save the historical rate to database
+      const rateData = {
+        ...result.data,
+        userId: userId
+      };
+
+      // Check if historical rate already exists
+      const existingRate = await CurrencyRate.findOne({
+        fromCurrency: rateData.fromCurrency,
+        toCurrency: rateData.toCurrency,
+        userId: userId,
+        date: {
+          $gte: new Date(historicalDate.getFullYear(), historicalDate.getMonth(), historicalDate.getDate()),
+          $lt: new Date(historicalDate.getFullYear(), historicalDate.getMonth(), historicalDate.getDate() + 1)
+        }
+      });
+
+      let savedRate;
+      if (existingRate) {
+        // Update existing rate
+        savedRate = await CurrencyRate.findByIdAndUpdate(
+          existingRate._id,
+          { 
+            rate: rateData.rate,
+            source: rateData.source,
+            notes: rateData.notes,
+            updatedAt: new Date()
+          },
+          { new: true }
+        );
+        console.log(`✅ Updated existing historical rate: ${savedRate._id}`);
+      } else {
+        // Create new rate
+        savedRate = new CurrencyRate(rateData);
+        await savedRate.save();
+        console.log(`✅ Created new historical rate: ${savedRate._id}`);
+      }
+
+      res.json({
+        success: true,
+        data: savedRate,
+        message: 'Historical exchange rate fetched and saved successfully'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Failed to fetch historical exchange rate',
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching historical exchange rate:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch historical exchange rate',
+      error: error.message
+    });
+  }
+};
+
+// Initialize default exchange rates for current user
+export const initializeDefaultRates = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    console.log(`🔄 Initializing default rates for user: ${userId}`);
+    
+    await initializeDefaultRatesForUser(userId);
+    
+    res.json({
+      success: true,
+      message: 'Default exchange rates initialized successfully'
+    });
+  } catch (error) {
+    console.error('Error initializing default rates:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initialize default rates',
+      error: error.message
+    });
+  }
+};
+
+// Manually trigger exchange rate update for all users
+export const triggerExchangeRateUpdate = async (req, res) => {
+  try {
+    console.log('🔄 Manual exchange rate update triggered by user');
+    
+    await triggerManualUpdate();
+    
+    res.json({
+      success: true,
+      message: 'Exchange rates update triggered successfully'
+    });
+  } catch (error) {
+    console.error('Error triggering exchange rate update:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to trigger exchange rate update',
       error: error.message
     });
   }

@@ -6,6 +6,7 @@ const router = express.Router();
 // CRUD operations - No authentication required
 router.get("/", ctrl.getAll);
 router.get("/next-number", ctrl.getNextInvoiceNumber);
+router.get("/stats", ctrl.getInvoiceStats);
 router.get("/:id", ctrl.getById);
 router.post("/", ctrl.create);
 router.put("/:id", ctrl.update);

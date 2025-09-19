@@ -55,6 +55,7 @@ const CurrencyAdjustmentsPage = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: '',
     currency: '',
@@ -62,6 +63,8 @@ const CurrencyAdjustmentsPage = () => {
     dateTo: ''
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showImportDropdown, setShowImportDropdown] = useState(false);
   const [stats, setStats] = useState({
     totalRates: 0,
     activeRates: 0,
@@ -119,13 +122,52 @@ const CurrencyAdjustmentsPage = () => {
       loadExchangeRates();
       loadCurrencyAdjustments();
       loadStats();
+      // Initialize default rates if none exist
+      initializeDefaultRatesIfNeeded();
     }
   }, [user, authLoading]);
+
+  const initializeDefaultRatesIfNeeded = async () => {
+    try {
+      // Check if user has any exchange rates
+      if (exchangeRates.length === 0) {
+        console.log('🔄 No exchange rates found, initializing defaults...');
+        const response = await api('/api/currency/rates/initialize-defaults', {
+          method: 'POST'
+        });
+        
+        if (response.success) {
+          console.log('✅ Default exchange rates initialized');
+          // Reload data to show the new rates
+          await loadExchangeRates();
+          await loadStats();
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing default rates:', error);
+    }
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.dropdown-container')) {
+        setShowExportDropdown(false);
+        setShowImportDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      router.push('/signin');
     }
   }, [user, authLoading, router]);
 
@@ -160,12 +202,88 @@ const CurrencyAdjustmentsPage = () => {
 
   const handleRefreshRates = async () => {
     setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
     try {
+      // Fetch real-time rates for common currency pairs
+      const commonPairs = [
+        { from: 'USD', to: 'INR' },
+        { from: 'EUR', to: 'INR' },
+        { from: 'GBP', to: 'INR' },
+        { from: 'USD', to: 'EUR' },
+        { from: 'USD', to: 'GBP' },
+        { from: 'EUR', to: 'USD' },
+        { from: 'GBP', to: 'USD' }
+      ];
+
+      console.log('🔄 Fetching real-time exchange rates...');
+      const response = await api('/api/currency/rates/realtime/bulk', {
+        method: 'POST',
+        json: { currencyPairs: commonPairs }
+      });
+
+      if (response.success) {
+        console.log('✅ Real-time rates fetched successfully');
+        await Promise.all([
+          loadExchangeRates(),
+          loadCurrencyAdjustments(),
+          loadStats()
+        ]);
+        setSuccess(`Successfully updated ${response.data.length} exchange rates with real-time data!`);
+      } else {
+        console.log('❌ Failed to fetch real-time rates:', response.message);
+        setError(response.message || 'Failed to fetch real-time exchange rates');
+        // Still load existing data even if real-time fetch fails
+        await Promise.all([
+          loadExchangeRates(),
+          loadCurrencyAdjustments(),
+          loadStats()
+        ]);
+      }
+    } catch (error) {
+      console.error('Error refreshing rates:', error);
+      setError('Failed to refresh exchange rates');
+      // Still load existing data even if real-time fetch fails
       await Promise.all([
         loadExchangeRates(),
         loadCurrencyAdjustments(),
         loadStats()
       ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManualUpdate = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      console.log('🔄 Triggering manual exchange rate update...');
+      const response = await api('/api/currency/rates/trigger-update', {
+        method: 'POST'
+      });
+
+      if (response.success) {
+        console.log('✅ Manual update triggered successfully');
+        // Wait a moment for the update to complete, then refresh data
+        setTimeout(async () => {
+          await Promise.all([
+            loadExchangeRates(),
+            loadCurrencyAdjustments(),
+            loadStats()
+          ]);
+          setSuccess('Exchange rates update completed! All rates have been refreshed.');
+        }, 2000);
+      } else {
+        console.log('❌ Failed to trigger manual update:', response.message);
+        setError(response.message || 'Failed to trigger exchange rate update');
+      }
+    } catch (error) {
+      console.error('Error triggering manual update:', error);
+      setError('Failed to trigger exchange rate update');
     } finally {
       setLoading(false);
     }
@@ -321,6 +439,18 @@ const CurrencyAdjustmentsPage = () => {
                 Refresh Rates
               </button>
               <button 
+                onClick={handleManualUpdate}
+                disabled={loading}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                )}
+                Update All Rates
+              </button>
+              <button 
                 onClick={() => router.push('/dashboard/accountant/currency-adjustments/new')}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
@@ -342,6 +472,20 @@ const CurrencyAdjustmentsPage = () => {
                 <h3 className="text-sm font-medium text-red-800">Error</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>{error}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Display */}
+        {success && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">Success</h3>
+                <div className="mt-2 text-sm text-green-700">
+                  <p>{success}</p>
                 </div>
               </div>
             </div>
@@ -398,49 +542,77 @@ const CurrencyAdjustmentsPage = () => {
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <button className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <div className="relative dropdown-container">
+              <button 
+                onClick={() => {
+                  setShowExportDropdown(!showExportDropdown);
+                  setShowImportDropdown(false);
+                }}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                <div className="py-1">
-                  <button
-                    onClick={() => handleExport('rates')}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Export Exchange Rates
-                  </button>
-                  <button
-                    onClick={() => handleExport('adjustments')}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Export Adjustments
-                  </button>
+              {showExportDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        handleExport('rates');
+                        setShowExportDropdown(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Export Exchange Rates
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleExport('adjustments');
+                        setShowExportDropdown(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Export Adjustments
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-            <div className="relative">
-              <button className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <div className="relative dropdown-container">
+              <button 
+                onClick={() => {
+                  setShowImportDropdown(!showImportDropdown);
+                  setShowExportDropdown(false);
+                }}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
                 <Upload className="h-4 w-4 mr-2" />
                 Import
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                <div className="py-1">
-                  <button
-                    onClick={() => handleImport('rates')}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Import Exchange Rates
-                  </button>
-                  <button
-                    onClick={() => handleImport('adjustments')}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Import Adjustments
-                  </button>
+              {showImportDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        handleImport('rates');
+                        setShowImportDropdown(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Import Exchange Rates
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleImport('adjustments');
+                        setShowImportDropdown(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Import Adjustments
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -698,9 +870,22 @@ const CurrencyAdjustmentsPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                        <button 
+                          onClick={() => router.push(`/dashboard/accountant/currency-adjustments/view/${adjustment._id}`)}
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                        >
+                          View
+                        </button>
                         {adjustment.status === 'pending' && (
                           <>
+                            {/* Only show edit button for the creator */}
+                            <button 
+                              onClick={() => router.push(`/dashboard/accountant/currency-adjustments/edit/${adjustment._id}`)}
+                              className="text-indigo-600 hover:text-indigo-900 mr-3"
+                            >
+                              Edit
+                            </button>
+                            {/* Only show approve/reject for admins - for now, show for all users */}
                             <button 
                               onClick={() => handleApproveAdjustment(adjustment._id)}
                               className="text-green-600 hover:text-green-900 mr-3"

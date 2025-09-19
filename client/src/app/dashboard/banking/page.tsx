@@ -20,7 +20,7 @@ import TransactionManager from "./components/TransactionManager";
 import BankReconciliation from "./components/BankReconciliation";
 import BankAccountManager from "./components/BankAccountManager";
 import BankStatementImport from "./components/BankStatementImport";
-import { BankingProvider } from "@/contexts/BankingContext";
+import { BankingProvider, useBanking } from "@/contexts/BankingContext";
 
 // Define the BankAccount interface
 interface BankAccount {
@@ -75,6 +75,7 @@ interface ReconciliationItem {
 // Internal component that uses the banking context
 function BankingPageContent() {
   const { addToast } = useToast();
+  const { refreshTransactions } = useBanking();
   const [activeTab, setActiveTab] = useState("overview");
   const [showConnectModal, setShowConnectModal] = useState(false);
   const [showImportWizard, setShowImportWizard] = useState(false);
@@ -271,10 +272,18 @@ function BankingPageContent() {
           setImportData={setImportData}
           onNext={handleImportNext}
           onBack={handleImportBack}
-          onComplete={() => {
+          onComplete={async () => {
             setShowImportWizard(false);
             setImportStep(1);
             setActiveTab("transactions");
+            // Refresh transactions to show the newly imported ones
+            await refreshTransactions();
+            addToast({
+              title: "Success",
+              message: "Bank statement imported successfully! Transactions are now available.",
+              type: "success",
+              duration: 5000,
+            });
           }}
         />
       </div>

@@ -276,6 +276,55 @@ export const toggleFavorite = async (req, res) => {
   }
 };
 
+// Get reports statistics
+export const getReportsStats = async (req, res) => {
+  try {
+    const userId = req.user?.uid || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Get total reports count with error handling
+    let totalReports = 0;
+    try {
+      totalReports = await Report.countDocuments({ createdBy: userId });
+    } catch (dbError) {
+      console.warn("Error counting reports:", dbError.message);
+    }
+
+    // Calculate total revenue from invoices with error handling
+    let totalRevenue = 0;
+    try {
+      const revenueResult = await Invoice.aggregate([
+        { $match: { createdBy: userId, status: "paid" } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ]);
+      totalRevenue = revenueResult[0]?.total || 0;
+    } catch (dbError) {
+      console.warn("Error calculating revenue:", dbError.message);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        totalReports,
+        totalRevenue
+      },
+    });
+  } catch (error) {
+    console.error("Get reports stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching reports statistics",
+      error: error.message,
+    });
+  }
+};
+
 // Helper functions for report generation
 async function generateBusinessOverviewReport(filters, userId) {
   const dateFilter = {};

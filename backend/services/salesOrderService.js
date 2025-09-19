@@ -303,4 +303,37 @@ export async function getOrderStats() {
   }
 }
 
+export async function getSalesOrderStats() {
+  try {
+    const stats = await SalesOrder.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Convert array to object with default values
+    const statsObj = {
+      pending: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0
+    };
+
+    stats.forEach(stat => {
+      if (stat._id === "draft" || stat._id === "pending") statsObj.pending = stat.count;
+      if (stat._id === "sent" || stat._id === "confirmed") statsObj.confirmed = stat.count;
+      if (stat._id === "delivered" || stat._id === "completed") statsObj.completed = stat.count;
+      if (stat._id === "cancelled") statsObj.cancelled = stat.count;
+    });
+
+    return statsObj;
+  } catch (error) {
+    console.error("Error fetching sales order stats:", error);
+    throw error;
+  }
+}
+
 

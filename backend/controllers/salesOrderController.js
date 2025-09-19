@@ -158,4 +158,26 @@ export async function sendSalesOrderEmail(req, res) {
   }
 }
 
+export async function getSalesOrderStats(req, res) {
+  try {
+    const stats = await SalesOrderService.getSalesOrderStats();
+    res.json({
+      success: true,
+      data: {
+        pending: stats.pending || 0,
+        confirmed: stats.confirmed || 0,
+        completed: stats.completed || 0,
+        cancelled: stats.cancelled || 0
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching sales order stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching sales order statistics",
+      error: error.message,
+    });
+  }
+}
+
 

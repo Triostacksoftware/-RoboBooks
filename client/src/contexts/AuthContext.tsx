@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Try to get user info from API
-      const response = await api("/api/auth/status");
+      const response = await api("/api/auth/me");
       if (response.success && response.user) {
         setUser(response.user);
         // Update localStorage with fresh user data

@@ -8,6 +8,7 @@ import {
   deleteReport,
   generateReport,
   toggleFavorite,
+  getReportsStats,
 } from "../controllers/reportController.js";
 
 const router = express.Router();
@@ -17,6 +18,9 @@ router.use(authGuard);
 
 // Get all reports
 router.get("/", getReports);
+
+// Get reports statistics (must be before /:id route)
+router.get("/stats", getReportsStats);
 
 // Get a single report by ID
 router.get("/:id", getReportById);

@@ -9,6 +9,7 @@ import passport from "passport";
 
 import connectDB from "./config/db.js";
 import "./config/passport.js";
+import { startScheduledRateUpdates } from './services/scheduledRatesService.js';
 
 // Route imports
 import authRoutes from "./routes/auth.js";
@@ -176,6 +177,9 @@ server.on("error", (error) => {
 
 server.on("listening", () => {
   console.log("✅ Server is ready to accept connections");
+  
+  // Start scheduled exchange rate updates
+  startScheduledRateUpdates();
 });
 
 

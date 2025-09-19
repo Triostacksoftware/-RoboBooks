@@ -26,7 +26,7 @@ const currencyRateSchema = new mongoose.Schema({
   source: {
     type: String,
     required: true,
-    enum: ['RBI', 'MANUAL', 'API', 'BANK']
+    enum: ['RBI', 'MANUAL', 'API', 'BANK', 'Manual Entry', 'REAL_TIME_API', 'HISTORICAL_API', 'SCHEDULED_UPDATE', 'INITIAL_SETUP']
   },
   isActive: {
     type: Boolean,

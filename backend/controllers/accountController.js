@@ -5,14 +5,17 @@ import { ACCOUNT_HEADS, ACCOUNT_GROUPS } from "../models/Account.js";
 
 export async function getAccounts(req, res) {
   try {
+    const userId = req.user.id;
     const { accountHead, parent, isActive } = req.query;
-    const filter = {};
+    const filter = { userId }; // Always filter by user ID for security
 
     if (accountHead) filter.accountHead = accountHead;
     if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
     if (isActive !== undefined) filter.isActive = isActive === "true";
 
+    console.log('🔍 getAccounts - Filter:', filter);
     const accounts = await Account.find(filter).sort({ code: 1, name: 1 });
+    console.log('🔍 getAccounts - Found accounts:', accounts.length);
     res.json({ success: true, data: accounts });
   } catch (error) {
     console.error("Error fetching accounts:", error);
@@ -24,8 +27,9 @@ export async function getAccounts(req, res) {
 
 export const listAccounts = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { accountHead, parent, isActive } = req.query;
-    const filter = {};
+    const filter = { userId }; // Always filter by user ID for security
 
     if (accountHead) filter.accountHead = accountHead;
     if (parent !== undefined) filter.parent = parent === "null" ? null : parent;
@@ -43,6 +47,7 @@ export const listAccounts = async (req, res) => {
 
 export const getAccountById = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { id } = req.params;
     if (!mongoose.isValidObjectId(id)) {
       return res
@@ -50,7 +55,7 @@ export const getAccountById = async (req, res) => {
         .json({ success: false, message: "Invalid account id" });
     }
 
-    const account = await Account.findById(id);
+    const account = await Account.findOne({ _id: id, userId });
     if (!account) {
       return res
         .status(404)
@@ -115,6 +120,7 @@ export const getAccountById = async (req, res) => {
  * Body: { code$, name, accountHead, accountGroup$, parent$, openingBalance$, currency$ }
  */
 export const createAccount = async (req, res) => {
+  const userId = req.user.id;
   const {
     name,
     accountHead,
@@ -141,6 +147,7 @@ export const createAccount = async (req, res) => {
 
   try {
     const account = await Account.create({
+      userId, // Include user ID for multi-tenant support
       name,
       accountHead,
       accountGroup,

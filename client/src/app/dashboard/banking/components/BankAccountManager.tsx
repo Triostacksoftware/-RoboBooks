@@ -945,6 +945,8 @@ export default function BankAccountManager() {
       if (form.importFile && newAccount) {
         try {
           await handleImportTransactions(form.importFile, newAccount._id);
+          // Refresh transactions to show the newly imported ones
+          await banking.refreshTransactions();
           addToast({
             title: "Success",
             message: `Account created and transactions imported successfully!`,

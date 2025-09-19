@@ -156,4 +156,45 @@ export const deletePurchaseOrder = async (req, res) => {
   }
 };
 
+// Get purchase order statistics
+export const getPurchaseOrderStats = async (req, res) => {
+  try {
+    const stats = await PurchaseOrder.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Convert array to object with default values
+    const statsObj = {
+      pending: 0,
+      confirmed: 0,
+      completed: 0,
+      cancelled: 0
+    };
+
+    stats.forEach(stat => {
+      if (stat._id === "draft") statsObj.pending = stat.count;
+      if (stat._id === "sent") statsObj.confirmed = stat.count;
+      if (stat._id === "received") statsObj.completed = stat.count;
+      if (stat._id === "cancelled") statsObj.cancelled = stat.count;
+    });
+
+    res.json({
+      success: true,
+      data: statsObj,
+    });
+  } catch (error) {
+    console.error("Error fetching purchase order stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching purchase order statistics",
+      error: error.message,
+    });
+  }
+};
+
 

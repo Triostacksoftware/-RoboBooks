@@ -145,6 +145,13 @@ class BankingService {
     };
   }
 
+  async createTransaction(
+    transactionData: Partial<BankTransaction>
+  ): Promise<{ success: boolean; data: BankTransaction }> {
+    const response = await apiClient.post("/banking/transactions", transactionData);
+    return response.data as { success: boolean; data: BankTransaction };
+  }
+
   // Bank Statement Import
   async uploadStatement(
     file: File,

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   BanknotesIcon,
   CreditCardIcon,
@@ -24,6 +24,11 @@ interface BankingOverviewData {
 
 export default function BankingOverview() {
   const { overview, loading, errors, refreshOverview } = useBanking();
+  
+  // Refresh overview when component mounts
+  useEffect(() => {
+    refreshOverview();
+  }, [refreshOverview]);
 
   if (loading.overview) {
     return (

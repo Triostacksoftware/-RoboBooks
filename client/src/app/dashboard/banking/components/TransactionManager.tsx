@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -34,6 +34,11 @@ interface Transaction {
 export default function TransactionManager() {
   const { addToast } = useToast();
   const { transactions, accounts, users, loading, errors, refreshTransactions, reconcileTransaction, deleteTransaction } = useBanking();
+  
+  // Refresh transactions when component mounts
+  useEffect(() => {
+    refreshTransactions();
+  }, [refreshTransactions]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAccount, setSelectedAccount] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
