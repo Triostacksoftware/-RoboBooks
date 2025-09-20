@@ -11,13 +11,14 @@ import {
 import clsx from "clsx";
 import { createPortal } from "react-dom";
 import { organizationService } from "../../../../services/organizationService";
+import { isTextField } from "@/utils/isTextField";
 
 // --- Helper hooks & portal ---
 function useKey(key: string, callback: () => void, when = true) {
   useEffect(() => {
     if (!when) return;
     function handler(e: KeyboardEvent) {
-      if (e.key === key) callback();
+      if (e.key === key && !isTextField(e.target)) callback();
     }
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);

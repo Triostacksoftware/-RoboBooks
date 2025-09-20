@@ -404,6 +404,144 @@ export const restoreDocument = async (req, res) => {
   }
 };
 
+// Upload signature specifically
+export const uploadSignature = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No signature file uploaded'
+      });
+    }
+
+    // Validate that it's an image file
+    if (!file.mimetype.startsWith('image/')) {
+      // Clean up uploaded file
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Only image files are allowed for signatures'
+      });
+    }
+
+    // Calculate file checksum
+    const fileBuffer = fs.readFileSync(file.path);
+    const checksum = crypto.createHash('md5').update(fileBuffer).digest('hex');
+
+    // Create document record specifically for signature
+    const document = new Document({
+      userId,
+      filename: file.filename,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      path: file.path,
+      url: `/uploads/documents/${file.filename}`,
+      category: 'signature',
+      description: 'Digital signature file',
+      tags: ['signature', 'digital'],
+      relatedEntity: {
+        type: 'signature',
+        entityId: null
+      },
+      isPublic: false,
+      accessLevel: 'private',
+      checksum,
+      uploadedBy: userId,
+      metadata: {
+        uploadedAt: new Date(),
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip,
+        signatureType: 'digital'
+      }
+    });
+
+    await document.save();
+
+    res.json({
+      success: true,
+      message: 'Signature uploaded successfully',
+      data: {
+        id: document._id,
+        filename: document.filename,
+        originalName: document.originalName,
+        url: document.url,
+        size: document.size,
+        mimeType: document.mimeType
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading signature:', error);
+    
+    // Clean up uploaded file if document creation failed
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload signature',
+      error: error.message
+    });
+  }
+};
+
+// Test signature upload endpoint (for testing without authentication)
+export const testSignatureUpload = async (req, res) => {
+  try {
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No signature file uploaded'
+      });
+    }
+
+    // Validate that it's an image file
+    if (!file.mimetype.startsWith('image/')) {
+      // Clean up uploaded file
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Only image files are allowed for signatures'
+      });
+    }
+
+    // For test endpoint, just return success without saving to database
+    res.json({
+      success: true,
+      message: 'Test signature upload successful',
+      data: {
+        filename: file.filename,
+        originalName: file.originalname,
+        size: file.size,
+        mimeType: file.mimetype
+      }
+    });
+  } catch (error) {
+    console.error('Error in test signature upload:', error);
+    
+    // Clean up uploaded file if test failed
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Test signature upload failed',
+      error: error.message
+    });
+  }
+};
+
 // Get document statistics
 export const getDocumentStats = async (req, res) => {
   try {

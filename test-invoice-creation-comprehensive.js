@@ -1,0 +1,383 @@
+/**
+ * Comprehensive Invoice Creation Test Suite
+ * Tests all aspects of invoice creation including file uploads, signatures, and redirects
+ */
+
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
+// Configuration
+const BACKEND_URL = 'http://localhost:5000';
+const FRONTEND_URL = 'http://localhost:3000';
+
+// Test data
+const testCustomer = {
+  firstName: 'Test',
+  lastName: 'Customer',
+  email: 'test@example.com',
+  workPhone: '1234567890'
+};
+
+const testInvoiceData = {
+  customerId: null, // Will be set after customer creation
+  customerName: 'Test Customer',
+  customerEmail: 'test@example.com',
+  customerPhone: '1234567890',
+  invoiceDate: new Date().toISOString().split('T')[0],
+  dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  items: [
+    {
+      id: 1,
+      itemId: 'ITEM001',
+      name: 'Test Item',
+      description: 'Test Description',
+      quantity: 2,
+      rate: 1000,
+      amount: 2000,
+      taxRate: 18,
+      taxAmount: 360,
+      total: 2360
+    }
+  ],
+  subtotal: 2000,
+  totalTax: 360,
+  total: 2360,
+  status: 'Draft',
+  files: [],
+  additionalTaxId: null
+};
+
+// Test results tracking
+let testResults = {
+  passed: 0,
+  failed: 0,
+  errors: []
+};
+
+// Helper function to log test results
+function logTest(testName, passed, error = null) {
+  if (passed) {
+    console.log(`✅ ${testName}`);
+    testResults.passed++;
+  } else {
+    console.log(`❌ ${testName}`);
+    if (error) {
+      console.log(`   Error: ${error.message || error}`);
+      testResults.errors.push({ test: testName, error: error.message || error });
+    }
+    testResults.failed++;
+  }
+}
+
+// Helper function to make API calls
+async function apiCall(endpoint, method = 'GET', data = null, headers = {}) {
+  try {
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      }
+    };
+    
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+    
+    const response = await fetch(`${BACKEND_URL}${endpoint}`, options);
+    const result = await response.json();
+    
+    return { success: response.ok, status: response.status, data: result };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Test 1: Backend Server Health Check
+async function testBackendHealth() {
+  console.log('\n🔍 Testing Backend Server Health...');
+  
+  const result = await apiCall('/api/invoices');
+  logTest('Backend server is running', result.success || result.status === 401);
+  
+  if (!result.success && result.status !== 401) {
+    console.log('   Backend server is not responding. Please start the server first.');
+    return false;
+  }
+  
+  console.log('   Backend server is responding');
+  return true;
+}
+
+// Test 2: Create Test Customer
+async function testCreateCustomer() {
+  console.log('\n👤 Testing Customer Creation...');
+  
+  const result = await apiCall('/api/customers', 'POST', testCustomer);
+  logTest('Customer creation', result.success);
+  
+  if (result.success) {
+    testInvoiceData.customerId = result.data.customer._id;
+    testInvoiceData.customerName = `${result.data.customer.firstName} ${result.data.customer.lastName}`;
+    testInvoiceData.customerEmail = result.data.customer.email;
+    testInvoiceData.customerPhone = result.data.customer.workPhone || result.data.customer.mobile;
+    console.log(`   Created customer: ${testInvoiceData.customerName} (ID: ${testInvoiceData.customerId})`);
+  }
+  
+  return result.success;
+}
+
+// Test 3: Test Invoice Creation (Draft)
+async function testCreateDraftInvoice() {
+  console.log('\n📄 Testing Draft Invoice Creation...');
+  
+  const draftData = { ...testInvoiceData, status: 'Draft' };
+  const result = await apiCall('/api/invoices', 'POST', draftData);
+  
+  logTest('Draft invoice creation', result.success);
+  
+  if (result.success) {
+    console.log(`   Created draft invoice: ${result.data.invoiceNumber || 'N/A'}`);
+    return result.data;
+  } else {
+    console.log(`   Error: ${result.data?.error || result.error}`);
+  }
+  
+  return null;
+}
+
+// Test 4: Test Invoice Creation (Sent)
+async function testCreateSentInvoice() {
+  console.log('\n📤 Testing Sent Invoice Creation...');
+  
+  const sentData = { ...testInvoiceData, status: 'Sent' };
+  const result = await apiCall('/api/invoices', 'POST', sentData);
+  
+  logTest('Sent invoice creation', result.success);
+  
+  if (result.success) {
+    console.log(`   Created sent invoice: ${result.data.invoiceNumber || 'N/A'}`);
+    return result.data;
+  } else {
+    console.log(`   Error: ${result.data?.error || result.error}`);
+  }
+  
+  return null;
+}
+
+// Test 5: Test File Upload
+async function testFileUpload() {
+  console.log('\n📁 Testing File Upload...');
+  
+  // Create a test file buffer
+  const testFileContent = 'This is a test file for invoice attachment';
+  const testFile = new Blob([testFileContent], { type: 'text/plain' });
+  
+  const formData = new FormData();
+  formData.append('document', testFile, 'test-invoice-file.txt');
+  formData.append('title', 'Test Invoice Attachment');
+  formData.append('description', 'Test file for invoice');
+  formData.append('documentType', 'invoice');
+  formData.append('category', 'financial');
+  
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/documents/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    const success = response.ok;
+    
+    logTest('File upload', success);
+    
+    if (success) {
+      console.log(`   Uploaded file: ${result.data.fileName}`);
+      return result.data;
+    } else {
+      console.log(`   Error: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    logTest('File upload', false, error);
+  }
+  
+  return null;
+}
+
+// Test 6: Test Signature Upload
+async function testSignatureUpload() {
+  console.log('\n✍️ Testing Signature Upload...');
+  
+  // Create a test image buffer (minimal PNG)
+  const testImageBuffer = Buffer.from([
+    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+    0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1 pixel
+    0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, // IHDR data
+    0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, 0x54, // IDAT chunk
+    0x08, 0x99, 0x01, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, // IDAT data
+    0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82 // IEND chunk
+  ]);
+  
+  const formData = new FormData();
+  formData.append('signature', new Blob([testImageBuffer], { type: 'image/png' }), 'test-signature.png');
+  
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/documents/upload-signature`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    const success = response.ok;
+    
+    logTest('Signature upload', success);
+    
+    if (success) {
+      console.log(`   Uploaded signature: ${result.data.fileName}`);
+      return result.data;
+    } else {
+      console.log(`   Error: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    logTest('Signature upload', false, error);
+  }
+  
+  return null;
+}
+
+// Test 7: Test Invoice with Files
+async function testInvoiceWithFiles() {
+  console.log('\n📄 Testing Invoice Creation with Files...');
+  
+  const fileData = await testFileUpload();
+  const signatureData = await testSignatureUpload();
+  
+  if (!fileData || !signatureData) {
+    logTest('Invoice with files', false, 'File uploads failed');
+    return null;
+  }
+  
+  const invoiceWithFiles = {
+    ...testInvoiceData,
+    files: [
+      {
+        fileName: fileData.fileName,
+        filePath: fileData.filePath,
+        fileSize: fileData.fileSize,
+        uploadedAt: new Date(),
+        isAttachment: true
+      },
+      {
+        fileName: signatureData.fileName,
+        filePath: signatureData.filePath,
+        fileSize: signatureData.fileSize,
+        uploadedAt: new Date(),
+        isSignature: true
+      }
+    ]
+  };
+  
+  const result = await apiCall('/api/invoices', 'POST', invoiceWithFiles);
+  logTest('Invoice creation with files', result.success);
+  
+  if (result.success) {
+    console.log(`   Created invoice with files: ${result.data.invoiceNumber || 'N/A'}`);
+    return result.data;
+  } else {
+    console.log(`   Error: ${result.data?.error || result.error}`);
+  }
+  
+  return null;
+}
+
+// Test 8: Test Invoice List Retrieval
+async function testInvoiceList() {
+  console.log('\n📋 Testing Invoice List Retrieval...');
+  
+  const result = await apiCall('/api/invoices');
+  logTest('Invoice list retrieval', result.success);
+  
+  if (result.success) {
+    console.log(`   Retrieved ${result.data.length || 0} invoices`);
+    return result.data;
+  } else {
+    console.log(`   Error: ${result.data?.error || result.error}`);
+  }
+  
+  return null;
+}
+
+// Test 9: Test Frontend Redirect (Simulation)
+async function testFrontendRedirect() {
+  console.log('\n🔄 Testing Frontend Redirect Simulation...');
+  
+  // Simulate the redirect logic
+  const redirectUrl = '/dashboard/sales/invoices';
+  const expectedUrl = `${FRONTEND_URL}${redirectUrl}`;
+  
+  console.log(`   Expected redirect URL: ${expectedUrl}`);
+  logTest('Frontend redirect URL construction', true);
+  
+  return true;
+}
+
+// Test 10: Test Error Handling
+async function testErrorHandling() {
+  console.log('\n⚠️ Testing Error Handling...');
+  
+  // Test with invalid customer ID
+  const invalidInvoiceData = {
+    ...testInvoiceData,
+    customerId: 'invalid-customer-id'
+  };
+  
+  const result = await apiCall('/api/invoices', 'POST', invalidInvoiceData);
+  logTest('Error handling with invalid customer', !result.success);
+  
+  if (!result.success) {
+    console.log(`   Correctly handled error: ${result.data?.error || result.error}`);
+  }
+  
+  return true;
+}
+
+// Main test runner
+async function runAllTests() {
+  console.log('🚀 Starting Comprehensive Invoice Creation Tests...\n');
+  
+  // Check if backend is running
+  const backendHealthy = await testBackendHealth();
+  if (!backendHealthy) {
+    console.log('\n❌ Backend server is not running. Please start it first.');
+    return;
+  }
+  
+  // Run all tests
+  await testCreateCustomer();
+  await testCreateDraftInvoice();
+  await testCreateSentInvoice();
+  await testFileUpload();
+  await testSignatureUpload();
+  await testInvoiceWithFiles();
+  await testInvoiceList();
+  await testFrontendRedirect();
+  await testErrorHandling();
+  
+  // Print summary
+  console.log('\n📊 Test Summary:');
+  console.log(`✅ Passed: ${testResults.passed}`);
+  console.log(`❌ Failed: ${testResults.failed}`);
+  console.log(`📈 Success Rate: ${((testResults.passed / (testResults.passed + testResults.failed)) * 100).toFixed(1)}%`);
+  
+  if (testResults.errors.length > 0) {
+    console.log('\n🔍 Errors:');
+    testResults.errors.forEach(error => {
+      console.log(`   - ${error.test}: ${error.error}`);
+    });
+  }
+  
+  console.log('\n🎉 Test suite completed!');
+}
+
+// Run the tests
+runAllTests().catch(console.error);

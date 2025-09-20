@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Select from "react-select";
 import { indianStates } from "@/utils/indianStates";
@@ -79,6 +79,19 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
     useState<string>("");
   const [showPlaceOfSupplyDropdown, setShowPlaceOfSupplyDropdown] =
     useState(false);
+  
+  // Use refs to avoid dependency issues
+  const onFormDataChangeRef = useRef(onFormDataChange);
+  const onPlaceOfSupplyChangeRef = useRef(onPlaceOfSupplyChange);
+  
+  // Update refs when props change
+  useEffect(() => {
+    onFormDataChangeRef.current = onFormDataChange;
+  }, [onFormDataChange]);
+  
+  useEffect(() => {
+    onPlaceOfSupplyChangeRef.current = onPlaceOfSupplyChange;
+  }, [onPlaceOfSupplyChange]);
   const [billingAddress, setBillingAddress] = useState<AddressFormData>({
     street: formData.billingAddress?.street || "",
     city: formData.billingAddress?.city || "",
@@ -118,7 +131,7 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
       setShippingAddress(newShippingAddress);
 
       // Update form data with customer addresses
-      onFormDataChange({
+      onFormDataChangeRef.current({
         billingAddress: newBillingAddress,
         shippingAddress: newShippingAddress,
         placeOfSupplyState:
@@ -127,21 +140,17 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
 
       // Trigger place of supply change callback only if state has actually changed
       if (
-        onPlaceOfSupplyChange &&
+        onPlaceOfSupplyChangeRef.current &&
         newShippingAddress.state &&
         newShippingAddress.state !== lastPlaceOfSupplyState
       ) {
         setLastPlaceOfSupplyState(newShippingAddress.state);
-        onPlaceOfSupplyChange(newShippingAddress.state);
+        onPlaceOfSupplyChangeRef.current(newShippingAddress.state);
       }
 
       // Show success message if addresses were loaded
       if (newBillingAddress.street || newShippingAddress.street) {
         setAddressesLoaded(true);
-        console.log(
-          "Addresses loaded successfully for customer:",
-          selectedCustomer.firstName
-        );
       }
     } else {
       // Reset addresses when no customer is selected
@@ -162,7 +171,33 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
       setAddressesLoaded(false);
       setLastPlaceOfSupplyState(""); // Reset place of supply state
     }
-  }, [selectedCustomer, companyState, onFormDataChange, onPlaceOfSupplyChange]);
+  }, [selectedCustomer, companyState]);
+
+
+  // Focus first input when modal opens
+  useEffect(() => {
+    if (showShippingPopup) {
+      const timer = setTimeout(() => {
+        const firstInput = document.querySelector('.address-edit-popup input[type="text"]') as HTMLInputElement;
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showShippingPopup]);
+
+  useEffect(() => {
+    if (showBillingPopup) {
+      const timer = setTimeout(() => {
+        const firstInput = document.querySelector('.address-edit-popup input[type="text"]') as HTMLInputElement;
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showBillingPopup]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -487,7 +522,7 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 </div>
                 {isAddressComplete(billingAddress) && (
                   <button
-                    className="text-xs text-blue-600 hover:text-blue-800"
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
                     onClick={() => handleUseSameAddress("shipping")}
                   >
                     Use Billing
@@ -614,8 +649,18 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
 
       {/* Address Edit Popups */}
       {showBillingPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center address-edit-popup">
-          <div className="bg-white rounded-lg p-2 w-full max-w-md mx-4">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center address-edit-popup z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowBillingPopup(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg p-2 w-full max-w-md mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-gray-900">
                 Edit Billing Address
@@ -736,8 +781,18 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
       )}
 
       {showShippingPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center address-edit-popup">
-          <div className="bg-white rounded-lg p-2 w-full max-w-md mx-4">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center address-edit-popup z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowShippingPopup(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-lg p-2 w-full max-w-md mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-gray-900">
                 Edit Shipping Address
@@ -765,6 +820,8 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                     })
                   }
                   className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                  autoFocus
+                  placeholder="Enter street address"
                 />
               </div>
 
@@ -783,6 +840,7 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                       })
                     }
                     className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                    placeholder="Enter city"
                   />
                 </div>
 
@@ -800,6 +858,7 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                       })
                     }
                     className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                    placeholder="Enter state"
                   />
                 </div>
 
@@ -817,6 +876,7 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                       })
                     }
                     className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent text-sm"
+                    placeholder="Enter ZIP code"
                   />
                 </div>
               </div>

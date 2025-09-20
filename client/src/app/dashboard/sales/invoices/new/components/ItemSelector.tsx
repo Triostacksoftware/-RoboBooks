@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDownIcon, PlusIcon } from "@heroicons/react/24/outline";
 import AddItemModal from "./AddItemModal";
+import { isTextField } from "@/utils/isTextField";
 
 interface Item {
   _id: string;
@@ -98,7 +99,7 @@ const ItemSelector: React.FC<ItemSelectorProps> = ({
     };
 
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
+      if (e.key === "Escape" && !isTextField(e.target)) setIsOpen(false);
     };
 
     document.addEventListener("mousedown", handleDocMouseDown);

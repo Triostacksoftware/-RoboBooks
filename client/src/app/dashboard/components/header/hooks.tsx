@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { isTextField } from '@/utils/isTextField';
 import { createPortal } from 'react-dom';
 
 /** Click/Tap outside a given element */
@@ -28,7 +29,7 @@ export function useKey(key: string, handler: () => void, enabled = true) {
   useEffect(() => {
     if (!enabled) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key.toLowerCase() === key.toLowerCase()) handler();
+      if (e.key.toLowerCase() === key.toLowerCase() && !isTextField(e.target)) handler();
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

@@ -553,6 +553,7 @@ const NewInvoiceForm = () => {
 
     const fetchNextInvoiceNumber = async () => {
       try {
+        console.log("Fetching next invoice number...");
         const response = await fetch(
           process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number",
           {
@@ -562,9 +563,12 @@ const NewInvoiceForm = () => {
             },
           }
         );
+        console.log("Next invoice number response:", response.status);
         if (response.ok) {
           const result = await response.json();
+          console.log("Next invoice number result:", result);
           if (result.success && result.data.invoiceNumber) {
+            console.log("Setting invoice number to:", result.data.invoiceNumber);
             setFormData((prev) => ({
               ...prev,
               invoiceNumber: result.data.invoiceNumber,
@@ -1109,33 +1113,50 @@ const NewInvoiceForm = () => {
     }
   };
 
+  const handleMakeRecurring = () => {
+    console.log("Make Recurring button clicked");
+    showToast("Make Recurring feature coming soon!", "info");
+  };
+
   const handleSaveInvoice = async (asDraft = false) => {
+    console.log("Save Invoice button clicked", { asDraft, selectedCustomer });
+    
+    // Show initial processing toast
+    showToast(
+      asDraft ? "Saving invoice as draft..." : "Creating and sending invoice...", 
+      "info"
+    );
+    
     try {
       if (!selectedCustomer) {
+        console.log("No customer selected");
         showToast("Please select a customer", "error");
         return;
       }
+      
+      console.log("Customer selected:", selectedCustomer);
 
       // Upload files first if any
       let uploadedFiles = [];
       if (formData.files.length > 0) {
-        showToast("Uploading files...", "info");
+        showToast(`📁 Uploading ${formData.files.length} file(s)...`, "info");
         
         for (const file of formData.files) {
           try {
-            const formData = new FormData();
-            formData.append('document', file);
-            formData.append('title', `Invoice Attachment - ${file.name}`);
-            formData.append('description', `File attached to invoice`);
-            formData.append('documentType', 'invoice');
-            formData.append('category', 'financial');
+            const uploadFormData = new FormData();
+            uploadFormData.append('document', file);
+            uploadFormData.append('title', `Invoice Attachment - ${file.name}`);
+            uploadFormData.append('description', `File attached to invoice`);
+            uploadFormData.append('documentType', 'invoice');
+            uploadFormData.append('category', 'financial');
 
+            console.log(`Uploading file: ${file.name}`);
             const uploadResponse = await fetch(
-              `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/upload`,
+              `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/documents/upload`,
               {
                 method: "POST",
                 credentials: "include",
-                body: formData,
+                body: uploadFormData,
               }
             );
 
@@ -1147,20 +1168,44 @@ const NewInvoiceForm = () => {
                 fileSize: file.size,
                 uploadedAt: new Date(),
               });
+              console.log(`Successfully uploaded: ${file.name}`);
             } else {
-              console.error(`Failed to upload file: ${file.name}`);
-              showToast(`Failed to upload file: ${file.name}`, "error");
+              console.error(`Failed to upload file: ${file.name}, status: ${uploadResponse.status}`);
+              showToast(`❌ Failed to upload: ${file.name}`, "error");
             }
           } catch (error) {
             console.error(`Error uploading file ${file.name}:`, error);
-            showToast(`Error uploading file: ${file.name}`, "error");
+            showToast(`❌ Upload error: ${file.name}`, "error");
           }
         }
+        
+        // Show success message after all files uploaded
+        if (uploadedFiles.length > 0) {
+          showToast(`✅ Successfully uploaded ${uploadedFiles.length} file(s)`, "success");
+        }
+      }
+
+      // Add signature file to uploaded files if it exists
+      if (formData.signature) {
+        uploadedFiles.push({
+          fileName: formData.signature.fileName,
+          filePath: formData.signature.filePath,
+          fileSize: formData.signature.fileSize,
+          uploadedAt: new Date(),
+          isSignature: true,
+        });
+        showToast("✅ Signature file included", "success");
       }
 
       // Remove undefined fields and ensure proper data types
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { project: _unusedProject, files: _unusedFiles, ...formDataWithoutProject } = formData;
+
+      // Helper function to clean ObjectId fields
+      const cleanObjectIdField = (value: string | null | undefined): string | null => {
+        if (!value || value.trim() === "") return null;
+        return value;
+      };
 
       const invoiceData = {
         ...formDataWithoutProject,
@@ -1174,6 +1219,8 @@ const NewInvoiceForm = () => {
         invoiceDate: new Date(formData.invoiceDate),
         dueDate: new Date(formData.dueDate),
         files: uploadedFiles, // Use uploaded file metadata
+        // Clean up ObjectId fields - convert empty strings to null
+        additionalTaxId: cleanObjectIdField(formData.additionalTaxId),
         // Clean up items - remove empty itemId fields
         items: formData.items.map((item) => ({
           ...item,
@@ -1183,37 +1230,77 @@ const NewInvoiceForm = () => {
 
       console.log('Saving invoice with data:', invoiceData);
       console.log('Signature data:', formData.signature);
+      console.log('Uploaded files:', uploadedFiles);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/invoices`,
+      // Get a fresh invoice number to avoid duplicates
+      console.log("Getting fresh invoice number...");
+      const invoiceNumberResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/invoices/next-number`,
         {
-          method: "POST",
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(invoiceData),
         }
       );
+      
+      let freshInvoiceNumber = invoiceData.invoiceNumber;
+      if (invoiceNumberResponse.ok) {
+        const invoiceNumberResult = await invoiceNumberResponse.json();
+        if (invoiceNumberResult.success && invoiceNumberResult.data.invoiceNumber) {
+          freshInvoiceNumber = invoiceNumberResult.data.invoiceNumber;
+          console.log("Using fresh invoice number:", freshInvoiceNumber);
+        }
+      }
 
+      // Update invoice data with fresh number
+      invoiceData.invoiceNumber = freshInvoiceNumber;
+
+      // Show processing message
+      showToast("🔄 Processing invoice data...", "info");
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      const invoiceUrl = `${backendUrl}/api/invoices`;
+      console.log('Backend URL:', backendUrl);
+      console.log('Invoice URL:', invoiceUrl);
+
+      const response = await fetch(invoiceUrl, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(invoiceData),
+      });
+
+      console.log('Invoice response status:', response.status);
+      console.log('Invoice response headers:', response.headers);
+      
       const result = await response.json();
+      console.log('Invoice response result:', result);
 
       if (response.ok) {
         console.log("Invoice saved successfully", result);
         showToast(
-          `Invoice ${
+          `✅ Invoice ${
             asDraft ? "saved as draft" : "created and sent"
-          } successfully!`,
+          } successfully! Invoice #${result.invoiceNumber || 'N/A'}`,
           "success"
         );
-        setTimeout(() => router.push("/dashboard/sales/invoices"), 800);
+        setTimeout(() => router.push("/dashboard/sales/invoices"), 1500);
       } else {
         console.error("Error saving invoice:", result.error);
-        showToast(`Error: ${result.error}`, "error");
+        showToast(
+          `❌ Failed to ${asDraft ? "save draft" : "create invoice"}: ${result.error || 'Unknown error'}`,
+          "error"
+        );
       }
     } catch (error) {
       console.error("Error saving invoice:", error);
-      showToast("Error saving invoice. Please try again.", "error");
+      showToast(
+        `❌ Error ${asDraft ? "saving draft" : "creating invoice"}: ${error instanceof Error ? error.message : 'Please try again'}`,
+        "error"
+      );
     }
   };
 
@@ -1717,18 +1804,13 @@ const NewInvoiceForm = () => {
                               }
                               
                               try {
-                                // Check if backend URL is available
-                                if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
-                                  showToast('Backend URL not configured. Please check environment variables.', 'error');
-                                  return;
-                                }
-                                
                                 // Create FormData for file upload
                                 const formData = new FormData();
                                 formData.append('signature', file);
                                 
-                                const uploadUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/upload-signature`;
-                                console.log('Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+                                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+                                const uploadUrl = `${backendUrl}/api/documents/upload-signature`;
+                                console.log('Backend URL:', backendUrl);
                                 console.log('Uploading to URL:', uploadUrl);
                                 
                                 const response = await fetch(uploadUrl, {
@@ -1745,7 +1827,9 @@ const NewInvoiceForm = () => {
                                   console.log('Signature upload result:', result);
                                   
                                   // Create a URL for the uploaded file
-                                  const fileUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/uploads/${result.signatureUrl}`;
+                                  const fileUrl = result.data?.url?.startsWith('http') 
+                                    ? result.data.url 
+                                    : `${backendUrl}${result.data?.url}`;
                                   console.log('Constructed file URL:', fileUrl);
                                   
                                   setFormData(prev => ({
@@ -1753,19 +1837,29 @@ const NewInvoiceForm = () => {
                                     signature: {
                                       fileName: file.name,
                                       filePath: fileUrl,
-                                      fileSize: file.size
+                                      fileSize: file.size,
+                                      signatureId: result.data?.id
                                     }
                                   }));
                                   
                                   showToast('Signature uploaded successfully!', 'success');
+                                  
+                                  // Reset the file input to allow selecting the same file again
+                                  e.target.value = '';
                                 } else {
                                   const error = await response.json();
                                   console.error('Signature upload error response:', error);
                                   showToast(`Error uploading signature: ${error.message}`, 'error');
+                                  
+                                  // Reset the file input on error too
+                                  e.target.value = '';
                                 }
                               } catch (error) {
                                 console.error('Error uploading signature:', error);
                                 showToast('Error uploading signature. Please try again.', 'error');
+                                
+                                // Reset the file input on error
+                                e.target.value = '';
                               }
                             } else {
                               console.log('No file selected');
@@ -1776,16 +1870,6 @@ const NewInvoiceForm = () => {
                         />
                         <label
                           htmlFor="signature-upload"
-                          onClick={() => {
-                            console.log('Label clicked, attempting to trigger file input');
-                            const fileInput = document.getElementById('signature-upload');
-                            console.log('File input element:', fileInput);
-                            if (fileInput) {
-                              fileInput.click();
-                            } else {
-                              console.error('File input not found');
-                            }
-                          }}
                           className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
                         >
                           <PaperClipIcon className="h-3 w-3 mr-1.5" />
@@ -1797,93 +1881,6 @@ const NewInvoiceForm = () => {
                       Upload a digital signature for the invoice. Recommended: PNG or JPG format.
                     </p>
                     
-                    {/* Test button for debugging */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          // Create a simple test image
-                          const canvas = document.createElement('canvas');
-                          canvas.width = 100;
-                          canvas.height = 50;
-                          const ctx = canvas.getContext('2d');
-                          ctx.fillStyle = '#000000';
-                          ctx.fillRect(0, 0, 100, 50);
-                          ctx.fillStyle = '#ffffff';
-                          ctx.font = '12px Arial';
-                          ctx.fillText('Test Signature', 10, 30);
-                          
-                          canvas.toBlob(async (blob) => {
-                            if (blob) {
-                              const testFile = new File([blob], 'test-signature.png', { type: 'image/png' });
-                              console.log('Created test file:', testFile);
-                              
-                              // Test with the test endpoint first
-                              const formData = new FormData();
-                              formData.append('signature', testFile);
-                              
-                              const testUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/test-signature-upload`;
-                              console.log('Testing with URL:', testUrl);
-                              
-                              const response = await fetch(testUrl, {
-                                method: 'POST',
-                                body: formData,
-                              });
-                              
-                              console.log('Test response status:', response.status);
-                              const result = await response.json();
-                              console.log('Test response:', result);
-                              
-                              if (response.ok) {
-                                showToast('Test signature upload successful!', 'success');
-                                
-                                // Also test the authenticated endpoint
-                                const authResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/documents/upload-signature`, {
-                                  method: 'POST',
-                                  credentials: 'include',
-                                  body: formData,
-                                });
-                                
-                                console.log('Auth test response status:', authResponse.status);
-                                const authResult = await authResponse.json();
-                                console.log('Auth test response:', authResult);
-                                
-                                if (authResponse.ok) {
-                                  showToast('Authenticated signature upload also successful!', 'success');
-                                } else {
-                                  showToast(`Auth test failed: ${authResult.message}`, 'error');
-                                }
-                              } else {
-                                showToast(`Test failed: ${result.message}`, 'error');
-                              }
-                            }
-                          });
-                        } catch (error) {
-                          console.error('Test signature creation failed:', error);
-                          showToast('Test signature creation failed', 'error');
-                        }
-                      }}
-                      className="mt-2 px-2 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                    >
-                      Test Signature Upload
-                    </button>
-                    
-                    {/* Simple file input test */}
-                    <div className="mt-2">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            console.log('Simple file input test - file selected:', file.name, file.size, file.type);
-                            showToast(`File selected: ${file.name}`, 'success');
-                          }
-                        }}
-                        className="text-xs"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Simple file input test</p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1929,24 +1926,28 @@ const NewInvoiceForm = () => {
         </div>
       </div>
 
+
       {/* Bottom Action Bar - Fixed at bottom of page */}
       <div className="bg-white border-t border-gray-200 px-3 py-1.5 shadow-lg">
         <div className="max-w-full flex items-center justify-between transition-all duration-300 ease-in-out">
           {/* Left Section - Action Buttons */}
           <div className="flex items-center space-x-2">
             <button
+              type="button"
               className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
               onClick={() => handleSaveInvoice(true)}
             >
               Save as Draft
             </button>
             <button
+              type="button"
               className="px-4 py-1 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 whitespace-nowrap shadow-lg hover:shadow-xl transform hover:scale-105"
               onClick={() => handleSaveInvoice(false)}
             >
               Save and Send
             </button>
             <button
+              type="button"
               className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
               onClick={() => router.push("/dashboard/sales/invoices")}
             >
@@ -1975,7 +1976,11 @@ const NewInvoiceForm = () => {
             </div>
 
             {/* Make Recurring Button */}
-            <button className="flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md group">
+            <button 
+              type="button"
+              onClick={handleMakeRecurring}
+              className="flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md group"
+            >
               <ArrowPathIcon className="h-3 w-3 mr-1 text-gray-500 group-hover:text-gray-700 transition-colors" />
               <span className="hidden sm:inline">Make Recurring</span>
               <span className="sm:hidden">Recurring</span>

@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { isTextField } from "@/utils/isTextField";
 import {
   XMarkIcon,
   MagnifyingGlassIcon,
@@ -248,7 +249,7 @@ export default function AllZohoAppsPanel({
   // close on Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !isTextField(e.target)) onClose();
     }
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);

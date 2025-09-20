@@ -36,7 +36,7 @@ const documentSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['invoice', 'receipt', 'contract', 'statement', 'certificate', 'other']
+    enum: ['invoice', 'receipt', 'contract', 'statement', 'certificate', 'signature', 'other']
   },
   description: {
     type: String,
@@ -49,7 +49,7 @@ const documentSchema = new mongoose.Schema({
   relatedEntity: {
     type: {
       type: String,
-      enum: ['currency_adjustment', 'journal_entry', 'account', 'none']
+      enum: ['currency_adjustment', 'journal_entry', 'account', 'signature', 'none']
     },
     entityId: {
       type: mongoose.Schema.Types.ObjectId

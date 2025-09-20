@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { isTextField } from '@/utils/isTextField';
 
 export default function SubscribeButton() {
   const [open, setOpen] = useState(false);
@@ -10,7 +11,7 @@ export default function SubscribeButton() {
   // close on outside click or ESC
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape' && !isTextField(e.target)) setOpen(false);
     }
     function onClick(e: MouseEvent) {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {

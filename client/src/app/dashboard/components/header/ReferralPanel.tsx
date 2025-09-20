@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { UserGroupIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { createPortal } from "react-dom";
+import { isTextField } from "@/utils/isTextField";
 
 export default function ReferralPanel({
   open,
@@ -16,7 +17,7 @@ export default function ReferralPanel({
   // close on Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !isTextField(e.target)) onClose();
     }
     if (open) document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);

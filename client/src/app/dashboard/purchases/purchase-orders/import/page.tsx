@@ -2,7 +2,7 @@ import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import React from 'react'
 import ImportPurchaseOrdersPage from './components/ImportPurchaseOrdersPage'
 
-const page = () => {
+const content = () => {
   return (
     <>
     <ImportPurchaseOrdersPage/>
@@ -10,13 +10,10 @@ const page = () => {
   )
 }
 
-export default page
-
-
 // Wrapped with access guard
 const PageWithGuard = () => (
   <ModuleAccessGuard moduleName="Purchases">
-    {content}
+    {content()}
   </ModuleAccessGuard>
 );
 

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { createPortal } from 'react-dom';
+import { isTextField } from '@/utils/isTextField';
 
 const GROUPS = [
   {
@@ -66,7 +67,7 @@ export default function NewMenu({
   // escape to close
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !isTextField(e.target)) onClose();
     }
     if (open) document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
