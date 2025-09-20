@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import PaymentsMadeSection from "./components/PaymentsMadeSection";
 import PaymentDetailsPanel from "./components/PaymentDetailsPanel";
@@ -186,4 +187,11 @@ const PaymentsMadePage = () => {
   );
 };
 
-export default PaymentsMadePage;
+// Wrapped with access guard
+const PaymentsMadePageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <PaymentsMadePage />
+  </ModuleAccessGuard>
+);
+
+export default PaymentsMadePageWithGuard;

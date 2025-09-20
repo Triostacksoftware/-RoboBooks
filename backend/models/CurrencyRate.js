@@ -5,13 +5,23 @@ const currencyRateSchema = new mongoose.Schema({
     type: String,
     required: true,
     uppercase: true,
-    enum: ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY']
+    enum: [
+      'USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY',
+      'NZD', 'KRW', 'SGD', 'HKD', 'BRL', 'MXN', 'RUB', 'ZAR', 'TRY',
+      'SEK', 'NOK', 'DKK', 'AED', 'THB', 'MYR', 'IDR', 'PHP', 'VND',
+      'PLN', 'CZK', 'HUF', 'RON', 'BGN', 'HRK', 'RSD', 'UAH', 'KZT'
+    ]
   },
   toCurrency: {
     type: String,
     required: true,
     uppercase: true,
-    enum: ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY']
+    enum: [
+      'USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY',
+      'NZD', 'KRW', 'SGD', 'HKD', 'BRL', 'MXN', 'RUB', 'ZAR', 'TRY',
+      'SEK', 'NOK', 'DKK', 'AED', 'THB', 'MYR', 'IDR', 'PHP', 'VND',
+      'PLN', 'CZK', 'HUF', 'RON', 'BGN', 'HRK', 'RSD', 'UAH', 'KZT'
+    ]
   },
   rate: {
     type: Number,
@@ -26,7 +36,7 @@ const currencyRateSchema = new mongoose.Schema({
   source: {
     type: String,
     required: true,
-    enum: ['RBI', 'MANUAL', 'API', 'BANK', 'Manual Entry', 'REAL_TIME_API', 'HISTORICAL_API', 'SCHEDULED_UPDATE', 'INITIAL_SETUP']
+    enum: ['ExchangeRate-API.com', 'Manual Entry', 'RBI', 'BANK']
   },
   isActive: {
     type: Boolean,

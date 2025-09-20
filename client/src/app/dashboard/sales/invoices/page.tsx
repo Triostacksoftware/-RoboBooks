@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { useToast } from "../../../../contexts/ToastContext";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import {
   ChevronDownIcon,
   PlusIcon,
@@ -711,4 +712,11 @@ const AllInvoicesPage = () => {
   );
 };
 
-export default AllInvoicesPage;
+// Wrapped with access guard
+const AllInvoicesPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <AllInvoicesPage />
+  </ModuleAccessGuard>
+);
+
+export default AllInvoicesPageWithGuard;

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import PurchaseOrdersSection from "./components/PurchaseOrdersSection";
 import PurchaseOrderDetailsPanel from "./components/PurchaseOrderDetailsPanel";
 import BulkImportModal from "@/components/modals/BulkImportModal";
@@ -180,4 +181,11 @@ const PurchaseOrdersPage = () => {
   );
 };
 
-export default PurchaseOrdersPage;
+// Wrapped with access guard
+const PurchaseOrdersPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <PurchaseOrdersPage />
+  </ModuleAccessGuard>
+);
+
+export default PurchaseOrdersPageWithGuard;

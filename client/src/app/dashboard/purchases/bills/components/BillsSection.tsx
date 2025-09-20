@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useToast } from "@/contexts/ToastContext";
 import {
   ChevronDownIcon,
   PlusIcon,
@@ -67,6 +68,7 @@ export default function BillsSection({
   onClearSelection
 }: BillsSectionProps) {
   const router = useRouter();
+  const { addToast, removeToastsByType } = useToast();
   const [bills, setBills] = useState<Bill[]>(propBills || []);
   const [filteredBills, setFilteredBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(!propBills);
@@ -94,11 +96,44 @@ export default function BillsSection({
     try {
       setLoading(true);
       setError(null);
+      
+      // Remove any existing processing toasts
+      removeToastsByType('info');
+      
+      // Show processing toast
+      addToast({
+        type: 'info',
+        title: 'Loading...',
+        message: 'Fetching bills from server...',
+        duration: 0 // Don't auto-dismiss processing toast
+      });
+      
       const billsData = await billService.getBills();
       setBills(billsData);
-    } catch (error) {
+      
+      // Remove processing toast
+      removeToastsByType('info');
+      
+      // Show success toast
+      addToast({
+        title: "Success",
+        message: `Loaded ${billsData.length} bills successfully`,
+        type: "success",
+        duration: 2000,
+      });
+    } catch (error: any) {
       console.error("Error fetching bills:", error);
       setError("Failed to fetch bills. Please try again.");
+      
+      // Remove processing toast on error
+      removeToastsByType('info');
+      
+      addToast({
+        title: "Error",
+        message: "Failed to fetch bills",
+        type: "error",
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeftIcon,
@@ -1097,4 +1098,11 @@ const RecurringInvoiceViewPage = () => {
   );
 };
 
-export default RecurringInvoiceViewPage;
+// Wrapped with access guard
+const RecurringInvoiceViewPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <RecurringInvoiceViewPage />
+  </ModuleAccessGuard>
+);
+
+export default RecurringInvoiceViewPageWithGuard;

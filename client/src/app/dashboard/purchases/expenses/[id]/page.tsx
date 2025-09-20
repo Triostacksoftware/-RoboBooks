@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from "next/navigation";
 import ExpenseDetailsPanel from "./components/ExpenseDetailsPanel";
 import ExpenseListPanel from "./components/ExpenseListPanel";
 import BackButton from "@/components/ui/BackButton";
 import { expenseService, Expense } from "@/services/expenseService";
 
-export default function ExpenseDetailPage() {
+function ExpenseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const expenseId = params.id as string;
@@ -139,3 +140,13 @@ export default function ExpenseDetailPage() {
     </div>
   );
 }
+
+
+// Wrapped with access guard
+const ExpenseDetailPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <ExpenseDetailPage />
+  </ModuleAccessGuard>
+);
+
+export default ExpenseDetailPageWithGuard;

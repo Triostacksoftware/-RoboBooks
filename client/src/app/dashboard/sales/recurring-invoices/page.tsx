@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
@@ -480,4 +481,11 @@ const AllRecurringInvoicesPage = () => {
   );
 };
 
-export default AllRecurringInvoicesPage;
+// Wrapped with access guard
+const AllRecurringInvoicesPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <AllRecurringInvoicesPage />
+  </ModuleAccessGuard>
+);
+
+export default AllRecurringInvoicesPageWithGuard;

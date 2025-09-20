@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { 
   PieChart, 
   Plus, 
@@ -369,4 +370,11 @@ const BudgetsPage = () => {
   );
 };
 
-export default BudgetsPage;
+// Wrapped with access guard
+const BudgetsPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Accountant">
+    <BudgetsPage />
+  </ModuleAccessGuard>
+);
+
+export default BudgetsPageWithGuard;

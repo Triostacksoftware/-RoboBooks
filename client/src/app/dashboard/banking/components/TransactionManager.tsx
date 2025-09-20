@@ -32,7 +32,7 @@ interface Transaction {
 }
 
 export default function TransactionManager() {
-  const { addToast } = useToast();
+  const { addToast, removeToastsByType } = useToast();
   const { transactions, accounts, users, loading, errors, refreshTransactions, reconcileTransaction, deleteTransaction } = useBanking();
   
   // Refresh transactions when component mounts
@@ -153,17 +153,77 @@ export default function TransactionManager() {
     }
 
     try {
+      // Remove any existing processing toasts
+      removeToastsByType('info');
+      
+      // Show processing toast
+      addToast({
+        type: 'info',
+        title: 'Processing...',
+        message: `Deleting transaction: ${transaction.description}`,
+        duration: 0 // Don't auto-dismiss processing toast
+      });
+      
       await deleteTransaction(transaction.id.toString());
+      
+      // Remove processing toast
+      removeToastsByType('info');
+      
+      // Show success toast
+      addToast({
+        title: "Success",
+        message: "Transaction deleted successfully",
+        type: "success",
+        duration: 3000,
+      });
     } catch (err: any) {
       console.error("Error deleting transaction:", err);
+      // Remove processing toast on error
+      removeToastsByType('info');
+      addToast({
+        title: "Error",
+        message: "Failed to delete transaction",
+        type: "error",
+        duration: 3000,
+      });
     }
   };
 
   const handleReconcileTransaction = async (transaction: Transaction) => {
     try {
+      // Remove any existing processing toasts
+      removeToastsByType('info');
+      
+      // Show processing toast
+      addToast({
+        type: 'info',
+        title: 'Processing...',
+        message: `Reconciling transaction: ${transaction.description}`,
+        duration: 0 // Don't auto-dismiss processing toast
+      });
+      
       await reconcileTransaction(transaction.id.toString());
+      
+      // Remove processing toast
+      removeToastsByType('info');
+      
+      // Show success toast
+      addToast({
+        title: "Success",
+        message: "Transaction reconciled successfully",
+        type: "success",
+        duration: 3000,
+      });
     } catch (err: any) {
       console.error("Error reconciling transaction:", err);
+      // Remove processing toast on error
+      removeToastsByType('info');
+      addToast({
+        title: "Error",
+        message: "Failed to reconcile transaction",
+        type: "error",
+        duration: 3000,
+      });
     }
   };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import {
   Scale,
@@ -388,4 +389,11 @@ const BalanceSheetPage = () => {
   );
 };
 
-export default BalanceSheetPage;
+// Wrapped with access guard
+const BalanceSheetPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Accountant">
+    <BalanceSheetPage />
+  </ModuleAccessGuard>
+);
+
+export default BalanceSheetPageWithGuard;

@@ -1,7 +1,7 @@
 // Customer service for dashboard statistics
-const Customer = require('../models/Customer');
+import Customer from '../models/Customer.js';
 
-const getCustomerStats = async () => {
+export const getCustomerStats = async () => {
   try {
     const [
       total,
@@ -11,8 +11,8 @@ const getCustomerStats = async () => {
     ] = await Promise.all([
       Customer.countDocuments(),
       Customer.countDocuments({ status: 'active' }),
-      Customer.countDocuments({ customerType: 'business' }),
-      Customer.countDocuments({ customerType: 'individual' })
+      Customer.countDocuments({ customerType: 'Business' }),
+      Customer.countDocuments({ customerType: 'Individual' })
     ]);
 
     return {
@@ -32,7 +32,7 @@ const getCustomerStats = async () => {
   }
 };
 
-module.exports = {
+export default {
   getCustomerStats
 };
 

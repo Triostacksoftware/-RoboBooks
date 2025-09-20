@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeftIcon, 
@@ -445,4 +446,11 @@ const CustomViewPage = () => {
   );
 };
 
-export default CustomViewPage;
+// Wrapped with access guard
+const CustomViewPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <CustomViewPage />
+  </ModuleAccessGuard>
+);
+
+export default CustomViewPageWithGuard;

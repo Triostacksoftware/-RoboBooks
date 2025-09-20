@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import '../styles/toast-animations.css';
 
 export interface Toast {
   id: string;
@@ -15,6 +16,9 @@ interface ToastContextType {
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
   clearToasts: () => void;
+  replaceToast: (oldId: string, newToast: Omit<Toast, 'id'>) => void;
+  removeToastsByType: (type: Toast['type']) => void;
+  showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info', title?: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -35,7 +39,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newToast: Toast = {
       ...toast,
       id,
-      duration: toast.duration || 5000,
+      duration: toast.duration || 4000,
     };
 
     setToasts(prev => [...prev, newToast]);
@@ -56,8 +60,41 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts([]);
   }, []);
 
+  const replaceToast = useCallback((oldId: string, newToast: Omit<Toast, 'id'>) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    const newToastWithId: Toast = {
+      ...newToast,
+      id,
+      duration: newToast.duration || 4000,
+    };
+
+    setToasts(prev => prev.map(toast => 
+      toast.id === oldId ? newToastWithId : toast
+    ));
+
+    // Auto remove new toast after duration
+    if (newToastWithId.duration > 0) {
+      setTimeout(() => {
+        removeToast(id);
+      }, newToastWithId.duration);
+    }
+  }, []);
+
+  const removeToastsByType = useCallback((type: Toast['type']) => {
+    setToasts(prev => prev.filter(toast => toast.type !== type));
+  }, []);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info', title?: string) => {
+    addToast({
+      title: title || (type === 'success' ? 'Success' : type === 'error' ? 'Error' : type === 'warning' ? 'Warning' : 'Info'),
+      message,
+      type,
+      duration: 4000
+    });
+  }, [addToast]);
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast, clearToasts }}>
+    <ToastContext.Provider value={{ toasts, addToast, removeToast, clearToasts, replaceToast, removeToastsByType, showToast }}>
       {children}
       <ToastContainer />
     </ToastContext.Provider>
@@ -68,69 +105,183 @@ const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useToast();
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
-      {toasts.map(toast => (
-        <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+    <div className="fixed top-6 right-6 z-[9999] space-y-3 pointer-events-none">
+      {toasts.map((toast, index) => (
+        <ToastItem 
+          key={toast.id} 
+          toast={toast} 
+          onRemove={removeToast}
+          index={index}
+        />
       ))}
     </div>
   );
 };
 
-const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {
+const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void; index: number }> = ({ toast, onRemove, index }) => {
+  const [isExiting, setIsExiting] = useState(false);
+  const [progress, setProgress] = useState(100);
+
+  // Auto-dismiss progress
+  React.useEffect(() => {
+    if (toast.duration && toast.duration > 0) {
+      const interval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev - (100 / (toast.duration! / 100));
+          return newProgress <= 0 ? 0 : newProgress;
+        });
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+  }, [toast.duration]);
+
+  const handleRemove = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onRemove(toast.id);
+    }, 300);
+  };
   const getToastStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return {
+          container: 'bg-white border-l-4 border-green-500 shadow-lg',
+          icon: 'text-green-500',
+          title: 'text-gray-900',
+          message: 'text-gray-600'
+        };
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return {
+          container: 'bg-white border-l-4 border-red-500 shadow-lg',
+          icon: 'text-red-500',
+          title: 'text-gray-900',
+          message: 'text-gray-600'
+        };
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return {
+          container: 'bg-white border-l-4 border-yellow-500 shadow-lg',
+          icon: 'text-yellow-500',
+          title: 'text-gray-900',
+          message: 'text-gray-600'
+        };
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return {
+          container: 'bg-white border-l-4 border-blue-500 shadow-lg',
+          icon: 'text-blue-500',
+          title: 'text-gray-900',
+          message: 'text-gray-600'
+        };
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return {
+          container: 'bg-white border-l-4 border-gray-500 shadow-lg',
+          icon: 'text-gray-500',
+          title: 'text-gray-900',
+          message: 'text-gray-600'
+        };
     }
   };
 
   const getIcon = () => {
     switch (toast.type) {
       case 'success':
-        return '✅';
+        return (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        );
       case 'error':
-        return '❌';
+        return (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        );
       case 'warning':
-        return '⚠️';
+        return (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        );
       case 'info':
-        return 'ℹ️';
+        return (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
       default:
-        return '📢';
+        return (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4 19h6v-6H4v6z" />
+          </svg>
+        );
     }
   };
 
+  const styles = getToastStyles();
+
   return (
-    <div className={`max-w-sm w-full bg-white shadow-lg rounded-lg border-l-4 p-4 ${getToastStyles()}`}>
-      <div className="flex items-start">
-        <div className="flex-shrink-0">
-          <span className="text-lg">{getIcon()}</span>
+    <div 
+      className={`
+        ${styles.container}
+        ${isExiting ? 'toast-exit' : 'toast-enter'}
+        max-w-sm w-full 
+        rounded-lg 
+        p-4 
+        pointer-events-auto
+        toast-shadow
+        toast-backdrop
+        border
+        border-gray-200
+        toast-hover
+        relative
+        overflow-hidden
+      `}
+      style={{
+        transform: `translateY(${index * 8}px)`,
+        animationDelay: `${index * 100}ms`
+      }}
+    >
+      <div className="flex items-start space-x-3">
+        <div className={`flex-shrink-0 ${styles.icon}`}>
+          {getIcon()}
         </div>
-        <div className="ml-3 w-0 flex-1">
-          <p className="text-sm font-medium">{toast.title}</p>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-semibold ${styles.title}`}>
+            {toast.title}
+          </p>
           {toast.message && (
-            <p className="mt-1 text-sm opacity-90">{toast.message}</p>
+            <p className={`mt-1 text-sm ${styles.message}`}>
+              {toast.message}
+            </p>
           )}
         </div>
-        <div className="ml-4 flex-shrink-0 flex">
+        <div className="flex-shrink-0">
           <button
-            onClick={() => onRemove(toast.id)}
-            className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none"
+            onClick={handleRemove}
+            className="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 rounded-full p-1 transition-colors hover:bg-gray-100"
           >
             <span className="sr-only">Close</span>
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
       </div>
+      
+      {/* Progress bar - only show for toasts with duration > 0 */}
+      {toast.duration && toast.duration > 0 && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 rounded-b-lg overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-100 ease-linear ${
+              toast.type === 'success' ? 'bg-green-500' :
+              toast.type === 'error' ? 'bg-red-500' :
+              toast.type === 'warning' ? 'bg-yellow-500' :
+              toast.type === 'info' ? 'bg-blue-500' : 'bg-gray-500'
+            }`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 };

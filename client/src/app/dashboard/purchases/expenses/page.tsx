@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/contexts/ToastContext";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import ExpensesSection from "./components/ExpensesSection";
 import ExpenseDetailsPanel from "./[id]/components/ExpenseDetailsPanel";
 import BulkImportModal from "@/components/modals/BulkImportModal";
@@ -10,6 +12,7 @@ import { expenseService, Expense } from "@/services/expenseService";
 
 const ExpensesPage = () => {
   const router = useRouter();
+  const { addToast, removeToastsByType } = useToast();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
@@ -22,11 +25,47 @@ const ExpensesPage = () => {
     const loadExpenses = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
+        // Remove any existing processing toasts
+        removeToastsByType('info');
+        
+        // Show processing toast
+        addToast({
+          type: 'info',
+          title: 'Loading...',
+          message: 'Fetching expenses from server...',
+          duration: 0 // Don't auto-dismiss processing toast
+        });
+        
         const data = await expenseService.getExpenses();
         setExpenses(data);
-      } catch (err) {
+        
+        // Remove processing toast
+        removeToastsByType('info');
+        
+        // Show success toast (only if there were no expenses before)
+        if (expenses.length === 0) {
+          addToast({
+            title: "Success",
+            message: `Loaded ${data.length} expenses successfully`,
+            type: "success",
+            duration: 2000,
+          });
+        }
+      } catch (err: any) {
         console.error("Error loading expenses:", err);
         setError("Failed to load expenses");
+        
+        // Remove processing toast on error
+        removeToastsByType('info');
+        
+        addToast({
+          title: "Error",
+          message: "Failed to load expenses",
+          type: "error",
+          duration: 5000,
+        });
       } finally {
         setLoading(false);
       }
@@ -186,4 +225,11 @@ const ExpensesPage = () => {
   );
 };
 
-export default ExpensesPage;
+// Wrapped with access guard
+const ExpensesPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <ExpensesPage />
+  </ModuleAccessGuard>
+);
+
+export default ExpensesPageWithGuard;

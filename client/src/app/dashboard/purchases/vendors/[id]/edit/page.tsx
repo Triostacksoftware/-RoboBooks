@@ -1,3 +1,4 @@
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import React from 'react'
 import EditVendorForm from '../../components/EditVendorForm'
 
@@ -10,3 +11,13 @@ const EditVendorPage = ({ params }: { params: { id: string } }) => {
 }
 
 export default EditVendorPage
+
+
+// Wrapped with access guard
+const PageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    {content}
+  </ModuleAccessGuard>
+);
+
+export default PageWithGuard;

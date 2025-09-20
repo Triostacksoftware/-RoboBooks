@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
@@ -1299,7 +1300,7 @@ const NewSalesOrderForm = () => {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-gray-50">
+    <div className="flex-1 bg-gray-50 flex flex-col">
       {/* Company Header Section - Collapsible */}
       <div className="bg-white border-b border-gray-200">
         <div
@@ -1389,8 +1390,8 @@ const NewSalesOrderForm = () => {
         </div>
       )}
 
-      {/* Main Form Content */}
-      <div className="p-4 pb-20">
+      {/* Main Form Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 pb-4">
         <div className="max-w-full space-y-4">
           {/* Customer Details */}
           <CustomerDetails
@@ -1766,20 +1767,20 @@ const NewSalesOrderForm = () => {
               </div>
 
               {/* Payment Gateway Promotion */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-900">
+                    <p className="text-sm font-medium text-gray-900">
                       Want to get paid faster?
                     </p>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <p className="text-sm text-gray-700 mt-1">
                       Configure payment gateways and receive payments online.{" "}
-                      <button className="text-blue-600 hover:text-blue-800 underline">
+                      <button className="text-gray-600 hover:text-gray-800 underline">
                         Set up Payment Gateway
                       </button>
                     </p>
                   </div>
-                  <div className="text-sm text-blue-600">WA</div>
+                  <div className="text-sm text-gray-600">WA</div>
                 </div>
               </div>
             </div>
@@ -1806,46 +1807,6 @@ const NewSalesOrderForm = () => {
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-lg">
-        <div className="max-w-full flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              onClick={() => handleSaveInvoice(true)}
-            >
-              Save as Draft
-            </button>
-            <button
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-              onClick={() => handleSaveInvoice(false)}
-            >
-              Save and Send
-            </button>
-            <button
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              onClick={() => router.push("/dashboard/sales/sales-orders")}
-            >
-              Cancel
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">
-                Total: ₹{(formData.total || 0).toFixed(2)}
-              </span>
-              <span className="ml-2 text-gray-500">
-                Items: {formData.items.length}
-              </span>
-            </div>
-            <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="h-4 w-4 mr-2" />
-              Make Recurring
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Invoice Details Modal */}
       {showInvoiceDetailsModal && (
@@ -2043,6 +2004,61 @@ const NewSalesOrderForm = () => {
         }}
       />
 
+      {/* Bottom Action Bar - Fixed at bottom of page */}
+      <div className="bg-white border-t border-gray-200 px-3 py-1.5 shadow-lg">
+        <div className="max-w-full flex items-center justify-between transition-all duration-300 ease-in-out">
+          {/* Left Section - Action Buttons */}
+          <div className="flex items-center space-x-2">
+            <button
+              className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
+              onClick={() => handleSaveInvoice(true)}
+            >
+              Save as Draft
+            </button>
+            <button
+              className="px-4 py-1 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 whitespace-nowrap shadow-lg hover:shadow-xl transform hover:scale-105"
+              onClick={() => handleSaveInvoice(false)}
+            >
+              Save and Send
+            </button>
+            <button
+              className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
+              onClick={() => router.push("/dashboard/sales/sales-orders")}
+            >
+              Cancel
+            </button>
+          </div>
+
+          {/* Right Section - Summary and Additional Actions */}
+          <div className="flex items-center space-x-2">
+            {/* Invoice Summary Card */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg px-3 py-1 shadow-sm">
+              <div className="text-xs font-semibold text-gray-800">
+                Invoice Summary
+              </div>
+              <div className="flex items-center space-x-2 text-xs">
+                <div className="text-gray-600">
+                  <span className="font-bold text-gray-900 text-sm">
+                    ₹{(formData.total || 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-px h-3 bg-gray-300"></div>
+                <div className="text-gray-500">
+                  <span className="font-medium">{formData.items.length}</span> items
+                </div>
+              </div>
+            </div>
+
+            {/* Make Recurring Button */}
+            <button className="flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md group">
+              <ArrowPathIcon className="h-3 w-3 mr-1 text-gray-500 group-hover:text-gray-700 transition-colors" />
+              <span className="hidden sm:inline">Make Recurring</span>
+              <span className="sm:hidden">Recurring</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <TCSManagementModal
         isOpen={showTCSModal}
         onClose={() => setShowTCSModal(false)}
@@ -2054,4 +2070,11 @@ const NewSalesOrderForm = () => {
   );
 };
 
-export default NewSalesOrderForm;
+// Wrapped with access guard
+const NewSalesOrderFormWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <NewSalesOrderForm />
+  </ModuleAccessGuard>
+);
+
+export default NewSalesOrderFormWithGuard;

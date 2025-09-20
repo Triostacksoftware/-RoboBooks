@@ -1,201 +1,309 @@
 import AuditTrail from '../models/AuditTrail.js';
 
-/**
- * Log an action to the audit trail
- * @param {Object} params - Audit log parameters
- * @param {string} params.user - User ID
- * @param {string} params.action - Action performed (create, update, delete, etc.)
- * @param {string} params.entity - Entity type (user, document, invoice, etc.)
- * @param {string} params.entityId - Entity ID (optional)
- * @param {string} params.message - Human readable message
- * @param {Object} params.details - Additional details
- * @param {string} params.ipAddress - IP address of the request
- * @param {string} params.userAgent - User agent string
- * @param {string} params.status - Status of the action (success, failure, pending)
- * @param {string} params.errorMessage - Error message if status is failure
- */
-export async function logAction({
-  user,
-  action,
-  entity,
-  entityId,
-  message,
-  details = {},
-  ipAddress,
-  userAgent,
-  status = 'success',
-  errorMessage
-}) {
-  try {
-    const auditEntry = new AuditTrail({
-      user,
+class AuditTrailService {
+  // Create audit entry
+  static async logAction(data) {
+    try {
+      const auditEntry = await AuditTrail.createAuditEntry({
+        userId: data.userId,
+        action: data.action,
+        entityType: data.entityType,
+        entityId: data.entityId,
+        entityName: data.entityName,
+        description: data.description,
+        changes: data.changes,
+        metadata: {
+          ipAddress: data.ipAddress,
+          userAgent: data.userAgent,
+          sessionId: data.sessionId,
+          requestId: data.requestId,
+          duration: data.duration,
+          status: data.status || 'success',
+          errorMessage: data.errorMessage
+        },
+        relatedEntities: data.relatedEntities || [],
+        tags: data.tags || [],
+        severity: data.severity || 'low',
+        isSensitive: data.isSensitive || false,
+        retentionDate: data.retentionDate
+      });
+
+      console.log(`📝 Audit logged: ${data.action} ${data.entityType} by user ${data.userId}`);
+      return auditEntry;
+    } catch (error) {
+      console.error('Error creating audit entry:', error);
+      // Don't throw error to avoid breaking the main operation
+      return null;
+    }
+  }
+
+  // Log currency adjustment actions
+  static async logCurrencyAdjustmentAction(userId, action, adjustment, changes = {}, metadata = {}) {
+    return this.logAction({
+      userId,
       action,
-      entity,
-      entityId,
-      details: {
-        message,
-        ...details
-      },
-      ipAddress,
-      userAgent,
-      status,
-      errorMessage
+      entityType: 'currency_adjustment',
+      entityId: adjustment._id,
+      entityName: `Adjustment ${adjustment.referenceNumber || adjustment._id}`,
+      description: `${action} currency adjustment: ${adjustment.fromCurrency} to ${adjustment.toCurrency}`,
+      changes,
+      metadata,
+      tags: ['currency', 'adjustment', action],
+      severity: action === 'delete' ? 'high' : 'medium'
     });
-
-    await auditEntry.save();
-    console.log(`🔍 Audit log: ${action} on ${entity} - ${message}`);
-    return auditEntry;
-  } catch (error) {
-    console.error('❌ Failed to log audit trail:', error);
-    // Don't throw error as audit logging shouldn't break main functionality
   }
-}
 
-/**
- * Get audit trail with filters
- * @param {Object} filters - Filter parameters
- * @param {string} filters.user - Filter by user ID
- * @param {string} filters.entity - Filter by entity type
- * @param {string} filters.action - Filter by action
- * @param {Date} filters.startDate - Start date for filtering
- * @param {Date} filters.endDate - End date for filtering
- * @param {number} filters.page - Page number for pagination
- * @param {number} filters.limit - Number of records per page
- */
-export async function getAuditTrail(filters = {}) {
-  try {
-    const {
-      user,
-      entity,
+  // Log currency rate actions
+  static async logCurrencyRateAction(userId, action, rate, changes = {}, metadata = {}) {
+    return this.logAction({
+      userId,
       action,
-      startDate,
-      endDate,
-      page = 1,
-      limit = 50
-    } = filters;
-
-    const query = {};
-
-    if (user) query.user = user;
-    if (entity) query.entity = entity;
-    if (action) query.action = action;
-    if (startDate || endDate) {
-      query.timestamp = {};
-      if (startDate) query.timestamp.$gte = new Date(startDate);
-      if (endDate) query.timestamp.$lte = new Date(endDate);
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [auditTrail, total] = await Promise.all([
-      AuditTrail.find(query)
-        .populate('user', 'name email')
-        .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      AuditTrail.countDocuments(query)
-    ]);
-
-    return {
-      data: auditTrail,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalRecords: total,
-        hasNext: skip + auditTrail.length < total,
-        hasPrev: parseInt(page) > 1
-      }
-    };
-  } catch (error) {
-    console.error('❌ Failed to get audit trail:', error);
-    throw error;
+      entityType: 'currency_rate',
+      entityId: rate._id,
+      entityName: `Rate ${rate.fromCurrency}-${rate.toCurrency}`,
+      description: `${action} exchange rate: ${rate.fromCurrency} to ${rate.toCurrency} = ${rate.rate}`,
+      changes,
+      metadata,
+      tags: ['currency', 'rate', action],
+      severity: 'low'
+    });
   }
-}
 
-/**
- * Get audit trail for a specific entity
- * @param {string} entity - Entity type
- * @param {string} entityId - Entity ID
- * @param {number} page - Page number
- * @param {number} limit - Records per page
- */
-export async function getEntityAuditTrail(entity, entityId, page = 1, limit = 50) {
-  try {
-    const query = { entity, entityId };
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [auditTrail, total] = await Promise.all([
-      AuditTrail.find(query)
-        .populate('user', 'name email')
-        .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(parseInt(limit)),
-      AuditTrail.countDocuments(query)
-    ]);
-
-    return {
-      data: auditTrail,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalRecords: total,
-        hasNext: skip + auditTrail.length < total,
-        hasPrev: parseInt(page) > 1
-      }
-    };
-  } catch (error) {
-    console.error('❌ Failed to get entity audit trail:', error);
-    throw error;
+  // Log journal entry actions
+  static async logJournalEntryAction(userId, action, entry, changes = {}, metadata = {}) {
+    return this.logAction({
+      userId,
+      action,
+      entityType: 'journal_entry',
+      entityId: entry._id,
+      entityName: `Journal Entry ${entry.entryNumber}`,
+      description: `${action} journal entry: ${entry.description}`,
+      changes,
+      metadata,
+      tags: ['accounting', 'journal', action],
+      severity: action === 'delete' ? 'high' : 'medium'
+    });
   }
-}
 
-/**
- * Get user activity summary
- * @param {string} userId - User ID
- * @param {Date} startDate - Start date
- * @param {Date} endDate - End date
- */
-export async function getUserActivitySummary(userId, startDate, endDate) {
-  try {
-    const query = { user: userId };
-    if (startDate || endDate) {
-      query.timestamp = {};
-      if (startDate) query.timestamp.$gte = new Date(startDate);
-      if (endDate) query.timestamp.$lte = new Date(endDate);
-    }
+  // Log document actions
+  static async logDocumentAction(userId, action, document, changes = {}, metadata = {}) {
+    return this.logAction({
+      userId,
+      action,
+      entityType: 'document',
+      entityId: document._id,
+      entityName: document.originalName,
+      description: `${action} document: ${document.originalName}`,
+      changes,
+      metadata,
+      tags: ['document', document.category, action],
+      severity: action === 'delete' ? 'medium' : 'low'
+    });
+  }
 
-    const summary = await AuditTrail.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: {
-            action: '$action',
-            entity: '$entity'
-          },
-          count: { $sum: 1 },
-          lastActivity: { $max: '$timestamp' }
-        }
+  // Log API provider actions
+  static async logApiProviderAction(userId, action, provider, changes = {}, metadata = {}) {
+    return this.logAction({
+      userId,
+      action,
+      entityType: 'api_provider',
+      entityId: provider._id,
+      entityName: provider.displayName,
+      description: `${action} API provider: ${provider.displayName}`,
+      changes,
+      metadata,
+      tags: ['api', 'provider', action],
+      severity: 'medium'
+    });
+  }
+
+  // Log bulk operations
+  static async logBulkOperation(userId, operation, entityType, count, metadata = {}) {
+    return this.logAction({
+      userId,
+      action: 'bulk_operation',
+      entityType: 'bulk_operation',
+      entityName: `${operation} ${count} ${entityType}`,
+      description: `Bulk ${operation}: ${count} ${entityType} records`,
+      metadata: {
+        ...metadata,
+        operation,
+        entityType,
+        count
       },
-      {
-        $group: {
-          _id: '$_id.entity',
-          actions: {
-            $push: {
-              action: '$_id.action',
-              count: '$count',
-              lastActivity: '$lastActivity'
-            }
-          },
-          totalActions: { $sum: '$count' }
-        }
-      }
-    ]);
+      tags: ['bulk', operation, entityType],
+      severity: 'medium'
+    });
+  }
 
-    return summary;
-  } catch (error) {
-    console.error('❌ Failed to get user activity summary:', error);
-    throw error;
+  // Log authentication events
+  static async logAuthEvent(userId, action, metadata = {}) {
+    return this.logAction({
+      userId,
+      action,
+      entityType: 'user',
+      entityId: userId,
+      entityName: 'User Authentication',
+      description: `User ${action}`,
+      metadata,
+      tags: ['auth', action],
+      severity: action === 'login' ? 'low' : 'low'
+    });
+  }
+
+  // Log system events
+  static async logSystemEvent(event, description, metadata = {}) {
+    return this.logAction({
+      userId: null, // System event
+      action: 'system',
+      entityType: 'system',
+      entityName: event,
+      description,
+      metadata,
+      tags: ['system', event],
+      severity: 'low'
+    });
+  }
+
+  // Get audit trail for specific entity
+  static async getEntityAuditTrail(entityType, entityId, userId) {
+    try {
+      return await AuditTrail.getEntityAuditTrail(entityType, entityId, userId);
+    } catch (error) {
+      console.error('Error fetching entity audit trail:', error);
+      return [];
+    }
+  }
+
+  // Get user activity
+  static async getUserActivity(userId, startDate, endDate) {
+    try {
+      return await AuditTrail.getUserActivity(userId, startDate, endDate);
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      return [];
+    }
+  }
+
+  // Get system statistics
+  static async getSystemStats(startDate, endDate) {
+    try {
+      const stats = await AuditTrail.getSystemStats(startDate, endDate);
+      return stats[0] || {
+        totalActions: 0,
+        uniqueUserCount: 0,
+        errors: 0,
+        warnings: 0,
+        successRate: 100
+      };
+    } catch (error) {
+      console.error('Error fetching system stats:', error);
+      return {
+        totalActions: 0,
+        uniqueUserCount: 0,
+        errors: 0,
+        warnings: 0,
+        successRate: 100
+      };
+    }
+  }
+
+  // Get recent activities
+  static async getRecentActivities(limit = 50) {
+    try {
+      return await AuditTrail.find({})
+        .populate('userId', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(limit);
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+      return [];
+    }
+  }
+
+  // Get audit trail with filters
+  static async getAuditTrail(filters = {}) {
+    try {
+      const {
+        userId,
+        action,
+        entityType,
+        startDate,
+        endDate,
+        severity,
+        status,
+        page = 1,
+        limit = 50
+      } = filters;
+
+      let query = {};
+
+      if (userId) query.userId = userId;
+      if (action) query.action = action;
+      if (entityType) query.entityType = entityType;
+      if (severity) query.severity = severity;
+      if (status) query['metadata.status'] = status;
+
+      if (startDate || endDate) {
+        query.createdAt = {};
+        if (startDate) query.createdAt.$gte = new Date(startDate);
+        if (endDate) query.createdAt.$lte = new Date(endDate);
+      }
+
+      const skip = (page - 1) * limit;
+
+      const [auditTrails, totalCount] = await Promise.all([
+        AuditTrail.find(query)
+          .populate('userId', 'name email')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        AuditTrail.countDocuments(query)
+      ]);
+
+      return {
+        auditTrails,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        currentPage: page
+      };
+    } catch (error) {
+      console.error('Error fetching audit trail:', error);
+      return {
+        auditTrails: [],
+        totalCount: 0,
+        totalPages: 0,
+        currentPage: 1
+      };
+    }
+  }
+
+  // Clean up old audit entries
+  static async cleanupOldEntries(daysToKeep = 365) {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+      const result = await AuditTrail.deleteMany({
+        createdAt: { $lt: cutoffDate },
+        severity: { $in: ['low', 'medium'] } // Keep high and critical severity entries
+      });
+
+      console.log(`🧹 Cleaned up ${result.deletedCount} old audit entries`);
+      return result.deletedCount;
+    } catch (error) {
+      console.error('Error cleaning up audit entries:', error);
+      return 0;
+    }
   }
 }
 
+// Export individual functions for backward compatibility
+export const logAction = AuditTrailService.logAction;
+export const getAuditTrail = AuditTrailService.getAuditTrail;
+export const getEntityAuditTrail = AuditTrailService.getEntityAuditTrail;
+export const getUserActivity = AuditTrailService.getUserActivity;
+export const getSystemStats = AuditTrailService.getSystemStats;
+export const getRecentActivities = AuditTrailService.getRecentActivities;
 
+export default AuditTrailService;

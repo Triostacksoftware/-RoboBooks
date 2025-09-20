@@ -55,7 +55,14 @@ import vendorCreditRoutes from "./routes/vendorCreditRoutes.js";
 import customViewRoutes from "./routes/customViewRoutes.js";
 import preferencesRoutes from "./routes/preferencesRoutes.js";
 import currencyRoutes from "./routes/currencyRoutes.js";
-// import dashboardRoutes from "./routes/dashboardRoutes.js";
+import currencyAnalyticsRoutes from "./routes/currencyAnalyticsRoutes.js";
+import userPreferencesRoutes from "./routes/userPreferencesRoutes.js";
+import journalEntryRoutes from "./routes/journalEntryRoutes.js";
+import apiProviderRoutes from "./routes/apiProviderRoutes.js";
+import bulkOperationsRoutes from "./routes/bulkOperationsRoutes.js";
+import transactionLockingRoutes from "./routes/transactionLockingRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import dashboardEventsRoutes from "./routes/dashboardEvents.js";
 
 const app = express();
 
@@ -145,7 +152,14 @@ app.use("/api/vendor-credits", vendorCreditRoutes);
 app.use("/api/custom-views", customViewRoutes);
 app.use("/api/preferences", preferencesRoutes);
 app.use("/api/currency", currencyRoutes);
-// app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/currency-analytics", currencyAnalyticsRoutes);
+app.use("/api/user-preferences", userPreferencesRoutes);
+app.use("/api/journal-entries", journalEntryRoutes);
+app.use("/api/api-providers", apiProviderRoutes);
+app.use("/api/bulk-operations", bulkOperationsRoutes);
+app.use("/api/transaction-locking", transactionLockingRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/dashboard", dashboardEventsRoutes);
 
 // Health check and welcome routes
 app.get("/", (_req, res) => {

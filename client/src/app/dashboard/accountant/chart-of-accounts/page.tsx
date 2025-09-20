@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -530,4 +531,11 @@ const ChartOfAccountsPage = () => {
   );
 };
 
-export default ChartOfAccountsPage;
+// Wrapped with access guard
+const ChartOfAccountsPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Accountant">
+    <ChartOfAccountsPage />
+  </ModuleAccessGuard>
+);
+
+export default ChartOfAccountsPageWithGuard;

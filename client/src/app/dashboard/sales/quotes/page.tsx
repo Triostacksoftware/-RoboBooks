@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -319,4 +320,11 @@ const QuotesPage = () => {
   );
 };
 
-export default QuotesPage;
+// Wrapped with access guard
+const QuotesPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <QuotesPage />
+  </ModuleAccessGuard>
+);
+
+export default QuotesPageWithGuard;

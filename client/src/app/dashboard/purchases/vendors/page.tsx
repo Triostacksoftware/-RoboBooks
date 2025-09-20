@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useToast } from "@/contexts/ToastContext";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import VendorsSection from './components/VendorsSection';
 import BulkImportModal from "@/components/modals/BulkImportModal";
 import BulkExportModal from "@/components/modals/BulkExportModal";
 import { Vendor, vendorService } from '@/services/vendorService';
 
 const VendorsPage = () => {
+  const { addToast, removeToastsByType } = useToast();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
@@ -18,10 +21,45 @@ const VendorsPage = () => {
     const fetchVendors = async () => {
       try {
         setLoading(true);
+        
+        // Remove any existing processing toasts
+        removeToastsByType('info');
+        
+        // Show processing toast
+        addToast({
+          type: 'info',
+          title: 'Loading...',
+          message: 'Fetching vendors from server...',
+          duration: 0 // Don't auto-dismiss processing toast
+        });
+        
         const vendorsData = await vendorService.getVendors();
         setVendors(vendorsData);
-      } catch (error) {
+        
+        // Remove processing toast
+        removeToastsByType('info');
+        
+        // Show success toast (only if there were no vendors before)
+        if (vendors.length === 0) {
+          addToast({
+            title: "Success",
+            message: `Loaded ${vendorsData.length} vendors successfully`,
+            type: "success",
+            duration: 2000,
+          });
+        }
+      } catch (error: any) {
         console.error('Error fetching vendors:', error);
+        
+        // Remove processing toast on error
+        removeToastsByType('info');
+        
+        addToast({
+          title: "Error",
+          message: "Failed to load vendors",
+          type: "error",
+          duration: 5000,
+        });
       } finally {
         setLoading(false);
       }
@@ -241,4 +279,11 @@ const VendorsPage = () => {
   );
 };
 
-export default VendorsPage;
+// Wrapped with access guard
+const VendorsPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <VendorsPage />
+  </ModuleAccessGuard>
+);
+
+export default VendorsPageWithGuard;

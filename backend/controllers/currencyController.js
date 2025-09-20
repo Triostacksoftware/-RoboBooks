@@ -12,10 +12,19 @@ import {
   triggerManualUpdate 
 } from '../services/scheduledRatesService.js';
 
-// Get all exchange rates
+// Get all exchange rates with pagination
 export const getExchangeRates = async (req, res) => {
   try {
-    const { fromCurrency, toCurrency, isActive, date } = req.query;
+    const { 
+      fromCurrency, 
+      toCurrency, 
+      isActive, 
+      date, 
+      page = 1, 
+      limit = 20,
+      sortBy = 'date',
+      sortOrder = 'desc'
+    } = req.query;
     const userId = req.user.id;
 
     let query = { userId };
@@ -30,12 +39,36 @@ export const getExchangeRates = async (req, res) => {
       query.date = { $gte: startDate, $lt: endDate };
     }
 
+    // Calculate pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build sort object
+    const sortObj = {};
+    sortObj[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Get total count for pagination
+    const totalCount = await CurrencyRate.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limitNum);
+
+    // Get paginated results
     const rates = await CurrencyRate.find(query)
-      .sort({ date: -1, fromCurrency: 1, toCurrency: 1 });
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limitNum);
 
     res.json({
       success: true,
-      data: rates
+      data: rates,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalCount,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+        limit: limitNum
+      }
     });
   } catch (error) {
     console.error('Error fetching exchange rates:', error);

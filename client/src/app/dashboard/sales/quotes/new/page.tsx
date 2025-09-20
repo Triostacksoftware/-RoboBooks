@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
@@ -671,13 +672,6 @@ const NewQuoteForm = () => {
     }
   }, [formData.items]);
 
-  // Show immediate alert about backend status
-  useEffect(() => {
-    console.log("🚨 SHOWING IMMEDIATE BACKEND STATUS ALERT");
-    alert(
-      "🔧 Backend Status Check: The system is checking if your backend server is running. Look for the blue status panel below."
-    );
-  }, []);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -1727,7 +1721,7 @@ const NewQuoteForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex-1 bg-gray-50 flex flex-col">
       {/* Header with Back Button */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -1752,8 +1746,8 @@ const NewQuoteForm = () => {
         </div>
       </div>
 
-      {/* Main Form Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Main Form Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Customer Details */}
           <CustomerDetails
@@ -2164,15 +2158,16 @@ const NewQuoteForm = () => {
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
-      <div className="bg-white border-t border-gray-200 px-4 py-4 mt-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+      {/* Bottom Action Bar - Fixed at bottom of page */}
+      <div className="bg-white border-t border-gray-200 px-3 py-1.5 shadow-lg">
+        <div className="max-w-7xl mx-auto flex items-center justify-between transition-all duration-300 ease-in-out">
+          {/* Left Section - Action Buttons */}
+          <div className="flex items-center space-x-2">
             <button
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              className={`px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md ${
                 isSubmitting
                   ? "text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed"
-                  : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                  : "text-gray-600 bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300"
               }`}
               onClick={() => handleSaveQuote(true)}
               disabled={isSubmitting}
@@ -2180,10 +2175,10 @@ const NewQuoteForm = () => {
               {isSubmitting ? "Saving..." : "Save as Draft"}
             </button>
             <button
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              className={`px-4 py-1 text-xs font-semibold rounded-lg transition-all duration-200 whitespace-nowrap shadow-lg hover:shadow-xl transform hover:scale-105 ${
                 isSubmitting
                   ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                  : "text-white bg-blue-600 hover:bg-blue-700"
+                  : "text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
               }`}
               onClick={() => handleSaveQuote(false)}
               disabled={isSubmitting}
@@ -2191,7 +2186,7 @@ const NewQuoteForm = () => {
               {isSubmitting ? "Saving..." : "Save and Send"}
             </button>
             <button
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
               onClick={() => router.push("/dashboard/sales/quotes")}
               disabled={isSubmitting}
             >
@@ -2199,23 +2194,34 @@ const NewQuoteForm = () => {
             </button>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">
-                Total: ₹{(formData.total || 0).toFixed(2)}
-              </span>
-              <span className="ml-2 text-gray-500">
-                Items: {formData.items?.length || 0}
-              </span>
+          {/* Right Section - Summary and Additional Actions */}
+          <div className="flex items-center space-x-2">
+            {/* Quote Summary Card */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg px-3 py-1 shadow-sm">
+              <div className="text-xs font-semibold text-gray-800">
+                Quote Summary
+              </div>
+              <div className="flex items-center space-x-2 text-xs">
+                <div className="text-gray-600">
+                  <span className="font-bold text-gray-900 text-sm">
+                    ₹{(formData.total || 0).toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-px h-3 bg-gray-300"></div>
+                <div className="text-gray-500">
+                  <span className="font-medium">{formData.items?.length || 0}</span> items
+                </div>
+              </div>
             </div>
-            <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <ArrowPathIcon className="h-4 w-4 mr-2" />
-              Make Recurring
+
+            {/* Make Recurring Button */}
+            <button className="flex items-center px-3 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md group">
+              <ArrowPathIcon className="h-3 w-3 mr-1 text-gray-500 group-hover:text-gray-700 transition-colors" />
+              <span className="hidden sm:inline">Make Recurring</span>
+              <span className="sm:hidden">Recurring</span>
             </button>
           </div>
         </div>
-
-        {/* Backend status footer removed */}
       </div>
 
       {/* Compact Toasts */}
@@ -2256,4 +2262,11 @@ const NewQuoteForm = () => {
   );
 };
 
-export default NewQuoteForm;
+// Wrapped with access guard
+const NewQuoteFormWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <NewQuoteForm />
+  </ModuleAccessGuard>
+);
+
+export default NewQuoteFormWithGuard;

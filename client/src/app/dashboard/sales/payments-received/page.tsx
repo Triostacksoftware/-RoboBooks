@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import PaymentsReceivedEmpty from "./components/PaymentsReceivedEmpty";
 import PaymentsReceivedTable from "./components/PaymentsReceivedTable";
 import PaymentsReceivedHeader from "./components/PaymentsReceivedHeader";
@@ -21,7 +22,7 @@ import {
 } from "@/services/realTimeService";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-export default function PaymentsReceivedPage() {
+function PaymentsReceivedPage() {
   const [hasPayments, setHasPayments] = useState(true);
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -739,3 +740,12 @@ export default function PaymentsReceivedPage() {
     </ErrorBoundary>
   );
 }
+
+// Wrapped with access guard
+const PaymentsReceivedPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <PaymentsReceivedPage />
+  </ModuleAccessGuard>
+);
+
+export default PaymentsReceivedPageWithGuard;

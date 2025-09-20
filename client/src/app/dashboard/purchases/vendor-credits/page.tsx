@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import VendorCreditsSection from './components/VendorCreditsSection';
 import BulkImportModal from "@/components/modals/BulkImportModal";
@@ -348,4 +349,11 @@ const VendorCreditsPage = () => {
   );
 };
 
-export default VendorCreditsPage;
+// Wrapped with access guard
+const VendorCreditsPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <VendorCreditsPage />
+  </ModuleAccessGuard>
+);
+
+export default VendorCreditsPageWithGuard;

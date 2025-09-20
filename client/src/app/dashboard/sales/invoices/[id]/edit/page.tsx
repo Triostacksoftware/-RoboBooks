@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import {
@@ -825,4 +826,11 @@ const EditInvoicePage = () => {
   );
 };
 
-export default EditInvoicePage;
+// Wrapped with access guard
+const EditInvoicePageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <EditInvoicePage />
+  </ModuleAccessGuard>
+);
+
+export default EditInvoicePageWithGuard;

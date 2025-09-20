@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -423,4 +424,11 @@ const CreditNoteDetailPage = () => {
   );
 };
 
-export default CreditNoteDetailPage;
+// Wrapped with access guard
+const CreditNoteDetailPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <CreditNoteDetailPage />
+  </ModuleAccessGuard>
+);
+
+export default CreditNoteDetailPageWithGuard;

@@ -2,18 +2,71 @@ import cron from 'node-cron';
 import CurrencyRate from '../models/CurrencyRate.js';
 import { fetchRealTimeRate } from './exchangeRateService.js';
 
-// Common currency pairs that should be updated regularly
+// Major world currency pairs that should be updated regularly
 const COMMON_CURRENCY_PAIRS = [
-  { from: 'USD', to: 'INR' },
-  { from: 'EUR', to: 'INR' },
-  { from: 'GBP', to: 'INR' },
+  // Major currencies vs USD
   { from: 'USD', to: 'EUR' },
   { from: 'USD', to: 'GBP' },
-  { from: 'EUR', to: 'USD' },
-  { from: 'GBP', to: 'USD' },
   { from: 'USD', to: 'JPY' },
+  { from: 'USD', to: 'CHF' },
   { from: 'USD', to: 'CAD' },
-  { from: 'USD', to: 'AUD' }
+  { from: 'USD', to: 'AUD' },
+  { from: 'USD', to: 'NZD' },
+  { from: 'USD', to: 'INR' },
+  { from: 'USD', to: 'CNY' },
+  { from: 'USD', to: 'KRW' },
+  { from: 'USD', to: 'SGD' },
+  { from: 'USD', to: 'HKD' },
+  { from: 'USD', to: 'BRL' },
+  { from: 'USD', to: 'MXN' },
+  { from: 'USD', to: 'RUB' },
+  { from: 'USD', to: 'ZAR' },
+  { from: 'USD', to: 'TRY' },
+  { from: 'USD', to: 'SEK' },
+  { from: 'USD', to: 'NOK' },
+  { from: 'USD', to: 'DKK' },
+  
+  // Major currencies vs EUR
+  { from: 'EUR', to: 'USD' },
+  { from: 'EUR', to: 'GBP' },
+  { from: 'EUR', to: 'JPY' },
+  { from: 'EUR', to: 'CHF' },
+  { from: 'EUR', to: 'INR' },
+  { from: 'EUR', to: 'CNY' },
+  { from: 'EUR', to: 'CAD' },
+  { from: 'EUR', to: 'AUD' },
+  
+  // Major currencies vs GBP
+  { from: 'GBP', to: 'USD' },
+  { from: 'GBP', to: 'EUR' },
+  { from: 'GBP', to: 'JPY' },
+  { from: 'GBP', to: 'INR' },
+  { from: 'GBP', to: 'CHF' },
+  { from: 'GBP', to: 'CAD' },
+  { from: 'GBP', to: 'AUD' },
+  
+  // Major currencies vs INR
+  { from: 'INR', to: 'USD' },
+  { from: 'INR', to: 'EUR' },
+  { from: 'INR', to: 'GBP' },
+  { from: 'INR', to: 'JPY' },
+  { from: 'INR', to: 'CNY' },
+  { from: 'INR', to: 'SGD' },
+  { from: 'INR', to: 'HKD' },
+  { from: 'INR', to: 'AED' },
+  
+  // Other important pairs
+  { from: 'JPY', to: 'USD' },
+  { from: 'JPY', to: 'EUR' },
+  { from: 'JPY', to: 'GBP' },
+  { from: 'CHF', to: 'USD' },
+  { from: 'CHF', to: 'EUR' },
+  { from: 'CNY', to: 'USD' },
+  { from: 'CNY', to: 'EUR' },
+  { from: 'AUD', to: 'USD' },
+  { from: 'AUD', to: 'EUR' },
+  { from: 'CAD', to: 'USD' },
+  { from: 'CAD', to: 'EUR' }
 ];
 
 /**
@@ -57,8 +110,8 @@ const updateExchangeRatesForAllUsers = async () => {
                 existingRate._id,
                 { 
                   rate: result.data.rate,
-                  source: 'SCHEDULED_UPDATE',
-                  notes: `Auto-updated via scheduled job`,
+                  source: result.data.source, // Use the actual API provider name
+                  notes: result.data.notes, // Use the actual API notes
                   updatedAt: new Date()
                 }
               );
@@ -67,9 +120,7 @@ const updateExchangeRatesForAllUsers = async () => {
               // Create new rate
               const rateData = {
                 ...result.data,
-                userId: userId,
-                source: 'SCHEDULED_UPDATE',
-                notes: `Auto-created via scheduled job`
+                userId: userId
               };
               const newRate = new CurrencyRate(rateData);
               await newRate.save();
@@ -123,9 +174,7 @@ export const initializeDefaultRatesForUser = async (userId) => {
             // Create new rate
             const rateData = {
               ...result.data,
-              userId: userId,
-              source: 'INITIAL_SETUP',
-              notes: `Initial setup for new user`
+              userId: userId
             };
             const newRate = new CurrencyRate(rateData);
             await newRate.save();
@@ -149,9 +198,9 @@ export const initializeDefaultRatesForUser = async (userId) => {
 export const startScheduledRateUpdates = () => {
   console.log('🚀 Starting scheduled exchange rate updates...');
   
-  // Update rates every 4 hours (4 times per day)
-  cron.schedule('0 */4 * * *', () => {
-    console.log('⏰ Scheduled exchange rate update triggered');
+  // Update rates every 10 minutes
+  cron.schedule('*/10 * * * *', () => {
+    console.log('⏰ Scheduled exchange rate update triggered (every 10 minutes)');
     updateExchangeRatesForAllUsers();
   }, {
     scheduled: true,
@@ -168,7 +217,7 @@ export const startScheduledRateUpdates = () => {
   });
 
   console.log('✅ Scheduled exchange rate updates started');
-  console.log('📅 Updates will run every 4 hours and daily at 9 AM UTC');
+  console.log('📅 Updates will run every 10 minutes and daily at 9 AM UTC');
 };
 
 /**

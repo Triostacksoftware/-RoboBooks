@@ -336,3 +336,306 @@ body.rs-collapsed main {
   color: #6b7280 !important;
   padding: 8px 12px !important;
 }
+
+/* Custom Ultra-Thin Scrollbars for RoboBooks UI */
+/* Sidebar Scrollbar - Ultra Thin Light Blue - 50% lighter and 40% thinner (20% more than before) */
+.sidebar-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: #93c5fd transparent !important;
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable !important;
+  max-height: calc(100vh - 120px) !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 0.5px !important;
+  height: 0.5px !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  transition: background-color 0.2s ease !important;
+  min-height: 15px !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #3b82f6 !important;
+}
+
+/* Force scrollbar to always be visible */
+.sidebar-scrollbar::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Main Content Scrollbar - Ultra Thin Light Blue - 50% lighter and 40% thinner (20% more than before) */
+.main-content-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: #93c5fd #f8fafc !important;
+  overflow-y: scroll !important;
+  scrollbar-gutter: stable !important;
+}
+
+.main-content-scrollbar::-webkit-scrollbar {
+  width: 0.5px !important;
+  height: 0.5px !important;
+}
+
+.main-content-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 0.5px !important;
+}
+
+.main-content-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  transition: background-color 0.2s ease !important;
+  min-height: 20px !important;
+}
+
+.main-content-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa !important;
+}
+
+.main-content-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #3b82f6 !important;
+}
+
+/* Force scrollbar to always be visible */
+.main-content-scrollbar::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Force visibility and override any conflicting styles */
+.sidebar-scrollbar,
+.main-content-scrollbar {
+  overflow-y: auto !important;
+  scrollbar-gutter: stable !important;
+}
+
+/* Additional specificity to override Tailwind - Both scrollbars identical - 50% lighter and 40% thinner (20% more than before) */
+div.sidebar-scrollbar::-webkit-scrollbar,
+div.main-content-scrollbar::-webkit-scrollbar {
+  width: 0.5px !important;
+  height: 0.5px !important;
+}
+
+div.sidebar-scrollbar::-webkit-scrollbar-thumb,
+div.main-content-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  min-height: 20px !important;
+}
+
+div.sidebar-scrollbar::-webkit-scrollbar-track,
+div.main-content-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 0.5px !important;
+}
+
+/* Force sidebar scrollbar to be more visible - 50% lighter and 20% thinner */
+.sidebar-scrollbar {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #93c5fd #f8fafc !important;
+}
+
+/* Make scrollbar thumb more visible */
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  min-height: 20px !important;
+}
+
+/* Ensure scrollbar track is visible */
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 0.5px !important;
+}
+
+/* Force main content scrollbar to be more visible - 50% lighter and 20% thinner */
+.main-content-scrollbar {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #93c5fd #f8fafc !important;
+}
+
+/* Make main content scrollbar thumb more visible */
+.main-content-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  min-height: 20px !important;
+}
+
+/* Ensure main content scrollbar track is visible */
+.main-content-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 0.5px !important;
+}
+
+/* Firefox fallback with higher specificity - 50% lighter and 20% thinner */
+@supports (scrollbar-width: thin) {
+  .sidebar-scrollbar,
+  .main-content-scrollbar {
+    scrollbar-width: thin !important;
+    scrollbar-color: #93c5fd #f8fafc !important;
+  }
+}
+
+/* Force override any browser defaults for main content - 50% lighter and 40% thinner (20% more than before) */
+main.main-content-scrollbar {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #93c5fd #f8fafc !important;
+}
+
+main.main-content-scrollbar::-webkit-scrollbar {
+  width: 0.5px !important;
+  height: 0.5px !important;
+}
+
+main.main-content-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 0.5px !important;
+}
+
+main.main-content-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  min-height: 20px !important;
+}
+
+main.main-content-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa !important;
+}
+
+main.main-content-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #3b82f6 !important;
+}
+
+main.main-content-scrollbar::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Force override for div elements with main-content-scrollbar class - 50% lighter and 40% thinner (20% more than before) */
+div.main-content-scrollbar {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #93c5fd #f8fafc !important;
+}
+
+div.main-content-scrollbar::-webkit-scrollbar {
+  width: 0.5px !important;
+  height: 0.5px !important;
+}
+
+div.main-content-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 0.5px !important;
+}
+
+div.main-content-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  min-height: 20px !important;
+}
+
+div.main-content-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa !important;
+}
+
+div.main-content-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #3b82f6 !important;
+}
+
+div.main-content-scrollbar::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Hide default browser scrollbar completely and show only custom one */
+html, body, * {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* Internet Explorer 10+ */
+}
+
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar, 
+*::-webkit-scrollbar {
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+  display: none !important;
+}
+
+/* Ensure no scrollbars on the main page */
+body {
+  overflow-x: hidden !important;
+}
+
+/* Hide any potential bottom gradient strips or browser elements */
+body::after,
+html::after,
+*::after {
+  display: none !important;
+}
+
+/* Remove any potential bottom borders or strips */
+body,
+html {
+  border-bottom: none !important;
+}
+
+/* Hide any potential browser scrollbar gradients */
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+  display: none !important;
+}
+
+/* Hide any potential browser elements at the bottom */
+*[style*="gradient"] {
+  display: none !important;
+}
+
+/* But show our custom scrollbars - 50% lighter and 40% thinner (20% more than before) */
+.sidebar-scrollbar,
+.main-content-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: #93c5fd #f8fafc !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar,
+.main-content-scrollbar::-webkit-scrollbar {
+  width: 0.5px !important;
+  background: transparent !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track,
+.main-content-scrollbar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 0.5px !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb,
+.main-content-scrollbar::-webkit-scrollbar-thumb {
+  background: #93c5fd !important;
+  border-radius: 0.5px !important;
+  min-height: 20px !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover,
+.main-content-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa !important;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:active,
+.main-content-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #3b82f6 !important;
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp,
@@ -382,4 +383,11 @@ const ProfitLossPage = () => {
   );
 };
 
-export default ProfitLossPage;
+// Wrapped with access guard
+const ProfitLossPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Accountant">
+    <ProfitLossPage />
+  </ModuleAccessGuard>
+);
+
+export default ProfitLossPageWithGuard;

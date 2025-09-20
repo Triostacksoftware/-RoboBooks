@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from "next/navigation";
 import { generateClientPDF } from "../../../../../utils/pdfGenerator";
 import {
@@ -1073,4 +1074,11 @@ const InvoiceDetailPage = () => {
   );
 };
 
-export default InvoiceDetailPage;
+// Wrapped with access guard
+const InvoiceDetailPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <InvoiceDetailPage />
+  </ModuleAccessGuard>
+);
+
+export default InvoiceDetailPageWithGuard;

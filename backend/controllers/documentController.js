@@ -1,177 +1,117 @@
-import Document from "../models/Document.js";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { logAction } from "../services/auditTrailservice.js";
+import Document from '../models/Document.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, "../uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Upload document
-export const uploadDocument = async (req, res) => {
-  try {
-    console.log("Upload request received:", {
-      file: req.file ? "File present" : "No file",
-      body: req.body,
-      user: req.user
-    });
-
-    if (!req.file) {
-      console.log("No file uploaded");
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded",
-      });
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/documents';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
 
-    const {
-      title,
-      description,
-      documentType = "other",
-      category = "other",
-      tags = [],
-      isPublic = false,
-    } = req.body;
-
-    console.log("Processing upload with data:", {
-      title,
-      description,
-      documentType,
-      category,
-      tags,
-      isPublic,
-      fileName: req.file.filename,
-      originalName: req.file.originalname,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
-      userId: req.user.uid
-    });
-
-    if (!title) {
-      console.log("Title is missing");
-      return res.status(400).json({
-        success: false,
-        message: "Title is required",
-      });
-    }
-
-    const document = new Document({
-      title,
-      description,
-      fileName: req.file.filename,
-      originalName: req.file.originalname,
-      filePath: req.file.path,
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
-      documentType,
-      category,
-      tags: tags.split(",").map(tag => tag.trim()).filter(tag => tag),
-      uploadedBy: req.user.uid,
-      isPublic,
-    });
-
-    console.log("Saving document to database...");
-    await document.save();
-    console.log("Document saved successfully:", document._id);
-
-    // Log audit trail
-    await logAction({
-      user: req.user.uid,
-      action: "upload",
-      entity: "document",
-      entityId: document._id,
-      message: `Document "${title}" uploaded successfully`,
-      details: {
-        fileName: req.file.filename,
-        fileSize: req.file.size,
-        mimeType: req.file.mimetype,
-        documentType,
-        category
-      },
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent')
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Document uploaded successfully",
-      data: document,
-    });
-  } catch (error) {
-    console.error("Upload document error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error uploading document",
-      error: error.message,
-    });
+const fileFilter = (req, file, cb) => {
+  // Allow common document types
+  const allowedTypes = [
+    'application/pdf',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+    'text/csv'
+  ];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only documents, images, and common file types are allowed.'), false);
   }
 };
 
-// Get all documents with pagination and filters
+export const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// Get all documents
 export const getDocuments = async (req, res) => {
   try {
+    const userId = req.user.id;
     const {
       page = 1,
-      limit = 10,
-      search,
-      documentType,
+      limit = 20,
       category,
-      sortBy = "createdAt",
-      sortOrder = "desc",
+      relatedEntityType,
+      relatedEntityId,
+      search,
+      tags
     } = req.query;
 
-    const query = { isActive: true };
+    let query = { userId, isArchived: false };
 
-    // Search functionality
+    // Apply filters
+    if (category) query.category = category;
+    if (relatedEntityType) query['relatedEntity.type'] = relatedEntityType;
+    if (relatedEntityId) query['relatedEntity.entityId'] = relatedEntityId;
     if (search) {
-      query.$text = { $search: search };
+      query.$or = [
+        { filename: { $regex: search, $options: 'i' } },
+        { originalName: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (tags) {
+      const tagArray = tags.split(',').map(tag => tag.trim());
+      query.tags = { $in: tagArray };
     }
 
-    // Filter by document type
-    if (documentType) {
-      query.documentType = documentType;
-    }
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
-    // Filter by category
-    if (category) {
-      query.category = category;
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    const totalCount = await Document.countDocuments(query);
+    const totalPages = Math.ceil(totalCount / limitNum);
 
     const documents = await Document.find(query)
-      .populate("uploadedBy", "name email")
-      .sort(sortOptions)
+      .populate('uploadedBy', 'name email')
+      .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit));
-
-    const total = await Document.countDocuments(query);
+      .limit(limitNum);
 
     res.json({
       success: true,
       data: documents,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalDocuments: total,
-        hasNext: skip + documents.length < total,
-        hasPrev: parseInt(page) > 1,
-      },
+        currentPage: pageNum,
+        totalPages,
+        totalCount,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+        limit: limitNum
+      }
     });
   } catch (error) {
-    console.error("Get documents error:", error);
+    console.error('Error fetching documents:', error);
     res.status(500).json({
       success: false,
-      message: "Error fetching documents",
-      error: error.message,
+      message: 'Failed to fetch documents',
+      error: error.message
     });
   }
 };
@@ -179,154 +119,99 @@ export const getDocuments = async (req, res) => {
 // Get document by ID
 export const getDocumentById = async (req, res) => {
   try {
-    const document = await Document.findById(req.params.id)
-      .populate("uploadedBy", "name email");
+    const userId = req.user.id;
+    const documentId = req.params.id;
+
+    const document = await Document.findOne({ _id: documentId, userId })
+      .populate('uploadedBy', 'name email');
 
     if (!document) {
       return res.status(404).json({
         success: false,
-        message: "Document not found",
+        message: 'Document not found'
       });
     }
 
+    // Track access
+    await document.trackAccess();
+
     res.json({
       success: true,
-      data: document,
+      data: document
     });
   } catch (error) {
-    console.error("Get document by ID error:", error);
+    console.error('Error fetching document:', error);
     res.status(500).json({
       success: false,
-      message: "Error fetching document",
-      error: error.message,
+      message: 'Failed to fetch document',
+      error: error.message
     });
   }
 };
 
-// Update document
-export const updateDocument = async (req, res) => {
+// Upload document
+export const uploadDocument = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      documentType,
-      category,
-      tags,
-      isPublic,
-    } = req.body;
+    const userId = req.user.id;
+    const file = req.file;
 
-    const document = await Document.findById(req.params.id);
-
-    if (!document) {
-      return res.status(404).json({
+    if (!file) {
+      return res.status(400).json({
         success: false,
-        message: "Document not found",
+        message: 'No file uploaded'
       });
     }
 
-    // Check if user is the owner or admin
-    if (document.uploadedBy.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this document",
-      });
-    }
+    // Calculate file checksum
+    const fileBuffer = fs.readFileSync(file.path);
+    const checksum = crypto.createHash('md5').update(fileBuffer).digest('hex');
 
-    const updateData = {};
-    if (title) updateData.title = title;
-    if (description !== undefined) updateData.description = description;
-    if (documentType) updateData.documentType = documentType;
-    if (category) updateData.category = category;
-    if (tags !== undefined) {
-      updateData.tags = tags.split(",").map(tag => tag.trim()).filter(tag => tag);
-    }
-    if (isPublic !== undefined) updateData.isPublic = isPublic;
-
-    const updatedDocument = await Document.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    ).populate("uploadedBy", "name email");
-
-    // Log audit trail
-    await logAction({
-      user: req.user.uid,
-      action: "update",
-      entity: "document",
-      entityId: req.params.id,
-      message: `Document "${updatedDocument.title}" updated`,
-      details: updateData,
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent')
-    });
-
-    res.json({
-      success: true,
-      message: "Document updated successfully",
-      data: updatedDocument,
-    });
-  } catch (error) {
-    console.error("Update document error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating document",
-      error: error.message,
-    });
-  }
-};
-
-// Delete document
-export const deleteDocument = async (req, res) => {
-  try {
-    const document = await Document.findById(req.params.id);
-
-    if (!document) {
-      return res.status(404).json({
-        success: false,
-        message: "Document not found",
-      });
-    }
-
-    // Check if user is the owner or admin
-    if (document.uploadedBy.toString() !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to delete this document",
-      });
-    }
-
-    // Delete file from filesystem
-    if (fs.existsSync(document.filePath)) {
-      fs.unlinkSync(document.filePath);
-    }
-
-    await Document.findByIdAndDelete(req.params.id);
-
-    // Log audit trail
-    await logAction({
-      user: req.user.uid,
-      action: "delete",
-      entity: "document",
-      entityId: req.params.id,
-      message: `Document "${document.title}" deleted`,
-      details: {
-        fileName: document.fileName,
-        originalName: document.originalName
+    // Create document record
+    const document = new Document({
+      userId,
+      filename: file.filename,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      path: file.path,
+      url: `/uploads/documents/${file.filename}`,
+      category: req.body.category || 'other',
+      description: req.body.description || '',
+      tags: req.body.tags ? req.body.tags.split(',').map(tag => tag.trim()) : [],
+      relatedEntity: {
+        type: req.body.relatedEntityType || 'none',
+        entityId: req.body.relatedEntityId || null
       },
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent')
+      isPublic: req.body.isPublic === 'true',
+      accessLevel: req.body.accessLevel || 'private',
+      checksum,
+      uploadedBy: userId,
+      metadata: {
+        uploadedAt: new Date(),
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip
+      }
     });
+
+    await document.save();
 
     res.json({
       success: true,
-      message: "Document deleted successfully",
+      message: 'Document uploaded successfully',
+      data: document
     });
   } catch (error) {
-    console.error("Delete document error:", error);
+    console.error('Error uploading document:', error);
+    
+    // Clean up uploaded file if document creation failed
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
     res.status(500).json({
       success: false,
-      message: "Error deleting document",
-      error: error.message,
+      message: 'Failed to upload document',
+      error: error.message
     });
   }
 };
@@ -334,29 +219,187 @@ export const deleteDocument = async (req, res) => {
 // Download document
 export const downloadDocument = async (req, res) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const userId = req.user.id;
+    const documentId = req.params.id;
+
+    const document = await Document.findOne({ _id: documentId, userId });
 
     if (!document) {
       return res.status(404).json({
         success: false,
-        message: "Document not found",
+        message: 'Document not found'
       });
     }
 
-    if (!fs.existsSync(document.filePath)) {
+    // Check if file exists
+    if (!fs.existsSync(document.path)) {
       return res.status(404).json({
         success: false,
-        message: "File not found on server",
+        message: 'File not found on disk'
       });
     }
 
-    res.download(document.filePath, document.originalName);
+    // Track access
+    await document.trackAccess();
+
+    // Set headers for download
+    res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+    res.setHeader('Content-Type', document.mimeType);
+    res.setHeader('Content-Length', document.size);
+
+    // Stream file to response
+    const fileStream = fs.createReadStream(document.path);
+    fileStream.pipe(res);
+
   } catch (error) {
-    console.error("Download document error:", error);
+    console.error('Error downloading document:', error);
     res.status(500).json({
       success: false,
-      message: "Error downloading document",
-      error: error.message,
+      message: 'Failed to download document',
+      error: error.message
+    });
+  }
+};
+
+// Update document
+export const updateDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+    const updates = req.body;
+
+    // Remove fields that shouldn't be updated directly
+    delete updates.filename;
+    delete updates.path;
+    delete updates.url;
+    delete updates.checksum;
+    delete updates.uploadedBy;
+
+    const document = await Document.findOneAndUpdate(
+      { _id: documentId, userId },
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Document updated successfully',
+      data: document
+    });
+  } catch (error) {
+    console.error('Error updating document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update document',
+      error: error.message
+    });
+  }
+};
+
+// Delete document
+export const deleteDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+
+    const document = await Document.findOne({ _id: documentId, userId });
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    // Delete file from disk
+    if (fs.existsSync(document.path)) {
+      fs.unlinkSync(document.path);
+    }
+
+    // Delete document record
+    await Document.findByIdAndDelete(documentId);
+
+    res.json({
+      success: true,
+      message: 'Document deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete document',
+      error: error.message
+    });
+  }
+};
+
+// Archive document
+export const archiveDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+
+    const document = await Document.findOne({ _id: documentId, userId });
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    await document.archive(userId);
+
+    res.json({
+      success: true,
+      message: 'Document archived successfully',
+      data: document
+    });
+  } catch (error) {
+    console.error('Error archiving document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to archive document',
+      error: error.message
+    });
+  }
+};
+
+// Restore document
+export const restoreDocument = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+
+    const document = await Document.findOne({ _id: documentId, userId });
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    await document.restore();
+
+    res.json({
+      success: true,
+      message: 'Document restored successfully',
+      data: document
+    });
+  } catch (error) {
+    console.error('Error restoring document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to restore document',
+      error: error.message
     });
   }
 };
@@ -364,67 +407,59 @@ export const downloadDocument = async (req, res) => {
 // Get document statistics
 export const getDocumentStats = async (req, res) => {
   try {
+    const userId = req.user.id;
+
     const stats = await Document.aggregate([
-      { $match: { isActive: true } },
+      { $match: { userId, isArchived: false } },
       {
         $group: {
           _id: null,
           totalDocuments: { $sum: 1 },
-          totalSize: { $sum: "$fileSize" },
-          byType: {
-            $push: {
-              type: "$documentType",
-              size: "$fileSize",
-            },
-          },
-          byCategory: {
-            $push: {
-              category: "$category",
-              size: "$fileSize",
-            },
-          },
-        },
-      },
-    ]);
-
-    const typeStats = await Document.aggregate([
-      { $match: { isActive: true } },
-      {
-        $group: {
-          _id: "$documentType",
-          count: { $sum: 1 },
-          totalSize: { $sum: "$fileSize" },
-        },
-      },
+          totalSize: { $sum: '$size' },
+          averageSize: { $avg: '$size' },
+          categories: { $addToSet: '$category' },
+          totalAccessCount: { $sum: '$accessCount' }
+        }
+      }
     ]);
 
     const categoryStats = await Document.aggregate([
-      { $match: { isActive: true } },
+      { $match: { userId, isArchived: false } },
       {
         $group: {
-          _id: "$category",
+          _id: '$category',
           count: { $sum: 1 },
-          totalSize: { $sum: "$fileSize" },
-        },
+          totalSize: { $sum: '$size' }
+        }
       },
+      { $sort: { count: -1 } }
     ]);
+
+    const recentDocuments = await Document.find({ userId, isArchived: false })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('filename originalName category createdAt size');
 
     res.json({
       success: true,
       data: {
-        overview: stats[0] || { totalDocuments: 0, totalSize: 0 },
-        byType: typeStats,
-        byCategory: categoryStats,
-      },
+        overview: stats[0] || {
+          totalDocuments: 0,
+          totalSize: 0,
+          averageSize: 0,
+          categories: [],
+          totalAccessCount: 0
+        },
+        categoryStats,
+        recentDocuments
+      }
     });
   } catch (error) {
-    console.error("Get document stats error:", error);
+    console.error('Error fetching document stats:', error);
     res.status(500).json({
       success: false,
-      message: "Error fetching document statistics",
-      error: error.message,
+      message: 'Failed to fetch document statistics',
+      error: error.message
     });
   }
 };
-
-

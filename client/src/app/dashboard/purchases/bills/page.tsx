@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/contexts/ToastContext";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import BillsSection from "./components/BillsSection";
 import BillDetailsPanel from "./components/BillDetailsPanel";
 import BulkImportModal from "@/components/modals/BulkImportModal";
@@ -10,6 +12,7 @@ import { Bill, billService } from "@/services/billService";
 
 const BillsPage = () => {
   const router = useRouter();
+  const { addToast, removeToastsByType } = useToast();
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
@@ -22,11 +25,47 @@ const BillsPage = () => {
     const loadBills = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
+        // Remove any existing processing toasts
+        removeToastsByType('info');
+        
+        // Show processing toast
+        addToast({
+          type: 'info',
+          title: 'Loading...',
+          message: 'Fetching bills from server...',
+          duration: 0 // Don't auto-dismiss processing toast
+        });
+        
         const data = await billService.getBills();
         setBills(data);
-      } catch (err) {
+        
+        // Remove processing toast
+        removeToastsByType('info');
+        
+        // Show success toast (only if there were no bills before)
+        if (bills.length === 0) {
+          addToast({
+            title: "Success",
+            message: `Loaded ${data.length} bills successfully`,
+            type: "success",
+            duration: 2000,
+          });
+        }
+      } catch (err: any) {
         console.error("Error loading bills:", err);
         setError("Failed to load bills");
+        
+        // Remove processing toast on error
+        removeToastsByType('info');
+        
+        addToast({
+          title: "Error",
+          message: "Failed to load bills",
+          type: "error",
+          duration: 5000,
+        });
       } finally {
         setLoading(false);
       }
@@ -186,4 +225,11 @@ const BillsPage = () => {
   );
 };
 
-export default BillsPage;
+// Wrapped with access guard
+const BillsPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <BillsPage />
+  </ModuleAccessGuard>
+);
+
+export default BillsPageWithGuard;

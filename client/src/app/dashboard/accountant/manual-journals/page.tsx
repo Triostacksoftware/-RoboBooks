@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
@@ -470,4 +471,11 @@ const ManualJournalsPage = () => {
   );
 };
 
-export default ManualJournalsPage;
+// Wrapped with access guard
+const ManualJournalsPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Accountant">
+    <ManualJournalsPage />
+  </ModuleAccessGuard>
+);
+
+export default ManualJournalsPageWithGuard;

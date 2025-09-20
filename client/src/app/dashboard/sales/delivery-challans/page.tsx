@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import DeliveryChallanList from './components/DeliveryChallanList';
 import DeliveryChallanFilters from './components/DeliveryChallanFilters';
 import DeliveryChallanSearch from './components/DeliveryChallanSearch';
@@ -119,4 +120,11 @@ const DeliveryChallansPage = () => {
   );
 };
 
-export default DeliveryChallansPage;
+// Wrapped with access guard
+const DeliveryChallansPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <DeliveryChallansPage />
+  </ModuleAccessGuard>
+);
+
+export default DeliveryChallansPageWithGuard;

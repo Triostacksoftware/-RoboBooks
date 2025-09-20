@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/contexts/ToastContext";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import {
   BanknotesIcon,
   CreditCardIcon,
@@ -74,7 +75,7 @@ interface ReconciliationItem {
 
 // Internal component that uses the banking context
 function BankingPageContent() {
-  const { addToast } = useToast();
+  const { addToast, removeToastsByType } = useToast();
   const { refreshTransactions } = useBanking();
   const [activeTab, setActiveTab] = useState("overview");
   const [showConnectModal, setShowConnectModal] = useState(false);
@@ -273,17 +274,45 @@ function BankingPageContent() {
           onNext={handleImportNext}
           onBack={handleImportBack}
           onComplete={async () => {
-            setShowImportWizard(false);
-            setImportStep(1);
-            setActiveTab("transactions");
-            // Refresh transactions to show the newly imported ones
-            await refreshTransactions();
-            addToast({
-              title: "Success",
-              message: "Bank statement imported successfully! Transactions are now available.",
-              type: "success",
-              duration: 5000,
-            });
+            try {
+              // Remove any existing processing toasts
+              removeToastsByType('info');
+              
+              // Show processing toast
+              addToast({
+                type: 'info',
+                title: 'Processing...',
+                message: 'Importing bank statement and processing transactions...',
+                duration: 0 // Don't auto-dismiss processing toast
+              });
+              
+              setShowImportWizard(false);
+              setImportStep(1);
+              setActiveTab("transactions");
+              
+              // Refresh transactions to show the newly imported ones
+              await refreshTransactions();
+              
+              // Remove processing toast
+              removeToastsByType('info');
+              
+              // Show success toast
+              addToast({
+                title: "Success",
+                message: "Bank statement imported successfully! Transactions are now available.",
+                type: "success",
+                duration: 5000,
+              });
+            } catch (error: any) {
+              // Remove processing toast on error
+              removeToastsByType('info');
+              addToast({
+                type: 'error',
+                title: 'Import Failed',
+                message: error.message || 'Failed to import bank statement',
+                duration: 5000,
+              });
+            }
           }}
         />
       </div>
@@ -401,8 +430,10 @@ function BankingPageContent() {
 // Main export that provides the BankingProvider
 export default function BankingPage() {
   return (
-    <BankingProvider>
-      <BankingPageContent />
-    </BankingProvider>
+    <ModuleAccessGuard moduleName="Banking">
+      <BankingProvider>
+        <BankingPageContent />
+      </BankingProvider>
+    </ModuleAccessGuard>
   );
 }

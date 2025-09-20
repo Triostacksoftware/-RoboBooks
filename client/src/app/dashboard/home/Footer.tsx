@@ -70,14 +70,14 @@ export default function Footer() {
             </ul>
           </div>
           {/* Contact block - spans all columns on mobile */}
-          <div className="sm:col-span-2 md:col-span-3 mt-6 bg-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col gap-2">
+          <div className="sm:col-span-2 md:col-span-3 mt-6 bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-2">
             <p className="font-medium text-gray-800">
               You can directly talk to us every{" "}
               <span className="font-bold">
                 Monday to Friday 9:00 AM to 7:00 PM
               </span>
             </p>
-            <p className="text-blue-700 font-semibold">
+            <p className="text-gray-700 font-semibold">
               Robo Books India Helpline:{" "}
               <span className="font-bold">18003093036</span>{" "}
               <span className="text-xs font-normal">(Toll Free)</span>

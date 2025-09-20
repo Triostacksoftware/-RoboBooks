@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import {
   Search,
   Filter,
@@ -95,7 +96,7 @@ const statusIcons = {
   cancelled: AlertCircle,
 };
 
-export default function CreditNotesPage() {
+function CreditNotesPage() {
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>(mockCreditNotes);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -502,3 +503,12 @@ export default function CreditNotesPage() {
     </div>
   );
 }
+
+// Wrapped with access guard
+const CreditNotesPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <CreditNotesPage />
+  </ModuleAccessGuard>
+);
+
+export default CreditNotesPageWithGuard;

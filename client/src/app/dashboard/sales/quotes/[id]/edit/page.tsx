@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { Quote, quotesApi } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -88,6 +89,13 @@ const EditQuotePage = () => {
   );
 };
 
-export default EditQuotePage;
+// Wrapped with access guard
+const EditQuotePageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <EditQuotePage />
+  </ModuleAccessGuard>
+);
+
+export default EditQuotePageWithGuard;
 
 

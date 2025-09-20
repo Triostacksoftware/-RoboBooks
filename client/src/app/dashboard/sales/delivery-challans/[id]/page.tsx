@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/contexts/ToastContext";
 import DeliveryChallanDetail from "../components/DeliveryChallanDetail";
@@ -375,4 +376,11 @@ const DeliveryChallanDetailPage = () => {
   );
 };
 
-export default DeliveryChallanDetailPage;
+// Wrapped with access guard
+const DeliveryChallanDetailPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <DeliveryChallanDetailPage />
+  </ModuleAccessGuard>
+);
+
+export default DeliveryChallanDetailPageWithGuard;

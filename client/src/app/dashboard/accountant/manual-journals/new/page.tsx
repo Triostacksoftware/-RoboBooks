@@ -11,6 +11,7 @@ import {
   ArrowLeftIcon,
   DocumentTextIcon,
   InformationCircleIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { Settings } from "lucide-react";
 
@@ -881,21 +882,22 @@ const NewManualJournalPage = () => {
         </div>
       </div>
 
-      {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-4 shadow-lg">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+      {/* Bottom Action Bar - Fixed at bottom of content area */}
+      <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-200/60 px-6 py-2 shadow-2xl z-50">
+        <div className="max-w-6xl mx-auto flex items-center justify-between transition-all duration-300 ease-in-out">
+          {/* Left Section - Action Buttons */}
           <div className="flex items-center space-x-3">
             <button
               onClick={() => handleSave(true)}
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="px-4 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md disabled:opacity-50"
             >
               {loading ? "Saving..." : "Save as Draft"}
             </button>
             <button
               onClick={() => handleSave(false)}
               disabled={loading || Math.abs(difference) >= 0.01}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-1.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 whitespace-nowrap shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
               {loading ? "Posting..." : "Save and Post"}
             </button>
@@ -903,23 +905,41 @@ const NewManualJournalPage = () => {
               onClick={() =>
                 router.push("/dashboard/accountant/manual-journals")
               }
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
             >
               Cancel
             </button>
           </div>
 
+          {/* Right Section - Summary and Additional Actions */}
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">
-                Difference: ₹{difference.toFixed(2)}
-              </span>
-              {Math.abs(difference) < 0.01 && (
-                <span className="ml-2 text-green-600">✓ Balanced</span>
-              )}
+            {/* Journal Summary Card */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl px-4 py-1.5 shadow-sm">
+              <div className="text-sm font-semibold text-gray-800 mb-1">
+                Journal Summary
+              </div>
+              <div className="flex items-center space-x-3 text-sm">
+                <div className="text-gray-600">
+                  <span className={`font-bold text-lg ${Math.abs(difference) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
+                    ₹{difference.toFixed(2)}
+                  </span>
+                </div>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <div className="text-gray-500">
+                  {Math.abs(difference) < 0.01 ? (
+                    <span className="text-green-600 font-medium">✓ Balanced</span>
+                  ) : (
+                    <span className="text-red-600 font-medium">Unbalanced</span>
+                  )}
+                </div>
+              </div>
             </div>
-            <button className="text-sm text-blue-600 hover:text-blue-800 underline">
-              Make Recurring
+
+            {/* Make Recurring Button */}
+            <button className="flex items-center px-4 py-1.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 whitespace-nowrap shadow-sm hover:shadow-md group">
+              <ArrowPathIcon className="h-4 w-4 mr-2 text-gray-500 group-hover:text-gray-700 transition-colors" />
+              <span className="hidden sm:inline">Make Recurring</span>
+              <span className="sm:hidden">Recurring</span>
             </button>
           </div>
         </div>

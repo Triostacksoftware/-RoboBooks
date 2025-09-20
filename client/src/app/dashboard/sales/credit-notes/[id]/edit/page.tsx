@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, X, Settings, Info, ChevronDown, Search } from 'lucide-react';
 
@@ -569,4 +570,11 @@ const EditCreditNotePage = () => {
   );
 };
 
-export default EditCreditNotePage;
+// Wrapped with access guard
+const EditCreditNotePageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <EditCreditNotePage />
+  </ModuleAccessGuard>
+);
+
+export default EditCreditNotePageWithGuard;

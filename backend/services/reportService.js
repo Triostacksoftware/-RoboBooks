@@ -1,7 +1,7 @@
 // Report service for dashboard statistics
-const Report = require('../models/Report');
+import Report from '../models/Report.js';
 
-const getReportStats = async () => {
+export const getReportStats = async () => {
   try {
     // Get basic report statistics
     const totalGenerated = await Report.countDocuments();
@@ -29,7 +29,7 @@ const getReportStats = async () => {
   }
 };
 
-module.exports = {
+export default {
   getReportStats
 };
 

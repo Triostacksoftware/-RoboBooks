@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import {
   XMarkIcon,
@@ -1347,4 +1348,11 @@ const NewRecurringInvoiceForm = () => {
   );
 };
 
-export default NewRecurringInvoiceForm;
+// Wrapped with access guard
+const NewRecurringInvoiceFormWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <NewRecurringInvoiceForm />
+  </ModuleAccessGuard>
+);
+
+export default NewRecurringInvoiceFormWithGuard;

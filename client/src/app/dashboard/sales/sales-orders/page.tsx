@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import {
   ChevronDownIcon,
   PlusIcon,
@@ -693,4 +694,11 @@ const AllSalesOrdersPage = () => {
   );
 };
 
-export default AllSalesOrdersPage;
+// Wrapped with access guard
+const AllSalesOrdersPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <AllSalesOrdersPage />
+  </ModuleAccessGuard>
+);
+
+export default AllSalesOrdersPageWithGuard;

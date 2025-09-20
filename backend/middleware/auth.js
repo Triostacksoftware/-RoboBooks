@@ -26,17 +26,34 @@ export const authenticateToken = (req, res, next) => {
     // Directly decode JWT using JWT_SECRET
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("✅ Token verified, user:", decoded);
+    console.log("🔍 Auth middleware - decoded.organization:", decoded.organization);
+    console.log("🔍 Auth middleware - decoded.organization type:", typeof decoded.organization);
     
     // Create consistent user object structure (same as authGuard)
+    // CRITICAL FIX: Use user ID as company ID to ensure consistency
+    let organizationId;
+    if (decoded.organization) {
+      organizationId = decoded.organization;
+    } else if (decoded.company) {
+      organizationId = decoded.company;
+    } else {
+      // Use user ID as organization ID to ensure consistency
+      // This ensures the same user always gets the same company ID
+      organizationId = new mongoose.Types.ObjectId(decoded.uid || decoded.id);
+    }
+    
     req.user = {
       id: decoded.uid || decoded.id, // Handle both uid and id formats
       uid: decoded.uid || decoded.id, // Keep uid for backward compatibility
       role: decoded.role || 'user',
       email: decoded.email,
-      organization: decoded.organization || new mongoose.Types.ObjectId(), // Use ObjectId for organization
+      organization: organizationId, // Consistent organization ID
       iat: decoded.iat,
       exp: decoded.exp
     };
+    
+    console.log("🔍 Auth middleware - final req.user.organization:", req.user.organization);
+    console.log("🔍 Auth middleware - organization type:", typeof req.user.organization);
     
     next();
   } catch (err) {

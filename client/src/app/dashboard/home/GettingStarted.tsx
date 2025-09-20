@@ -93,23 +93,23 @@ export default function GettingStarted() {
   return (
     <div className="space-y-8">
       {/* Getting Started Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-8 text-white">
+      <div className="bg-white rounded-lg border shadow-sm p-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           <div>
-            <h1 className="text-3xl font-bold mb-4">Getting Started with Robo Books</h1>
-            <p className="text-xl mb-6">The easy-to-use accounting software that you can set up in no time!</p>
-            <p className="text-blue-100">
+            <h1 className="text-3xl font-bold mb-4 text-gray-900">Getting Started with Robo Books</h1>
+            <p className="text-xl mb-6 text-gray-600">The easy-to-use accounting software that you can set up in no time!</p>
+            <p className="text-gray-600">
               Need help getting started with Robo Books? Register for one of our free webinars.{' '}
-             <a href="https://www.youtube.com/results?search_query=robobooks+webinar" target="_blank" rel="noreferrer" className="underline font-semibold">View Live Webinar</a>
+             <a href="https://www.youtube.com/results?search_query=robobooks+webinar" target="_blank" rel="noreferrer" className="underline font-semibold text-blue-600 hover:text-blue-800">View Live Webinar</a>
             </p>
           </div>
           <div className="flex justify-center">
-            <div className="bg-blue-500 rounded-lg p-6 text-center max-w-md">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                <PlayIcon className="w-8 h-8 text-blue-600" />
+            <div className="bg-gray-50 rounded-lg p-6 text-center max-w-md border">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PlayIcon className="w-8 h-8 text-gray-600" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Setup and Overview of Robo Books</h3>
-              <p className="text-blue-100">Watch our comprehensive guide to get started</p>
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Setup and Overview of Robo Books</h3>
+              <p className="text-gray-600">Watch our comprehensive guide to get started</p>
             </div>
           </div>
         </div>

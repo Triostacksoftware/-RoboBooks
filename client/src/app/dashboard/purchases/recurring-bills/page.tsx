@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useRouter } from "next/navigation";
 import RecurringBillsSection from './components/RecurringBillsSection';
 import BulkImportModal from "@/components/modals/BulkImportModal";
@@ -345,4 +346,11 @@ const RecurringBillsPage = () => {
   );
 };
 
-export default RecurringBillsPage;
+// Wrapped with access guard
+const RecurringBillsPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <RecurringBillsPage />
+  </ModuleAccessGuard>
+);
+
+export default RecurringBillsPageWithGuard;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from 'next/navigation';
 import { useToast } from '@/contexts/ToastContext';
 import DeliveryChallanForm from '../../components/DeliveryChallanForm';
@@ -229,4 +230,11 @@ const EditDeliveryChallanPage = () => {
   );
 };
 
-export default EditDeliveryChallanPage;
+// Wrapped with access guard
+const EditDeliveryChallanPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <EditDeliveryChallanPage />
+  </ModuleAccessGuard>
+);
+
+export default EditDeliveryChallanPageWithGuard;

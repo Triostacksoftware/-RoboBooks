@@ -1,5 +1,6 @@
 import React from 'react'
 import CustomersSection from './components/CustomersSection'
+import ModuleAccessGuard from '@/components/ModuleAccessGuard'
 
 const page = () => {
   return (
@@ -10,4 +11,11 @@ const page = () => {
   )
 }
 
-export default page 
+// Wrapped with access guard
+const CustomersPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Sales">
+    <page />
+  </ModuleAccessGuard>
+);
+
+export default CustomersPageWithGuard 

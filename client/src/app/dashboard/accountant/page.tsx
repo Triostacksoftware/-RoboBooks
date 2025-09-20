@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -238,4 +239,11 @@ const AccountantPage = () => {
   );
 };
 
-export default AccountantPage;
+// Wrapped with access guard
+const AccountantPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Accountant">
+    <AccountantPage />
+  </ModuleAccessGuard>
+);
+
+export default AccountantPageWithGuard;

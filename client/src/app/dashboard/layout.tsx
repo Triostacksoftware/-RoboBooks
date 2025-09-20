@@ -177,7 +177,7 @@ export default function DashboardLayout({
         <Header onToggleSidebar={handleToggleSidebar} />
         <div className="flex flex-1 ">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <main className="flex-1 overflow-hidden">{children}</main>
+          <main className="flex-1 overflow-y-scroll main-content-scrollbar" style={{ height: 'calc(100vh - 80px)' }}>{children}</main>
         </div>
 
         {/* Scroll to Top Button */}

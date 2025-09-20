@@ -23,6 +23,11 @@ export async function create(req, res) {
       }));
     }
 
+    // Sanitize additionalTaxId - convert empty strings to null
+    if (salesOrderData.additionalTaxId === "" || salesOrderData.additionalTaxId === undefined) {
+      salesOrderData.additionalTaxId = null;
+    }
+
     const salesOrder = await SalesOrderService.createSalesOrder(salesOrderData);
     res.status(201).json({
       success: true,

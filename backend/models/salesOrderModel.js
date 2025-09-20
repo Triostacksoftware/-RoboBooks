@@ -77,6 +77,21 @@ const schema = new mongoose.Schema({
   additionalTaxId: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: "additionalTaxType",
+    default: null,
+    validate: {
+      validator: function(v) {
+        // Allow null, undefined, or valid ObjectId
+        return v === null || v === undefined || mongoose.Types.ObjectId.isValid(v);
+      },
+      message: 'additionalTaxId must be a valid ObjectId or null'
+    },
+    set: function(v) {
+      // Convert empty strings to null
+      if (v === "" || v === undefined) {
+        return null;
+      }
+      return v;
+    }
   },
   additionalTaxRate: { type: Number, default: 0 },
   additionalTaxAmount: { type: Number, default: 0.0 },
@@ -149,6 +164,7 @@ schema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
 });
+
 
 // Index for better query performance
 schema.index({ salesOrderNumber: 1 });

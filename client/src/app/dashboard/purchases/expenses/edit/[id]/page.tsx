@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { useParams, useRouter } from "next/navigation";
 import RecordExpensePage from "../../record/components/RecordExpensePage";
 import BackButton from "@/components/ui/BackButton";
@@ -167,4 +168,11 @@ const EditExpensePage = () => {
   );
 };
 
-export default EditExpensePage;
+// Wrapped with access guard
+const EditExpensePageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <EditExpensePage />
+  </ModuleAccessGuard>
+);
+
+export default EditExpensePageWithGuard;

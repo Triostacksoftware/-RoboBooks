@@ -1,3 +1,4 @@
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import React from 'react'
 import NewVendorForm from '../components/NewVendorForm'
 
@@ -10,3 +11,13 @@ const NewVendorPage = () => {
 }
 
 export default NewVendorPage
+
+
+// Wrapped with access guard
+const PageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    {content}
+  </ModuleAccessGuard>
+);
+
+export default PageWithGuard;

@@ -242,15 +242,15 @@ const NAV: Node[] = [
         href: "/dashboard/accountant/budgets",
         icon: ChartPieIcon,
       },
-      {
-        id: "lock",
-        label: "Transaction Locking",
-        href: "/dashboard/accountant/transaction-locking",
-        icon: LockClosedIcon,
-      },
     ],
   },
 
+  {
+    id: "transaction-locking",
+    label: "Transaction Locking",
+    icon: LockClosedIcon,
+    href: "/dashboard/accountant/transaction-locking",
+  },
   {
     id: "reports",
     label: "Reports",
@@ -342,6 +342,11 @@ export default function Sidebar({
       return "sales";
     }
 
+    // Special handling for transaction-locking route - it should highlight transaction-locking section
+    if (pathname?.startsWith("/dashboard/accountant/transaction-locking")) {
+      return "transaction-locking";
+    }
+
     return NAV.find((n) => n.id === seg)?.id ?? "home";
   }, [pathname]);
 
@@ -421,7 +426,7 @@ export default function Sidebar({
         </div>
 
         {/* Nav list */}
-        <div className="flex-1 overflow-y-auto px-2 pt-3">
+        <div className="flex-1 overflow-y-scroll px-2 pt-3 sidebar-scrollbar" style={{ height: 'calc(100vh - 80px)' }}>
           {NAV.filter((node) => isModuleEnabled(node.id)).map((node) => {
             const Icon = node.icon;
             const isActive = activeTopId === node.id;
@@ -611,7 +616,7 @@ export default function Sidebar({
 
           {/* Promo (expanded only) */}
           {!collapsed && (
-            <div className="mx-2 mt-6 mb-16 rounded-2xl border bg-white p-4 shadow-sm">
+            <div className="mx-2 mt-6 mb-6 rounded-2xl border bg-white p-4 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-sky-50 text-sky-600 grid place-items-center text-lg">
                   ▶
@@ -631,25 +636,25 @@ export default function Sidebar({
               </div>
             </div>
           )}
-        </div>
 
-        {/* Logout button */}
-        <div className="border-t">
-          <button
-            onClick={async () => {
-              try {
-                await logout();
-              } catch (error) {
-                console.error("Logout failed:", error);
-                router.push("/signin");
-              }
-            }}
-            className="w-full py-3 px-4 flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors"
-            aria-label="Logout"
-          >
-            <ArrowRightOnRectangleIcon className="h-5 w-5" />
-            {!collapsed && <span className="text-sm font-medium">Logout</span>}
-          </button>
+          {/* Logout button - now scrollable */}
+          <div className="mx-2 mb-4 border-t pt-4">
+            <button
+              onClick={async () => {
+                try {
+                  await logout();
+                } catch (error) {
+                  console.error("Logout failed:", error);
+                  router.push("/signin");
+                }
+              }}
+              className="w-full py-3 px-4 flex items-center gap-3 text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+              aria-label="Logout"
+            >
+              <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              {!collapsed && <span className="text-sm font-medium">Logout</span>}
+            </button>
+          </div>
         </div>
       </aside>
     </>

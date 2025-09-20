@@ -1,6 +1,8 @@
 import axios from 'axios';
+import multiProviderService from './multiProviderExchangeRateService.js';
 
 const EXCHANGE_RATE_API_BASE = 'https://api.exchangerate-api.com/v4/latest';
+const API_PROVIDER_NAME = 'ExchangeRate-API.com';
 
 /**
  * Fetch real-time exchange rate from ExchangeRate.host API
@@ -12,7 +14,18 @@ export const fetchRealTimeRate = async (fromCurrency, toCurrency) => {
   try {
     console.log(`🔄 Fetching real-time rate: ${fromCurrency} → ${toCurrency}`);
     
-    // Use exchangerate-api.com which is free and doesn't require API key
+    // Try multi-provider service first
+    try {
+      const result = await multiProviderService.fetchRateWithFallback(fromCurrency, toCurrency);
+      if (result.success) {
+        console.log(`✅ Multi-provider rate fetched: ${fromCurrency} → ${toCurrency} = ${result.data.rate} (${result.provider})`);
+        return result;
+      }
+    } catch (error) {
+      console.log(`⚠️ Multi-provider failed, falling back to direct API: ${error.message}`);
+    }
+    
+    // Fallback to direct API call
     const response = await axios.get(`${EXCHANGE_RATE_API_BASE}/${fromCurrency.toUpperCase()}`, {
       timeout: 10000 // 10 second timeout
     });
@@ -26,12 +39,12 @@ export const fetchRealTimeRate = async (fromCurrency, toCurrency) => {
           toCurrency: toCurrency.toUpperCase(),
           rate: targetRate,
           date: new Date(),
-          source: 'REAL_TIME_API',
+          source: API_PROVIDER_NAME,
           isActive: true,
-          notes: `Real-time rate from exchangerate-api.com`
+          notes: `Real-time rate from ${API_PROVIDER_NAME} (fallback)`
         };
 
-        console.log(`✅ Real-time rate fetched: ${fromCurrency} → ${toCurrency} = ${rateData.rate}`);
+        console.log(`✅ Fallback rate fetched: ${fromCurrency} → ${toCurrency} = ${rateData.rate}`);
         return {
           success: true,
           data: rateData

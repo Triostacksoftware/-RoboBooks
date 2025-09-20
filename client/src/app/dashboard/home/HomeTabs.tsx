@@ -31,6 +31,7 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
   const router = useRouter();
 
   const handleTabChange = (tab: "dashboard" | "tabular" | "graphical") => {
@@ -48,6 +49,7 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
       setError(null);
       const stats = await dashboardService.getDashboardStats();
       setDashboardStats(stats);
+      setLastRefreshTime(new Date());
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
       setError('Failed to load dashboard data');
@@ -75,24 +77,36 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
     fetchDashboardStats();
   }, []);
 
-  // Auto-refresh every 5 minutes
+  // Real-time updates
   useEffect(() => {
+    const handleRealTimeUpdate = (stats: DashboardStats) => {
+      setDashboardStats(stats);
+      setLastRefreshTime(new Date());
+    };
+
+    // Connect to real-time updates
+    dashboardService.connectRealTimeUpdates(handleRealTimeUpdate);
+
+    // Fallback: Auto-refresh every 2 minutes if real-time fails
     const interval = setInterval(() => {
       if (activeTab === 'dashboard') {
         fetchDashboardStats();
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 2 * 60 * 1000); // 2 minutes
 
-    return () => clearInterval(interval);
+    return () => {
+      dashboardService.disconnectRealTimeUpdates();
+      clearInterval(interval);
+    };
   }, [activeTab]);
 
   // Refresh data when user returns to dashboard tab
   useEffect(() => {
     if (activeTab === 'dashboard' && !loading && dashboardStats) {
-      // Only refresh if data is older than 2 minutes
+      // Only refresh if data is older than 1 minute
       const lastRefresh = localStorage.getItem('dashboardLastRefresh');
       const now = Date.now();
-      if (!lastRefresh || (now - parseInt(lastRefresh)) > 2 * 60 * 1000) {
+      if (!lastRefresh || (now - parseInt(lastRefresh)) > 1 * 60 * 1000) {
         fetchDashboardStats();
         localStorage.setItem('dashboardLastRefresh', now.toString());
       }
@@ -108,9 +122,9 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
       route: "/dashboard/customers",
     },
     items: {
-      total: (dashboardStats?.items.total || 0) > 0 ? dashboardStats?.items.total : "No data",
+      total: (dashboardStats?.items?.data?.totalItems || 0) > 0 ? dashboardStats?.items?.data?.totalItems : "No data",
       icon: ShoppingCartIcon,
-      color: (dashboardStats?.items.total || 0) > 0 ? "bg-green-500" : "bg-gray-400",
+      color: (dashboardStats?.items?.data?.totalItems || 0) > 0 ? "bg-green-500" : "bg-gray-400",
       route: "/dashboard/items",
     },
     banking: {
@@ -132,9 +146,9 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
       route: "/dashboard/purchases",
     },
     projects: {
-      total: (dashboardStats?.projects.total || 0) > 0 ? dashboardStats?.projects.total : "No data",
+      total: (dashboardStats?.projects.totalProjects || 0) > 0 ? dashboardStats?.projects.totalProjects : "No data",
       icon: DocumentTextIcon,
-      color: (dashboardStats?.projects.total || 0) > 0 ? "bg-indigo-500" : "bg-gray-400",
+      color: (dashboardStats?.projects.totalProjects || 0) > 0 ? "bg-indigo-500" : "bg-gray-400",
       route: "/dashboard/time/projects",
     },
     invoices: {
@@ -144,9 +158,9 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
       route: "/dashboard/sales/invoices",
     },
     reports: {
-      total: (dashboardStats?.reports.totalRevenue || 0) > 0 ? `₹${dashboardStats?.reports.totalRevenue}` : "No data",
+      total: (dashboardStats?.reports.totalGenerated || 0) > 0 ? dashboardStats?.reports.totalGenerated : "No data",
       icon: CurrencyDollarIcon,
-      color: (dashboardStats?.reports.totalRevenue || 0) > 0 ? "bg-emerald-500" : "bg-gray-400",
+      color: (dashboardStats?.reports.totalGenerated || 0) > 0 ? "bg-emerald-500" : "bg-gray-400",
       route: "/dashboard/reports",
     },
   };
@@ -243,9 +257,9 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
           <div className="flex items-center gap-3">
             {activeTab === "dashboard" && (
               <div className="flex items-center gap-2">
-                {dashboardStats && (
+                {lastRefreshTime && (
                   <span className="text-xs text-gray-500">
-                    Last updated: {new Date().toLocaleTimeString()}
+                    Last updated: {lastRefreshTime.toLocaleTimeString()}
                   </span>
                 )}
                 <button

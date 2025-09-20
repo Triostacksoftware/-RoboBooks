@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import ReceiptInbox from "./components/ReceiptInbox";
 import BackButton from "@/components/ui/BackButton";
 
@@ -15,4 +16,11 @@ const ReceiptInboxPage = () => {
   );
 };
 
-export default ReceiptInboxPage;
+// Wrapped with access guard
+const ReceiptInboxPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <ReceiptInboxPage />
+  </ModuleAccessGuard>
+);
+
+export default ReceiptInboxPageWithGuard;

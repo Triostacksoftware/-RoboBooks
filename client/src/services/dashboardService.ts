@@ -49,13 +49,27 @@ export interface DashboardStats {
 }
 
 class DashboardService {
-  private baseUrl = '/api';
+  private baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+  private eventSource: EventSource | null = null;
+  private listeners: ((stats: DashboardStats) => void)[] = [];
 
   // Fetch all dashboard statistics
   async getDashboardStats(): Promise<DashboardStats> {
     try {
       console.log('📊 Fetching dashboard statistics...');
       
+      // Try to use the unified dashboard endpoint first
+      try {
+        const response = await api('/api/dashboard/stats');
+        if (response.success && response.data) {
+          console.log('📊 Dashboard statistics loaded from unified endpoint:', response.data);
+          return response.data;
+        }
+      } catch (unifiedError) {
+        console.warn('⚠️ Unified dashboard endpoint failed, falling back to individual calls:', unifiedError);
+      }
+
+      // Fallback to individual service calls
       const [
         customersStats,
         itemsStats,
@@ -114,10 +128,79 @@ class DashboardService {
     }
   }
 
+  // Real-time updates using Server-Sent Events
+  connectRealTimeUpdates(onUpdate: (stats: DashboardStats) => void) {
+    this.listeners.push(onUpdate);
+    
+    if (this.eventSource) {
+      this.disconnectRealTimeUpdates();
+    }
+
+    try {
+      // Get token from localStorage for SSE authentication
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      
+      if (!token) {
+        console.error('❌ No token found for SSE connection');
+        return;
+      }
+
+      // Pass token as query parameter since EventSource doesn't support headers
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      this.eventSource = new EventSource(`${backendUrl}/api/dashboard/events?token=${encodeURIComponent(token)}`);
+      
+      this.eventSource.onopen = () => {
+        console.log('✅ Real-time dashboard connection established');
+      };
+
+      this.eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'dashboard_update' && data.stats) {
+            console.log('📊 Real-time dashboard update received:', data.stats);
+            this.listeners.forEach(listener => listener(data.stats));
+          }
+        } catch (error) {
+          console.error('❌ Error parsing real-time update:', error);
+        }
+      };
+
+      this.eventSource.onerror = (error) => {
+        console.error('❌ Real-time dashboard connection error:', error);
+        
+        // Check if it's an authentication error
+        if (this.eventSource?.readyState === EventSource.CLOSED) {
+          console.log('🔐 SSE connection closed, checking authentication...');
+          
+          // Try to get a fresh token and reconnect
+          const freshToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+          if (freshToken) {
+            console.log('🔄 Attempting to reconnect with fresh token...');
+            setTimeout(() => {
+              this.connectRealTimeUpdates(onUpdate);
+            }, 5000);
+          } else {
+            console.error('❌ No token available for reconnection');
+          }
+        }
+      };
+    } catch (error) {
+      console.error('❌ Failed to establish real-time connection:', error);
+    }
+  }
+
+  disconnectRealTimeUpdates() {
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+    this.listeners = [];
+  }
+
   // Customer statistics
   private async getCustomerStats() {
     try {
-      const response = await api(`${this.baseUrl}/customers/stats`);
+      const response = await api('/api/customers/stats');
       return {
         total: response.data?.totalCustomers || 0,
         active: response.data?.activeCustomers || 0,
@@ -133,7 +216,7 @@ class DashboardService {
   // Item statistics
   private async getItemStats() {
     try {
-      const response = await api(`${this.baseUrl}/items/stats`);
+      const response = await api('/api/items/stats');
       return {
         total: response.data?.totalItems || 0,
         goods: response.data?.goodsCount || 0,
@@ -149,7 +232,7 @@ class DashboardService {
   // Banking statistics
   private async getBankingStats() {
     try {
-      const response = await api(`${this.baseUrl}/banking/overview`);
+      const response = await api('/api/banking/overview');
       return {
         totalAccounts: response.data?.totalAccounts || 0,
         totalBalance: response.data?.totalBalance || 0,
@@ -164,7 +247,7 @@ class DashboardService {
   // Sales statistics
   private async getSalesStats() {
     try {
-      const response = await api(`${this.baseUrl}/invoices/stats`);
+      const response = await api('/api/invoices/stats');
       return {
         totalInvoices: response.data?.totalInvoices || 0,
         paidInvoices: response.data?.paidInvoices || 0,
@@ -180,7 +263,7 @@ class DashboardService {
   // Purchases statistics
   private async getPurchasesStats() {
     try {
-      const response = await api(`${this.baseUrl}/bills/stats`);
+      const response = await api('/api/bills/stats');
       return {
         totalBills: response.data?.totalBills || 0,
         paidBills: response.data?.paidBills || 0,
@@ -196,7 +279,7 @@ class DashboardService {
   // Projects statistics
   private async getProjectsStats() {
     try {
-      const response = await api(`${this.baseUrl}/projects/stats`);
+      const response = await api('/api/projects/stats');
       return {
         total: response.data?.totalProjects || 0,
         active: response.data?.activeProjects || 0,
@@ -212,7 +295,7 @@ class DashboardService {
   // Reports statistics
   private async getReportsStats() {
     try {
-      const response = await api(`${this.baseUrl}/reports/stats`);
+      const response = await api('/api/reports/stats');
       return {
         totalGenerated: response.data?.totalReports || 0,
         totalRevenue: response.data?.totalRevenue || 0
@@ -227,8 +310,8 @@ class DashboardService {
   private async getOrdersStats() {
     try {
       const [salesOrders, purchaseOrders] = await Promise.all([
-        api(`${this.baseUrl}/sales-orders/stats`).catch(() => ({ data: {} })),
-        api(`${this.baseUrl}/purchase-orders/stats`).catch(() => ({ data: {} }))
+        api('/api/sales-orders/stats').catch(() => ({ data: {} })),
+        api('/api/purchase-orders/stats').catch(() => ({ data: {} }))
       ]);
 
       return {

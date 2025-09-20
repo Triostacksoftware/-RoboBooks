@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import { 
   RefreshCw, 
   Plus, 
@@ -387,4 +388,11 @@ const BulkUpdatePage = () => {
   );
 };
 
-export default BulkUpdatePage;
+// Wrapped with access guard
+const BulkUpdatePageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Accountant">
+    <BulkUpdatePage />
+  </ModuleAccessGuard>
+);
+
+export default BulkUpdatePageWithGuard;

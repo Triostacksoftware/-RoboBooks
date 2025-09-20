@@ -1,6 +1,7 @@
     "use client";
 
 import React from "react";
+import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import ImportExpensesPage from "./components/ImportExpensesPage";
 import BackButton from "@/components/ui/BackButton";
 
@@ -15,4 +16,11 @@ const ImportPage = () => {
   );
 };
 
-export default ImportPage;
+// Wrapped with access guard
+const ImportPageWithGuard = () => (
+  <ModuleAccessGuard moduleName="Purchases">
+    <ImportPage />
+  </ModuleAccessGuard>
+);
+
+export default ImportPageWithGuard;
