@@ -553,7 +553,6 @@ const NewInvoiceForm = () => {
 
     const fetchNextInvoiceNumber = async () => {
       try {
-        console.log("Fetching next invoice number...");
         const response = await fetch(
           process.env.NEXT_PUBLIC_BACKEND_URL + "/api/invoices/next-number",
           {
@@ -563,12 +562,9 @@ const NewInvoiceForm = () => {
             },
           }
         );
-        console.log("Next invoice number response:", response.status);
         if (response.ok) {
           const result = await response.json();
-          console.log("Next invoice number result:", result);
           if (result.success && result.data.invoiceNumber) {
-            console.log("Setting invoice number to:", result.data.invoiceNumber);
             setFormData((prev) => ({
               ...prev,
               invoiceNumber: result.data.invoiceNumber,
@@ -1168,7 +1164,6 @@ const NewInvoiceForm = () => {
                 fileSize: file.size,
                 uploadedAt: new Date(),
               });
-              console.log(`Successfully uploaded: ${file.name}`);
             } else {
               console.error(`Failed to upload file: ${file.name}, status: ${uploadResponse.status}`);
               showToast(`❌ Failed to upload: ${file.name}`, "error");
@@ -1234,27 +1229,41 @@ const NewInvoiceForm = () => {
 
       // Get a fresh invoice number to avoid duplicates
       console.log("Getting fresh invoice number...");
-      const invoiceNumberResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/invoices/next-number`,
-        {
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      
       let freshInvoiceNumber = invoiceData.invoiceNumber;
-      if (invoiceNumberResponse.ok) {
-        const invoiceNumberResult = await invoiceNumberResponse.json();
-        if (invoiceNumberResult.success && invoiceNumberResult.data.invoiceNumber) {
-          freshInvoiceNumber = invoiceNumberResult.data.invoiceNumber;
-          console.log("Using fresh invoice number:", freshInvoiceNumber);
+      
+      try {
+        const invoiceNumberResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/api/invoices/next-number`,
+          {
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        
+        if (invoiceNumberResponse.ok) {
+          const invoiceNumberResult = await invoiceNumberResponse.json();
+          if (invoiceNumberResult.success && invoiceNumberResult.data.invoiceNumber) {
+            freshInvoiceNumber = invoiceNumberResult.data.invoiceNumber;
+            console.log("Using fresh invoice number:", freshInvoiceNumber);
+          }
+        } else {
+          console.log("Failed to get fresh invoice number, using timestamp-based number");
+          // Fallback: use timestamp-based number
+          const timestamp = Date.now();
+          freshInvoiceNumber = `INV-${timestamp}`;
         }
+      } catch (error) {
+        console.log("Error getting fresh invoice number, using timestamp-based number:", error);
+        // Fallback: use timestamp-based number
+        const timestamp = Date.now();
+        freshInvoiceNumber = `INV-${timestamp}`;
       }
 
       // Update invoice data with fresh number
       invoiceData.invoiceNumber = freshInvoiceNumber;
+      console.log("Final invoice number:", freshInvoiceNumber);
 
       // Show processing message
       showToast("🔄 Processing invoice data...", "info");

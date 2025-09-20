@@ -410,10 +410,10 @@ const InvoiceDetailPage = () => {
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!invoice) return;
     try {
-      generateClientPDF(invoice);
+      await generateClientPDF(invoice);
       showToastMessage("PDF downloaded successfully!", "success");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -1018,23 +1018,6 @@ const InvoiceDetailPage = () => {
               >
                 <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
                 Download PDF
-              </button>
-
-              <button
-                onClick={handleSendInvoice}
-                disabled={sending}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <EnvelopeIcon className="h-4 w-4 mr-2" />
-                {sending ? "Sending..." : "Send Invoice"}
-              </button>
-
-              <button
-                onClick={() => window.print()}
-                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              >
-                <PrinterIcon className="h-4 w-4 mr-2" />
-                Print
               </button>
 
               <button

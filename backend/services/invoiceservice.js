@@ -340,14 +340,35 @@ export async function recordPayment(invoiceId, paymentData) {
 
 export async function getNextInvoiceNumber() {
   try {
+    // Get the highest invoice number
     const lastInvoice = await Invoice.findOne().sort({ invoiceNumber: -1 });
-    const lastNumber = lastInvoice
-      ? parseInt(lastInvoice.invoiceNumber.split("-")[1])
-      : 0;
-    const nextNumber = lastNumber + 1;
-    return `INV-${String(nextNumber).padStart(6, "0")}`;
+    console.log("Last invoice found:", lastInvoice?.invoiceNumber);
+    
+    let nextNumber = 1;
+    if (lastInvoice && lastInvoice.invoiceNumber) {
+      const match = lastInvoice.invoiceNumber.match(/INV-(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    
+    const invoiceNumber = `INV-${String(nextNumber).padStart(6, "0")}`;
+    console.log("Generated next invoice number:", invoiceNumber);
+    
+    // Double-check that this number doesn't already exist
+    const existingInvoice = await Invoice.findOne({ invoiceNumber });
+    if (existingInvoice) {
+      console.log("Generated number already exists, using timestamp fallback");
+      const timestamp = Date.now();
+      return `INV-${timestamp}`;
+    }
+    
+    return invoiceNumber;
   } catch (error) {
-    throw new Error(`Failed to get next invoice number: ${error.message}`);
+    console.error("Error generating invoice number:", error);
+    // Fallback to timestamp-based number
+    const timestamp = Date.now();
+    return `INV-${timestamp}`;
   }
 }
 

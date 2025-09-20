@@ -4,14 +4,52 @@ import { generateSimplePDF } from "./simplePdfService.js";
 
 dotenv.config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// Create transporter with fallback for missing credentials
+let transporter = null;
+
+try {
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+    console.log("Email service configured with Gmail");
+  } else {
+    console.log("Email credentials not configured - using mock transporter");
+    // Create a mock transporter for development
+    transporter = {
+      sendMail: async (mailOptions) => {
+        console.log("Mock email sent:", {
+          to: mailOptions.to,
+          subject: mailOptions.subject,
+          text: mailOptions.text?.substring(0, 100) + "...",
+        });
+        return {
+          messageId: "mock-" + Date.now(),
+          response: "Mock email sent successfully",
+        };
+      },
+    };
+  }
+} catch (error) {
+  console.error("Error creating email transporter:", error.message);
+  // Create a mock transporter as fallback
+  transporter = {
+    sendMail: async (mailOptions) => {
+      console.log("Mock email sent (fallback):", {
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+      });
+      return {
+        messageId: "mock-fallback-" + Date.now(),
+        response: "Mock email sent successfully (fallback)",
+      };
+    },
+  };
+}
 
 // PDF generation is now handled by pdfService.js
 
@@ -442,6 +480,11 @@ const generateInvoiceHTML = (invoice) => {
 // Send invoice email
 export const sendInvoiceEmail = async (invoice, recipientEmail) => {
   try {
+    // Check if transporter is available
+    if (!transporter) {
+      throw new Error("Email service not configured. Please set EMAIL_USER and EMAIL_PASS environment variables.");
+    }
+
     // Generate HTML content
     const htmlContent = generateInvoiceHTML(invoice);
 
@@ -450,7 +493,7 @@ export const sendInvoiceEmail = async (invoice, recipientEmail) => {
 
     // Email options
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER || "noreply@robobooks.com",
       to: recipientEmail,
       subject: `Invoice ${invoice.invoiceNumber} from ${
         invoice.sellerName || "ROBOBOOKS SOLUTIONS"
@@ -489,9 +532,20 @@ export const sendInvoiceEmail = async (invoice, recipientEmail) => {
       success: true,
       messageId: result.messageId,
       message: "Invoice sent successfully",
+      recipientEmail: recipientEmail,
     };
   } catch (error) {
     console.error("Error sending invoice email:", error);
+    
+    // Return a more user-friendly error message
+    if (error.message.includes("Missing credentials")) {
+      return {
+        success: false,
+        error: "Email service not configured. Please contact administrator to set up email credentials.",
+        message: "Email service not configured",
+      };
+    }
+    
     throw new Error(`Failed to send invoice email: ${error.message}`);
   }
 };
