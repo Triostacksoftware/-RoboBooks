@@ -21,6 +21,9 @@ interface ExpenseDetailsPanelProps {
   onClose: () => void;
   onUpdate: (expense: Expense) => void;
   onDelete: (expenseId: string) => void;
+  onCreate?: (expense: Expense) => void;
+  onRefresh?: () => void;
+  onOpenHistory?: () => void;
 }
 
 export default function ExpenseDetailsPanel({
@@ -28,6 +31,9 @@ export default function ExpenseDetailsPanel({
   onClose,
   onUpdate,
   onDelete,
+  onCreate,
+  onRefresh,
+  onOpenHistory,
 }: ExpenseDetailsPanelProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("details");
@@ -36,7 +42,8 @@ export default function ExpenseDetailsPanel({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showMoreActions) {
+      const target = event.target as HTMLElement;
+      if (showMoreActions && !target.closest('.relative')) {
         setShowMoreActions(false);
       }
     };
@@ -49,6 +56,7 @@ export default function ExpenseDetailsPanel({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showMoreActions]);
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,6 +87,16 @@ export default function ExpenseDetailsPanel({
   const handleEdit = () => {
     console.log("Edit button clicked, expense ID:", expense._id);
     console.log("Full expense object:", expense);
+    
+    // Show loading toast
+    const event = new CustomEvent("showToast", {
+      detail: {
+        message: "Loading expense for editing...",
+        type: "info",
+      },
+    });
+    window.dispatchEvent(event);
+    
     router.push(`/dashboard/purchases/expenses/edit/${expense._id}`);
   };
 
@@ -122,13 +140,6 @@ export default function ExpenseDetailsPanel({
 
   const handleClone = async () => {
     try {
-      // Show loading state
-      const button = document.querySelector('[data-action="clone"]') as HTMLButtonElement;
-      if (button) {
-        button.disabled = true;
-        button.innerHTML = '<svg class="h-4 w-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Cloning...';
-      }
-
       // Create a clone of the expense data
       const clonedExpenseData = {
         date: new Date().toISOString().split('T')[0], // Set to today's date
@@ -150,48 +161,77 @@ export default function ExpenseDetailsPanel({
       // Call the expense service to create the clone
       const newExpense = await expenseService.createExpense(clonedExpenseData);
       
-      alert(`Expense cloned successfully! New expense ID: ${newExpense._id}`);
-      // Refresh the page to show the new expense
-      window.location.reload();
+      console.log('✅ Clone successful, new expense:', newExpense);
+      
+      // Show success toast notification
+      const event = new CustomEvent("showToast", {
+        detail: {
+          message: `Expense cloned successfully! New expense: ${newExpense.description}`,
+          type: "success",
+        },
+      });
+      window.dispatchEvent(event);
+      
+      // Add the new expense to the list if onCreate is available
+      if (onCreate) {
+        onCreate(newExpense);
+      }
+      
+      // Refresh the expenses list if onRefresh is available
+      if (onRefresh) {
+        onRefresh();
+      }
+      
+      // Navigate back to the expenses list to show the new expense
+      router.push('/dashboard/purchases/expenses');
+      
     } catch (error) {
       console.error('Error cloning expense:', error);
-      alert('Failed to clone expense. Please try again.');
-    } finally {
-      // Reset button state
-      const button = document.querySelector('[data-action="clone"]') as HTMLButtonElement;
-      if (button) {
-        button.disabled = false;
-        button.innerHTML = '<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg><span>Clone</span>';
+      
+      // Show error toast notification with more specific message
+      let errorMessage = "Failed to clone expense. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = `Failed to clone expense: ${error.message}`;
       }
+      
+      const event = new CustomEvent("showToast", {
+        detail: {
+          message: errorMessage,
+          type: "error",
+        },
+      });
+      window.dispatchEvent(event);
     }
   };
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
       try {
-        // Show loading state
-        const button = document.querySelector('[data-action="delete"]') as HTMLButtonElement;
-        if (button) {
-          button.disabled = true;
-          button.innerHTML = '<svg class="h-4 w-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Deleting...';
-        }
-
         // Call the expense service delete method
         await expenseService.deleteExpense(expense._id);
         
-        alert('Expense deleted successfully!');
+        // Show success toast notification
+        const event = new CustomEvent("showToast", {
+          detail: {
+            message: "Expense deleted successfully!",
+            type: "success",
+          },
+        });
+        window.dispatchEvent(event);
+        
         // Call the parent's delete handler
         onDelete(expense._id);
       } catch (error) {
         console.error('Error deleting expense:', error);
-        alert('Failed to delete expense. Please try again.');
-      } finally {
-        // Reset button state
-        const button = document.querySelector('[data-action="delete"]') as HTMLButtonElement;
-        if (button) {
-          button.disabled = false;
-          button.innerHTML = '<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg><span>Delete</span>';
-        }
+        
+        // Show error toast notification
+        const event = new CustomEvent("showToast", {
+          detail: {
+            message: "Failed to delete expense. Please try again.",
+            type: "error",
+          },
+        });
+        window.dispatchEvent(event);
       }
     }
   };
@@ -204,6 +244,15 @@ export default function ExpenseDetailsPanel({
         behavior: 'smooth',
         block: 'start'
       });
+    } else {
+      // If no journal section exists, show a message
+      const event = new CustomEvent("showToast", {
+        detail: {
+          message: "Journal section not available for this expense.",
+          type: "info",
+        },
+      });
+      window.dispatchEvent(event);
     }
   };
 
@@ -419,13 +468,15 @@ export default function ExpenseDetailsPanel({
         </div>
         
         <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setActiveTab("comments")}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-            title="Comments & History"
-          >
-            <ChatBubbleLeftRightIcon className="h-5 w-5" />
-          </button>
+          {onOpenHistory && (
+            <button
+              onClick={onOpenHistory}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+              title="View History"
+            >
+              <ChatBubbleLeftRightIcon className="h-5 w-5" />
+            </button>
+          )}
           <button
             onClick={onClose}
             className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
@@ -461,55 +512,74 @@ export default function ExpenseDetailsPanel({
             <PrinterIcon className="w-4 h-4 mr-2" />
             Print
           </button>
+          <button
+            onClick={onOpenHistory}
+            className="inline-flex items-center px-3 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium text-sm"
+          >
+            <BookOpenIcon className="w-4 h-4 mr-2" />
+            View History
+          </button>
+          <div className="relative">
             <button
               onClick={() => setShowMoreActions(!showMoreActions)}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-            title="More options"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+              title="More options"
             >
-            <EllipsisHorizontalIcon className="h-5 w-5" />
+              <EllipsisHorizontalIcon className="h-5 w-5" />
             </button>
-        </div>
-      </div>
-
-      {/* More Actions Dropdown - Positioned absolutely */}
+            
+            {/* More Actions Dropdown - Positioned relative to button */}
             {showMoreActions && (
-        <div className="absolute right-4 top-20 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                 <div className="py-1">
                   <button
                     onClick={() => {
                       setShowMoreActions(false);
-                handleClone();
+                      handleClone();
                     }}
-              data-action="clone"
-              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                    data-action="clone"
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                   >
-              <DocumentDuplicateIcon className="h-4 w-4" />
-              <span>Clone</span>
+                    <DocumentDuplicateIcon className="h-4 w-4" />
+                    <span>Clone</span>
                   </button>
                   <button
                     onClick={() => {
                       setShowMoreActions(false);
-                handleDelete();
+                      handleDelete();
                     }}
-              data-action="delete"
-              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    data-action="delete"
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                   >
-              <TrashIcon className="h-4 w-4" />
-              <span>Delete</span>
+                    <TrashIcon className="h-4 w-4" />
+                    <span>Delete</span>
                   </button>
                   <button
                     onClick={() => {
                       setShowMoreActions(false);
-                handleViewJournal();
+                      onOpenHistory?.();
                     }}
-              className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                   >
-              <BookOpenIcon className="h-4 w-4" />
-              <span>View Journal</span>
+                    <BookOpenIcon className="h-4 w-4" />
+                    <span>View History</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMoreActions(false);
+                      handleViewJournal();
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <BookOpenIcon className="h-4 w-4" />
+                    <span>View Journal</span>
                   </button>
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
@@ -598,6 +668,7 @@ export default function ExpenseDetailsPanel({
                 </div>
               </div>
             )}
+
 
       </div>
 

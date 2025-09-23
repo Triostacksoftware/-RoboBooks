@@ -423,9 +423,21 @@ export const BankingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteTransaction = useCallback(async (id: string) => {
     try {
+      console.log('🗑️ Deleting transaction with ID:', id);
+      console.log('🗑️ Current transactions before delete:', transactions.length);
+      
       await bankingService.deleteTransaction(id);
-      setTransactions(prev => prev.filter(transaction => transaction._id !== id));
+      
+      console.log('🗑️ API call successful, updating local state');
+      setTransactions(prev => {
+        const filtered = prev.filter(transaction => transaction._id !== id);
+        console.log('🗑️ Transactions after filter:', filtered.length);
+        return filtered;
+      });
+      
       await refreshOverview(); // Refresh overview to update totals
+      
+      console.log('🗑️ Delete operation completed successfully');
       addToast({
         title: 'Success',
         message: 'Transaction deleted successfully!',
@@ -433,6 +445,7 @@ export const BankingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         duration: 3000,
       });
     } catch (error: any) {
+      console.error('🗑️ Delete transaction error:', error);
       const message = error?.response?.data?.message || error?.message || 'Failed to delete transaction';
       addToast({
         title: 'Error',
@@ -442,7 +455,7 @@ export const BankingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
       throw error;
     }
-  }, [addToast, refreshOverview]);
+  }, [addToast, refreshOverview, transactions.length]);
 
   const reconcileTransaction = useCallback(async (id: string) => {
     try {

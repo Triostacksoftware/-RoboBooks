@@ -11,6 +11,7 @@ import {
   issueVendorCredit,
   applyVendorCredit,
   cancelVendorCredit,
+  recordRefund,
   importVendorCredits
 } from '../controllers/vendorCreditController.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -32,6 +33,7 @@ router.patch('/:id/status', updateVendorCreditStatus);
 router.post('/:id/issue', issueVendorCredit);
 router.post('/:id/apply', applyVendorCredit);
 router.post('/:id/cancel', cancelVendorCredit);
+router.post('/:id/refund', recordRefund);
 router.post('/import', importVendorCredits);
 
 export default router;

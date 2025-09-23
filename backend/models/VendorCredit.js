@@ -33,7 +33,7 @@ const vendorCreditSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'issued', 'applied', 'cancelled'],
+    enum: ['draft', 'issued', 'applied', 'cancelled', 'refunded'],
     default: 'draft'
   },
   reference: {
@@ -45,6 +45,66 @@ const vendorCreditSchema = new mongoose.Schema({
   },
   notes: {
     type: String
+  },
+  // Line items for detailed credit breakdown
+  items: [{
+    itemName: {
+      type: String,
+      required: true
+    },
+    description: {
+      type: String
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    rate: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    amount: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    taxRate: {
+      type: Number,
+      default: 0
+    },
+    taxAmount: {
+      type: Number,
+      default: 0
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
+      min: 0
+    }
+  }],
+  // Financial calculations
+  subtotal: {
+    type: Number,
+    default: 0
+  },
+  taxAmount: {
+    type: Number,
+    default: 0
+  },
+  discountAmount: {
+    type: Number,
+    default: 0
+  },
+  discountType: {
+    type: String,
+    enum: ['percentage', 'fixed'],
+    default: 'fixed'
+  },
+  discountValue: {
+    type: Number,
+    default: 0
   },
   appliedToBills: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -58,6 +118,22 @@ const vendorCreditSchema = new mongoose.Schema({
   remainingAmount: {
     type: Number,
     min: 0
+  },
+  // Refund information
+  refundAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  refundDate: {
+    type: Date
+  },
+  refundMethod: {
+    type: String,
+    enum: ['cash', 'check', 'bank_transfer', 'credit_card', 'debit_card', 'upi', 'other']
+  },
+  refundReference: {
+    type: String
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -87,11 +163,38 @@ vendorCreditSchema.index({ organizationId: 1, vendorId: 1 });
 vendorCreditSchema.index({ organizationId: 1, creditDate: -1 });
 vendorCreditSchema.index({ creditNumber: 1, organizationId: 1 }, { unique: true });
 
-// Pre-save middleware to calculate remaining amount
+// Pre-save middleware to calculate amounts
 vendorCreditSchema.pre('save', function(next) {
-  if (this.isNew || this.isModified('amount') || this.isModified('appliedAmount')) {
-    this.remainingAmount = this.amount - (this.appliedAmount || 0);
+  // Calculate subtotal from items
+  if (this.items && this.items.length > 0) {
+    this.subtotal = this.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+    this.taxAmount = this.items.reduce((sum, item) => sum + (item.taxAmount || 0), 0);
   }
+  
+  // Calculate discount
+  if (this.discountType === 'percentage' && this.discountValue > 0) {
+    this.discountAmount = (this.subtotal * this.discountValue) / 100;
+  } else if (this.discountType === 'fixed' && this.discountValue > 0) {
+    this.discountAmount = this.discountValue;
+  }
+  
+  // Calculate total amount
+  this.amount = this.subtotal + this.taxAmount - this.discountAmount;
+  
+  // Calculate remaining amount
+  if (this.isNew || this.isModified('amount') || this.isModified('appliedAmount') || this.isModified('refundAmount')) {
+    this.remainingAmount = this.amount - (this.appliedAmount || 0) - (this.refundAmount || 0);
+  }
+  
+  // Update status based on remaining amount
+  if (this.remainingAmount === 0 && this.status === 'issued') {
+    if (this.refundAmount > 0) {
+      this.status = 'refunded';
+    } else {
+      this.status = 'applied';
+    }
+  }
+  
   next();
 });
 
@@ -120,6 +223,30 @@ vendorCreditSchema.methods.applyToBills = async function(billIds, amount) {
 // Method to check if credit can be applied
 vendorCreditSchema.methods.canApply = function(amount) {
   return this.status === 'issued' && this.remainingAmount >= amount;
+};
+
+// Method to record refund
+vendorCreditSchema.methods.recordRefund = async function(refundData) {
+  if (this.status !== 'issued') {
+    throw new Error('Credit must be issued before recording refund');
+  }
+  
+  if (refundData.amount > this.remainingAmount) {
+    throw new Error('Cannot refund more than remaining credit amount');
+  }
+  
+  this.refundAmount = (this.refundAmount || 0) + refundData.amount;
+  this.refundDate = refundData.refundDate || new Date();
+  this.refundMethod = refundData.refundMethod;
+  this.refundReference = refundData.refundReference;
+  
+  this.remainingAmount = this.amount - (this.appliedAmount || 0) - this.refundAmount;
+  
+  if (this.remainingAmount === 0) {
+    this.status = 'refunded';
+  }
+  
+  return this.save();
 };
 
 export default mongoose.models.VendorCredit || mongoose.model('VendorCredit', vendorCreditSchema);

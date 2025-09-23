@@ -371,6 +371,53 @@ export const cancelVendorCredit = async (req, res) => {
   }
 };
 
+// Record refund for vendor credit
+export const recordRefund = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, refundMethod, refundReference, refundDate } = req.body;
+    const organizationId = req.user.organizationId;
+    
+    const vendorCredit = await VendorCredit.findOne({ _id: id, organizationId });
+    
+    if (!vendorCredit) {
+      return res.status(404).json({ success: false, error: 'Vendor credit not found' });
+    }
+    
+    if (vendorCredit.status !== 'issued') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Credit must be issued before recording refund' 
+      });
+    }
+    
+    if (amount > vendorCredit.remainingAmount) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot refund more than remaining credit amount' 
+      });
+    }
+    
+    // Record the refund
+    await vendorCredit.recordRefund({
+      amount,
+      refundMethod,
+      refundReference,
+      refundDate: refundDate ? new Date(refundDate) : new Date()
+    });
+    
+    const populatedVendorCredit = await VendorCredit.findById(vendorCredit._id)
+      .populate('vendorId', 'name companyName email')
+      .populate('createdBy', 'name email')
+      .populate('appliedToBills', 'billNumber totalAmount');
+    
+    res.json({ success: true, data: populatedVendorCredit });
+  } catch (error) {
+    console.error('Error recording refund:', error);
+    res.status(500).json({ success: false, error: 'Failed to record refund' });
+  }
+};
+
 // Import vendor credits from CSV
 export const importVendorCredits = async (req, res) => {
   try {

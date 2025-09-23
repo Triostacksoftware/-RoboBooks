@@ -1046,9 +1046,11 @@ export default function BankAccountManager() {
         duration: 3000,
       });
 
-      // Import transactions using fetch directly
-      const response = await fetch('/api/banking/import-transactions', {
+      // Import transactions using fetch directly to backend
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(`${backendUrl}/api/banking/import-transactions`, {
         method: 'POST',
+        credentials: 'include', // Include cookies for authentication
         body: formData,
       });
 

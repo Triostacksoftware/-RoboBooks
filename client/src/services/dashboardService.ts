@@ -63,6 +63,12 @@ class DashboardService {
         const response = await api('/api/dashboard/stats');
         if (response.success && response.data) {
           console.log('📊 Dashboard statistics loaded from unified endpoint:', response.data);
+          
+          // Debug each section
+          console.log('🔍 Items from unified endpoint:', response.data.items);
+          console.log('🔍 Customers from unified endpoint:', response.data.customers);
+          console.log('🔍 Banking from unified endpoint:', response.data.banking);
+          
           return response.data;
         }
       } catch (unifiedError) {
@@ -98,6 +104,17 @@ class DashboardService {
             console.warn(`⚠️ Failed to fetch ${moduleNames[index]} stats:`, result.reason);
           }
         });
+
+      // Debug individual service results
+      console.log('🔍 Individual service results:');
+      console.log('👥 Customers stats:', customersStats);
+      console.log('📦 Items stats:', itemsStats);
+      console.log('🏦 Banking stats:', bankingStats);
+      console.log('💰 Sales stats:', salesStats);
+      console.log('📋 Purchases stats:', purchasesStats);
+      console.log('📁 Projects stats:', projectsStats);
+      console.log('📈 Reports stats:', reportsStats);
+      console.log('📦 Orders stats:', ordersStats);
 
       const stats = {
         customers: customersStats.status === 'fulfilled' ? customersStats.value : { total: 0, active: 0, business: 0, individual: 0 },
@@ -159,6 +176,10 @@ class DashboardService {
           if (data.type === 'dashboard_update' && data.stats) {
             console.log('📊 Real-time dashboard update received:', data.stats);
             this.listeners.forEach(listener => listener(data.stats));
+          } else if (data.type === 'heartbeat') {
+            console.log('💓 Dashboard heartbeat received');
+          } else if (data.type === 'error') {
+            console.error('❌ Dashboard SSE error:', data.message);
           }
         } catch (error) {
           console.error('❌ Error parsing real-time update:', error);
@@ -197,15 +218,53 @@ class DashboardService {
     this.listeners = [];
   }
 
+  // Refresh specific module stats
+  async refreshModuleStats(module: keyof DashboardStats): Promise<any> {
+    try {
+      console.log(`🔄 Refreshing ${module} stats...`);
+      
+      switch (module) {
+        case 'customers':
+          return await this.getCustomerStats();
+        case 'items':
+          return await this.getItemStats();
+        case 'banking':
+          return await this.getBankingStats();
+        case 'sales':
+          return await this.getSalesStats();
+        case 'purchases':
+          return await this.getPurchasesStats();
+        case 'projects':
+          return await this.getProjectsStats();
+        case 'reports':
+          return await this.getReportsStats();
+        case 'orders':
+          return await this.getOrdersStats();
+        default:
+          throw new Error(`Unknown module: ${module}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error refreshing ${module} stats:`, error);
+      throw error;
+    }
+  }
+
   // Customer statistics
   private async getCustomerStats() {
     try {
+      console.log('👥 Fetching customer stats...');
       const response = await api('/api/customers/stats');
+      console.log('👥 Customer stats response:', response);
+      
+      // The backend returns the data directly
+      const customerData = response.data || response;
+      console.log('👥 Processed customer data:', customerData);
+      
       return {
-        total: response.data?.totalCustomers || 0,
-        active: response.data?.activeCustomers || 0,
-        business: response.data?.businessCustomers || 0,
-        individual: response.data?.individualCustomers || 0
+        total: customerData?.total || 0,
+        active: customerData?.active || 0,
+        business: customerData?.business || 0,
+        individual: customerData?.individual || 0
       };
     } catch (error) {
       console.warn('⚠️ Customer stats not available:', error);
@@ -216,12 +275,19 @@ class DashboardService {
   // Item statistics
   private async getItemStats() {
     try {
+      console.log('📦 Fetching item stats...');
       const response = await api('/api/items/stats');
+      console.log('📦 Item stats response:', response);
+      
+      // The backend now returns the data directly, not wrapped in a data object
+      const itemData = response.data || response;
+      console.log('📦 Processed item data:', itemData);
+      
       return {
-        total: response.data?.totalItems || 0,
-        goods: response.data?.goodsCount || 0,
-        services: response.data?.servicesCount || 0,
-        lowStock: response.data?.lowStockCount || 0
+        total: itemData?.total || 0,
+        goods: itemData?.goods || 0,
+        services: itemData?.services || 0,
+        lowStock: itemData?.lowStock || 0
       };
     } catch (error) {
       console.warn('⚠️ Item stats not available:', error);
@@ -232,11 +298,18 @@ class DashboardService {
   // Banking statistics
   private async getBankingStats() {
     try {
+      console.log('🏦 Fetching banking stats...');
       const response = await api('/api/banking/overview');
+      console.log('🏦 Banking stats response:', response);
+      
+      // The backend returns the data directly
+      const bankingData = response.data || response;
+      console.log('🏦 Processed banking data:', bankingData);
+      
       return {
-        totalAccounts: response.data?.totalAccounts || 0,
-        totalBalance: response.data?.totalBalance || 0,
-        pendingTransactions: response.data?.pendingTransactions || 0
+        totalAccounts: bankingData?.totalAccounts || 0,
+        totalBalance: bankingData?.totalBalance || 0,
+        pendingTransactions: bankingData?.pendingTransactions || 0
       };
     } catch (error) {
       console.warn('⚠️ Banking stats not available:', error);
@@ -247,12 +320,19 @@ class DashboardService {
   // Sales statistics
   private async getSalesStats() {
     try {
+      console.log('💰 Fetching sales stats...');
       const response = await api('/api/invoices/stats');
+      console.log('💰 Sales stats response:', response);
+      
+      // The backend returns the data directly
+      const salesData = response.data || response;
+      console.log('💰 Processed sales data:', salesData);
+      
       return {
-        totalInvoices: response.data?.totalInvoices || 0,
-        paidInvoices: response.data?.paidInvoices || 0,
-        pendingInvoices: response.data?.pendingInvoices || 0,
-        totalRevenue: response.data?.totalRevenue || 0
+        totalInvoices: salesData?.totalInvoices || 0,
+        paidInvoices: salesData?.paidInvoices || 0,
+        pendingInvoices: salesData?.pendingInvoices || 0,
+        totalRevenue: salesData?.totalRevenue || 0
       };
     } catch (error) {
       console.warn('⚠️ Sales stats not available:', error);
@@ -263,12 +343,19 @@ class DashboardService {
   // Purchases statistics
   private async getPurchasesStats() {
     try {
+      console.log('📋 Fetching purchases stats...');
       const response = await api('/api/bills/stats');
+      console.log('📋 Purchases stats response:', response);
+      
+      // The backend returns the data directly
+      const purchaseData = response.data || response;
+      console.log('📋 Processed purchase data:', purchaseData);
+      
       return {
-        totalBills: response.data?.totalBills || 0,
-        paidBills: response.data?.paidBills || 0,
-        pendingBills: response.data?.pendingBills || 0,
-        totalExpenses: response.data?.totalExpenses || 0
+        totalBills: purchaseData?.totalBills || 0,
+        paidBills: purchaseData?.paidBills || 0,
+        pendingBills: purchaseData?.pendingBills || 0,
+        totalExpenses: purchaseData?.totalExpenses || 0
       };
     } catch (error) {
       console.warn('⚠️ Purchases stats not available:', error);
@@ -279,12 +366,19 @@ class DashboardService {
   // Projects statistics
   private async getProjectsStats() {
     try {
+      console.log('📁 Fetching projects stats...');
       const response = await api('/api/projects/stats');
+      console.log('📁 Projects stats response:', response);
+      
+      // The backend returns the data directly
+      const projectData = response.data || response;
+      console.log('📁 Processed project data:', projectData);
+      
       return {
-        total: response.data?.totalProjects || 0,
-        active: response.data?.activeProjects || 0,
-        completed: response.data?.completedProjects || 0,
-        totalHours: response.data?.totalHours || 0
+        total: projectData?.total || 0,
+        active: projectData?.active || 0,
+        completed: projectData?.completed || 0,
+        totalHours: projectData?.totalHours || 0
       };
     } catch (error) {
       console.warn('⚠️ Projects stats not available:', error);
@@ -295,10 +389,17 @@ class DashboardService {
   // Reports statistics
   private async getReportsStats() {
     try {
+      console.log('📈 Fetching reports stats...');
       const response = await api('/api/reports/stats');
+      console.log('📈 Reports stats response:', response);
+      
+      // The backend returns the data directly
+      const reportData = response.data || response;
+      console.log('📈 Processed report data:', reportData);
+      
       return {
-        totalGenerated: response.data?.totalReports || 0,
-        totalRevenue: response.data?.totalRevenue || 0
+        totalGenerated: reportData?.totalGenerated || 0,
+        totalRevenue: reportData?.totalRevenue || 0
       };
     } catch (error) {
       console.warn('⚠️ Reports stats not available:', error);
@@ -309,10 +410,14 @@ class DashboardService {
   // Orders statistics (combining various order types)
   private async getOrdersStats() {
     try {
+      console.log('📦 Fetching orders stats...');
       const [salesOrders, purchaseOrders] = await Promise.all([
         api('/api/sales-orders/stats').catch(() => ({ data: {} })),
         api('/api/purchase-orders/stats').catch(() => ({ data: {} }))
       ]);
+
+      console.log('📦 Sales orders response:', salesOrders);
+      console.log('📦 Purchase orders response:', purchaseOrders);
 
       return {
         pending: (salesOrders.data?.pending || 0) + (purchaseOrders.data?.pending || 0),

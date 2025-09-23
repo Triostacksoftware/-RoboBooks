@@ -44,6 +44,29 @@ export const generateClientPDF = async (invoice) => {
     });
   };
 
+  // Helper function to get state code from address
+  const getStateFromAddress = (address) => {
+    if (!address) return "09";
+    if (address.includes("Uttar Pradesh")) return "09";
+    if (address.includes("West Bengal")) return "19";
+    if (address.includes("Maharashtra")) return "27";
+    if (address.includes("Tamil Nadu")) return "33";
+    if (address.includes("Gujarat")) return "24";
+    if (address.includes("Rajasthan")) return "08";
+    if (address.includes("Punjab")) return "03";
+    if (address.includes("Haryana")) return "06";
+    if (address.includes("Delhi")) return "07";
+    if (address.includes("Karnataka")) return "29";
+    return "09";
+  };
+
+  // Helper function to check if transaction is inter-state
+  const isInterState = () => {
+    const sellerState = "29"; // Karnataka
+    const buyerState = getStateFromAddress(invoice.buyerAddress || invoice.customerAddress || "");
+    return sellerState !== buyerState;
+  };
+
   // Helper function to convert number to words
   const numberToWords = (num) => {
     // Ensure num is a valid number
@@ -135,7 +158,19 @@ export const generateClientPDF = async (invoice) => {
   }
   
   yPos += 6;
-  doc.text("State: 09-Uttar Pradesh", 20, yPos);
+  const buyerState = getStateFromAddress(invoice.buyerAddress || invoice.customerAddress || "");
+  const stateName = invoice.buyerAddress?.includes("Uttar Pradesh") ? "09-Uttar Pradesh" :
+                   invoice.buyerAddress?.includes("West Bengal") ? "19-West Bengal" :
+                   invoice.buyerAddress?.includes("Maharashtra") ? "27-Maharashtra" :
+                   invoice.buyerAddress?.includes("Tamil Nadu") ? "33-Tamil Nadu" :
+                   invoice.buyerAddress?.includes("Gujarat") ? "24-Gujarat" :
+                   invoice.buyerAddress?.includes("Rajasthan") ? "08-Rajasthan" :
+                   invoice.buyerAddress?.includes("Punjab") ? "03-Punjab" :
+                   invoice.buyerAddress?.includes("Haryana") ? "06-Haryana" :
+                   invoice.buyerAddress?.includes("Delhi") ? "07-Delhi" :
+                   invoice.buyerAddress?.includes("Karnataka") ? "29-Karnataka" :
+                   "09-Uttar Pradesh";
+  doc.text(`State: ${stateName}`, 20, yPos);
 
   // Shipping Address (right side)
   yPos = 75;
@@ -152,7 +187,10 @@ export const generateClientPDF = async (invoice) => {
   }
   
   yPos += 6;
-  doc.text("Place of Supply: 09-Delivery Location", 110, yPos);
+  const placeOfSupply = invoice.placeOfSupplyState ? 
+    `${getStateFromAddress(invoice.placeOfSupplyState)}-${invoice.placeOfSupplyState}` :
+    `${buyerState}-Delivery Location`;
+  doc.text(`Place of Supply: ${placeOfSupply}`, 110, yPos);
   
   if (invoice.terms) {
     yPos += 6;
@@ -284,15 +322,23 @@ export const generateClientPDF = async (invoice) => {
   doc.text(formatCurrency(invoice.subTotal), summaryX + 60, summaryY);
   
   if (invoice.taxAmount > 0) {
-    // Fix NaN% issue by ensuring taxRate is a valid number
-    const taxRate = invoice.taxRate || 18;
-    const halfTaxRate = taxRate / 2;
-    
-    doc.text(`SGST@${halfTaxRate}%:`, summaryX, summaryY + 6);
-    doc.text(formatCurrency(invoice.taxAmount / 2), summaryX + 60, summaryY + 6);
-    
-    doc.text(`CGST@${halfTaxRate}%:`, summaryX, summaryY + 12);
-    doc.text(formatCurrency(invoice.taxAmount / 2), summaryX + 60, summaryY + 12);
+    // Display GST based on actual transaction type
+    if (!isInterState()) {
+      // Intra-State: CGST + SGST (same state)
+      const taxRate = invoice.taxRate || 18;
+      const halfTaxRate = taxRate / 2;
+      
+      doc.text(`CGST@${halfTaxRate}%:`, summaryX, summaryY + 6);
+      doc.text(formatCurrency(invoice.taxAmount / 2), summaryX + 60, summaryY + 6);
+      
+      doc.text(`SGST@${halfTaxRate}%:`, summaryX, summaryY + 12);
+      doc.text(formatCurrency(invoice.taxAmount / 2), summaryX + 60, summaryY + 12);
+    } else {
+      // Inter-State: IGST (different states)
+      const taxRate = invoice.taxRate || 18;
+      doc.text(`IGST@${taxRate}%:`, summaryX, summaryY + 6);
+      doc.text(formatCurrency(invoice.taxAmount), summaryX + 60, summaryY + 6);
+    }
   }
   
   // Total line

@@ -47,7 +47,9 @@ const bankStatementImportSchema = new mongoose.Schema({
     payee: String,
     referenceNumber: String,
     withdrawals: String,
-    deposits: String
+    deposits: String,
+    category: String,
+    status: String
   },
   dateFormat: {
     type: String,
@@ -59,16 +61,17 @@ const bankStatementImportSchema = new mongoose.Schema({
   },
   originalHeaders: [String],
   processedData: [{
-    date: Date,
-    description: String,
-    payee: String,
-    referenceNumber: String,
-    withdrawals: Number,
-    deposits: Number,
-    amount: Number,
-    type: String,
-    status: String,
-    errors: [String]
+    date: { type: Date },
+    description: { type: String, default: '' },
+    payee: { type: String, default: '' },
+    referenceNumber: { type: String, default: '' },
+    withdrawals: { type: Number, default: 0 },
+    deposits: { type: Number, default: 0 },
+    amount: { type: Number, default: 0 },
+    type: { type: String, default: 'unknown' },
+    category: { type: String, default: '' },
+    status: { type: String, default: 'ready' },
+    errors: { type: [String], default: [] }
   }],
   errors: [{
     row: Number,

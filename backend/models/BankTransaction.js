@@ -43,7 +43,7 @@ const bankTransactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['deposit', 'withdrawal'],
+    enum: ['credit', 'debit', 'deposit', 'withdrawal'],
     required: true
   },
   category: {
@@ -52,8 +52,8 @@ const bankTransactionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['uncategorized', 'categorized', 'reconciled'],
-    default: 'uncategorized'
+    enum: ['pending', 'reconciled', 'cancelled', 'uncategorized', 'categorized'],
+    default: 'pending'
   },
   isImported: {
     type: Boolean,

@@ -209,15 +209,12 @@ class ItemService {
       ]);
 
       return {
-        success: true,
-        data: {
-          totalItems,
-          goodsCount,
-          servicesCount,
-          lowStockCount,
-          categoryStats,
-          priceStats: priceStats[0] || {}
-        }
+        total: totalItems,
+        goods: goodsCount,
+        services: servicesCount,
+        lowStock: lowStockCount,
+        categoryStats,
+        priceStats: priceStats[0] || {}
       };
     } catch (error) {
       throw error;

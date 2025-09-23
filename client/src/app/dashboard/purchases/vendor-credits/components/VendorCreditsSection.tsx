@@ -122,6 +122,7 @@ export default function VendorCreditsSection({
     { value: "draft", label: "Draft", icon: PencilIcon, isCustom: false },
     { value: "issued", label: "Issued", icon: ClockIcon, isCustom: false },
     { value: "applied", label: "Applied", icon: CheckIcon, isCustom: false },
+    { value: "refunded", label: "Refunded", icon: CurrencyDollarIcon, isCustom: false },
     { value: "cancelled", label: "Cancelled", icon: XCircleIcon, isCustom: false },
   ];
 
@@ -369,6 +370,7 @@ export default function VendorCreditsSection({
       issued: 'bg-blue-100 text-blue-800',
       applied: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
+      refunded: 'bg-purple-100 text-purple-800',
     };
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
@@ -383,6 +385,8 @@ export default function VendorCreditsSection({
         return <CheckIcon className="h-4 w-4" />;
       case 'cancelled':
         return <XCircleIcon className="h-4 w-4" />;
+      case 'refunded':
+        return <CurrencyDollarIcon className="h-4 w-4" />;
       default:
         return null;
     }
@@ -629,33 +633,16 @@ export default function VendorCreditsSection({
                 dropdownPosition === 'left' ? 'right-0' : 'left-0'
               }`}>
                 <div className="p-2">
-                  {mainDropdownOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setSelectedFilter(option.value);
-                          setShowFilters(false);
-                        }}
-                        className={`w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 ${
-                          selectedFilter === option.value ? "bg-blue-50 text-blue-700" : "text-gray-700"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="text-sm">{option.label}</span>
-                        {selectedFilter === option.value && (
-                          <CheckIcon className="h-4 w-4 ml-auto" />
-                        )}
-                      </button>
-                    );
-                  })}
-                  <div className="border-t border-gray-200 mt-2 pt-2">
-                    <button className="w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 text-blue-600">
-                      <PlusIcon className="h-4 w-4" />
-                      <span className="text-sm">New Custom View</span>
-                    </button>
-                  </div>
+                  <button 
+                    onClick={() => {
+                      router.push('/dashboard/purchases/vendor-credits/custom-view');
+                      setShowFilters(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-left rounded-md hover:bg-gray-50 text-blue-600"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <span className="text-sm">New Custom View</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -688,7 +675,7 @@ export default function VendorCreditsSection({
                         <PlayIcon className="h-6 w-6 text-white" />
                       </div>
                       <div className="text-left">
-                        <div className="text-lg font-semibold text-gray-900">How to manage vendor credits</div>
+                        <div className="text-lg font-semibold text-gray-900">How to create a vendor credit</div>
                         <div className="text-sm text-gray-600">Learn the basics of vendor credit management</div>
                       </div>
                     </div>
@@ -697,10 +684,10 @@ export default function VendorCreditsSection({
               </div>
 
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Time To Manage Your Vendor Credits!
+                You deserve some credit too.
               </h2>
               <p className="text-gray-600 mb-6">
-                Create and manage vendor credits to handle refunds and adjustments.
+                Create vendor credits and apply them to multiple bills when buying stuff from your vendor.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -708,7 +695,7 @@ export default function VendorCreditsSection({
                   onClick={() => window.location.href = '/dashboard/purchases/vendor-credits/new'}
                   className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                 >
-                  NEW VENDOR CREDIT
+                  CREATE VENDOR CREDITS
                 </button>
                 <button
                   onClick={() => window.location.href = '/dashboard/purchases/vendor-credits/import'}
@@ -716,6 +703,152 @@ export default function VendorCreditsSection({
                 >
                   Import Vendor Credits
                 </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Lifecycle Diagram - Similar to Zoho Books */}
+          <div className="bg-white rounded-lg border p-8">
+            <div className="max-w-4xl mx-auto">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
+                Life cycle of a Vendor Credit
+              </h3>
+              
+              {/* Lifecycle Flowchart */}
+              <div className="flex flex-col lg:flex-row items-center justify-center space-y-4 lg:space-y-0 lg:space-x-8 mb-8">
+                {/* Step 1 */}
+                <div className="flex flex-col items-center">
+                  <div className="w-48 h-16 bg-blue-100 rounded-lg flex items-center justify-center border-2 border-blue-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-blue-800">PRODUCT RETURNED / CANCELLED</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex flex-col items-center">
+                  <div className="w-48 h-16 bg-green-100 rounded-lg flex items-center justify-center border-2 border-green-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-green-800">CREDIT NOTE RECEIVED</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex flex-col items-center">
+                  <div className="w-48 h-16 bg-green-100 rounded-lg flex items-center justify-center border-2 border-green-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-green-800">RECORD VENDOR CREDITS</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Branching Paths */}
+              <div className="flex flex-col lg:flex-row items-center justify-center space-y-4 lg:space-y-0 lg:space-x-8">
+                {/* Branch Label */}
+                <div className="flex items-center">
+                  <div className="w-32 h-8 bg-gray-100 rounded flex items-center justify-center border border-gray-200">
+                    <span className="text-xs font-medium text-gray-600">MARK AS OPEN</span>
+                  </div>
+                </div>
+
+                {/* Branch Arrow */}
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" strokeDasharray="5,5" />
+                  </svg>
+                </div>
+
+                {/* Upper Path */}
+                <div className="flex flex-col items-center">
+                  <div className="w-48 h-16 bg-green-100 rounded-lg flex items-center justify-center border-2 border-green-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-green-800">APPLY TO FUTURE BILLS</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lower Path */}
+                <div className="flex flex-col items-center">
+                  <div className="w-48 h-16 bg-blue-100 rounded-lg flex items-center justify-center border-2 border-blue-200">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-500 rounded flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-blue-800">RECORD REFUND</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Explanation Text */}
+              <div className="mt-8 text-center">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                  In the Vendor Credits module, you can:
+                </h4>
+                <div className="space-y-2 text-left max-w-2xl mx-auto">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">Record credits when you receive a credit note from your vendor.</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">Apply vendor credits to bill payments in the future.</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="text-gray-700">Record refunds for your vendor credits.</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

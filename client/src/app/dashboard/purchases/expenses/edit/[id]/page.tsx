@@ -146,6 +146,7 @@ const EditExpensePage = () => {
                     updatedAt: new Date().toISOString()
                   };
                   setExpense(mockExpense);
+                  setError(null);
                 }}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
               >

@@ -2,6 +2,22 @@ import Expense from '../models/Expense.js';
 import { validationResult } from 'express-validator';
 import path from 'path';
 import fs from 'fs';
+import mongoose from 'mongoose';
+import ExpenseHistoryService from '../services/expenseHistoryService.js';
+
+// Helper function to build expense query with proper organization handling
+const buildExpenseQuery = (baseQuery = {}, organizationId) => {
+  const query = {
+    ...baseQuery,
+    isDeleted: false
+  };
+  
+  if (organizationId && mongoose.Types.ObjectId.isValid(organizationId)) {
+    query.organization = organizationId;
+  }
+  
+  return query;
+};
 
 // Get all expenses
 export const getExpenses = async (req, res) => {
@@ -104,13 +120,9 @@ export const getExpenses = async (req, res) => {
 export const getExpenseById = async (req, res) => {
   try {
     const { id } = req.params;
-    const organizationId = req.user.organization || 'default';
+    const organizationId = req.user.organization;
 
-    const expense = await Expense.findOne({
-      _id: id,
-      organization: organizationId,
-      isDeleted: false
-    })
+    const expense = await Expense.findOne(buildExpenseQuery({ _id: id }, organizationId))
       .populate('createdBy', 'name email')
       .populate('updatedBy', 'name email')
       .populate('customer', 'name')
@@ -169,6 +181,23 @@ export const createExpense = async (req, res) => {
 
     await expense.populate('createdBy', 'name email');
 
+    // Track expense creation in history
+    try {
+      console.log('📝 Backend: Attempting to track expense creation in history...');
+      console.log('📝 Backend: User info:', { id: req.user.id, name: req.user.name, email: req.user.email });
+      console.log('📝 Backend: Expense info:', { id: expense._id, description: expense.description, amount: expense.amount });
+      
+      const historyEntry = await ExpenseHistoryService.trackExpenseCreation(expense, req.user, req);
+      console.log('✅ Backend: Expense creation tracked in history:', historyEntry._id);
+    } catch (historyError) {
+      console.error('❌ Backend: Failed to track expense creation in history:', historyError);
+      console.error('❌ Backend: History error details:', {
+        message: historyError.message,
+        stack: historyError.stack
+      });
+      // Don't fail the request if history tracking fails
+    }
+
     res.status(201).json({
       success: true,
       data: expense,
@@ -188,7 +217,7 @@ export const createExpense = async (req, res) => {
 export const updateExpense = async (req, res) => {
   try {
     const { id } = req.params;
-    const organizationId = req.user.organization || 'default';
+    const organizationId = req.user.organization;
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -199,11 +228,7 @@ export const updateExpense = async (req, res) => {
       });
     }
 
-    const expense = await Expense.findOne({
-      _id: id,
-      organization: organizationId,
-      isDeleted: false
-    });
+    const expense = await Expense.findOne(buildExpenseQuery({ _id: id }, organizationId));
 
     if (!expense) {
       return res.status(404).json({
@@ -211,6 +236,9 @@ export const updateExpense = async (req, res) => {
         message: 'Expense not found'
       });
     }
+
+    // Store previous values for history tracking
+    const previousExpense = { ...expense.toObject() };
 
     // Update fields
     Object.keys(req.body).forEach(key => {
@@ -224,6 +252,29 @@ export const updateExpense = async (req, res) => {
 
     await expense.populate('createdBy', 'name email');
     await expense.populate('updatedBy', 'name email');
+
+    // Track expense update in history
+    try {
+      console.log('📝 Backend: Attempting to track expense update in history...');
+      console.log('📝 Backend: User info:', { id: req.user.id, name: req.user.name, email: req.user.email });
+      console.log('📝 Backend: Expense ID:', expense._id);
+      console.log('📝 Backend: Previous values:', Object.keys(previousExpense));
+      console.log('📝 Backend: Updated values:', Object.keys(req.body));
+      
+      const historyEntry = await ExpenseHistoryService.trackExpenseUpdate(expense._id, previousExpense, expense, req.user, req);
+      if (historyEntry) {
+        console.log('✅ Backend: Expense update tracked in history:', historyEntry._id);
+      } else {
+        console.log('ℹ️ Backend: No changes detected, no history entry created');
+      }
+    } catch (historyError) {
+      console.error('❌ Backend: Failed to track expense update in history:', historyError);
+      console.error('❌ Backend: History error details:', {
+        message: historyError.message,
+        stack: historyError.stack
+      });
+      // Don't fail the request if history tracking fails
+    }
 
     res.json({
       success: true,
@@ -244,19 +295,24 @@ export const updateExpense = async (req, res) => {
 export const deleteExpense = async (req, res) => {
   try {
     const { id } = req.params;
-    const organizationId = req.user.organization || 'default';
+    const organizationId = req.user.organization;
 
-    const expense = await Expense.findOne({
-      _id: id,
-      organization: organizationId,
-      isDeleted: false
-    });
+    const expense = await Expense.findOne(buildExpenseQuery({ _id: id }, organizationId));
 
     if (!expense) {
       return res.status(404).json({
         success: false,
         message: 'Expense not found'
       });
+    }
+
+    // Track expense deletion in history before soft delete
+    try {
+      await ExpenseHistoryService.trackExpenseDeletion(expense, req.user, req);
+      console.log('✅ Backend: Expense deletion tracked in history');
+    } catch (historyError) {
+      console.error('⚠️ Backend: Failed to track expense deletion in history:', historyError);
+      // Don't fail the request if history tracking fails
     }
 
     // Soft delete

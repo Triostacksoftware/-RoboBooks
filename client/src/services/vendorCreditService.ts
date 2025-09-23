@@ -9,7 +9,7 @@ export interface VendorCredit {
   creditDate: string;
   amount: number;
   currency: string;
-  status: 'draft' | 'issued' | 'applied' | 'cancelled';
+  status: 'draft' | 'issued' | 'applied' | 'cancelled' | 'refunded';
   reference?: string;
   reason: string;
   notes?: string;
@@ -246,6 +246,27 @@ class VendorCreditService {
       throw new Error('Failed to cancel vendor credit');
     } catch (error) {
       console.error('Error cancelling vendor credit:', error);
+      throw error;
+    }
+  }
+
+  async recordRefund(id: string, refundData: {
+    amount: number;
+    refundMethod: string;
+    refundReference: string;
+    refundDate: string;
+  }): Promise<VendorCredit> {
+    try {
+      const response = await api<{ success: boolean; data: VendorCredit }>(`${this.baseUrl}/${id}/refund`, {
+        method: 'POST',
+        body: JSON.stringify(refundData),
+      });
+      if (response.success) {
+        return response.data;
+      }
+      throw new Error('Failed to record refund');
+    } catch (error) {
+      console.error('Error recording refund:', error);
       throw error;
     }
   }

@@ -133,9 +133,9 @@ export const getAllProjectStats = async (userId) => {
     ]);
 
     return {
-      totalProjects,
-      activeProjects,
-      completedProjects,
+      total: totalProjects,
+      active: activeProjects,
+      completed: completedProjects,
       totalHours: totalHours[0]?.total || 0
     };
   } catch (error) {

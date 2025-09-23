@@ -47,11 +47,24 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
   const fetchDashboardStats = async () => {
     try {
       setError(null);
+      console.log('🔄 Fetching dashboard statistics...');
       const stats = await dashboardService.getDashboardStats();
+      console.log('📊 Dashboard stats received:', stats);
+      
+      // Debug each section
+      console.log('📋 Items data:', stats?.items);
+      console.log('👥 Customers data:', stats?.customers);
+      console.log('🏦 Banking data:', stats?.banking);
+      console.log('💰 Sales data:', stats?.sales);
+      console.log('📦 Purchases data:', stats?.purchases);
+      console.log('📁 Projects data:', stats?.projects);
+      console.log('📈 Reports data:', stats?.reports);
+      console.log('📦 Orders data:', stats?.orders);
+      
       setDashboardStats(stats);
       setLastRefreshTime(new Date());
     } catch (err) {
-      console.error('Error fetching dashboard stats:', err);
+      console.error('❌ Error fetching dashboard stats:', err);
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -87,12 +100,13 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
     // Connect to real-time updates
     dashboardService.connectRealTimeUpdates(handleRealTimeUpdate);
 
-    // Fallback: Auto-refresh every 2 minutes if real-time fails
+    // Fallback: Auto-refresh every 30 seconds if real-time fails
     const interval = setInterval(() => {
       if (activeTab === 'dashboard') {
+        console.log('🔄 Auto-refresh: Updating dashboard data...');
         fetchDashboardStats();
       }
-    }, 2 * 60 * 1000); // 2 minutes
+    }, 30000); // 30 seconds for better real-time experience
 
     return () => {
       dashboardService.disconnectRealTimeUpdates();
@@ -122,9 +136,9 @@ export default function HomeTabs({ companyName, onTabChange }: HomeTabsProps) {
       route: "/dashboard/customers",
     },
     items: {
-      total: (dashboardStats?.items?.data?.totalItems || 0) > 0 ? dashboardStats?.items?.data?.totalItems : "No data",
+      total: (dashboardStats?.items?.total || 0) > 0 ? dashboardStats?.items?.total : "No data",
       icon: ShoppingCartIcon,
-      color: (dashboardStats?.items?.data?.totalItems || 0) > 0 ? "bg-green-500" : "bg-gray-400",
+      color: (dashboardStats?.items?.total || 0) > 0 ? "bg-green-500" : "bg-gray-400",
       route: "/dashboard/items",
     },
     banking: {

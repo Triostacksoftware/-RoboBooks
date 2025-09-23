@@ -1,5 +1,5 @@
 // Banking service for dashboard statistics
-import Account from '../models/Account.js';
+import BankAccount from '../models/BankAccount.js';
 import BankTransaction from '../models/BankTransaction.js';
 
 const getBankingStats = async () => {
@@ -9,8 +9,9 @@ const getBankingStats = async () => {
       totalBalance,
       pendingTransactions
     ] = await Promise.all([
-      Account.countDocuments(),
-      Account.aggregate([
+      BankAccount.countDocuments({ status: 'active' }),
+      BankAccount.aggregate([
+        { $match: { status: 'active' } },
         { $group: { _id: null, total: { $sum: '$balance' } } }
       ]),
       BankTransaction.countDocuments({ status: 'pending' })

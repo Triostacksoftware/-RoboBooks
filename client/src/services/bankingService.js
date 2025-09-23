@@ -45,7 +45,10 @@ export const bankingService = {
   getTransaction: (id) => http.get(`/banking/transactions/${id}`),
   createTransaction: (data) => http.post("/banking/transactions", data),
   updateTransaction: (id, data) => http.put(`/banking/transactions/${id}`, data),
-  deleteTransaction: (id) => http.delete(`/banking/transactions/${id}`),
+  deleteTransaction: (id) => {
+    console.log('🗑️ Service: Deleting transaction with ID:', id);
+    return http.delete(`/banking/transactions/${id}`);
+  },
   reconcileTransaction: (id) =>
     http.patch(`/banking/transactions/${id}/reconcile`),
   categorizeTransaction: (id, data) =>
@@ -214,8 +217,10 @@ export const mockBankingData = {
 
   // Import transactions for specific account
   importTransactions: async (formData) => {
-    const response = await fetch('/api/banking/import-transactions', {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+    const response = await fetch(`${backendUrl}/api/banking/import-transactions`, {
       method: 'POST',
+      credentials: 'include', // Include cookies for authentication
       body: formData,
     });
     

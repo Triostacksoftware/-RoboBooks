@@ -6,6 +6,7 @@ import { getBillStats } from '../services/bills.service.js';
 import { getAllProjectStats } from '../services/projectservice.js';
 import { getReportStats } from '../services/reportService.js';
 import { getOrderStats } from '../services/salesOrderService.js';
+import jwt from 'jsonwebtoken';
 
 // Get comprehensive dashboard statistics
 const getDashboardStats = async (req, res) => {
@@ -115,9 +116,105 @@ const getDashboardStatsData = async (req) => {
   }
 };
 
+// Real-time dashboard updates via Server-Sent Events
+const getDashboardEvents = async (req, res) => {
+  try {
+    // Authenticate using token from query parameter
+    const token = req.query.token;
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    // Use the same JWT secret as the auth middleware and JWT utilities
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret-key';
+    console.log('🔐 SSE - Using JWT secret:', jwtSecret ? 'Found' : 'Not found');
+    
+    // Verify token
+    const decoded = jwt.verify(token, jwtSecret);
+    console.log('✅ SSE - Token verified, user:', decoded);
+    
+    // Create consistent user object structure (same as auth middleware)
+    req.user = {
+      id: decoded.uid || decoded.id,
+      uid: decoded.uid || decoded.id,
+      role: decoded.role || 'user',
+      email: decoded.email,
+      organization: decoded.organization,
+      iat: decoded.iat,
+      exp: decoded.exp
+    };
+
+    // Set SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    console.log('📡 SSE connection established for dashboard updates');
+
+    // Send initial data
+    const initialStats = await getDashboardStatsData(req);
+    res.write(`data: ${JSON.stringify({
+      type: 'dashboard_update',
+      stats: initialStats,
+      timestamp: new Date().toISOString()
+    })}\n\n`);
+
+    // Set up periodic updates (every 30 seconds)
+    const updateInterval = setInterval(async () => {
+      try {
+        const stats = await getDashboardStatsData(req);
+        res.write(`data: ${JSON.stringify({
+          type: 'dashboard_update',
+          stats: stats,
+          timestamp: new Date().toISOString()
+        })}\n\n`);
+      } catch (error) {
+        console.error('Error sending periodic update:', error);
+        res.write(`data: ${JSON.stringify({
+          type: 'error',
+          message: 'Failed to fetch dashboard data',
+          timestamp: new Date().toISOString()
+        })}\n\n`);
+      }
+    }, 30000);
+
+    // Handle client disconnect
+    req.on('close', () => {
+      console.log('📡 SSE connection closed for dashboard updates');
+      clearInterval(updateInterval);
+    });
+
+    // Send heartbeat every 10 seconds to keep connection alive
+    const heartbeatInterval = setInterval(() => {
+      res.write(`data: ${JSON.stringify({
+        type: 'heartbeat',
+        timestamp: new Date().toISOString()
+      })}\n\n`);
+    }, 10000);
+
+    req.on('close', () => {
+      clearInterval(heartbeatInterval);
+    });
+
+  } catch (error) {
+    console.error('❌ Error setting up SSE connection:', error);
+    if (error.name === 'JsonWebTokenError') {
+      console.error('🔐 JWT Error details:', error.message);
+      res.status(401).json({ error: 'Invalid token for real-time connection' });
+    } else {
+      res.status(500).json({ error: 'Failed to establish real-time connection' });
+    }
+  }
+};
+
 export default {
   getDashboardStats,
-  getDashboardStatsData
+  getDashboardStatsData,
+  getDashboardEvents
 };
 
 

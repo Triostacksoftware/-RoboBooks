@@ -19,6 +19,8 @@ interface ToastContextType {
   replaceToast: (oldId: string, newToast: Omit<Toast, 'id'>) => void;
   removeToastsByType: (type: Toast['type']) => void;
   showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info', title?: string) => void;
+  showConsolidatedToast: (message: string, type: 'success' | 'error' | 'warning' | 'info', title?: string) => void;
+  showMixedResultsToast: (successCount: number, failureCount: number, itemType: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -93,8 +95,75 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, [addToast]);
 
+  const showConsolidatedToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info', title?: string) => {
+    // Remove any existing toasts of the same type first
+    removeToastsByType(type);
+    
+    // Then add the new consolidated toast
+    addToast({
+      title: title || (type === 'success' ? 'Success' : type === 'error' ? 'Error' : type === 'warning' ? 'Warning' : 'Info'),
+      message,
+      type,
+      duration: 4000
+    });
+  }, [addToast, removeToastsByType]);
+
+  const showMixedResultsToast = useCallback((successCount: number, failureCount: number, itemType: string) => {
+    // Remove any existing success/error toasts first
+    removeToastsByType('success');
+    removeToastsByType('error');
+    removeToastsByType('warning');
+    
+    let message: string;
+    let type: 'success' | 'error' | 'warning' | 'info';
+    let title: string;
+    
+    if (successCount > 0 && failureCount > 0) {
+      // Mixed results - show warning
+      message = `Loaded ${successCount} ${itemType} successfully and ${failureCount} ${itemType} loading failed`;
+      type = 'warning';
+      title = 'Partial Success';
+    } else if (successCount > 0 && failureCount === 0) {
+      // All successful
+      message = `Loaded ${successCount} ${itemType} successfully`;
+      type = 'success';
+      title = 'Success';
+    } else if (successCount === 0 && failureCount > 0) {
+      // All failed
+      message = `Failed to load ${itemType}`;
+      type = 'error';
+      title = 'Error';
+    } else {
+      // No items
+      message = `No ${itemType} found`;
+      type = 'info';
+      title = 'Info';
+    }
+    
+    addToast({
+      title,
+      message,
+      type,
+      duration: 4000
+    });
+  }, [addToast, removeToastsByType]);
+
+  // Add global event listener for custom toast events
+  React.useEffect(() => {
+    const handleCustomToast = (event: CustomEvent) => {
+      const { message, type, title } = event.detail;
+      showToast(message, type, title);
+    };
+
+    window.addEventListener('showToast', handleCustomToast as EventListener);
+    
+    return () => {
+      window.removeEventListener('showToast', handleCustomToast as EventListener);
+    };
+  }, [showToast]);
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast, clearToasts, replaceToast, removeToastsByType, showToast }}>
+    <ToastContext.Provider value={{ toasts, addToast, removeToast, clearToasts, replaceToast, removeToastsByType, showToast, showConsolidatedToast, showMixedResultsToast }}>
       {children}
       <ToastContainer />
     </ToastContext.Provider>

@@ -46,6 +46,58 @@ export interface ExpenseStats {
   nonBillableAmount: number;
 }
 
+export interface ExpenseHistoryEntry {
+  _id: string;
+  expenseId: string;
+  action: string;
+  description: string;
+  changes: { [key: string]: any };
+  previousValues: { [key: string]: any };
+  newValues: { [key: string]: any };
+  performedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  performedByName: string;
+  performedByEmail: string;
+  ipAddress?: string;
+  userAgent?: string;
+  metadata: { [key: string]: any };
+  timestamp: string;
+  formattedTimestamp: string;
+  relativeTime: string;
+}
+
+export interface ExpenseHistoryResponse {
+  success: boolean;
+  data: ExpenseHistoryEntry[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  message: string;
+}
+
+export interface ActivitySummary {
+  _id: string;
+  count: number;
+  lastOccurrence: string;
+}
+
+export interface HistoryStats {
+  totalActions: number;
+  uniqueUserCount: number;
+  firstAction: string | null;
+  lastAction: string | null;
+  actionsByType: Array<{
+    action: string;
+    timestamp: string;
+  }>;
+}
+
 class ExpenseService {
   private baseUrl = '/api/expenses';
 
@@ -90,6 +142,17 @@ class ExpenseService {
       console.log('💾 ExpenseService: API response:', response);
       if (response.success) {
         console.log('✅ ExpenseService: Expense created successfully:', response.data);
+        
+        // Dispatch event to notify other components
+        const event = new CustomEvent('expenseCreated', {
+          detail: {
+            expenseId: response.data._id,
+            expense: response.data,
+            timestamp: new Date()
+          }
+        });
+        window.dispatchEvent(event);
+        
         return response.data;
       }
       throw new Error('Failed to create expense');
@@ -102,16 +165,30 @@ class ExpenseService {
 
   async updateExpense(id: string, expenseData: Partial<CreateExpenseData>): Promise<Expense> {
     try {
+      console.log('🔄 Frontend: Updating expense:', id, expenseData);
       const response = await api<{ success: boolean; data: Expense }>(`${this.baseUrl}/${id}`, {
         method: 'PUT',
         body: JSON.stringify(expenseData),
       });
       if (response.success) {
+        console.log('✅ Frontend: Expense updated successfully:', response.data);
+        
+        // Dispatch event to notify other components
+        const event = new CustomEvent('expenseUpdated', {
+          detail: {
+            expenseId: id,
+            expense: response.data,
+            timestamp: new Date()
+          }
+        });
+        window.dispatchEvent(event);
+        
         return response.data;
       }
       throw new Error('Failed to update expense');
     } catch (error) {
-      console.error('Error updating expense:', error);
+      console.error('❌ Frontend: Error updating expense:', error);
+      console.error('❌ Frontend: This means the backend API is not being called, so history tracking will not work');
       throw error;
     }
   }
@@ -353,6 +430,120 @@ class ExpenseService {
       billableAmount: 525.50,
       nonBillableAmount: 649.00,
     };
+  }
+
+  // Expense History Methods
+  async getExpenseHistory(
+    expenseId: string,
+    options: {
+      page?: number;
+      limit?: number;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+      action?: string;
+    } = {}
+  ): Promise<ExpenseHistoryResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (options.page) params.append('page', options.page.toString());
+      if (options.limit) params.append('limit', options.limit.toString());
+      if (options.sortBy) params.append('sortBy', options.sortBy);
+      if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+      if (options.action) params.append('action', options.action);
+
+      const response = await api<ExpenseHistoryResponse>(`/api/expense-history/${expenseId}?${params.toString()}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching expense history:', error);
+      throw error;
+    }
+  }
+
+  async getExpenseHistorySummary(expenseId: string): Promise<{ success: boolean; data: ActivitySummary[]; message: string }> {
+    try {
+      const response = await api<{ success: boolean; data: ActivitySummary[]; message: string }>(`/api/expense-history/${expenseId}/summary`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching expense history summary:', error);
+      throw error;
+    }
+  }
+
+  async getExpenseHistoryStats(expenseId: string): Promise<{ success: boolean; data: HistoryStats; message: string }> {
+    try {
+      const response = await api<{ success: boolean; data: HistoryStats; message: string }>(`/api/expense-history/${expenseId}/stats`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching expense history stats:', error);
+      throw error;
+    }
+  }
+
+  async getRecentActivity(limit: number = 20): Promise<{ success: boolean; data: ExpenseHistoryEntry[]; message: string }> {
+    try {
+      const response = await api<{ success: boolean; data: ExpenseHistoryEntry[]; message: string }>(`/api/expense-history/activity/recent?limit=${limit}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      throw error;
+    }
+  }
+
+  async getAllExpenseHistory(options: {
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    action?: string;
+    expenseId?: string;
+    userId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  } = {}): Promise<ExpenseHistoryResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (options.page) params.append('page', options.page.toString());
+      if (options.limit) params.append('limit', options.limit.toString());
+      if (options.sortBy) params.append('sortBy', options.sortBy);
+      if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+      if (options.action) params.append('action', options.action);
+      if (options.expenseId) params.append('expenseId', options.expenseId);
+      if (options.userId) params.append('userId', options.userId);
+      if (options.dateFrom) params.append('dateFrom', options.dateFrom);
+      if (options.dateTo) params.append('dateTo', options.dateTo);
+
+      const response = await api<ExpenseHistoryResponse>(`/api/expense-history/activity/all?${params.toString()}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching all expense history:', error);
+      throw error;
+    }
+  }
+
+  async getHistoryByAction(action: string, options: { page?: number; limit?: number } = {}): Promise<ExpenseHistoryResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (options.page) params.append('page', options.page.toString());
+      if (options.limit) params.append('limit', options.limit.toString());
+
+      const response = await api<ExpenseHistoryResponse>(`/api/expense-history/action/${action}?${params.toString()}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching history by action:', error);
+      throw error;
+    }
+  }
+
+  async exportExpenseHistory(expenseId: string, format: 'json' | 'csv' = 'json'): Promise<any> {
+    try {
+      const response = await api<any>(`/api/expense-history/${expenseId}/export?format=${format}`, {
+        responseType: format === 'csv' ? 'blob' : 'json'
+      });
+      return response;
+    } catch (error) {
+      console.error('Error exporting expense history:', error);
+      throw error;
+    }
   }
 }
 

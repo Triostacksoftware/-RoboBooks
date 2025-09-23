@@ -103,6 +103,40 @@ const VendorCreditsPage = () => {
     setSelectedVendorCreditIds([]);
   };
 
+  const handleRecordRefund = async (amount: number, method: string, reference: string) => {
+    if (!selectedVendorCredit) return;
+    
+    try {
+      await vendorCreditService.recordRefund(selectedVendorCredit._id, {
+        amount,
+        refundMethod: method,
+        refundReference: reference,
+        refundDate: new Date().toISOString()
+      });
+      
+      // Refresh the vendor credit data
+      const updatedCredit = await vendorCreditService.getVendorCreditById(selectedVendorCredit._id);
+      handleVendorCreditUpdate(updatedCredit);
+      
+      const event = new CustomEvent("showToast", {
+        detail: {
+          message: "Refund recorded successfully!",
+          type: "success",
+        },
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error("Error recording refund:", error);
+      const event = new CustomEvent("showToast", {
+        detail: {
+          message: "Failed to record refund. Please try again.",
+          type: "error",
+        },
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -226,7 +260,13 @@ const VendorCreditsPage = () => {
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Applied Amount</dt>
                       <dd className="text-sm text-gray-900">
-                        ${selectedVendorCredit.appliedAmount}
+                        ${selectedVendorCredit.appliedAmount || 0}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Refund Amount</dt>
+                      <dd className="text-sm text-gray-900">
+                        ${(selectedVendorCredit as any).refundAmount || 0}
                       </dd>
                     </div>
                     <div>
@@ -292,34 +332,56 @@ const VendorCreditsPage = () => {
                   Delete Vendor Credit
                 </button>
                 {selectedVendorCredit.status === 'issued' && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        await vendorCreditService.updateVendorCreditStatus(selectedVendorCredit._id, 'applied');
-                        const updatedCredit = { ...selectedVendorCredit, status: 'applied' as const };
-                        handleVendorCreditUpdate(updatedCredit);
-                        const event = new CustomEvent("showToast", {
-                          detail: {
-                            message: "Vendor credit marked as applied!",
-                            type: "success",
-                          },
-                        });
-                        window.dispatchEvent(event);
-                      } catch (error) {
-                        console.error("Error updating vendor credit status:", error);
-                        const event = new CustomEvent("showToast", {
-                          detail: {
-                            message: "Failed to update vendor credit status. Please try again.",
-                            type: "error",
-                          },
-                        });
-                        window.dispatchEvent(event);
-                      }
-                    }}
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
-                  >
-                    Mark as Applied
-                  </button>
+                  <>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await vendorCreditService.updateVendorCreditStatus(selectedVendorCredit._id, 'applied');
+                          const updatedCredit = { ...selectedVendorCredit, status: 'applied' as const };
+                          handleVendorCreditUpdate(updatedCredit);
+                          const event = new CustomEvent("showToast", {
+                            detail: {
+                              message: "Vendor credit marked as applied!",
+                              type: "success",
+                            },
+                          });
+                          window.dispatchEvent(event);
+                        } catch (error) {
+                          console.error("Error updating vendor credit status:", error);
+                          const event = new CustomEvent("showToast", {
+                            detail: {
+                              message: "Failed to update vendor credit status. Please try again.",
+                              type: "error",
+                            },
+                          });
+                          window.dispatchEvent(event);
+                        }
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700"
+                    >
+                      Mark as Applied
+                    </button>
+                    <button
+                      onClick={() => {
+                        const refundAmount = prompt(`Enter refund amount (max: ${selectedVendorCredit.remainingAmount}):`);
+                        if (refundAmount && parseFloat(refundAmount) > 0) {
+                          const amount = parseFloat(refundAmount);
+                          if (amount <= selectedVendorCredit.remainingAmount) {
+                            const refundMethod = prompt("Enter refund method (cash, check, bank_transfer, etc.):");
+                            if (refundMethod) {
+                              const refundReference = prompt("Enter refund reference (optional):");
+                              handleRecordRefund(amount, refundMethod, refundReference || '');
+                            }
+                          } else {
+                            alert("Refund amount cannot exceed remaining credit amount");
+                          }
+                        }
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                    >
+                      Record Refund
+                    </button>
+                  </>
                 )}
               </div>
             </div>

@@ -55,20 +55,37 @@ const BankStatementImport: React.FC<BankStatementImportProps> = ({
     setUploading(true);
 
     try {
-      // Simulate file processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('statement', file);
+      formData.append('accountId', selectedAccount?.id || '68cc3632ffc1217ce953c0fd'); // Use first available account ID
 
-      // Mock file data based on file type
-      const mockData = generateMockData(file.name);
-      setFileData(mockData);
-      setFieldMapping(mockData.autoMapping);
-      setPreviewData(mockData.sampleData);
+      // Call backend API to process file
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(`${backendUrl}/api/banking/import/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload file');
+      }
+
+      const result = await response.json();
+      console.log('📁 Upload result:', result);
+
+      // Set the real data from backend
+      setFileData(result.data);
+      setFieldMapping(result.data.fieldMapping || {});
+      setPreviewData(result.data.sampleData || []);
 
       setImportData({
         ...importData,
         file,
-        mappedFields: mockData.autoMapping,
-        previewData: mockData.sampleData,
+        importId: result.data.importId,
+        mappedFields: result.data.fieldMapping,
+        previewData: result.data.sampleData || [],
       });
 
       setUploading(false);
@@ -76,6 +93,7 @@ const BankStatementImport: React.FC<BankStatementImportProps> = ({
     } catch (error) {
       console.error("File upload error:", error);
       setUploading(false);
+      alert('Failed to upload file: ' + error.message);
     }
   };
 
@@ -197,24 +215,31 @@ const BankStatementImport: React.FC<BankStatementImportProps> = ({
     setProcessing(true);
 
     try {
-      // Simulate processing
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call backend API to update field mapping
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(`${backendUrl}/api/banking/import/${importData.importId}/mapping`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          fieldMapping: fieldMapping,
+        }),
+      });
 
-      // Process data with new mapping
-      const processed = previewData.map((row) => ({
-        date: row[fieldMapping.date] || "",
-        description: row[fieldMapping.description] || "",
-        payee: row[fieldMapping.payee] || "",
-        referenceNumber: row[fieldMapping.referenceNumber] || "",
-        withdrawals: parseFloat(row[fieldMapping.withdrawals]) || 0,
-        deposits: parseFloat(row[fieldMapping.deposits]) || 0,
-        status: "ready",
-      }));
+      if (!response.ok) {
+        throw new Error('Failed to update field mapping');
+      }
 
-      setPreviewData(processed);
+      const result = await response.json();
+      console.log('📊 Field mapping result:', result);
+
+      // Update preview data with processed data from backend
+      setPreviewData(result.data.sampleData || []);
       setImportData({
         ...importData,
-        previewData: processed,
+        previewData: result.data.sampleData || [],
       });
 
       setProcessing(false);
@@ -222,6 +247,7 @@ const BankStatementImport: React.FC<BankStatementImportProps> = ({
     } catch (error) {
       console.error("Processing error:", error);
       setProcessing(false);
+      alert('Failed to process field mapping: ' + error.message);
     }
   };
 
@@ -230,14 +256,26 @@ const BankStatementImport: React.FC<BankStatementImportProps> = ({
     setProcessing(true);
 
     try {
-      // Simulate import
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Call backend API to process and import transactions
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      const response = await fetch(`${backendUrl}/api/banking/import/${importData.importId}/process`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to import transactions');
+      }
+
+      const result = await response.json();
+      console.log('✅ Import result:', result);
 
       setProcessing(false);
       onComplete();
     } catch (error) {
       console.error("Import error:", error);
       setProcessing(false);
+      alert('Failed to import transactions: ' + error.message);
     }
   };
 
@@ -441,10 +479,12 @@ const BankStatementImport: React.FC<BankStatementImportProps> = ({
                   },
                   {
                     field: "withdrawals",
-                    label: "Withdrawals",
+                    label: "Withdrawals/Debit",
                     required: false,
                   },
-                  { field: "deposits", label: "Deposits", required: false },
+                  { field: "deposits", label: "Deposits/Credit", required: false },
+                  { field: "category", label: "Category", required: false },
+                  { field: "status", label: "Status", required: false },
                 ].map((item) => (
                   <tr key={item.field}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -456,7 +496,7 @@ const BankStatementImport: React.FC<BankStatementImportProps> = ({
                           <XMarkIcon className="h-4 w-4" />
                         </button>
                         <select
-                          value={fieldMapping[item.field] || ""}
+                          value={(fieldMapping || {})[item.field] || ""}
                           onChange={(e) =>
                             handleFieldMappingChange(item.field, e.target.value)
                           }

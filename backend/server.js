@@ -48,6 +48,7 @@ import chartOfAccountsRoutes from "./routes/chartOfAccountsRoutes.js";
 import adminUserApprovalRoutes from "./routes/adminUserApproval.js";
 import organizationRoutes from "./routes/organizationRoutes.js";
 import recurringExpenseRoutes from "./routes/recurringExpenseRoutes.js";
+import expenseHistoryRoutes from "./routes/expenseHistory.js";
 import purchaseOrderRoutes from "./routes/purchaseOrderRoutes.js";
 import paymentMadeRoutes from "./routes/paymentMadeRoutes.js";
 import recurringBillRoutes from "./routes/recurringBillRoutes.js";
@@ -63,6 +64,10 @@ import bulkOperationsRoutes from "./routes/bulkOperationsRoutes.js";
 import transactionLockingRoutes from "./routes/transactionLockingRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import dashboardEventsRoutes from "./routes/dashboardEvents.js";
+
+// Import models to ensure they are registered with mongoose
+import './models/ExpenseHistory.js';
+import './models/User.js';
 
 const app = express();
 
@@ -116,6 +121,7 @@ app.use("/api/banking", bankingRoutes);
 app.use("/api/vendors", vendorsRoutes);
 app.use("/api/bills", billsRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/expense-history", expenseHistoryRoutes);
 app.use("/api/estimates", estimatesRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/projects", projectRoutes);

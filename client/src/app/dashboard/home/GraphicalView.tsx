@@ -31,6 +31,7 @@ export default function GraphicalView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
 
   // Fetch dashboard statistics
   const fetchDashboardStats = async () => {
@@ -38,6 +39,7 @@ export default function GraphicalView() {
       setError(null);
       const stats = await dashboardService.getDashboardStats();
       setDashboardStats(stats);
+      setLastRefreshTime(new Date());
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
       setError('Failed to load dashboard data');
@@ -50,6 +52,29 @@ export default function GraphicalView() {
   // Load data on component mount
   useEffect(() => {
     fetchDashboardStats();
+  }, []);
+
+  // Real-time updates with fallback polling
+  useEffect(() => {
+    const handleRealTimeUpdate = (stats: DashboardStats) => {
+      console.log('📊 GraphicalView: Real-time update received', stats);
+      setDashboardStats(stats);
+      setLastRefreshTime(new Date());
+    };
+
+    // Connect to real-time updates
+    dashboardService.connectRealTimeUpdates(handleRealTimeUpdate);
+
+    // Fallback: Auto-refresh every 30 seconds if real-time fails
+    const interval = setInterval(() => {
+      console.log('🔄 GraphicalView: Auto-refresh updating chart data...');
+      fetchDashboardStats();
+    }, 30000); // 30 seconds for better real-time experience
+
+    return () => {
+      dashboardService.disconnectRealTimeUpdates();
+      clearInterval(interval);
+    };
   }, []);
 
   // Debug logging

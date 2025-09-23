@@ -1037,16 +1037,22 @@ export default function RecordExpensePage({ initialData, mode = 'create' }: Reco
       {/* Page Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => window.history.back()}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeftIcon className="h-4 w-4 mr-1" />
-              Back to Expenses
-            </button>
+            {mode === 'create' && (
+              <button
+                onClick={() => window.history.back()}
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeftIcon className="h-4 w-4 mr-1" />
+                Back to Expenses
+              </button>
+            )}
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Add New Expense</h1>
-              <p className="text-gray-600">Record and manage your business expenses</p>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {mode === 'edit' ? 'Edit Expense' : 'Add New Expense'}
+              </h1>
+              <p className="text-gray-600">
+                {mode === 'edit' ? 'Update and manage your expense details' : 'Record and manage your business expenses'}
+              </p>
           </div>
         </div>
       </div>

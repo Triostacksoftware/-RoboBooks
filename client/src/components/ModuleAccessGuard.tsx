@@ -99,9 +99,14 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
 
           {/* Lock Message */}
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-            <p className="text-gray-700 text-sm leading-relaxed">
-              {lockMessage}
+            <p className="text-gray-700 text-sm leading-relaxed mb-3">
+              This module is locked. Transactions created before 23/09/2025 have been locked.
             </p>
+            <div className="bg-orange-100 border border-orange-300 rounded-lg p-3">
+              <p className="text-orange-800 text-lg font-bold text-center">
+                Reason: {lockMessage.split('Reason: ')[1] || lockMessage}
+              </p>
+            </div>
           </div>
 
           {/* Action Buttons */}

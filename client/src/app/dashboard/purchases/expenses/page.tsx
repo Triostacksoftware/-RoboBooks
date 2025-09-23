@@ -1,21 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/contexts/ToastContext";
 import ModuleAccessGuard from "@/components/ModuleAccessGuard";
 import ExpensesSection from "./components/ExpensesSection";
 import ExpenseDetailsPanel from "./[id]/components/ExpenseDetailsPanel";
+import ExpenseHistoryPanel from "./[id]/components/ExpenseHistoryPanel";
 import BulkImportModal from "@/components/modals/BulkImportModal";
 import BulkExportModal from "@/components/modals/BulkExportModal";
 import { expenseService, Expense } from "@/services/expenseService";
 
 const ExpensesPage = () => {
   const router = useRouter();
-  const { addToast, removeToastsByType } = useToast();
+  const searchParams = useSearchParams();
+  const { showMixedResultsToast } = useToast();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedExpenseIds, setSelectedExpenseIds] = useState<string[]>([]);
@@ -27,45 +30,17 @@ const ExpensesPage = () => {
         setLoading(true);
         setError(null);
         
-        // Remove any existing processing toasts
-        removeToastsByType('info');
-        
-        // Show processing toast
-        addToast({
-          type: 'info',
-          title: 'Loading...',
-          message: 'Fetching expenses from server...',
-          duration: 0 // Don't auto-dismiss processing toast
-        });
-        
         const data = await expenseService.getExpenses();
         setExpenses(data);
         
-        // Remove processing toast
-        removeToastsByType('info');
-        
-        // Show success toast (only if there were no expenses before)
-        if (expenses.length === 0) {
-          addToast({
-            title: "Success",
-            message: `Loaded ${data.length} expenses successfully`,
-            type: "success",
-            duration: 2000,
-          });
-        }
+        // Show consolidated toast with count
+        showMixedResultsToast(data.length, 0, "expenses");
       } catch (err: any) {
         console.error("Error loading expenses:", err);
         setError("Failed to load expenses");
         
-        // Remove processing toast on error
-        removeToastsByType('info');
-        
-        addToast({
-          title: "Error",
-          message: "Failed to load expenses",
-          type: "error",
-          duration: 5000,
-        });
+        // Show consolidated error toast
+        showMixedResultsToast(0, 1, "expenses");
       } finally {
         setLoading(false);
       }
@@ -73,6 +48,28 @@ const ExpensesPage = () => {
 
     loadExpenses();
   }, []);
+
+  // Handle URL parameters for expense selection and history opening
+  useEffect(() => {
+    const expenseId = searchParams.get('expense');
+    const openHistory = searchParams.get('openHistory');
+    
+    if (expenseId && expenses.length > 0) {
+      const expense = expenses.find(exp => exp._id === expenseId);
+      if (expense) {
+        setSelectedExpense(expense);
+        setShowRightPanel(true);
+      }
+    } else if (openHistory === 'true' && expenses.length > 0) {
+      // If openHistory is true, select the first expense and open history panel
+      const firstExpense = expenses[0];
+      if (firstExpense) {
+        setSelectedExpense(firstExpense);
+        setShowRightPanel(true);
+        setShowHistoryPanel(true);
+      }
+    }
+  }, [searchParams, expenses]);
 
   const handleExpenseSelect = (expense: Expense) => {
     setSelectedExpense(expense);
@@ -83,8 +80,17 @@ const ExpensesPage = () => {
 
   const handleCloseRightPanel = () => {
     setShowRightPanel(false);
+    setShowHistoryPanel(false);
     setSelectedExpense(null);
     router.push("/dashboard/purchases/expenses", { scroll: false });
+  };
+
+  const handleOpenHistory = () => {
+    setShowHistoryPanel(true);
+  };
+
+  const handleCloseHistory = () => {
+    setShowHistoryPanel(false);
   };
 
   const handleExpenseUpdate = (updatedExpense: Expense) => {
@@ -104,6 +110,24 @@ const ExpensesPage = () => {
       setSelectedExpense(null);
       setShowRightPanel(false);
       router.push("/dashboard/purchases/expenses", { scroll: false });
+    }
+  };
+
+  const handleExpenseCreate = (newExpense: Expense) => {
+    setExpenses(prev => [newExpense, ...prev]);
+  };
+
+  const refreshExpenses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await expenseService.getExpenses();
+      setExpenses(data);
+    } catch (err: any) {
+      console.error("Error refreshing expenses:", err);
+      setError("Failed to refresh expenses");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,8 +196,9 @@ const ExpensesPage = () => {
       <div className="flex h-full">
         {/* Left Panel - Expenses List */}
         <div
-          className={`transition-all duration-300 ${
-            showRightPanel ? "w-[30%]" : "w-full"
+          className={`transition-all duration-300 flex-shrink-0 ${
+            showRightPanel && showHistoryPanel ? "w-[25%]" :
+            showRightPanel ? "w-[35%]" : "w-full"
           }`}
         >
           <ExpensesSection
@@ -190,14 +215,29 @@ const ExpensesPage = () => {
           />
         </div>
 
-        {/* Right Panel - Expense Details */}
+        {/* Middle Panel - Expense Details */}
         {showRightPanel && selectedExpense && (
-          <div className="w-[70%] border-l border-gray-200 bg-white transition-all duration-300 ease-in-out overflow-hidden">
+          <div className={`border-l border-gray-200 bg-white transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 ${
+            showHistoryPanel ? "w-[40%]" : "w-[65%]"
+          }`}>
             <ExpenseDetailsPanel
               expense={selectedExpense}
               onClose={handleCloseRightPanel}
               onUpdate={handleExpenseUpdate}
               onDelete={handleExpenseDelete}
+              onCreate={handleExpenseCreate}
+              onRefresh={refreshExpenses}
+              onOpenHistory={handleOpenHistory}
+            />
+          </div>
+        )}
+
+        {/* Right Panel - Expense History */}
+        {showHistoryPanel && selectedExpense && (
+          <div className="w-[35%] border-l border-gray-200 bg-white transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0">
+            <ExpenseHistoryPanel
+              expense={selectedExpense}
+              onClose={handleCloseHistory}
             />
           </div>
         )}

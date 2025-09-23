@@ -19,6 +19,7 @@ import {
   ChartBarIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
+  ChatBubbleLeftEllipsisIcon,
 } from "@heroicons/react/24/outline";
 
 // Dynamic imports for components that use document references
@@ -188,6 +189,16 @@ export default function Header({ onToggleSidebar }: Props) {
                 onClose={closeAll}
               />
             </ActionWrap>
+
+            {/* Message Icon - Opens All Expenses with History */}
+            <button
+              onClick={() => router.push('/dashboard/purchases/expenses?openHistory=true')}
+              className="h-8 w-8 rounded-md grid place-items-center hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-all duration-200"
+              aria-label="Go to All Expenses with History"
+              title="Go to All Expenses with History"
+            >
+              <ChatBubbleLeftEllipsisIcon className="h-4 w-4 text-white" />
+            </button>
 
             {/* Org switcher */}
             <div className="hidden sm:block">

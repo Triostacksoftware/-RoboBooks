@@ -61,11 +61,11 @@ router.get("/transactions/categories", bankingController.getTransactionCategorie
 router.get("/transactions/summary", bankingController.getTransactionSummary);
 
 // Bank Statement Import routes
-router.post("/import/upload", bankingController.uploadStatement);
-router.post("/import-transactions", upload.single('file'), bankingController.importTransactions);
-router.put("/import/:importId/mapping", bankingController.updateFieldMapping);
-router.post("/import/:importId/process", bankingController.importTransactions);
-router.get("/import/:importId/status", bankingController.getImportStatus);
+router.post("/import/upload", auth, upload.single('statement'), bankingController.uploadStatement);
+router.post("/import-transactions", auth, upload.single('file'), bankingController.importTransactions);
+router.put("/import/:importId/mapping", auth, bankingController.updateFieldMapping);
+router.post("/import/:importId/process", auth, bankingController.processImportTransactions);
+router.get("/import/:importId/status", auth, bankingController.getImportStatus);
 
 // Overview routes
 router.get("/overview", bankingController.getBankingOverview);
