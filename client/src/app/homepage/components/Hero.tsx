@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
@@ -24,12 +23,15 @@ const Hero: React.FC = () => {
       {/* Headings */}
       <div className="text-center max-w-4xl mx-auto">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight animate-slide-up text-yellow-100">
-          <span className="text-white">Comprehensive</span><br />
-          accounting platform for<br />
+          <span className="text-white">Comprehensive</span>
+          <br />
+          accounting platform for
+          <br />
           <span className="text-white">growing businesses</span>
         </h1>
         <p className="mt-6 text-lg sm:text-xl text-white max-w-2xl mx-auto animate-fade-in-up">
-          Manage end-to-end accounting—from banking & e-invoicing to inventory & payroll with the best accounting software in India.
+          Manage end-to-end accounting—from banking & e-invoicing to inventory &
+          payroll with the best accounting software in India.
         </p>
 
         {/* CTA Buttons */}
@@ -46,26 +48,6 @@ const Hero: React.FC = () => {
           >
             Request a demo
           </Link>
-        </div>
-      </div>
-
-      {/* Animated Blurs + Image */}
-      <div className="relative mt-20 flex justify-center items-center px-4 overflow-hidden">
-        {/* Left Blur */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-72 h-72 bg-yellow-300 opacity-20 rounded-full blur-3xl animate-pulse" />
-
-        {/* Right Blur */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-72 h-72 bg-yellow-400 opacity-20 rounded-full blur-3xl animate-spin" />
-
-        {/* Animated Image */}
-        <div className="relative z-10 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-white/10 backdrop-blur-sm animate-slide-left-right">
-          <Image
-            src="/images/usability.png"
-            alt="Dashboard Preview"
-            width={1200}
-            height={700}
-            className="w-full h-auto object-cover"
-          />
         </div>
       </div>
     </section>

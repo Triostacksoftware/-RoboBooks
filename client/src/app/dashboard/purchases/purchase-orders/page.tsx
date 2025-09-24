@@ -7,16 +7,44 @@ import PurchaseOrdersSection from "./components/PurchaseOrdersSection";
 import PurchaseOrderDetailsPanel from "./components/PurchaseOrderDetailsPanel";
 import BulkImportModal from "@/components/modals/BulkImportModal";
 import BulkExportModal from "@/components/modals/BulkExportModal";
-import { PurchaseOrder, purchaseOrderService } from "@/services/purchaseOrderService";
+import {
+  PurchaseOrder,
+  purchaseOrderService,
+} from "@/services/purchaseOrderService";
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  DocumentArrowDownIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  CheckIcon,
+  XMarkIcon,
+  TruckIcon,
+} from "@heroicons/react/24/outline";
+import { api } from "@/lib/api";
+import { formatCurrency } from "@/utils/currency";
 
 const PurchaseOrdersPage = () => {
   const router = useRouter();
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
-  const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState<PurchaseOrder | null>(null);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] =
+    useState<PurchaseOrder | null>(null);
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<string[]>([]);
+  const [selectedPurchaseOrderIds, setSelectedPurchaseOrderIds] = useState<
+    string[]
+  >([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 25,
+    total: 0,
+    pages: 0,
+  });
 
   useEffect(() => {
     const loadPurchaseOrders = async () => {
@@ -37,7 +65,10 @@ const PurchaseOrdersPage = () => {
   const handlePurchaseOrderSelect = (purchaseOrder: PurchaseOrder) => {
     setSelectedPurchaseOrder(purchaseOrder);
     setShowRightPanel(true);
-    router.push(`/dashboard/purchases/purchase-orders?order=${purchaseOrder._id}`, { scroll: false });
+    router.push(
+      `/dashboard/purchases/purchase-orders?order=${purchaseOrder._id}`,
+      { scroll: false }
+    );
   };
 
   const handleCloseRightPanel = () => {
@@ -47,8 +78,8 @@ const PurchaseOrdersPage = () => {
   };
 
   const handlePurchaseOrderUpdate = (updatedPurchaseOrder: PurchaseOrder) => {
-    setPurchaseOrders(prev => 
-      prev.map(order => 
+    setPurchaseOrders((prev) =>
+      prev.map((order) =>
         order._id === updatedPurchaseOrder._id ? updatedPurchaseOrder : order
       )
     );
@@ -58,7 +89,7 @@ const PurchaseOrdersPage = () => {
   };
 
   const handlePurchaseOrderDelete = (orderId: string) => {
-    setPurchaseOrders(prev => prev.filter(order => order._id !== orderId));
+    setPurchaseOrders((prev) => prev.filter((order) => order._id !== orderId));
     if (selectedPurchaseOrder?._id === orderId) {
       setSelectedPurchaseOrder(null);
       setShowRightPanel(false);
@@ -90,7 +121,11 @@ const PurchaseOrdersPage = () => {
   };
 
   const handleBulkDelete = () => {
-    if (confirm(`Are you sure you want to delete ${selectedPurchaseOrderIds.length} purchase orders?`)) {
+    if (
+      confirm(
+        `Are you sure you want to delete ${selectedPurchaseOrderIds.length} purchase orders?`
+      )
+    ) {
       // TODO: Implement bulk delete functionality
       console.log("Bulk delete for purchase orders:", selectedPurchaseOrderIds);
       setSelectedPurchaseOrderIds([]);
@@ -172,7 +207,9 @@ const PurchaseOrdersPage = () => {
       {showBulkExportModal && (
         <BulkExportModal
           selectedIds={selectedPurchaseOrderIds}
-          selectedData={purchaseOrders.filter(po => selectedPurchaseOrderIds.includes(po._id))}
+          selectedData={purchaseOrders.filter((po) =>
+            selectedPurchaseOrderIds.includes(po._id)
+          )}
           type="purchase-orders"
           onClose={closeBulkExportModal}
         />

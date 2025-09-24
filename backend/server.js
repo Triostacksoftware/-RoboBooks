@@ -9,7 +9,7 @@ import passport from "passport";
 
 import connectDB from "./config/db.js";
 import "./config/passport.js";
-import { startScheduledRateUpdates } from './services/scheduledRatesService.js';
+import { startScheduledRateUpdates } from "./services/scheduledRatesService.js";
 
 // Route imports
 import authRoutes from "./routes/auth.js";
@@ -18,6 +18,7 @@ import accountsRoutes from "./routes/accounts.js";
 import vendorsRoutes from "./routes/vendorsRoutes.js";
 import billsRoutes from "./routes/bills.routes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import purchaseOrderRoutes from "./routes/purchaseOrder.routes.js";
 import estimatesRoutes from "./routes/estimates.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
 import projectRoutes from "./routes/projectroutes.js";
@@ -66,8 +67,8 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import dashboardEventsRoutes from "./routes/dashboardEvents.js";
 
 // Import models to ensure they are registered with mongoose
-import './models/ExpenseHistory.js';
-import './models/User.js';
+import "./models/ExpenseHistory.js";
+import "./models/User.js";
 
 const app = express();
 
@@ -120,8 +121,7 @@ app.use("/api/accounts", accountsRoutes);
 app.use("/api/banking", bankingRoutes);
 app.use("/api/vendors", vendorsRoutes);
 app.use("/api/bills", billsRoutes);
-app.use("/api/expenses", expenseRoutes);
-app.use("/api/expense-history", expenseHistoryRoutes);
+app.use("/api/expenses", expensesRoutes);
 app.use("/api/estimates", estimatesRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/projects", projectRoutes);
@@ -197,9 +197,7 @@ server.on("error", (error) => {
 
 server.on("listening", () => {
   console.log("✅ Server is ready to accept connections");
-  
+
   // Start scheduled exchange rate updates
   startScheduledRateUpdates();
 });
-
-
