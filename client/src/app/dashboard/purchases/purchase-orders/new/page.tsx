@@ -36,12 +36,6 @@ interface Account {
   type: string;
 }
 
-interface Tax {
-  _id: string;
-  name: string;
-  rate: number;
-}
-
 interface VendorsResponse {
   success: boolean;
   data: Vendor[];
@@ -57,11 +51,6 @@ interface AccountsResponse {
   data: Account[];
 }
 
-interface TaxesResponse {
-  success: boolean;
-  data: Tax[];
-}
-
 interface PurchaseOrderItem {
   item: string;
   description: string;
@@ -75,13 +64,12 @@ interface PurchaseOrderItem {
   totalAmount: number;
 }
 
-export default function NewPurchaseOrderPage() {
+function NewPurchaseOrderPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [taxes, setTaxes] = useState<Tax[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
@@ -142,17 +130,16 @@ export default function NewPurchaseOrderPage() {
 
   const fetchInitialData = async () => {
     try {
-      const [vendorsRes, itemsRes, accountsRes, taxesRes] = await Promise.all([
+      const [vendorsRes, itemsRes, accountsRes] = await Promise.all([
         api<VendorsResponse>("/api/vendors"),
         api<ItemsResponse>("/api/items"),
         api<AccountsResponse>("/api/accounts"),
-        api<TaxesResponse>("/api/taxes"),
       ]);
 
       if (vendorsRes.success) setVendors(vendorsRes.data);
       if (itemsRes.success) setItems(itemsRes.data);
       if (accountsRes.success) setAccounts(accountsRes.data);
-      if (taxesRes.success) setTaxes(taxesRes.data);
+      // Taxes are not used in this component
     } catch (error) {
       console.error("Error fetching initial data:", error);
     }
@@ -206,14 +193,20 @@ export default function NewPurchaseOrderPage() {
     }
   };
 
-  const handleItemChange = (index: number, field: string, value: any) => {
+  const handleItemChange = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
 
     // Calculate amount
     if (field === "quantity" || field === "rate") {
-      const quantity = field === "quantity" ? value : newItems[index].quantity;
-      const rate = field === "rate" ? value : newItems[index].rate;
+      const quantity =
+        field === "quantity" ? Number(value) : Number(newItems[index].quantity);
+      const rate =
+        field === "rate" ? Number(value) : Number(newItems[index].rate);
       newItems[index].amount = quantity * rate;
     }
 
@@ -359,10 +352,13 @@ export default function NewPurchaseOrderPage() {
         adjustment: parseFloat(formData.adjustment.toString()),
       };
 
-      const response = await api("/api/purchase-orders", {
-        method: "POST",
-        body: JSON.stringify(submitData),
-      });
+      const response = await api<{ success: boolean; data: { _id: string } }>(
+        "/api/purchase-orders",
+        {
+          method: "POST",
+          body: JSON.stringify(submitData),
+        }
+      );
 
       if (response.success) {
         // Upload files if any
