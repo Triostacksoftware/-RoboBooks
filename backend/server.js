@@ -18,6 +18,7 @@ import accountsRoutes from "./routes/accounts.js";
 import vendorsRoutes from "./routes/vendorsRoutes.js";
 import billsRoutes from "./routes/bills.routes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import expensesRoutes from "./routes/expenses.routes.js";
 import purchaseOrderRoutes from "./routes/purchaseOrder.routes.js";
 import estimatesRoutes from "./routes/estimates.routes.js";
 import invoiceRoutes from "./routes/invoice.routes.js";
@@ -50,7 +51,6 @@ import adminUserApprovalRoutes from "./routes/adminUserApproval.js";
 import organizationRoutes from "./routes/organizationRoutes.js";
 import recurringExpenseRoutes from "./routes/recurringExpenseRoutes.js";
 import expenseHistoryRoutes from "./routes/expenseHistory.js";
-import purchaseOrderRoutes from "./routes/purchaseOrderRoutes.js";
 import paymentMadeRoutes from "./routes/paymentMadeRoutes.js";
 import recurringBillRoutes from "./routes/recurringBillRoutes.js";
 import vendorCreditRoutes from "./routes/vendorCreditRoutes.js";
@@ -90,12 +90,13 @@ app.use(
       process.env.CLIENT_ORIGIN || "http://localhost:3000",
       "https://robobookss.com",
       "https://www.robobookss.com",
+      "https://api.robobookss.com",
       "http://localhost:3000",
       "http://localhost:3001",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 
