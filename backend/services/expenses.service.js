@@ -1,4 +1,4 @@
-import Expense from "../models/expense.model.js";
+import Expense from "../models/Expense.js";
 import mongoose from "mongoose";
 
 // Create a new expense
